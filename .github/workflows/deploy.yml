@@ -1,0 +1,31 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            mkdir -p /home/ubuntu/alvarezplacas_web
+            cd /home/ubuntu/alvarezplacas_web
+            if [ ! -d .git ]; then
+              git clone https://github.com/alvarezplacas/alvarezplacas_web.git .
+            else
+              git remote set-url origin https://github.com/alvarezplacas/alvarezplacas_web.git
+              git pull origin main
+            fi
+            docker compose -f docker-compose.yml up -d --build
