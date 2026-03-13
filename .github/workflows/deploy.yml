@@ -65,6 +65,8 @@ jobs:
             docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
             echo "Checking for 'nginx' or 'proxy' directories in home:"
             ls -d ~/*/ | grep -E "nginx|proxy|nx" || echo "No proxy dirs found in ~"
+            echo "Checking Nginx Logs (Astro Container) for 502 errors:"
+            docker logs alvarezplacas_web --tail 20
             echo "Checking listening ports on host:"
             # ss -tulpn | grep LISTEN || echo "ss command failed"
             echo "Diagnostic finish."
