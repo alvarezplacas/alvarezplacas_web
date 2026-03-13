@@ -2,6 +2,8 @@
 import '../styles/global.css';
 import BottomNav from '../components/BottomNav.astro';
 
+import Footer from '../components/Footer.astro';
+
 interface Props {
 	title: string;
 	description?: string;
@@ -45,14 +47,15 @@ const {
 		<!-- Font Awesome -->
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 	</head>
-	<body class="bg-jet-black text-white font-sans antialiased pb-20 md:pb-0">
+	<body class="bg-jet-black text-white font-sans antialiased pb-20 md:pb-0 min-h-screen flex flex-col">
 		<!-- Main Header Here -->
 		
-		<main>
+		<main class="flex-grow">
 			<slot />
 		</main>
 
 		<!-- Main Footer Here -->
+        <Footer />
         <BottomNav />
 	</body>
 </html>
