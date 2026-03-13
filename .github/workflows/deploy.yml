@@ -59,8 +59,12 @@ jobs:
             echo "Final user list in FileBrowser:"
             docker exec alvarezplacas_files /filebrowser users ls
             
-            echo "Deployment finished! Summary of state:"
-            echo "Git Commit: $(git rev-parse --short HEAD)"
-            echo "Docker PS:"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "Deployment finished! DEEP DIAGNOSTIC:"
+            echo "Current Commit: $(git rev-parse --short HEAD)"
+            echo "Running Containers (All):"
+            docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "Checking for 'nginx' or 'proxy' directories in home:"
+            ls -d ~/*/ | grep -E "nginx|proxy|nx" || echo "No proxy dirs found in ~"
+            echo "Checking listening ports on host:"
+            # ss -tulpn | grep LISTEN || echo "ss command failed"
             echo "Diagnostic finish."
