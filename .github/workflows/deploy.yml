@@ -41,7 +41,10 @@ jobs:
             docker network create javiermix_network || true
             
             echo "Rebuilding and restarting containers..."
-            docker compose -f docker-compose.yml up -d --build
+            docker-compose up -d --build
+            
+            echo "Cleaning up old images to save space..."
+            docker image prune -f
             
             echo "Waiting for all services to stabilize (45s)..."
             sleep 45
