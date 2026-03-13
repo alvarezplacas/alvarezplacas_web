@@ -53,7 +53,7 @@ jobs:
             docker exec alvarezplacas_web curl -s http://localhost/api/settings || echo "API check failed, but continuing..."
             
             echo "Injecting FileBrowser credentials..."
-            # Asegurarnos de usar la ruta completa al binario y el archivo de db correcto
+            # Forzar puerto y db en el comando de ejecución si es necesario, pero aquí solo añadimos usuarios
             docker exec alvarezplacas_files /filebrowser users add "alvarezjavierh@gmail.com" "Tecno121212" --perm.admin || \
             docker exec alvarezplacas_files /filebrowser users update 1 --username "alvarezjavierh@gmail.com" --password "Tecno121212"
             

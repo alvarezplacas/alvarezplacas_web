@@ -10,7 +10,7 @@ services:
     volumes:
       - ./archivos_alvarezplacas:/usr/share/nginx/html/images/catalog
     environment:
-      - DATABASE_URL=postgresql://alvarez_admin:alvarez_password@db:5432/alvarezplacas
+      - DATABASE_URL=postgresql://alvarez_admin:JavierMix2026!@db:5432/alvarezplacas
       - NODE_ENV=production
 
   filebrowser:
@@ -22,7 +22,8 @@ services:
     volumes:
       - ./archivos_alvarezplacas:/srv
       - ./filebrowser.db:/database.db
-    command: ["-d", "/database.db", "-p", "80"]
+    # Usar flags estándar para asegurar que cargue la DB y el puerto 80 interno
+    command: [ "--database", "/database.db", "--port", "80" ]
     networks:
       - javiermix_network
 
@@ -31,7 +32,7 @@ services:
     container_name: alvarezplacas_db
     environment:
       POSTGRES_USER: alvarez_admin
-      POSTGRES_PASSWORD: alvarez_password
+      POSTGRES_PASSWORD: JavierMix2026!
       POSTGRES_DB: alvarezplacas
     ports:
       - "5432:5432"
