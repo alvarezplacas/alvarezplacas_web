@@ -19,7 +19,7 @@ services:
     container_name: alvarezplacas_files
     restart: always
     ports:
-      - "8083:80"
+      - "8084:80"
     volumes:
       - ./archivos_alvarezplacas:/srv
       - ./filebrowser.db:/database.db
