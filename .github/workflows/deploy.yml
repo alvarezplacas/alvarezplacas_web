@@ -37,17 +37,28 @@ jobs:
               git reset --hard origin/main
               git clean -fd
             fi
-            echo "Cleaning up FileBrowser database for a fresh start..."
+            echo "Performing deep cleaning of FileBrowser..."
+            docker stop alvarezplacas_files || true
+            docker rm alvarezplacas_files || true
             rm -f filebrowser.db
+            touch filebrowser.db
+            chmod 666 filebrowser.db
+            
             echo "Rebuilding and restarting containers..."
             docker compose -f docker-compose.yml up -d --build
-            echo "Waiting for FileBrowser to initialize (20s)..."
-            sleep 20
-            echo "Attempting to create user 'alvarezjavierh@gmail.com'..."
-            docker exec alvarezplacas_files filebrowser users add alvarezjavierh@gmail.com Tecno121212 --perm.admin
             
-            echo "Current users in FileBrowser:"
-            docker exec alvarezplacas_files filebrowser users ls
+            echo "Waiting for FileBrowser to initialize (25s)..."
+            sleep 25
+            
+            echo "Injecting custom credentials..."
+            # Forzar la creación del usuario correo
+            docker exec alvarezplacas_files /filebrowser users add "alvarezjavierh@gmail.com" "Tecno121212" --perm.admin || echo "Failed to add email user"
+            
+            # Crear un usuario alternativo corto por si el correo da problemas en el login
+            docker exec alvarezplacas_files /filebrowser users add "javier" "Tecno121212" --perm.admin || echo "Failed to add javier user"
+            
+            echo "Current users list:"
+            docker exec alvarezplacas_files /filebrowser users ls
             
             echo "Inspect running containers:"
             echo "Inspect images:"
