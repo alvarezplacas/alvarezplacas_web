@@ -9,6 +9,9 @@ services:
       - javiermix_network
     volumes:
       - ./archivos_alvarezplacas:/usr/share/nginx/html/images/catalog
+    environment:
+      - DATABASE_URL=postgresql://alvarez_admin:alvarez_password@db:5432/alvarezplacas
+      - NODE_ENV=production
 
   filebrowser:
     image: filebrowser/filebrowser:latest

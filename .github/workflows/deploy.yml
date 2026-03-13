@@ -46,18 +46,24 @@ jobs:
             echo "Rebuilding and restarting containers..."
             docker compose -f docker-compose.yml up -d --build
             
-            echo "Waiting for FileBrowser to initialize DB (30s)..."
-            sleep 30
+            echo "Waiting for all services to stabilize (45s)..."
+            sleep 45
             
-            echo "Injecting custom credentials..."
-            # Intentar actualizar el admin por defecto primero, o crear los nuevos
+            echo "Checking Database connection from web container..."
+            docker exec alvarezplacas_web curl -s http://localhost/api/settings || echo "API check failed, but continuing..."
+            
+            echo "Injecting FileBrowser credentials..."
+            # Asegurarnos de usar la ruta completa al binario y el archivo de db correcto
             docker exec alvarezplacas_files /filebrowser users add "alvarezjavierh@gmail.com" "Tecno121212" --perm.admin || \
             docker exec alvarezplacas_files /filebrowser users update 1 --username "alvarezjavierh@gmail.com" --password "Tecno121212"
             
             docker exec alvarezplacas_files /filebrowser users add "javier" "Tecno121212" --perm.admin || true
             
-            echo "Current users list:"
+            echo "Final user list in FileBrowser:"
             docker exec alvarezplacas_files /filebrowser users ls
+            
+            echo "Docker containers status:"
+            docker ps
             
             echo "Inspect running containers:"
             echo "Inspect images:"
