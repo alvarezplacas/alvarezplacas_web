@@ -41,21 +41,20 @@ jobs:
             docker stop alvarezplacas_files || true
             docker rm alvarezplacas_files || true
             rm -f filebrowser.db
-            touch filebrowser.db
-            chmod 666 filebrowser.db
+            # No hacemos touch, dejamos que FileBrowser lo cree para evitar archivos vacíos corruptos
             
             echo "Rebuilding and restarting containers..."
             docker compose -f docker-compose.yml up -d --build
             
-            echo "Waiting for FileBrowser to initialize (25s)..."
-            sleep 25
+            echo "Waiting for FileBrowser to initialize DB (30s)..."
+            sleep 30
             
             echo "Injecting custom credentials..."
-            # Forzar la creación del usuario correo
-            docker exec alvarezplacas_files /filebrowser users add "alvarezjavierh@gmail.com" "Tecno121212" --perm.admin || echo "Failed to add email user"
+            # Intentar actualizar el admin por defecto primero, o crear los nuevos
+            docker exec alvarezplacas_files /filebrowser users add "alvarezjavierh@gmail.com" "Tecno121212" --perm.admin || \
+            docker exec alvarezplacas_files /filebrowser users update 1 --username "alvarezjavierh@gmail.com" --password "Tecno121212"
             
-            # Crear un usuario alternativo corto por si el correo da problemas en el login
-            docker exec alvarezplacas_files /filebrowser users add "javier" "Tecno121212" --perm.admin || echo "Failed to add javier user"
+            docker exec alvarezplacas_files /filebrowser users add "javier" "Tecno121212" --perm.admin || true
             
             echo "Current users list:"
             docker exec alvarezplacas_files /filebrowser users ls

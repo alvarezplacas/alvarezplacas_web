@@ -19,6 +19,7 @@ services:
     volumes:
       - ./archivos_alvarezplacas:/srv
       - ./filebrowser.db:/database.db
+    command: ["-d", "/database.db", "-p", "80"]
     networks:
       - javiermix_network
 
