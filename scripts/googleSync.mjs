@@ -86,12 +86,17 @@ function intelligentParse(input, category, codeFromSheet) {
             result.brand = placaMatch.brand;
             result.localMatch = true;
         } else {
-            // Lógica por defecto: Intentar construir ruta basada en nombre limpio y marca
-            // Formato: /images/catalog/[Marca]/[Nombre].avif
+            // Lógica por defecto: Intentar construir ruta basada en Marca/Línea/Nombre.avif
+            // NOTA: Para obtener la 'Línea', dependemos de que esté en el Excel o se deduzca.
+            // Por ahora, asumimos que si no hay match, usamos una estructura base.
             const brandFolder = result.brand;
-            const cleanNameForImage = result.name.replace(/\//g, "-"); // Evitar problemas con / en nombres
-            result.imagen = `/images/catalog/${brandFolder}/${cleanNameForImage}.avif`;
-            result.localMatch = true; // Asumimos que si la suben con ese nombre, funcionará
+            const cleanNameForImage = result.name.replace(/\//g, "-"); 
+            
+            // Si tenemos la marca y el nombre, pero no la línea exacta desde el parseo, 
+            // el usuario deberá subirla a [Marca]/[Línea]/[Nombre].avif
+            // Ajustamos la guía para que el usuario sepa que 'Línea' es obligatoria en la carpeta.
+            result.imagen = `/images/catalog/Placas/${brandFolder}/REVISAR_LINEA/${cleanNameForImage}.avif`;
+            result.localMatch = true;
         }
     } else {
         result.localMatch = false;

@@ -8,19 +8,38 @@ El sistema utiliza una lógica de **emparejamiento automático**. Para que una i
 
 ### Estructura de carpetas
 Las imágenes deben subirse a:
-`public/images/catalog/[MARCA]/[NOMBRE_IMAGEN].avif`
+`public/images/catalog/[CATEGORÍA]/[MARCA]/[LÍNEA]/[NOMBRE_IMAGEN].avif`
 
-**Ejemplo para Faplac:**
-Si tienes una placa que en el Excel/Catálogo se llama "Blanco", debes subir la imagen a:
-`public/images/catalog/Faplac/Blanco.avif`
+**Ejemplo para una placa Egger:**
+Si es una placa Egger de la línea "Grupo 7" llamada "Roble Bardolino natural", la ruta debe ser:
+`public/images/catalog/Placas/Egger/Grupo 7/H1145 ST10 Roble Bardolino natural.avif`
 
 ### Reglas importantes:
-- **Formato**: Únicamente se admite el formato **.avif** por su alta compresión y calidad.
-- **Nombre del archivo**: Debe coincidir exactamente con el nombre de la variante/color en el catálogo (ej. "Roble", "Gris Humo").
+- **Formato**: Únicamente se admite el formato **.avif**.
+- **Jerarquía**: Respetar el orden [Categoría] > [Marca] > [Línea].
+- **Nombre del archivo**: El nombre debe ser descriptivo (ej: `H1145 ST10 Roble Bardolino natural.avif`).
 
 ---
 
-## 2. Cómo ocultar o mostrar Precios
+## 2. Dónde y Cómo subir los archivos
+
+Actualmente, al ser un sistema basado en código, el Panel Admin no tiene un botón de "Subir" (esto es para asegurar que las imágenes se optimicen correctamente).
+
+### La forma más fácil y rápida: Usar FileBrowser (Recomendado)
+1. Entra a tu gestor de archivos **FileBrowser** en el servidor.
+2. Busca la carpeta llamada **`archivos_alvarezplacas`**.
+3. Dentro de ella, crea las carpetas por **Marca** y **Línea** (ej: `Placas/Faplac/Nórdica`).
+4. Sube directamente ahí tus archivos `.avif`.
+5. Los cambios se verán en la web al instante, sin esperar despliegues.
+
+### Otra opción: Usar GitHub (Web)
+*(Este método es más lento porque cada subida debe procesarse e instalarse en el servidor).*
+1. Entra a tu repositorio: [alvarezplacas_web en GitHub](https://github.com/alvarezplacas/alvarezplacas_web).
+...
+
+---
+
+## 3. Cómo ocultar o mostrar Precios
 
 Para evitar mostrar precios desactualizados o por decisión comercial, puedes controlarlos desde el Panel de Administración.
 
