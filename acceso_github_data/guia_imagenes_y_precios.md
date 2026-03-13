@@ -27,8 +27,9 @@ Actualmente, al ser un sistema basado en código, el Panel Admin no tiene un bot
 
 ### La forma más fácil y rápida: Usar FileBrowser Dedicado (Recomendado)
 1. Entra a tu nuevo gestor de archivos aquí: [http://144.217.163.13:8083](http://144.217.163.13:8083)
-2. **Usuario**: `admin` / **Contraseña**: `admin` (Cámbiala al entrar).
-3. Verás directamente el contenido de **`archivos_alvarezplacas`**.
+2. **Usuario**: `alvarezjavierh@gmail.com`
+3. **Contraseña**: `Tecno121212`
+4. Verás directamente el contenido de **`archivos_alvarezplacas`**.
 4. Crea la estructura: `Placas` > `Marca` > `Línea`.
 5. Sube tus archivos `.avif`.
 
