@@ -9,10 +9,12 @@ export const BRANDS = {
 
 // Vendedores configurables (Ventanillas)
 export const sellers = atom([
-    { id: 1, name: 'Ventanilla 1', phone: '123456789', orders: 0 },
-    { id: 2, name: 'Ventanilla 2', phone: '987654321', orders: 0 },
-    { id: 3, name: 'Ventanilla 3', phone: '555555555', orders: 0 }
+    { id: 1, name: 'Ventanilla 1', phone: '123456789', orders: 0, email: 'vendedor1@alvarezplacas.com' },
+    { id: 2, name: 'Ventanilla 2', phone: '987654321', orders: 0, email: 'vendedor2@alvarezplacas.com' },
+    { id: 3, name: 'Ventanilla 3', phone: '555555555', orders: 0, email: 'vendedor3@alvarezplacas.com' }
 ]);
+
+export const preferredSellerId = atom(null); // ID del vendedor preferido por el cliente
 
 export const currentSheetItems = atom([]); // Piezas de la placa actual
 export const allSheets = atom([]); // Lista de placas finalizadas [{ config, items }]
@@ -107,11 +109,22 @@ export const getVisualSummary = () => {
 
 export const assignSeller = () => {
     const currentSellers = sellers.get();
-    // Asignación simple por menos pedidos o round robin
-    const sorted = [...currentSellers].sort((a, b) => a.orders - b.orders);
-    const assigned = sorted[0];
+    const prefId = preferredSellerId.get();
     
-    // Actualizamos contador local (en un sistema real esto iría a DB)
+    let assigned;
+    
+    // 1. Si hay un vendedor preferido, asignarlo a él
+    if (prefId) {
+        assigned = currentSellers.find(s => s.id === prefId);
+    }
+    
+    // 2. Si no hay preferido o no se encontró, asignar al que menos pedidos tenga (Carga Equilibrada)
+    if (!assigned) {
+        const sorted = [...currentSellers].sort((a, b) => a.orders - b.orders);
+        assigned = sorted[0];
+    }
+    
+    // Actualizamos contador local (esto simula la carga en DB)
     sellers.set(currentSellers.map(s => s.id === assigned.id ? { ...s, orders: s.orders + 1 } : s));
     return assigned;
 };
