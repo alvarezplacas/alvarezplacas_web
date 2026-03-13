@@ -59,10 +59,8 @@ jobs:
             echo "Final user list in FileBrowser:"
             docker exec alvarezplacas_files /filebrowser users ls
             
-            echo "Docker containers status:"
-            docker ps
-            
-            echo "Inspect running containers:"
-            echo "Inspect images:"
-            docker images | grep alvarez
-            echo "Deployment finished successfully!"
+            echo "Deployment finished! Summary of state:"
+            echo "Git Commit: $(git rev-parse --short HEAD)"
+            echo "Docker PS:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "Diagnostic finish."
