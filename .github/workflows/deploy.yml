@@ -39,11 +39,13 @@ jobs:
             fi
             echo "Rebuilding and restarting containers..."
             docker compose -f docker-compose.yml up -d --build
-            echo "Inspect running containers:"
-            docker ps
+            echo "Waiting for FileBrowser to initialize..."
+            sleep 10
             # Configurar usuario personalizado en FileBrowser
             docker exec alvarezplacas_files filebrowser users add alvarezjavierh@gmail.com Tecno121212 --perm.admin || \
+            docker exec alvarezplacas_files filebrowser users update alvarezjavierh@gmail.com --password Tecno121212 || \
             docker exec alvarezplacas_files filebrowser users update 1 --username alvarezjavierh@gmail.com --password Tecno121212
+            echo "Inspect running containers:"
             echo "Inspect images:"
             docker images | grep alvarez
             echo "Deployment finished successfully!"
