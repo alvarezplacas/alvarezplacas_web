@@ -1,0 +1,84 @@
+---
+import { Order } from '../../../domain/Order';
+
+interface Props {
+    orders: any[];
+    title?: string;
+}
+
+const { orders, title = "Estado de Procesos" } = Astro.props;
+
+// Transform raw data to Order domain objects
+const orderObjects = orders.map(o => new Order(o));
+---
+
+<div class="bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-lg flex flex-col h-full">
+    <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fas fa-tasks text-primary"></i> {title}
+        </h3>
+        <span class="text-xs text-gray-500 font-medium bg-gray-800 px-2 py-1 rounded-full">
+            {orders.length} pedidos
+        </span>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <div class="divide-y divide-gray-800">
+            {orderObjects.map((order) => {
+                const statusColor = order.getStatusColor();
+                const logistics = order.getLogisticsInfo();
+                
+                return (
+                    <div class="p-4 hover:bg-white/5 transition-colors group">
+                        <div class="flex items-start justify-between mb-2">
+                            <div>
+                                <h4 class="text-white font-bold text-sm">#{order.id} - {order.cliente}</h4>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class={`text-[10px] font-bold px-2 py-0.5 rounded border ${statusColor} uppercase tracking-wider`}>
+                                        {order.status}
+                                    </span>
+                                    <span class="text-[10px] text-gray-500 flex items-center gap-1">
+                                        <i class={`fas ${logistics.icon}`}></i> {logistics.label}
+                                    </span>
+                                </div>
+                            </div>
+                            <button class="text-gray-600 hover:text-white transition-colors">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden mt-3">
+                            <div 
+                                class={`h-full transition-all duration-1000 ${
+                                    order.status === Order.STATUS.PENDIENTE ? 'w-1/4 bg-amber-400' :
+                                    order.status === Order.STATUS.EN_PROCESO ? 'w-2/4 bg-blue-400' :
+                                    order.status === Order.STATUS.TERMINADO ? 'w-3/4 bg-green-400' :
+                                    'w-full bg-gray-400'
+                                }`}
+                            ></div>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    </div>
+    
+    <div class="p-4 border-t border-gray-800 bg-black/20">
+        <button class="w-full py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:bg-white/5 transition-colors text-xs font-semibold">
+            Ver Monitor Fullscreen
+        </button>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 10px;
+    }
+</style>

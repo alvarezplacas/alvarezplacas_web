@@ -1,0 +1,186 @@
+---
+// Hero.astro
+// Main landing section with quick nav and live status card
+---
+
+<section class="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-jet-black via-[#111111] to-neutral-900 border-b border-white/5">
+  
+  <!-- Subtle Background Radial Glow to mimic the old overlay -->
+  <div class="absolute inset-0 z-0">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] opacity-60"></div>
+  </div>
+
+  <div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center">
+    
+    <!-- Hero Text & Main CTAs -->
+    <div class="text-center max-w-3xl mx-auto mb-8 sm:mb-16">
+      <h2 class="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
+        Inspiración y <span class="text-primary drop-shadow-[0_0_20px_rgba(255,40,0,0.5)]">Tecnología</span>
+      </h2>
+      <p class="text-lg md:text-xl text-gray-300 font-medium mb-4 sm:mb-10">
+        La mejor calidad en cortes de melamina y soluciones para el mueble.
+      </p>
+      
+      <div class="hidden sm:flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="/cliente" class="w-full sm:w-auto px-8 py-4 bg-primary text-white font-bold rounded-lg shadow-[0_0_20px_rgba(255,40,0,0.4)] hover:bg-primary-light hover:-translate-y-1 transition-all duration-300 text-lg">
+          Presupuestar Ahora
+        </a>
+        <a href="/contacto" class="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-white/20 text-white font-bold rounded-lg hover:border-white hover:bg-white/5 transition-all duration-300 text-lg">
+          Contactar
+        </a>
+      </div>
+    </div>
+
+    <!-- Widgets Container -->
+    <div class="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+      
+      <!-- 1. Mobile & Desktop Quick Navigation -->
+      <nav class="flex flex-col gap-3 w-full" aria-label="Navegación Rápida">
+        <a href="/catalogo" class="flex items-center gap-3 w-full p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-primary/50 transition-all backdrop-blur-sm group">
+          <div class="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white group-hover:text-primary transition-colors">
+            <i class="fas fa-book-open"></i>
+          </div>
+          <span class="text-white font-semibold text-lg">Catálogo interactivo</span>
+          <i class="fas fa-chevron-right ml-auto text-white/30 group-hover:text-primary transition-colors"></i>
+        </a>
+        
+        <a href="/cliente" class="flex items-center gap-3 w-full p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-primary/50 transition-all backdrop-blur-sm group">
+          <div class="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white group-hover:text-primary transition-colors">
+            <i class="fas fa-calculator"></i>
+          </div>
+          <span class="text-white font-semibold text-lg">Presupuesto Online</span>
+          <i class="fas fa-chevron-right ml-auto text-white/30 group-hover:text-primary transition-colors"></i>
+        </a>
+        
+        <a href="/herramientas" class="flex items-center gap-3 w-full p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-primary/50 transition-all backdrop-blur-sm group">
+          <div class="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white group-hover:text-primary transition-colors">
+            <i class="fas fa-tools"></i>
+          </div>
+          <span class="text-white font-semibold text-lg">Herramientas útiles</span>
+          <i class="fas fa-chevron-right ml-auto text-white/30 group-hover:text-primary transition-colors"></i>
+        </a>
+        
+        <button id="btn-open-club" class="flex items-center gap-3 w-full p-4 rounded-xl bg-primary/10 border border-primary/40 hover:bg-primary/20 hover:border-primary transition-all backdrop-blur-sm group text-left">
+          <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/20 text-primary group-hover:scale-110 transition-transform">
+            <i class="fas fa-crown"></i>
+          </div>
+          <span class="text-white font-bold text-lg">Club de Clientes</span>
+          <i class="fas fa-external-link-alt ml-auto text-primary/60 group-hover:text-primary transition-colors"></i>
+        </button>
+      </nav>
+
+      <!-- 2. Live Status Card -->
+      <div id="live-status-card" class="relative overflow-hidden w-full p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col items-center justify-center text-center h-full min-h-[200px] transition-all duration-500">
+        
+        <!-- Status Indicator Dot -->
+        <div id="status-glow" class="absolute top-0 right-0 w-32 h-32 blur-[50px] rounded-full opacity-30 transition-colors duration-500"></div>
+
+        <div class="relative z-10 w-full flex flex-col items-center gap-4">
+          <div class="flex items-center justify-center gap-3">
+            <span id="status-dot" class="w-4 h-4 rounded-full bg-gray-500 shadow-[0_0_10px_rgba(128,128,128,0.8)] animate-pulse"></span>
+            <span id="live-status-text" class="text-2xl font-bold tracking-tight text-white">
+              <i class="fas fa-spinner fa-spin text-gray-400"></i> Cargando...
+            </span>
+          </div>
+
+          <p class="text-gray-400 text-sm mt-2 mb-4">
+            Av. Vergara 1605, Villa Tesei, Hurlingham
+          </p>
+
+          <a href="https://www.google.com/maps/search/?api=1&query=Alvarez+Placas+Av.+Vergara+1605+Villa+Tesei" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold transition-colors w-full sm:w-auto">
+            <i class="fas fa-map-marker-alt text-primary-light"></i> Ver cómo llegar
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Dynamic status classes applied via JS */
+  .status-closed { border-color: rgba(255, 60, 60, 0.3); background-color: rgba(255, 0, 0, 0.05); }
+  .status-closed #status-glow { background-color: #ff0000; }
+  .status-closed #status-dot { background-color: #ff3333; box-shadow: 0 0 15px rgba(255,0,0,0.8); }
+  
+  .status-lunch { border-color: rgba(255, 152, 0, 0.3); background-color: rgba(255, 152, 0, 0.05); }
+  .status-lunch #status-glow { background-color: #ff9800; }
+  .status-lunch #status-dot { background-color: #ff9800; box-shadow: 0 0 15px rgba(255,152,0,0.8); }
+  
+  .status-closing { border-color: rgba(255, 193, 7, 0.3); background-color: rgba(255, 193, 7, 0.05); }
+  .status-closing #status-glow { background-color: #ffc107; }
+  .status-closing #status-dot { background-color: #ffc107; box-shadow: 0 0 15px rgba(255,193,7,0.8); }
+  
+  .status-open { border-color: rgba(0, 200, 83, 0.3); background-color: rgba(0, 200, 83, 0.05); }
+  .status-open #status-glow { background-color: #00e676; }
+  .status-open #status-dot { background-color: #00e676; box-shadow: 0 0 15px rgba(0,200,83,0.8); }
+</style>
+
+<script>
+  // Business logic script extracted from old front-page.php
+  function updateBusinessStatus() {
+    const now = new Date();
+    const targetOffset = -3 * 60; // Buenos Aires GMT-3 in minutes
+    // Calculate local time precisely avoiding system locale quirks
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const localNow = new Date(utc + (60000 * targetOffset));
+    
+    const dayOfWeek = localNow.getDay(); // 0 = Sunday, 1 = Monday...
+    const hour = localNow.getHours() + (localNow.getMinutes() / 60);
+
+    let isOpen = false;
+    let isClosingSoon = false;
+    let isLunch = false;
+
+    // Hardcoded hours based on previous theme rules
+    const weekdayOpen = 8.0, weekdayClose = 17.0, lunchStart = 13.0, lunchEnd = 14.0;
+    const satOpen = 8.0, satClose = 13.0;
+
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Mon-Fri
+        if (hour >= weekdayOpen && hour < lunchStart) {
+            isOpen = true;
+        } else if (hour >= lunchStart && hour < lunchEnd) {
+            isLunch = true;
+        } else if (hour >= lunchEnd && hour < weekdayClose) {
+            isOpen = true;
+            if ((weekdayClose - hour) <= 1.0) isClosingSoon = true;
+        }
+    } else if (dayOfWeek === 6) { // Saturday
+        if (hour >= satOpen && hour < satClose) {
+            isOpen = true;
+            if ((satClose - hour) <= 1.0) isClosingSoon = true;
+        }
+    }
+
+    let statusText = "¡Cerrado!";
+    let statusClass = "status-closed";
+
+    if (isLunch) {
+        statusText = "<i class='fas fa-hamburger mr-2'></i> ¡Almorzando! Abrimos 14hs";
+        statusClass = "status-lunch"; 
+    } else if (isOpen) {
+        if (isClosingSoon) {
+            statusText = "¡Cierra Pronto! ¡Corré!";
+            statusClass = "status-closing";
+        } else {
+            statusText = "¡Abierto ahora! ¡Vamos allá!";
+            statusClass = "status-open";
+        }
+    }
+
+    const card = document.getElementById('live-status-card');
+    const textEl = document.getElementById('live-status-text');
+    
+    if (card && textEl) {
+        card.className = "relative overflow-hidden w-full p-6 rounded-2xl backdrop-blur-md flex flex-col items-center justify-center text-center h-full min-h-[230px] transition-all duration-500 border " + statusClass;
+        textEl.innerHTML = statusText;
+    }
+  }
+
+  // Initialize once DOM is ready and set interval
+  document.addEventListener("DOMContentLoaded", () => {
+    updateBusinessStatus();
+    // Re-check every minute to keep UI fresh
+    setInterval(updateBusinessStatus, 60000); 
+  });
+</script>

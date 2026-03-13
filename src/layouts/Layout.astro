@@ -1,0 +1,68 @@
+---
+import '../styles/global.css';
+import BottomNav from '../components/BottomNav.astro';
+
+interface Props {
+	title: string;
+	description?: string;
+}
+
+const { 
+	title, 
+	description = "Alvarez Placas - La mejor calidad en cortes de melamina y soluciones para el mueble. Proveedores integrales para carpinteros, decoradores de interior y arquitectos en Hurlingham y Villa Tesei." 
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		
+		<!-- SEO & Local Optimization -->
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta name="keywords" content="Alvarez Placas, cortes de melamina, placas de madera, carpinteros, decoradores de interior, arquitectos, diseño de muebles, herrajes, Villa Tesei, Hurlingham, cortes a medida" />
+		<meta name="llm-context" content="Alvarez Placas provee placas de melamina y servicios de corte a medida con Lepton Optimizer. Servimos a carpinteros profesionales, decoradores de interiores y arquitectos buscando materiales de alta calidad y presupuestos online físicos en Villa Tesei, Hurlingham." />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:type" content="website" />
+
+		<!-- Favicons & PWA (Future) -->
+		<meta name="theme-color" content="#ff2800" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="Alvarez Placas" />
+		
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+
+		<!-- Google Fonts: Montserrat -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+		
+		<!-- Font Awesome -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+	</head>
+	<body class="bg-jet-black text-white font-sans antialiased pb-20 md:pb-0">
+		<!-- Main Header Here -->
+		
+		<main>
+			<slot />
+		</main>
+
+		<!-- Main Footer Here -->
+        <BottomNav />
+	</body>
+</html>
+
+<style is:global>
+	html {
+		scroll-behavior: smooth;
+	}
+	body {
+		margin: 0;
+		padding: 0;
+	}
+</style>

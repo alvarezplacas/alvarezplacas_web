@@ -1,0 +1,447 @@
+---
+import placasData from '../data/placas.json';
+
+// Extraer marcas únicas para los botones de filtro (ignorando "Sin Marca" si existe y ordenando)
+const marcasRaw = [...new Set(placasData.map((placa) => placa.marca))].filter(m => m !== "Sin Marca");
+const marcas = ["Todos", ...marcasRaw.sort()];
+---
+
+<section class="max-w-7xl mx-auto px-4 py-12 relative">
+  <div class="text-center mb-12">
+    <h2 class="text-3xl md:text-5xl font-bold text-white mb-4">
+      Catálogo de <span class="text-primary">Materiales</span>
+    </h2>
+    <p class="text-gray-400">Explorá nuestra colección de texturas y diseños.</p>
+  </div>
+
+  <!-- Buscador y Filtros -->
+  <div class="mb-10 flex flex-col items-center gap-6">
+    <p class="text-gray-400 text-sm">Buscá por <span class="text-white font-medium">color, textura, línea o marca</span></p>
+    
+    <div class="relative w-full max-w-lg">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <input
+        type="search"
+        id="searchInput"
+        class="block w-full pl-10 pr-3 py-3 border border-gray-700 rounded-full leading-5 bg-[#1a1a1a] text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-colors"
+        placeholder="Buscar..."
+      />
+    </div>
+
+    <div class="flex flex-wrap justify-center gap-3 mt-2" id="filterButtons">
+      {marcas.map((marca, index) => (
+        <button
+          class={`px-6 py-2 rounded-full text-sm font-medium transition-colors border filter-btn ${
+            index === 0 
+              ? 'bg-primary text-white border-primary cursor-default' 
+              : 'bg-transparent text-gray-300 border-gray-700 hover:border-gray-500 hover:text-white'
+          }`}
+          data-filter={marca}
+        >
+          {marca}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <!-- Catálogo Grid -->
+  <!-- En móviles: grid 1 columna (tarjeta vertical). En Desktop: grid auto-fit para cuadrados (tarjeta solo imagen) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" id="catalogGrid">
+    {placasData.map((placa) => (
+      <article 
+        class="bg-[#1a1a1a] rounded-xl overflow-hidden border border-gray-800 flex flex-col md:block placa-card transition-all duration-300 hover:border-gray-600 md:cursor-pointer md:hover:-translate-y-1 md:hover:shadow-[0_10px_20px_rgba(0,0,0,0.5)] md:hover:shadow-primary/20 md:aspect-square group"
+        data-marca={placa.marca?.toLowerCase() || ""}
+        data-linea={placa.linea?.toLowerCase() || ""}
+        data-nombre={placa.nombre?.toLowerCase() || ""}
+        data-codigo={placa.codigo?.toLowerCase() || ""}
+        data-color={placa.color_base?.toLowerCase() || placa.color?.toLowerCase() || ""}
+        data-tags={(placa.tags || []).join(' ').toLowerCase()}
+        data-acabado={placa.acabado?.toLowerCase() || ""}
+        data-full={JSON.stringify(placa)}
+      >
+        <!-- Imagen (Desktop: Ocupa toda la card. Mobile: Ocupa la parte superior) -->
+        <div class="aspect-[4/3] md:aspect-square w-full bg-[#0a2e2e] relative overflow-hidden flex-shrink-0">
+           <!-- Placeholder bg -->
+           <div class="absolute inset-0 bg-gradient-to-br from-[#0f3838] to-[#0a2e2e]"></div>
+           <img 
+              src={placa.imagen} 
+              alt={`${placa.marca} ${placa.nombre}`} 
+              class="absolute inset-0 w-full h-full object-cover origin-center transition-transform duration-700 md:group-hover:scale-110 z-10"
+              loading="lazy"
+              onerror="this.style.opacity='0'"
+           />
+           
+           <!-- Overlay on Desktop Hover -->
+           <div class="hidden md:flex absolute inset-0 bg-black/60 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-col items-center justify-center p-4 text-center">
+              <span class="text-white font-bold text-lg mb-1 drop-shadow-md">{placa.nombre}</span>
+               <span class="text-gray-300 text-sm drop-shadow-md uppercase tracking-widest">{placa.marca}</span>
+               <div class="mt-4 p-2 bg-primary/90 rounded-full backdrop-blur-sm transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                  <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+               </div>
+           </div>
+           
+           <!-- Etiqueta de marca sobre la imagen (Mobile always, Desktop initial) -->
+           <div class="absolute bottom-4 left-4 z-20 md:group-hover:opacity-0 transition-opacity duration-300">
+              <span class="bg-primary/90 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wider shadow-lg">
+                {placa.marca}
+              </span>
+           </div>
+        </div>
+
+        <!-- Contenido (Solo visible en Mobile. En desktop esto está oculto porque la tarjeta es solo imagen) -->
+        <div class="p-6 flex flex-col flex-grow md:hidden pointer-events-none">
+          <h3 class="text-xl font-bold text-white mb-6">
+            {placa.nombre}
+            <span class="block text-sm text-gray-400 font-normal mt-1">{placa.linea}</span>
+          </h3>
+
+          <div class="space-y-3 mb-6 text-sm flex-grow">
+            <!-- Fila Código -->
+            <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+              <div class="flex items-center text-gray-400 gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                <span>Código</span>
+              </div>
+              <span class="text-white font-bold text-right truncate max-w-[50%]">{placa.nombre}</span>
+            </div>
+            
+            <!-- Fila Línea -->
+            <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+              <div class="flex items-center text-gray-400 gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                <span>Marca</span>
+              </div>
+              <span class="text-white font-bold">{placa.marca}</span>
+            </div>
+
+            <!-- Fila Medidas -->
+            <div class="flex justify-between items-center pb-2">
+              <div class="flex items-center text-gray-400 gap-2">
+                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                <span>Medidas</span>
+              </div>
+              <span class="text-white font-bold">Consultar</span>
+            </div>
+          </div>
+
+          <!-- Botones de Acción (Mobile) -->
+          <div class="flex flex-col gap-3 mt-auto pointer-events-auto">
+            <a 
+              href={`https://wa.me/5491100000000?text=Hola, quiero consultar por la placa ${placa.marca} ${placa.nombre}`}
+              target="_blank"
+              class="w-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#1a1a1a] focus:ring-[#25D366] outline-none"
+            >
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Consultar Stock
+            </a>
+            <button 
+              class="w-full bg-[#f44336] hover:bg-[#d32f2f] text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors relative overflow-hidden group outline-none"
+            >
+              <div class="absolute inset-0 w-10 h-full bg-white/20 -skew-x-12 -ml-16 group-hover:animate-shine"></div>
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+              Sugerir Combinación
+            </button>
+          </div>
+        </div>
+      </article>
+    ))}
+    
+    <!-- Mensaje No Encontrado -->
+    <div id="noResults" class="hidden col-span-full py-12 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 mb-4">
+        <svg class="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-white mb-2">No se encontraron resultados</h3>
+      <p class="text-gray-400">Intentá buscar con otros términos o seleccioná otra marca.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Modal Desktop (Horizontal Layout) -->
+<div id="desktopModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm modal-backdrop"></div>
+  
+  <!-- Modal Content (Horizontal Card) -->
+  <div class="bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl shadow-primary/20 w-full max-w-5xl relative z-10 flex flex-col md:flex-row max-h-[90vh] transform scale-95 transition-transform duration-300" id="modalCard">
+    
+    <!-- Close Button -->
+    <button class="absolute top-4 right-4 z-30 p-2 bg-black/50 hover:bg-primary text-white rounded-full backdrop-blur-md transition-colors close-modal outline-none">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+
+    <!-- Left Side: Large Image -->
+    <div class="w-full md:w-3/5 bg-[#0a2e2e] relative min-h-[300px] md:min-h-0">
+      <img id="modalImage" src="" alt="Placa" class="absolute inset-0 w-full h-full object-cover" />
+      <div class="absolute top-4 left-4 z-20">
+        <span id="modalMarcaBadge" class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded uppercase tracking-wider shadow-lg"></span>
+      </div>
+    </div>
+
+    <!-- Right Side: Details & Actions -->
+    <div class="w-full md:w-2/5 p-8 flex flex-col bg-[#1a1a1a] md:border-l border-gray-800 overflow-y-auto">
+      <div class="mb-8">
+        <h2 id="modalNombre" class="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight"></h2>
+      </div>
+
+      <div class="space-y-4 mb-8 flex-grow">
+        <!-- Fila Código -->
+        <div class="flex flex-col border-b border-gray-800 pb-3">
+          <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Código
+          </span>
+          <span id="modalCodigo" class="text-white font-medium text-lg"></span>
+        </div>
+        
+        <!-- Fila Línea -->
+        <div class="flex flex-col border-b border-gray-800 pb-3">
+          <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            Línea
+          </span>
+          <span id="modalLinea" class="text-white font-medium text-lg"></span>
+        </div>
+
+        <!-- Fila Acabado -->
+        <div class="flex flex-col border-b border-gray-800 pb-3">
+          <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1 flex items-center gap-2">
+             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+            Acabado
+          </span>
+          <span id="modalAcabado" class="text-white font-medium text-lg capitalize"></span>
+        </div>
+        
+        <!-- Fila Color -->
+        <div class="flex flex-col pb-3">
+          <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1 flex items-center gap-2">
+             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            Color
+          </span>
+          <span id="modalColor" class="text-white font-medium text-lg capitalize"></span>
+        </div>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="flex flex-col gap-4 mt-auto">
+        <a 
+          id="modalWhatsAppBtn"
+          href="#"
+          target="_blank"
+          class="w-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg shadow-[#25D366]/20"
+        >
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Consultar Presupuesto
+        </a>
+        <button 
+          id="modalSmartMatchBtn"
+          class="w-full bg-[#f44336] hover:bg-[#d32f2f] text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors relative overflow-hidden group outline-none"
+        >
+          <div class="absolute inset-0 w-10 h-full bg-white/20 -skew-x-12 -ml-16 group-hover:animate-shine"></div>
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+          Sugerir Combinación
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    initCatalog();
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCatalog);
+  } else {
+    initCatalog();
+  }
+
+  function initCatalog() {
+    const searchInput = document.getElementById('searchInput');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const cards = document.querySelectorAll('.placa-card');
+    const noResults = document.getElementById('noResults');
+    
+    // Modal Elements
+    const modal = document.getElementById('desktopModal');
+    const modalCard = document.getElementById('modalCard');
+    const closeBtns = document.querySelectorAll('.close-modal, .modal-backdrop');
+    
+    const mImage = document.getElementById('modalImage');
+    const mMarcaBadge = document.getElementById('modalMarcaBadge');
+    const mLinea = document.getElementById('modalLinea');
+    const mNombre = document.getElementById('modalNombre');
+    const mCodigo = document.getElementById('modalCodigo');
+    const mAcabado = document.getElementById('modalAcabado');
+    const mColor = document.getElementById('modalColor');
+    const mWhatsAppBtn = document.getElementById('modalWhatsAppBtn');
+    const mSmartMatchBtn = document.getElementById('modalSmartMatchBtn');
+    
+    if (!searchInput || !cards.length) return;
+
+    let currentFilter = 'Todos';
+    let currentSearchTerm = '';
+
+    // --- FILTRADO LOGIC ---
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        filterButtons.forEach(b => {
+          b.classList.remove('bg-primary', 'text-white', 'border-primary', 'cursor-default');
+          b.classList.add('bg-transparent', 'text-gray-300', 'border-gray-700');
+        });
+        
+        const target = e.target;
+        target.classList.remove('bg-transparent', 'text-gray-300', 'border-gray-700');
+        target.classList.add('bg-primary', 'text-white', 'border-primary', 'cursor-default');
+
+        currentFilter = target.dataset.filter;
+        filterCards();
+      });
+    });
+
+    searchInput.addEventListener('input', (e) => {
+      currentSearchTerm = e.target.value.toLowerCase().trim();
+      filterCards();
+    });
+
+    function filterCards() {
+      let visibleCount = 0;
+      const searchTerms = currentSearchTerm.split(' ').filter(term => term.length > 0);
+
+      cards.forEach(card => {
+        const marca = card.dataset.marca;
+        const matchesBrand = currentFilter === 'Todos' || marca === currentFilter.toLowerCase();
+        let matchesSearch = true;
+        
+        if (searchTerms.length > 0) {
+          const cardDataString = `
+            ${card.dataset.marca} 
+            ${card.dataset.linea} 
+            ${card.dataset.nombre} 
+            ${card.dataset.codigo} 
+            ${card.dataset.color} 
+            ${card.dataset.tags} 
+            ${card.dataset.acabado}
+          `.toLowerCase();
+
+          matchesSearch = searchTerms.every(term => cardDataString.includes(term));
+        }
+
+        if (matchesBrand && matchesSearch) {
+          card.style.display = window.innerWidth >= 768 ? 'block' : 'flex'; // Mantener el comportamiento css
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      if (visibleCount === 0) {
+        noResults.classList.remove('hidden');
+      } else {
+        noResults.classList.add('hidden');
+      }
+    }
+
+    // --- MODAL LOGIC (Desktop Solo) ---
+    
+    // Abrir Modal
+    cards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        // En mobile se ignora el modal porque la info ya esta en la tarjeta con los botones
+        if (window.innerWidth < 768) return;
+        
+        // Evitar que saltos o drags abran el modal accidentally
+        if (e.target.closest('a') || e.target.closest('button')) return;
+
+        const data = JSON.parse(card.dataset.full);
+        
+        // Poblar datos
+        mImage.src = data.imagen;
+        mImage.alt = `${data.marca} ${data.nombre}`;
+        mMarcaBadge.textContent = data.marca;
+        mNombre.textContent = data.nombre;
+        mCodigo.textContent = data.codigo || "-";
+        mLinea.textContent = data.linea || `Línea ${data.marca}`;
+        mAcabado.textContent = data.acabado || "Consultar";
+        
+        let colorText = data.color || "Consultar";
+        if (data.tono && data.tono !== "Neutro") {
+            const toneIcon = data.tono === 'Cálido' ? '🔥' : '❄️';
+            colorText += ` ${toneIcon} (${data.tono})`;
+        }
+        mColor.textContent = colorText;
+        
+        // Link de WS
+        mWhatsAppBtn.href = `https://wa.me/5491100000000?text=Hola, quiero pedir presupuesto por la placa ${data.marca} ${data.nombre}`;
+
+        // Link de Smart Match
+        mSmartMatchBtn.onclick = () => {
+            window.location.href = `/smart-match?id=${data.id}`;
+        };
+
+        // Mostrar Modal con animación
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        // Pequeño timeout para permitir que el display flex aplique antes de animar opacidad
+        setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          modalCard.classList.remove('scale-95');
+          modalCard.classList.add('scale-100');
+        }, 10);
+        
+        // Evitar scroll del body
+        document.body.style.overflow = 'hidden';
+      });
+    });
+
+    // Cerrar Modal
+    const closeModalFunc = () => {
+      modal.classList.add('opacity-0');
+      modalCard.classList.remove('scale-100');
+      modalCard.classList.add('scale-95');
+      
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+      }, 300);
+    };
+
+    closeBtns.forEach(btn => {
+      btn.addEventListener('click', closeModalFunc);
+    });
+
+    // Cerrar con Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModalFunc();
+      }
+    });
+    
+    // Reaplicar layout al resize
+    window.addEventListener('resize', () => {
+        cards.forEach(card => {
+            if (card.style.display !== 'none') {
+                 card.style.display = window.innerWidth >= 768 ? 'block' : 'flex';
+            }
+        });
+    });
+  }
+</script>
+
+<style>
+  @keyframes shine {
+    from { left: -50%; }
+    to { left: 150%; }
+  }
+  .animate-shine {
+    animation: shine 1.5s ease-in-out infinite;
+  }
+</style>

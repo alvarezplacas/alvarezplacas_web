@@ -1,0 +1,262 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import placasData from '../../data/placas.json';
+
+// Tomamos algunas placas para la vista previa en la tabla paginada (mock)
+const previewPlacas = placasData.slice(0, 8);
+---
+
+<AdminLayout title="Gestión de Catálogo">
+    
+    <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-white mb-2">Catálogo Online</h2>
+            <p class="text-gray-400">Administra los productos, precios y stock visibles para clientes.</p>
+        </div>
+        <div class="flex gap-3">
+            <button id="btn-export-excel" class="px-4 py-2 bg-[#1a1a1a] border border-gray-700 hover:border-white text-white rounded-lg transition-colors flex items-center gap-2 font-medium">
+                <i class="fas fa-download"></i> Descargar Actual
+            </button>
+            <button id="btn-upload-modal" class="px-4 py-2 bg-primary hover:bg-primary-light text-white rounded-lg transition-colors shadow-[0_0_15px_rgba(255,40,0,0.3)] flex items-center gap-2 font-bold">
+                <i class="fas fa-file-excel"></i> Actualizar con Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros de la tabla -->
+    <div class="bg-[#1a1a1a] border border-gray-800 rounded-t-xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div class="relative w-full sm:w-96">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="text" placeholder="Buscar por código, nombre o marca..." class="w-full bg-black/50 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-primary transition-colors">
+        </div>
+        <div class="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 custom-scrollbar">
+            <select class="bg-black/50 border border-gray-700 rounded-lg px-4 py-2 text-gray-300 focus:outline-none focus:border-primary">
+                <option value="">Todas las Marcas</option>
+                <option value="Egger">Egger</option>
+                <option value="Faplac">Faplac</option>
+                <option value="Sadepan">Sadepan</option>
+            </select>
+            <select class="bg-black/50 border border-gray-700 rounded-lg px-4 py-2 text-gray-300 focus:outline-none focus:border-primary">
+                <option value="">Estado</option>
+                <option value="active">Activo</option>
+                <option value="hidden">Oculto</option>
+                <option value="nostock">Sin Stock</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Tabla Principal -->
+    <div class="bg-[#1a1a1a] border-x border-b border-gray-800 rounded-b-xl overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-gray-800 bg-black/20 text-xs uppercase tracking-wider text-gray-500">
+                    <th class="p-4 font-semibold w-16 text-center">Img</th>
+                    <th class="p-4 font-semibold">Código / Diseño</th>
+                    <th class="p-4 font-semibold">Marca / Línea</th>
+                    <th class="p-4 font-semibold">Precio Base</th>
+                    <th class="p-4 font-semibold text-center">Grosor</th>
+                    <th class="p-4 font-semibold text-center">Estado</th>
+                    <th class="p-4 font-semibold text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800/50">
+                {previewPlacas.map((placa) => (
+                    <tr class="hover:bg-white/5 transition-colors group">
+                        <td class="p-4">
+                            <div class="w-12 h-12 rounded bg-gray-900 border border-gray-700 overflow-hidden relative">
+                                <img src={placa.imagen} alt={placa.nombre} class="w-full h-full object-cover" loading="lazy" />
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <p class="font-bold text-white text-sm">{placa.nombre}</p>
+                            <p class="text-xs text-gray-500 mt-1 font-mono">{placa.codigo}</p>
+                        </td>
+                        <td class="p-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-gray-700 text-xs font-semibold text-gray-300">
+                                {placa.marca}
+                            </span>
+                            <span class="text-xs text-gray-500 ml-2">{placa.linea}</span>
+                        </td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-400">$</span>
+                                <input type="number" value="45500" class="w-24 bg-transparent border-b border-dashed border-gray-600 focus:border-primary focus:outline-none text-white font-medium px-1 py-0.5" />
+                            </div>
+                        </td>
+                        <td class="p-4 text-center text-sm text-gray-400">
+                            18mm
+                        </td>
+                        <td class="p-4 text-center">
+                            <span class="inline-flex items-center gap-1.5 text-xs text-green-400 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-green-500"></span> Activo
+                            </span>
+                        </td>
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded transition-colors" title="Ocultar">
+                                    <i class="fas fa-eye-slash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+        
+        <!-- Paginación -->
+        <div class="p-4 border-t border-gray-800 flex items-center justify-between text-sm text-gray-400">
+            <p>Mostrando <span class="text-white font-medium">1</span> a <span class="text-white font-medium">8</span> de <span class="text-white font-medium">{placasData.length}</span> placas</p>
+            <div class="flex gap-1">
+                <button class="px-3 py-1 bg-black/50 border border-gray-700 rounded hover:bg-gray-800 text-gray-500 cursor-not-allowed">Anterior</button>
+                <button class="px-3 py-1 bg-primary border border-primary rounded text-white font-medium">1</button>
+                <button class="px-3 py-1 bg-black/50 border border-gray-700 rounded hover:bg-gray-800 text-white">2</button>
+                <button class="px-3 py-1 bg-black/50 border border-gray-700 rounded hover:bg-gray-800 text-white">3</button>
+                <button class="px-3 py-1 bg-black/50 border border-gray-700 rounded hover:bg-gray-800 text-white">Siguiente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Subir Excel -->
+    <div id="upload-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm upload-modal-close"></div>
+        
+        <!-- Modal Content -->
+        <div class="bg-[#1a1a1a] rounded-2xl border border-gray-700 w-full max-w-xl relative z-10 shadow-2xl flex flex-col" id="upload-modal-content">
+            
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-file-excel text-green-500"></i> Actualización Masiva
+                </h3>
+                <button class="text-gray-400 hover:text-white upload-modal-close focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <p class="text-gray-400 text-sm mb-6">Arrastra y suelta aquí el archivo Excel (<code>.xlsx</code> o <code>.csv</code>) con tu lista de precios o catálogo actualizado. El sistema reconocerá las columnas automáticamente.</p>
+                
+                <!-- Dropzone -->
+                <div class="border-2 border-dashed border-gray-600 rounded-xl p-10 flex flex-col items-center justify-center text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer group" id="dropzone">
+                    <div class="w-16 h-16 rounded-full bg-gray-800 group-hover:bg-primary/20 flex items-center justify-center mb-4 transition-colors">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 group-hover:text-primary transition-colors"></i>
+                    </div>
+                    <p class="text-white font-semibold text-lg mb-1">Click para seleccionar archivo</p>
+                    <p class="text-gray-500 text-sm">o arrastralo aquí</p>
+                    <input type="file" id="excel-file" class="hidden" accept=".xlsx, .xls, .csv" />
+                </div>
+
+                <!-- Template Link -->
+                <div class="mt-6 flex justify-between items-center px-4 py-3 bg-white/5 rounded-lg border border-gray-700 text-sm">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-info-circle text-blue-400 text-lg"></i>
+                        <div>
+                            <p class="text-gray-300 font-medium">¿Necesitas la plantilla?</p>
+                            <p class="text-gray-500 text-xs">Descargá el formato base para asegurar la compatibilidad.</p>
+                        </div>
+                    </div>
+                    <button class="text-primary hover:text-primary-light font-semibold hover:underline">
+                        Descargar .xlsx
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-gray-800 bg-black/40 rounded-b-2xl flex justify-end gap-3">
+                <button class="px-5 py-2.5 rounded-lg text-gray-400 hover:text-white font-medium upload-modal-close transition-colors">
+                    Cancelar
+                </button>
+                <button class="px-5 py-2.5 rounded-lg bg-primary hover:bg-primary-light text-white font-bold opacity-50 cursor-not-allowed transition-all" id="btn-process" disabled>
+                    Procesar Archivo
+                </button>
+            </div>
+        </div>
+    </div>
+
+</AdminLayout>
+
+<script>
+    document.addEventListener('astro:page-load', () => {
+        const modal = document.getElementById('upload-modal');
+        const openBtn = document.getElementById('btn-upload-modal');
+        const closers = document.querySelectorAll('.upload-modal-close');
+        
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('excel-file');
+        const processBtn = document.getElementById('btn-process');
+
+        // Modal Logic
+        if(openBtn && modal) {
+            openBtn.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+        }
+
+        const closeModal = () => {
+            if(modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                // Reset form
+                if(processBtn) {
+                     processBtn.disabled = true;
+                     processBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        };
+
+        closers.forEach(c => c.addEventListener('click', closeModal));
+
+        // Drag & Drop Logic (Visual Mockup)
+        if(dropzone && fileInput) {
+            dropzone.addEventListener('click', () => fileInput.click());
+
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('border-primary', 'bg-primary/5');
+            });
+
+            dropzone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('border-primary', 'bg-primary/5');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('border-primary', 'bg-primary/5');
+                
+                if (e.dataTransfer && e.dataTransfer.files.length) {
+                    handleFileSelection(e.dataTransfer.files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                 // @ts-ignore
+                if(e.target.files.length) {
+                     // @ts-ignore
+                    handleFileSelection(e.target.files[0]);
+                }
+            });
+        }
+
+        function handleFileSelection(file: File) {
+            if(!dropzone || !processBtn) return;
+            // Solo logica visual para el Frontend. 
+            // En un futuro se parsearía con SheetJS (xlsx)
+            
+            dropzone.innerHTML = `
+                <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
+                    <i class="fas fa-file-excel text-3xl text-green-500"></i>
+                </div>
+                <p class="text-white font-semibold text-lg mb-1">${file.name}</p>
+                <p class="text-green-400 text-sm font-medium">¡Archivo listo para procesar!</p>
+            `;
+
+            processBtn.disabled = false;
+            processBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            processBtn.classList.add('shadow-[0_0_15px_rgba(255,40,0,0.5)]');
+        }
+    });
+</script>

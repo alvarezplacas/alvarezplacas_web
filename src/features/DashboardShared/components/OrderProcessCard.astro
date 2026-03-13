@@ -1,0 +1,167 @@
+---
+import { Order } from '../../../domain/Order';
+
+interface Props {
+    order: Order;
+}
+
+const { order } = Astro.props;
+const statusColor = order.getStatusColor();
+---
+
+<div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-4 hover:border-primary/50 transition-all group shadow-md">
+    <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-3">
+            <div class={`w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 text-sm font-bold ${statusColor.split(' ')[0]}`}>
+                {order.cliente.charAt(0)}
+            </div>
+            <div>
+                <h4 class="text-white font-bold text-sm block leading-tight">{order.cliente}</h4>
+                <p class="text-[10px] text-gray-500 font-medium">#{order.id} • {order.getLogisticsInfo().label}</p>
+            </div>
+        </div>
+        <div class="text-right">
+            <p class="text-xs text-gray-400 font-medium">Total</p>
+            <p class="text-sm font-bold text-white">$ {order.getTotalValue().toLocaleString()}</p>
+        </div>
+    </div>
+
+    <div class="space-y-2 mb-4">
+        {order.items.slice(0, 2).map(item => (
+            <div class="flex justify-between text-[11px] text-gray-400">
+                <span>{item.quantity}x {item.name}</span>
+                <span>$ {(item.price * item.quantity).toLocaleString()}</span>
+            </div>
+        ))}
+        {order.items.length > 2 && (
+            <p class="text-[10px] text-primary font-medium">+{order.items.length - 2} productos más...</p>
+        )}
+    </div>
+
+    {order.status === Order.STATUS.PENDIENTE ? (
+        <div class="space-y-2">
+            <button 
+                class="w-full py-2.5 bg-primary hover:bg-primary-light text-white rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 group/btn"
+                data-process-order={order.id}
+                id={`btn-process-${order.id}`}
+            >
+                <i class="fas fa-play text-[10px] group-hover/btn:translate-x-1 transition-transform"></i> 
+                PROCESAR Y DAR PUNTOS
+            </button>
+            
+            <div id={`status-chip-${order.id}`} class="hidden w-full py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2">
+                <!-- Se llena por JS -->
+            </div>
+            
+            {order.hasCortes() && (
+                <button 
+                    class="w-full py-2 bg-gray-800 hover:bg-gray-700 text-amber-400 border border-amber-400/20 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-2"
+                    data-copy-leptom={order.id}
+                    data-leptom-content={order.getLeptomFormat()}
+                >
+                    <i class="fas fa-copy"></i>
+                    COPIAR PARA LEPTOM
+                </button>
+                <button 
+                    class="w-full py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-400/20 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-2"
+                    onclick={`window.open('/cliente/aprobacion?id=${order.id}', '_blank')`}
+                >
+                    <i class="fas fa-file-pdf"></i>
+                    PLANO PARA CLIENTE
+                </button>
+            )}
+        </div>
+    ) : (
+        <div class={`w-full py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${statusColor}`}>
+            <i class={`fas ${order.status === Order.STATUS.TERMINADO ? 'fa-check-double' : 'fa-sync fa-spin'} text-[10px]`}></i>
+            {order.status.toUpperCase()}
+        </div>
+    )}
+</div>
+
+</script>
+
+<script>
+    import { processOrder, scoringNotificationStore, ordersStore } from '../dashboardStore';
+
+    // Handle Order Processing
+    document.querySelectorAll('[data-process-order]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const orderId = btn.getAttribute('data-process-order');
+            processOrder(orderId);
+        });
+    });
+
+    // React to Store Changes (Reactivity via ID)
+    ordersStore.subscribe(orders => {
+        orders.forEach(order => {
+            const btn = document.getElementById(`btn-process-${order.id}`);
+            const chip = document.getElementById(`status-chip-${order.id}`);
+            
+            if (order.status !== 'Pendiente' && btn && chip) {
+                btn.classList.add('hidden');
+                chip.classList.remove('hidden');
+                chip.innerHTML = `<i class="fas fa-sync fa-spin text-[10px]"></i> ${order.status.toUpperCase()}`;
+                
+                // Aplicar colores de estado dinámicamente
+                const colors = {
+                    'En proceso': 'text-blue-400 border-blue-400/30 bg-blue-400/10',
+                    'Terminado': 'text-green-400 border-green-400/30 bg-green-400/10'
+                };
+                chip.className = `w-full py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${colors[order.status] || ''}`;
+            }
+        });
+    });
+
+    // Handle Scoring Notifications
+    scoringNotificationStore.subscribe(notification => {
+        if (notification) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-8 right-8 bg-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-bounce-in z-50 border-2 border-green-400';
+            toast.innerHTML = `
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <i class="fas fa-star text-yellow-300"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-sm">¡Puntos Otorgados!</h5>
+                    <p class="text-xs opacity-90">${notification.cliente} sumó <strong>${notification.puntos} puntos</strong></p>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('animate-out');
+                setTimeout(() => toast.remove(), 500);
+            }, 3500);
+        }
+    });
+
+    // Handle Leptom Copy
+    document.querySelectorAll('[data-copy-leptom]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const content = btn.getAttribute('data-leptom-content');
+            try {
+                await navigator.clipboard.writeText(content);
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> ¡COPIADO!';
+                btn.classList.add('bg-green-500/20', 'text-green-400');
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('bg-green-500/20', 'text-green-400');
+                }, 2000);
+            } catch (err) {
+                console.error('Error al copiar:', err);
+            }
+        });
+    });
+</script>
+
+<style>
+    @keyframes bounce-in {
+        0% { transform: scale(0.5) translateY(50px); opacity: 0; }
+        70% { transform: scale(1.05) translateY(-5px); opacity: 1; }
+        100% { transform: scale(1) translateY(0); }
+    }
+    .animate-bounce-in { animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .animate-out { opacity: 0; transform: translateY(20px); transition: all 0.5s ease; }
+</style>

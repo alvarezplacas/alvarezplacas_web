@@ -1,0 +1,170 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import StatCard from '../../features/DashboardShared/components/StatCard.astro';
+import OrderList from '../../features/DashboardShared/components/OrderList.astro';
+import { Order } from '../../domain/Order';
+
+// Mock data for processes
+const recentOrders = [
+    { id: '1024', cliente: 'Juan Perez', status: Order.STATUS.EN_PROCESO, logistica: Order.LOGISTICS.ENVIO },
+    { id: '1025', cliente: 'Carpintería ABC', status: Order.STATUS.PENDIENTE, logistica: Order.LOGISTICS.RETIRO },
+    { id: '1026', cliente: 'Muebles Sur', status: Order.STATUS.TERMINADO, logistica: Order.LOGISTICS.RETIRO },
+    { id: '1027', cliente: 'Estudio Q', status: Order.STATUS.EN_PROCESO, logistica: Order.LOGISTICS.ENVIO },
+    { id: '1028', cliente: 'Ricardo G.', status: Order.STATUS.TERMINADO, logistica: Order.LOGISTICS.ENVIO },
+];
+---
+
+<AdminLayout title="Dashboard General">
+    
+    <!-- Welcome Header -->
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-white mb-2">Bienvenido, Javier 👋</h2>
+        <p class="text-gray-400">Aquí tienes un resumen rápido de lo que está sucediendo en <span class="text-primary font-semibold">Alvarez Placas</span> hoy.</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard 
+            label="Nuevos Pedidos" 
+            value="12" 
+            icon="fa-shopping-cart" 
+            color="primary" 
+            trend={{ value: '8%', isUp: true, label: 'vs ayer' }}
+        />
+        <StatCard 
+            label="Presupuestos" 
+            value="45" 
+            icon="fa-calculator" 
+            color="blue" 
+            trend={{ value: '12%', isUp: true, label: 'vs ayer' }}
+        />
+        <StatCard 
+            label="Cortes Pendientes" 
+            value="128" 
+            icon="fa-cut" 
+            color="purple" 
+            trend={{ value: 'Altos', isUp: false, label: 'requiere atención' }}
+        />
+        <StatCard 
+            label="Clientes Activos" 
+            value="892" 
+            icon="fa-users" 
+            color="green" 
+            trend={{ value: '+5', isUp: true, label: 'esta semana' }}
+        />
+    </div>
+
+    <!-- Quick Actions & Recent Activity -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Quick Actions (Left, 2 cols width on large screens) -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 shadow-lg">
+                <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <i class="fas fa-bolt text-yellow-500"></i> Accesos Rápidos
+                </h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <a href="/admin/catalogo" class="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-gray-600 transition-all group">
+                        <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold">Subir Catálogo</h4>
+                            <p class="text-xs text-gray-400">Actualizar precios y placas</p>
+                        </div>
+                    </a>
+                    
+                    <a href="#" class="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-gray-600 transition-all group">
+                        <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fas fa-search-dollar"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold">Revisar Presupuestos</h4>
+                            <p class="text-xs text-gray-400">Ver pedidos pendientes</p>
+                        </div>
+                    </a>
+
+                    <a href="#" class="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-gray-600 transition-all group">
+                        <div class="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold">Nuevo Cliente</h4>
+                            <p class="text-xs text-gray-400">Registro manual</p>
+                        </div>
+                    </a>
+
+                    <a href="#" class="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-gray-600 transition-all group">
+                        <div class="w-10 h-10 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold">Anuncio Global</h4>
+                            <p class="text-xs text-gray-400">Notificar a carpinteros</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Configuración Global -->
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 shadow-lg">
+                <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <i class="fas fa-cogs text-blue-500"></i> Configuración del Catálogo
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-gray-800">
+                        <div>
+                            <h4 class="text-white font-semibold italic text-primary">MODO MANTENIMIENTO</h4>
+                            <p class="text-xs text-gray-400">Si se activa, los clientes verán la página de "Estamos Actualizando".</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="maintToggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-[0_0_15px_rgba(255,255,0,0.2)]"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-gray-800">
+                        <div>
+                            <h4 class="text-white font-semibold">Mostrar Precios al Cliente</h4>
+                            <p class="text-xs text-gray-400">Si se desactiva, el cliente verá "Consultar" en lugar del precio.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="priceToggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TODO: Add Chart widget here later -->
+
+        </div>
+
+        <!-- Recent Activity Sidebar (Right, 1 col width) -->
+        <OrderList orders={recentOrders} />
+    </div>
+
+    <script>
+        const priceToggle = document.getElementById('priceToggle');
+        const maintToggle = document.getElementById('maintToggle');
+        
+        // Cargar estado inicial
+        if (priceToggle) {
+            priceToggle.checked = localStorage.getItem('admin_show_prices') !== 'false';
+            priceToggle.addEventListener('change', (e) => localStorage.setItem('admin_show_prices', e.target.checked));
+        }
+
+        if (maintToggle) {
+            maintToggle.checked = localStorage.getItem('maintenance_mode') === 'true';
+            maintToggle.addEventListener('change', (e) => {
+                localStorage.setItem('maintenance_mode', e.target.checked);
+                alert(e.target.checked ? 'Modo Mantenimiento ACTIVADO' : 'Sitio web ONLINE');
+            });
+        }
+    </script>
+    </div>
+
+</AdminLayout>

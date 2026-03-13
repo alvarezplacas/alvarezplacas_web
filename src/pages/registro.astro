@@ -1,0 +1,52 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Registro de Cliente - Alvarezplacas">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#0a0a0a]">
+        <div class="max-w-md w-full space-y-8 bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 shadow-2xl">
+            <div>
+                <img class="mx-auto h-12 w-auto" src="/logo.png" alt="Alvarezplacas" />
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-white">
+                    Crea tu cuenta profesional
+                </h2>
+                <p class="mt-2 text-center text-sm text-gray-400">
+                    O <a href="/login" class="font-medium text-primary hover:text-primary-light">inicia sesión si ya tienes cuenta</a>
+                </p>
+            </div>
+            <form class="mt-8 space-y-6" action="/api/auth/register" method="POST">
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div class="mb-4">
+                        <label for="full-name" class="sr-only">Nombre Completo o Empresa</label>
+                        <input id="full-name" name="name" type="text" required class="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" placeholder="Nombre completo o Carpintería" />
+                    </div>
+                    <div class="mb-4">
+                        <label for="email-address" class="sr-only">Correo electrónico</label>
+                        <input id="email-address" name="email" type="email" autocomplete="email" required class="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" placeholder="Correo electrónico" />
+                    </div>
+                    <div class="mb-4">
+                        <label for="phone" class="sr-only">WhatsApp (opcional)</label>
+                        <input id="phone" name="phone" type="text" class="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" placeholder="WhatsApp (Ej: 1123456789)" />
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Contraseña</label>
+                        <input id="password" name="password" type="password" required class="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" placeholder="Contraseña" />
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all shadow-[0_0_20px_rgba(255,40,0,0.2)]">
+                        Registrarme
+                    </button>
+                </div>
+            </form>
+            
+            <div class="pt-6 border-t border-gray-800 text-center">
+                <p class="text-xs text-gray-500 mb-4">¿Solo necesitas un presupuesto rápido sin registrarte?</p>
+                <a href="/presupuestador" class="inline-flex items-center px-4 py-2 border border-gray-700 text-xs font-medium rounded-full text-gray-300 bg-transparent hover:bg-gray-800 transition-colors">
+                    Ir al Presupuestador Libre
+                </a>
+            </div>
+        </div>
+    </div>
+</Layout>

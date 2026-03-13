@@ -1,0 +1,133 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Gestión de Materiales - Admin">
+    <div class="mb-8">
+        <h2 class="text-3xl font-black text-white mb-2">Gestión de <span class="text-primary">Materiales</span></h2>
+        <p class="text-gray-400">Carga masiva por Excel, actualización de precios y gestión de fotos.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Excel Upload Section -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-file-excel text-green-500"></i> Actualización Masiva
+                </h3>
+                <p class="text-xs text-gray-500 mb-6">
+                    Sube un archivo .xlsx o .csv con las columnas: Nombre, Marca, Espesor, Precio m2.
+                </p>
+                
+                <div class="border-2 border-dashed border-gray-800 rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer group" id="drop-zone">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-700 group-hover:text-primary transition-colors mb-4"></i>
+                    <p class="text-sm text-gray-400 mb-2">Arrastra tu archivo aquí</p>
+                    <p class="text-xs text-gray-600">o haz clic para buscar</p>
+                    <input type="file" id="excel-input" class="hidden" accept=".xlsx, .xls, .csv" />
+                </div>
+
+                <button id="process-excel" class="w-full mt-6 py-3 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-xl transition-all border border-primary/20">
+                    PROCESAR ARCHIVO
+                </button>
+            </div>
+
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6">
+                <h3 class="text-sm font-bold text-white mb-4">SUSCRIPCIONES</h3>
+                <div class="space-y-4">
+                    <div class="p-3 bg-black/40 rounded-lg flex justify-between items-center border border-gray-800">
+                        <span class="text-xs text-gray-300">Plan Profesional</span>
+                        <span class="text-xs font-bold text-green-500">$15.000 / mes</span>
+                    </div>
+                    <button class="w-full py-2 bg-gray-800 text-xs font-bold text-white rounded-lg hover:bg-gray-700 transition-colors">
+                        Gestionar Planes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Material List / Results -->
+        <div class="lg:col-span-2">
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black/20">
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 bg-primary text-black text-xs font-bold rounded">Todos</button>
+                        <button class="px-3 py-1 bg-gray-800 text-gray-400 text-xs font-bold rounded hover:text-white">Melaminas</button>
+                        <button class="px-3 py-1 bg-gray-800 text-gray-400 text-xs font-bold rounded hover:text-white">MDF</button>
+                    </div>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+                        <input type="text" placeholder="Buscar material..." class="bg-black/50 border border-gray-700 rounded-lg pl-8 pr-4 py-2 text-xs text-white focus:outline-none focus:border-primary" />
+                    </div>
+                </div>
+
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-900/50 text-gray-500 uppercase text-[10px] font-bold">
+                        <tr>
+                            <th class="px-4 py-3">Material</th>
+                            <th class="px-4 py-3">Marca</th>
+                            <th class="px-4 py-3">Espesor</th>
+                            <th class="px-4 py-3">Precio m2</th>
+                            <th class="px-4 py-3 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800">
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="px-4 py-4 flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gray-800 rounded border border-gray-700 flex items-center justify-center overflow-hidden">
+                                    <i class="fas fa-image text-gray-700"></i>
+                                </div>
+                                <span class="text-white font-medium">Melamina Blanca Bronce</span>
+                            </td>
+                            <td class="px-4 py-4 text-gray-400">Faplac</td>
+                            <td class="px-4 py-4 text-gray-400">18mm</td>
+                            <td class="px-4 py-4 text-white font-bold">$12.500</td>
+                            <td class="px-4 py-4 text-right">
+                                <button class="text-gray-500 hover:text-primary p-2">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <button class="text-gray-500 hover:text-white p-2">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- ... more rows ... -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</AdminLayout>
+
+<script>
+    const dropZone = document.getElementById('drop-zone');
+    const excelInput = document.getElementById('excel-input');
+
+    dropZone.addEventListener('click', () => excelInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-primary');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-primary');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-primary');
+        const files = e.dataTransfer.files;
+        if (files.length) handleFile(files[0]);
+    });
+
+    excelInput.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+        // Aquí iría la lógica para enviar al servidor o procesar con SheetJS
+        alert('Archivo detectado: ' + file.name + '\nProcesando...');
+    }
+</script>

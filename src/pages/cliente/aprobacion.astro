@@ -1,0 +1,106 @@
+---
+import { Order } from '../../domain/Order';
+import CutPlanPreview from '../../features/DashboardShared/components/CutPlanPreview.astro';
+import Layout from '../../layouts/Layout.astro';
+
+// En un sistema real, buscaríamos por ID en la DB. Aquí mockeamos.
+const url = new URL(Astro.request.url);
+const orderId = url.searchParams.get('id') || '2045';
+
+const order = new Order({ 
+    id: orderId, 
+    cliente: 'Estudio Creativo Muebles', 
+    status: Order.STATUS.PENDIENTE, 
+    logistica: Order.LOGISTICS.ENVIO,
+    items: [
+        {
+            name: 'Placa Egger Olmo Alpino', 
+            price: 45000, 
+            quantity: 3,
+            medidas: { base: 1500, altura: 400, rota: true, cantos: { arriba: 1, abajo: 1, derecha: 2, izquierda: 2 } }
+        }, 
+        {
+            name: 'Placa Faplac Seda Giorno', 
+            price: 38000, 
+            quantity: 2,
+            medidas: { base: 2600, altura: 1830, rota: false, cantos: { arriba: 0, abajo: 0, derecha: 0, izquierda: 0 } }
+        }
+    ]
+});
+---
+
+<Layout title="Aprobar Plano de Corte | Alvarez Placas">
+    <main class="min-h-screen bg-[#111111] py-12 px-4 sm:px-6">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-10">
+                <div class="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4 border border-primary/20 rotate-3">
+                    <i class="fas fa-check-double text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-white tracking-tight uppercase">Confirmación de <span class="text-primary italic">Pedido</span></h1>
+                <p class="text-gray-400 mt-2">Revise los detalles técnicos del corte antes de que procedamos a producción.</p>
+            </div>
+
+            <!-- Preview -->
+            <CutPlanPreview order={order} />
+
+            <!-- Actions -->
+            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                <button 
+                    id="btn-ok"
+                    class="px-8 py-4 bg-primary hover:bg-primary-light text-white rounded-xl font-extrabold text-sm uppercase tracking-widest transition-all shadow-xl shadow-primary/20 hover:-translate-y-1 active:scale-95 flex items-center gap-3"
+                >
+                    <i class="fas fa-thumbs-up"></i>
+                    DAR MI OK AL PLANO
+                </button>
+                <button 
+                    id="btn-print"
+                    class="px-8 py-4 bg-gray-900 hover:bg-gray-800 text-gray-400 border border-gray-800 rounded-xl font-bold text-sm uppercase tracking-widest transition-all flex items-center gap-3"
+                    onclick="window.print()"
+                >
+                    <i class="fas fa-file-pdf"></i>
+                    GUARDAR PDF
+                </button>
+            </div>
+
+            <div id="success-message" class="hidden mt-8 p-6 bg-green-500/10 border border-green-500/30 rounded-2xl text-center">
+                <div class="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">¡Gracias por tu aprobación!</h3>
+                <p class="text-gray-400 text-sm">El vendedor ha sido notificado y el pedido entrará a producción a la brevedad.</p>
+            </div>
+            
+            <p class="text-center mt-12 text-gray-600 text-[10px] uppercase tracking-[0.2em]">ALVAREZ PLACAS • SISTEMA DE GESTIÓN DINÁMICA</p>
+        </div>
+    </main>
+</Layout>
+
+<script>
+    const btnOk = document.getElementById('btn-ok');
+    const successMsg = document.getElementById('success-message');
+
+    if (btnOk && successMsg) {
+        btnOk.addEventListener('click', () => {
+            btnOk.classList.add('hidden');
+            document.getElementById('btn-print').classList.add('hidden');
+            successMsg.classList.remove('hidden');
+            
+            // Simular notificación al vendedor
+            console.log("Notificación enviada al sistema de Alvarez Placas");
+        });
+    }
+</script>
+
+<style>
+    @media print {
+        button { display: none !important; }
+        body { background: white !important; color: black !important; }
+        .bg-[#111111] { background: white !important; }
+        .bg-[#1a1a1a], .bg-black\/40 { background: #f9f9f9 !important; border-color: #ddd !important; }
+        .text-white { color: black !important; }
+        .text-gray-400, .text-gray-500 { color: #666 !important; }
+        .text-amber-400 { color: #a50 !important; }
+        .border-gray-800 { border-color: #eee !important; }
+    }
+</style>

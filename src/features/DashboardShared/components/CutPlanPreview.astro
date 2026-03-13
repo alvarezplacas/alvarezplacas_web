@@ -1,0 +1,86 @@
+---
+import { Order } from '../../../domain/Order';
+
+interface Props {
+    order: Order;
+}
+
+const { order } = Astro.props;
+const cuttingItems = order.items.filter(item => item.medidas);
+---
+
+<div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+    <div class="p-6 border-b border-gray-800 bg-black/40 flex justify-between items-center">
+        <div>
+            <h3 class="text-xl font-bold text-white uppercase tracking-tight">Plano de Corte # {order.id}</h3>
+            <p class="text-xs text-gray-400 mt-1">Cliente: <span class="text-white font-medium">{order.cliente}</span></p>
+        </div>
+        <div class="text-right">
+            <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Total Piezas</span>
+            <span class="px-3 py-1 bg-primary/10 text-primary border border-primary/30 rounded-full text-sm font-bold">
+                {cuttingItems.reduce((acc, item) => acc + item.quantity, 0)}
+            </span>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-900/50 text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-800">
+                    <th class="p-4 font-bold">Cant.</th>
+                    <th class="p-4 font-bold">Material / Detalle</th>
+                    <th class="p-4 font-bold text-center">Base (mm)</th>
+                    <th class="p-4 font-bold text-center">Altura (mm)</th>
+                    <th class="p-4 font-bold text-center">Cantos</th>
+                    <th class="p-4 font-bold text-center">Rotar</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800/50">
+                {cuttingItems.map(item => {
+                    const m = item.medidas;
+                    return (
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="p-4">
+                                <span class="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-white font-bold text-sm">
+                                    {item.quantity}
+                                </span>
+                            </td>
+                            <td class="p-4 text-sm">
+                                <p class="text-white font-bold">{item.name}</p>
+                                <p class="text-[10px] text-gray-500 mt-0.5 uppercase tracking-wide">ID: {Math.random().toString(36).substr(2, 5).toUpperCase()}</p>
+                            </td>
+                            <td class="p-4 text-center font-mono text-amber-400 font-bold">
+                                {m.base}
+                            </td>
+                            <td class="p-4 text-center font-mono text-amber-400 font-bold">
+                                {m.altura}
+                            </td>
+                            <td class="p-4">
+                                <div class="flex flex-col items-center gap-1">
+                                    <div class="flex gap-1">
+                                        <span class={`w-2 h-2 rounded-sm border ${m.cantos.arriba ? 'bg-primary border-primary' : 'bg-transparent border-gray-700'}`} title="Arriba"></span>
+                                        <span class={`w-2 h-2 rounded-sm border ${m.cantos.abajo ? 'bg-primary border-primary' : 'bg-transparent border-gray-700'}`} title="Abajo"></span>
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <span class={`w-2 h-2 rounded-sm border ${m.cantos.izquierda ? 'bg-primary border-primary' : 'bg-transparent border-gray-700'}`} title="Izquierda"></span>
+                                        <span class={`w-2 h-2 rounded-sm border ${m.cantos.derecha ? 'bg-primary border-primary' : 'bg-transparent border-gray-700'}`} title="Derecha"></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-4 text-center">
+                                <i class={`fas ${m.rota ? 'fa-sync text-green-500' : 'fa-lock text-gray-700'} text-xs`}></i>
+                            </td>
+                        </tr>
+                    );
+                })}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="p-6 bg-black/20 border-t border-gray-800">
+        <p class="text-[11px] text-gray-500 leading-relaxed max-w-2xl">
+            <i class="fas fa-info-circle mr-1 text-primary"></i> 
+            Este es un plano preliminar basado en sus requerimientos técnicos. Por favor verifique las medidas y la orientación de la veta antes de confirmar. Las piezas marcadas con el icono de bloqueo no serán rotadas en el proceso de optimización.
+        </p>
+    </div>
+</div>

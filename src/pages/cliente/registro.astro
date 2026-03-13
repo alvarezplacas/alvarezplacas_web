@@ -1,0 +1,99 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+---
+
+<Layout title="Registro de Clientes Profesionales">
+    <Header />
+
+    <section class="min-h-screen pt-24 pb-12 flex items-center justify-center bg-gradient-to-br from-jet-black via-[#111111] to-neutral-900 relative overflow-hidden">
+        
+        <!-- Background Glow -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div class="max-w-4xl w-full mx-auto px-4 sm:px-6 relative z-10 flex flex-col md:flex-row gap-8 lg:gap-16 items-center">
+            
+            <!-- Left Info Side -->
+            <div class="w-full md:w-1/2 text-center md:text-left">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
+                    Únete a nuestro <br/><span class="text-primary tracking-wide uppercase">Club de Clientes</span>
+                </h1>
+                <p class="text-gray-400 text-lg mb-8 leading-relaxed">
+                    Accede a herramientas digitales exclusivas para profesionales, suma puntos con tus pedidos y participa en increíbles sorteos a fin de año.
+                </p>
+                
+                <div class="space-y-4 text-left">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                            <i class="fas fa-boxes text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold text-lg">Sistema de Scoring</h3>
+                            <p class="text-gray-500 text-sm mt-1">Suma 1 punto por cada pedido mensual. Mantén tu cuenta activa realizando pedidos periódicos.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center shrink-0">
+                            <i class="fab fa-whatsapp text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold text-lg">Acceso Rápido</h3>
+                            <p class="text-gray-500 text-sm mt-1">Al registrarte, recibirás un mensaje por WhatsApp con un enlace mágico para ingresar rápidamente a tu cuenta.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Form Side -->
+            <div class="w-full md:w-1/2">
+                <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm relative">
+                    <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-orange-500 rounded-t-2xl"></div>
+                    
+                    <h2 class="text-2xl font-bold text-white mb-6 text-center">Crear tu Cuenta</h2>
+                    
+                    <form class="space-y-4" onsubmit="event.preventDefault(); alert('Formulario simulado. Se conectará a MySQL pronto.')">
+                        
+                        <!-- Nombre / Empresa -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="nombre">Nombre o Empresa *</label>
+                            <input type="text" id="nombre" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Ej. Carpintería Gómez">
+                        </div>
+
+                        <!-- Celular / WhatsApp -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="whatsapp">Teléfono / WhatsApp *</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">+54 9</span>
+                                <input type="tel" id="whatsapp" required class="w-full bg-black/50 border border-gray-700 rounded-lg pl-14 pr-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="11 2345 6789">
+                            </div>
+                        </div>
+
+                        <!-- Dirección -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="direccion">Dirección *</label>
+                            <input type="text" id="direccion" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Ej. Av. San Martín 1234">
+                        </div>
+
+                        <!-- CUIT (Opcional) -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="cuit">CUIT (Opcional - Para facturación)</label>
+                            <input type="text" id="cuit" class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="20-12345678-9">
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit" class="w-full bg-primary hover:bg-primary-light text-white font-bold py-3.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(255,40,0,0.4)]">
+                                Registrarme Ahora <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        
+                        <p class="text-xs text-gray-500 text-center mt-4">
+                            Al registrarte, aceptas que procesemos tus datos en nuestro sistema. Recibirás tu acceso por WhatsApp en breve.
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</Layout>

@@ -1,0 +1,29 @@
+---
+// Header.astro
+// Sticky navigation with glassmorphism effect
+---
+
+<header class="sticky top-0 z-50 w-full bg-black/80 backdrop-blur-md border-b border-white/10 transition-all duration-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-center md:justify-between items-center h-20">
+      
+      <!-- Logo -->
+      <a href="/" class="flex-shrink-0 flex items-center gap-1 text-2xl font-bold tracking-tight text-white hover:opacity-90 transition-opacity">
+        ALVAREZ<span class="text-primary">PLACAS</span>
+      </a>
+
+      <!-- Desktop Menu (Hidden on Mobile) -->
+      <nav class="hidden md:flex items-center space-x-8">
+        <a href="/catalogo" class="text-sm font-semibold uppercase text-white hover:text-primary transition-colors">Catálogo</a>
+        <a href="/cliente" class="text-sm font-semibold uppercase text-white hover:text-primary transition-colors">Presupuestar</a>
+        <a href="/herramientas" class="text-sm font-semibold uppercase text-white hover:text-primary transition-colors">Herramientas</a>
+        
+        <!-- CTA Botón Contacto -->
+        <a href="/contacto" class="ml-4 px-6 py-2.5 rounded-full bg-primary/10 border border-primary text-primary text-sm font-bold uppercase hover:bg-primary hover:text-white transition-all shadow-[0_0_15px_rgba(255,40,0,0.3)] hover:shadow-[0_0_20px_rgba(255,40,0,0.5)]">
+          Contacto
+        </a>
+      </nav>
+      
+    </div>
+  </div>
+</header>

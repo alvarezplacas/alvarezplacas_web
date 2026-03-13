@@ -1,0 +1,15 @@
+node_modules
+.astro
+dist
+*.zip
+build_log*.txt
+sync_output.txt
+categorize_log.txt
+credentials.json
+exotic-equator
+gullible-gravity
+tender-transit
+.DS_Store
+.env
+.env.*
+!.env.example

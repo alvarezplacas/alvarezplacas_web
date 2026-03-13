@@ -1,0 +1,56 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+---
+
+<Layout title="Herramientas Digitales | Alvarez Placas">
+    <Header />
+    <main class="pt-24 min-h-screen bg-[#0a0a0a] px-4 sm:px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h1 class="text-4xl md:text-6xl font-extrabold text-white tracking-tight uppercase mb-4">
+                    Ecosistema <span class="text-primary italic">Digital</span>
+                </h1>
+                <p class="text-gray-400 text-lg max-w-2xl mx-auto">Explorá nuestras herramientas diseñadas para potenciar tu carpintería y diseño de interiores.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Optimizador -->
+                <a href="/herramientas/optimizador" class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 hover:border-blue-500/50 transition-all group shadow-xl">
+                    <div class="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all">
+                        <i class="fas fa-cut"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-3">Optimizador de Corte</h3>
+                    <p class="text-gray-400 mb-6 font-light">Reduce el desperdicio al mínimo con nuestro motor de optimización inteligente.</p>
+                    <span class="text-blue-500 font-bold flex items-center gap-2">
+                        Abrir Herramienta <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </a>
+
+                <!-- Match-Board -->
+                <a href="/herramientas/match-board" class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 hover:border-purple-500/50 transition-all group shadow-xl">
+                    <div class="w-16 h-16 bg-purple-500/10 text-purple-400 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-3">Match-Board</h3>
+                    <p class="text-gray-400 mb-6 font-light">Diseñá y compartí moodboards profesionales con tus clientes rápidamente.</p>
+                    <span class="text-purple-400 font-bold flex items-center gap-2">
+                        Probar Ahora <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </a>
+
+                <!-- Calculadora -->
+                <a href="/herramientas/calculadora" class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 hover:border-green-500/50 transition-all group shadow-xl">
+                    <div class="w-16 h-16 bg-green-500/10 text-green-500 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 group-hover:bg-green-500/20 transition-all">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-3">Calculadora Cúbica</h3>
+                    <p class="text-gray-400 mb-6 font-light">Cálculo preciso de stock y costos para presupuestos sin errores.</p>
+                    <span class="text-green-500 font-bold flex items-center gap-2">
+                        Calcular Stock <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </main>
+</Layout>
