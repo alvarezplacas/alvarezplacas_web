@@ -6,6 +6,7 @@ services:
     ports:
       - "4322:80"
     networks:
+      - alvarez_internal
       - javiermix_network
     volumes:
       - ./archivos_alvarezplacas:/usr/share/nginx/html/images/catalog
@@ -22,9 +23,9 @@ services:
     volumes:
       - ./archivos_alvarezplacas:/srv
       - ./filebrowser.db:/database.db
-    # Usar flags estándar para asegurar que cargue la DB y el puerto 80 interno
-    command: [ "--database", "/database.db", "--port", "80" ]
+    command: [ "--database", "/database.db", "--port", "80", "--address", "0.0.0.0" ]
     networks:
+      - alvarez_internal
       - javiermix_network
 
   db:
@@ -40,9 +41,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./src/infrastructure/db-schema.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
+      - alvarez_internal
       - javiermix_network
 
 networks:
+  alvarez_internal:
+    driver: bridge
   javiermix_network:
     external: true
 

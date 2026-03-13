@@ -37,11 +37,8 @@ jobs:
               git reset --hard origin/main
               git clean -fd
             fi
-            echo "Performing deep cleaning of FileBrowser..."
-            docker stop alvarezplacas_files || true
-            docker rm alvarezplacas_files || true
-            rm -f filebrowser.db
-            # No hacemos touch, dejamos que FileBrowser lo cree para evitar archivos vacíos corruptos
+            echo "Ensuring networks exist..."
+            docker network create javiermix_network || true
             
             echo "Rebuilding and restarting containers..."
             docker compose -f docker-compose.yml up -d --build
