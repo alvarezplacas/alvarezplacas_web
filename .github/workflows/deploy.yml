@@ -37,14 +37,14 @@ jobs:
               git reset --hard origin/main
               git clean -fd
             fi
+            echo "Cleaning up FileBrowser database for a fresh start..."
+            rm -f filebrowser.db
             echo "Rebuilding and restarting containers..."
             docker compose -f docker-compose.yml up -d --build
-            echo "Waiting for FileBrowser to initialize (15s)..."
-            sleep 15
-            echo "Attempting to create/update user 'alvarezjavierh@gmail.com'..."
-            # Intentar borrar el usuario admin por defecto si existe y crear el nuevo
-            docker exec alvarezplacas_files filebrowser users add alvarezjavierh@gmail.com Tecno121212 --perm.admin || \
-            docker exec alvarezplacas_files filebrowser users update 1 --username alvarezjavierh@gmail.com --password Tecno121212
+            echo "Waiting for FileBrowser to initialize (20s)..."
+            sleep 20
+            echo "Attempting to create user 'alvarezjavierh@gmail.com'..."
+            docker exec alvarezplacas_files filebrowser users add alvarezjavierh@gmail.com Tecno121212 --perm.admin
             
             echo "Current users in FileBrowser:"
             docker exec alvarezplacas_files filebrowser users ls
