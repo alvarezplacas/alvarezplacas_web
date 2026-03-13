@@ -1,13 +1,26 @@
----
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import { query } from '../../lib/db.js';
 
-// Datos estáticos base (Mock) para Vendedores
-const vendedores = [
-    { id: 1, nombre: "Martín Giménez", rol: "Vendedor Sr.", ventasMes: 45, sucursal: "Villa Tesei", estado: "Activo" },
-    { id: 2, nombre: "Laura Sánchez", rol: "Vendedor", ventasMes: 32, sucursal: "Hurlingham", estado: "Activo" },
-    { id: 3, nombre: "Carlos Rodriguez", rol: "Vendedor Jr.", ventasMes: 15, sucursal: "Villa Tesei", estado: "Vacaciones" },
-];
----
+// Obtener vendedores reales de la base de datos
+let vendedores = [];
+let totalVendedores = 0;
+let activosVendedores = 0;
+
+try {
+    const res = await query(
+        "SELECT id, full_name as nombre, role, branch as sucursal, seller_level as rol FROM users WHERE role = 'seller' OR role = 'admin' ORDER BY id ASC"
+    );
+    vendedores = res.rows.map(v => ({
+        ...v,
+        estado: 'Activo', // Por ahora lo dejamos fijo o podrías mapear un campo 'active'
+        ventasMes: Math.floor(Math.random() * 50) // Mock de ventas hasta conectar con presupuestos
+    }));
+    
+    totalVendedores = vendedores.length;
+    activosVendedores = vendedores.filter(v => v.estado === 'Activo').length;
+} catch (e) {
+    console.error("Error cargando vendedores:", e);
+}
 
 <AdminLayout title="Gestión de Vendedores">
     
@@ -65,11 +78,11 @@ const vendedores = [
                 <div class="space-y-3">
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-gray-400">Total Vendedores</span>
-                        <span class="text-white font-bold">3</span>
+                        <span class="text-white font-bold">{totalVendedores}</span>
                     </div>
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-gray-400">Activos Actualmente</span>
-                        <span class="text-green-400 font-bold">2</span>
+                        <span class="text-green-400 font-bold">{activosVendedores}</span>
                     </div>
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-gray-400">Roles de Administrador</span>
