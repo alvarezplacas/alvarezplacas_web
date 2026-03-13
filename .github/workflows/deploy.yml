@@ -33,7 +33,9 @@ jobs:
             else
               echo "Updating existing repository..."
               git remote set-url origin https://github.com/alvarezplacas/alvarezplacas_web.git
-              git pull origin main
+              git fetch origin main
+              git reset --hard origin/main
+              git clean -fd
             fi
             echo "Rebuilding and restarting containers..."
             docker compose -f docker-compose.yml up -d --build
