@@ -27,28 +27,37 @@ export function initCatalog() {
     let currentSearchTerm = '';
 
     // --- PRICING VISIBILITY ---
-    function applyPricingVisibility() {
-        const showPrices = localStorage.getItem('admin_show_prices') !== 'false'; // Default true
-        document.querySelectorAll('.catalog-item .text-primary, .catalog-item .font-bold.text-primary, #modalCard .text-primary').forEach(el => {
-            if (showPrices) {
-                el.classList.remove('hidden');
-            } else {
-                el.classList.add('hidden');
-            }
-        });
+    async function applyPricingVisibility() {
+        try {
+            const res = await fetch('/api/settings');
+            const settings = await res.json();
+            const showPrices = settings.show_prices !== 'false'; // Default true
 
-        // Hide price in WhatsApp link if needed
-        document.querySelectorAll('.catalog-item a[href*="wa.me"]').forEach(link => {
-            if (!showPrices) {
-                const url = new URL(link.href);
-                let text = url.searchParams.get('text');
-                if (text) {
-                    text = text.replace(/Precio Sugerido: .*/, 'Precio: Consultar');
-                    url.searchParams.set('text', text);
-                    link.href = url.toString();
+            document.querySelectorAll('.catalog-item .text-primary, .catalog-item .font-bold.text-primary, #modalCard .text-primary').forEach(el => {
+                if (showPrices) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
                 }
-            }
-        });
+            });
+
+            // Hide price in WhatsApp link if needed
+            document.querySelectorAll('.catalog-item a[href*="wa.me"]').forEach(link => {
+                if (!showPrices) {
+                    const url = new URL(link.href);
+                    let text = url.searchParams.get('text');
+                    if (text) {
+                        // Regex improved to handle current price format
+                        text = text.replace(/Precio Sugerido: .*/i, 'Precio: Consultar');
+                        text = text.replace(/Precio: .*/i, 'Precio: Consultar');
+                        url.searchParams.set('text', text);
+                        link.href = url.toString();
+                    }
+                }
+            });
+        } catch (err) {
+            console.error('Error fetching pricing visibility:', err);
+        }
     }
 
     // --- FILTRADO LOGIC ---
