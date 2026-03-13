@@ -16,7 +16,7 @@ services:
 
   filebrowser:
     image: filebrowser/filebrowser:latest
-    container_name: alvarezplacas_files
+    container_name: alvarezplacas_archivos
     restart: always
     # No public port anymore, proxied by nginx on port 80
     # ports:
