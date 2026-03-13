@@ -8,16 +8,15 @@ El sistema utiliza una lógica de **emparejamiento automático**. Para que una i
 
 ### Estructura de carpetas
 Las imágenes deben subirse a:
-`public/images/catalog/[MARCA]/[NOMBRE_IMAGEN].jpg` (o .png)
+`public/images/catalog/[MARCA]/[NOMBRE_IMAGEN].avif`
 
 **Ejemplo para Faplac:**
 Si tienes una placa que en el Excel/Catálogo se llama "Blanco", debes subir la imagen a:
-`public/images/catalog/Faplac/Blanco.jpg`
+`public/images/catalog/Faplac/Blanco.avif`
 
 ### Reglas importantes:
+- **Formato**: Únicamente se admite el formato **.avif** por su alta compresión y calidad.
 - **Nombre del archivo**: Debe coincidir exactamente con el nombre de la variante/color en el catálogo (ej. "Roble", "Gris Humo").
-- **Marca**: La carpeta debe llamarse exactamente como la marca (ej. "Egger", "Faplac", "Enchapados").
-- **Formato**: Se recomiendan imágenes cuadradas para que se vean bien en las tarjetas del catálogo.
 
 ---
 

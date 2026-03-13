@@ -79,14 +79,19 @@ function intelligentParse(input, category, codeFromSheet) {
     }
 
     // 2. Restauración de Imágenes para Placas
-    if (category === 'PLACAS' || result.brand === 'Egger' || result.brand === 'Faplac') {
+    if (category === 'PLACAS' || result.brand === 'Egger' || result.brand === 'Faplac' || result.brand === 'Sadepan') {
         const placaMatch = findPlacaImage(codeFromSheet, input);
         if (placaMatch) {
             result.imagen = placaMatch.imagen;
             result.brand = placaMatch.brand;
             result.localMatch = true;
         } else {
-            result.localMatch = false;
+            // Lógica por defecto: Intentar construir ruta basada en nombre limpio y marca
+            // Formato: /images/catalog/[Marca]/[Nombre].avif
+            const brandFolder = result.brand;
+            const cleanNameForImage = result.name.replace(/\//g, "-"); // Evitar problemas con / en nombres
+            result.imagen = `/images/catalog/${brandFolder}/${cleanNameForImage}.avif`;
+            result.localMatch = true; // Asumimos que si la suben con ese nombre, funcionará
         }
     } else {
         result.localMatch = false;
