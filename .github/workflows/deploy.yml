@@ -37,4 +37,8 @@ jobs:
             fi
             echo "Rebuilding and restarting containers..."
             docker compose -f docker-compose.yml up -d --build
+            echo "Inspect running containers:"
+            docker ps
+            echo "Inspect images:"
+            docker images | grep alvarez
             echo "Deployment finished successfully!"
