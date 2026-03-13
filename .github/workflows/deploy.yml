@@ -21,8 +21,12 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             echo "Starting deployment for Alvarez Placas..."
+            echo "Directorio actual antes del despliegue:"
+            pwd
             mkdir -p /home/ubuntu/alvarezplacas_web
             cd /home/ubuntu/alvarezplacas_web
+            echo "Directorio de trabajo:"
+            pwd
             if [ ! -d .git ]; then
               echo "Cloning repository for the first time..."
               git clone https://github.com/alvarezplacas/alvarezplacas_web.git .
