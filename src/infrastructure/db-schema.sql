@@ -11,6 +11,8 @@ CREATE TABLE users (
     role user_role DEFAULT 'client',
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(50),
+    branch VARCHAR(100), -- Sucursal: Villa Tesei, Hurlingham, etc.
+    seller_level VARCHAR(50), -- Sr., Jr., etc.
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -73,4 +75,13 @@ CREATE TABLE site_settings (
 INSERT INTO site_settings (key, value) VALUES ('maintenance_mode', 'false');
 
 -- Insertar usuario admin inicial
--- ...
+INSERT INTO users (email, password_hash, role, full_name, branch, seller_level) 
+VALUES ('alvarezjavierh@gmail.com', '$2b$10$YourHashHere', 'admin', 'Javier Alvarez', 'Casa Central', 'Administrador');
+
+-- Insertar vendedores de prueba (Igual que el Mock previo pero en DB)
+INSERT INTO users (email, password_hash, role, full_name, branch, seller_level)
+VALUES ('martin@alvarezplacas.com', 'pass', 'seller', 'Martín Giménez', 'Villa Tesei', 'Vendedor Sr.');
+INSERT INTO users (email, password_hash, role, full_name, branch, seller_level)
+VALUES ('laura@alvarezplacas.com', 'pass', 'seller', 'Laura Sánchez', 'Hurlingham', 'Vendedor');
+INSERT INTO users (email, password_hash, role, full_name, branch, seller_level)
+VALUES ('carlos@alvarezplacas.com', 'pass', 'seller', 'Carlos Rodriguez', 'Villa Tesei', 'Vendedor Jr.');

@@ -40,14 +40,15 @@ jobs:
             echo "Ensuring networks exist..."
             docker network create javiermix_network || true
             
-            echo "Rebuilding and restarting containers..."
-            docker-compose up -d --build
+            echo "DEEP CLEANUP: Stopping and removing everything for a fresh build..."
+            docker compose down --remove-orphans || true
+            docker system prune -af --volumes || true
             
-            echo "Cleaning up old images to save space..."
-            docker image prune -f
+            echo "Rebuilding and restarting containers (Version v1.1.9)..."
+            docker compose up -d --build
             
-            echo "Waiting for all services to stabilize (45s)..."
-            sleep 45
+            echo "Waiting for services to stabilize (60s)..."
+            sleep 60
             
             echo "Checking Database connection from web container..."
             docker exec alvarezplacas_web curl -s http://localhost/api/settings || echo "API check failed, but continuing..."
