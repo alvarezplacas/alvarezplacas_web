@@ -11,7 +11,7 @@ services:
     volumes:
       - ./archivos_alvarezplacas:/usr/share/nginx/html/images/catalog
     environment:
-      - DATABASE_URL='postgresql://alvarez_admin:AlvarezAdmin2026@db:5432/alvarezplacas'
+      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas
       - NODE_ENV=production
 
   filebrowser:
@@ -34,7 +34,7 @@ services:
     container_name: alvarezplacas_db
     environment:
       POSTGRES_USER: alvarez_admin
-      POSTGRES_PASSWORD: 'AlvarezAdmin2026'
+      POSTGRES_PASSWORD: AlvarezAdmin2026
       POSTGRES_DB: alvarezplacas
     ports:
       - "5432:5432"
