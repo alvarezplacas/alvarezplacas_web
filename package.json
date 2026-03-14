@@ -10,7 +10,7 @@
         "astro": "astro"
     },
     "dependencies": {
-        "@astrojs/node": "^10.0.1",
+        "@astrojs/node": "^9.5.5",
         "@tailwindcss/vite": "^4.2.1",
         "astro": "^5.18.0",
         "bcryptjs": "^3.0.3",
