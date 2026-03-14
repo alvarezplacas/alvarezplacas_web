@@ -2,7 +2,7 @@
 import VendedorLayout from '@layouts/VendedorLayout.astro';
 import StatCard from '@features/dashboard/components/StatCard.astro';
 import OrderProcessCard from '@features/dashboard/components/OrderProcessCard.astro';
-import { Order } from '@domain/Order';
+import { Order } from '@domain/order.js';
 
 const pendingOrders = [
     new Order({ 
