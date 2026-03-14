@@ -16,7 +16,7 @@ services:
 
   filebrowser:
     image: filebrowser/filebrowser:latest
-    container_name: alvarezplacas_archivos
+    container_name: alvarezplacas_files
     restart: always
     # No public port anymore, proxied by nginx on port 80
     # ports:
@@ -24,9 +24,7 @@ services:
     volumes:
       - ./archivos_alvarezplacas:/srv
       - ./filebrowser.db:/database.db
-    command: [ "--database", "/database.db", "--port", "80", "--address", "0.0.0.0", "--baseurl", "/files" ]
-    environment:
-      - FB_BASEURL=/files
+    command: [ "--database", "/database.db", "--port", "80", "--address", "0.0.0.0" ]
     networks:
       - alvarez_internal
       - javiermix_network
