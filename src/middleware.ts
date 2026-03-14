@@ -1,5 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { query } from './lib/db';
+import { query } from './lib/db.js';
 
 export const onRequest = defineMiddleware(async (context: any, next: any) => {
     // Definimos las rutas que NO deben ser bloqueadas por mantenimiento
