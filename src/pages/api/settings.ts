@@ -24,7 +24,14 @@ export const GET: APIRoute = async () => {
         });
     } catch (error: any) {
         console.error('API Settings GET Error:', error);
-        return new Response(JSON.stringify({ error: error.message || 'Unknown error' }), { status: 500 });
+        return new Response(JSON.stringify({ 
+            error: error.message || 'Unknown error',
+            stack: error.stack,
+            db_url: process.env.DATABASE_URL ? 'PRESENT' : 'MISSING'
+        }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 }
 
@@ -46,6 +53,12 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ success: true }), { status: 200 });
     } catch (error: any) {
         console.error('API Settings POST Error:', error);
-        return new Response(JSON.stringify({ error: error.message || 'Unknown error' }), { status: 500 });
+        return new Response(JSON.stringify({ 
+            error: error.message || 'Unknown error',
+            db_url: process.env.DATABASE_URL ? 'PRESENT' : 'MISSING'
+        }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 }
