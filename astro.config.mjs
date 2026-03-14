@@ -9,6 +9,16 @@ export default defineConfig({
     mode: 'standalone'
   }),
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    server: {
+      fs: {
+        deny: ['../codigo_basura/**']
+      }
+    },
+    build: {
+      rollupOptions: {
+        external: [/codigo_basura/]
+      }
+    }
   }
 });
