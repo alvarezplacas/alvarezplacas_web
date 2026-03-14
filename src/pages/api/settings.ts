@@ -24,14 +24,19 @@ export const GET: APIRoute = async () => {
         });
     } catch (error: any) {
         console.error('API Settings GET Error:', error);
-        return new Response(JSON.stringify({ error: error.message || 'Unknown error' }), { status: 500 });
+        return new Response(JSON.stringify({ 
+            error: error.message || 'Unknown error',
+            context: 'GET settings'
+        }), { status: 500 });
     }
 }
 
 export const POST: APIRoute = async ({ request }) => {
+    let body: any = {};
     try {
         await query(ENSURE_TABLE);
-        const { key, value } = await request.json();
+        body = await request.json();
+        const { key, value } = body;
         
         if (!key) {
             return new Response(JSON.stringify({ error: 'Key is required' }), { status: 400 });
@@ -46,6 +51,11 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ success: true }), { status: 200 });
     } catch (error: any) {
         console.error('API Settings POST Error:', error);
-        return new Response(JSON.stringify({ error: error.message || 'Unknown error' }), { status: 500 });
+        return new Response(JSON.stringify({ 
+            error: error.message || 'Unknown error',
+            key: body.key,
+            value: body.value,
+            context: 'POST settings'
+        }), { status: 500 });
     }
 }
