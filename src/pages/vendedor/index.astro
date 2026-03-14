@@ -1,8 +1,8 @@
 ---
-import VendedorLayout from '../../layouts/VendedorLayout.astro';
-import StatCard from '../../features/DashboardShared/components/StatCard.astro';
-import OrderProcessCard from '../../features/DashboardShared/components/OrderProcessCard.astro';
-import { Order } from '../../domain/Order';
+import VendedorLayout from '@layouts/VendedorLayout.astro';
+import StatCard from '@features/dashboard/components/StatCard.astro';
+import OrderProcessCard from '@features/dashboard/components/OrderProcessCard.astro';
+import { Order } from '@domain/Order';
 
 const pendingOrders = [
     new Order({ 

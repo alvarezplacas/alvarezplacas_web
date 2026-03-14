@@ -1,7 +1,7 @@
 ---
-import { Order } from '../../domain/Order';
-import CutPlanPreview from '../../features/DashboardShared/components/CutPlanPreview.astro';
-import Layout from '../../layouts/Layout.astro';
+import { Order } from '@domain/Order';
+import CutPlanPreview from '@features/dashboard/components/CutPlanPreview.astro';
+import Layout from '@layouts/Layout.astro';
 
 // En un sistema real, buscaríamos por ID en la DB. Aquí mockeamos.
 const url = new URL(Astro.request.url);

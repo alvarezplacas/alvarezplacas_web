@@ -19,6 +19,15 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
         console.error('Error consultando mantenimiento en DB:', e);
     }
 
+    const isAdminLogin = context.url.pathname === '/admin/login';
+
+    if (isAdmin && !isAdminLogin) {
+        const session = context.cookies.get('admin_session');
+        if (!session || session.value !== 'authenticated_javier') {
+            return context.redirect('/admin/login');
+        }
+    }
+
     if (isMaintenanceActive && !isMaintenancePage && !isAdmin && !isApi && !isPublicStatic) {
         return context.redirect('/mantenimiento');
     }

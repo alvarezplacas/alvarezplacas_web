@@ -1,4 +1,4 @@
-import { ScoringService } from './ScoringService';
+import { ScoringService } from '@features/scoring';
 
 /**
  * Entidad de Dominio: User

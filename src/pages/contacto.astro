@@ -1,17 +1,35 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import { query } from '../lib/db';
 
 const title = "Contacto | Alvarez Placas";
-const sucursales = [
-    {
-        nombre: "Casa Central - Villa Tesei",
-        direccion: "Av. Vergara 1605, Hurlingham",
-        telefono: "11-6141-1842",
-        horario: "Lun a Vie: 8:00 a 17:00 | Sáb: 8:00 a 13:00",
-        whatsapp: "5491161411842",
-        maps: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3283.473528766524!2d-58.6366!3d-34.6152!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzTCsDM2JzU0LjciUyA1OMKwMzgnMTEuNyJX!5e0!3m2!1ses!2sar!4v1700000000000"
-    }
+
+// Obtener vendedores activos de la DB
+let vendedores = [];
+try {
+    const res = await query(
+        "SELECT full_name as nombre, email, phone as whatsapp FROM users WHERE role = 'seller' AND (branch IS NULL OR branch != 'hidden') LIMIT 3"
+    );
+    vendedores = res.rows;
+} catch (e) {
+    console.error("Error cargando vendedores para contacto:", e);
+    // Fallback names if DB fails
+    vendedores = [
+        { nombre: 'Ventanilla 1', email: 'vendedor1@alvarezplacas.com.ar', whatsapp: '1161411842' },
+        { nombre: 'Ventanilla 2', email: 'vendedor2@alvarezplacas.com.ar', whatsapp: '1161411842' },
+        { nombre: 'Ventanilla 3', email: 'vendedor3@alvarezplacas.com.ar', whatsapp: '1161411842' }
+    ];
+}
+
+const horario = {
+    semana: "Lun a Vie: 8:00 a 13:00 y 14:00 a 17:00 hs.",
+    sabado: "Sábados: 8:00 a 13:00 hs."
+};
+
+const telefonos = [
+    { label: "Línea Directa", numero: "6083-4918", icon: "fa-phone" },
+    { label: "WhatsApp Ventas", numero: "1161411842", icon: "fab fa-whatsapp", link: "1161411842" }
 ];
 ---
 
@@ -35,107 +53,227 @@ const sucursales = [
                 
                 <!-- Columna Izquierda: Información de contacto -->
                 <div class="space-y-8">
-                    {sucursales.map(s => (
-                        <div class="bg-[#1a1a1a] border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
-                            <div class="absolute -right-10 -top-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl transition-all group-hover:bg-primary/10"></div>
-                            
-                            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                                <i class="fas fa-location-dot text-primary"></i> {s.nombre}
-                            </h2>
+                    <div class="bg-[#1a1a1a] border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+                        <div class="absolute -right-10 -top-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl transition-all group-hover:bg-primary/10"></div>
+                        
+                        <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                            <i class="fas fa-id-card text-primary"></i> Casa Central
+                        </h2>
 
-                            <div class="space-y-6 text-gray-300">
-                                <div class="flex items-start gap-4">
-                                    <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-                                        <i class="fas fa-map-marker-alt text-primary-light"></i>
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-white">Dirección</p>
-                                        <p>{s.direccion}</p>
-                                    </div>
+                        <div class="space-y-6 text-gray-300">
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-map-marker-alt text-primary-light"></i>
                                 </div>
-
-                                <div class="flex items-start gap-4">
-                                    <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-                                        <i class="fas fa-clock text-blue-400"></i>
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-white">Horarios de Atención</p>
-                                        <p>{s.horario}</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-start gap-4">
-                                    <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-                                        <i class="fas fa-phone text-green-400"></i>
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-white">Teléfonos</p>
-                                        <p>{s.telefono}</p>
-                                    </div>
+                                <div>
+                                    <p class="font-semibold text-white">Dirección</p>
+                                    <p>Av. Vergara 1605, Hurlingham</p>
                                 </div>
                             </div>
 
-                            <div class="mt-8 flex flex-wrap gap-4">
-                                <a href={`https://wa.me/${s.whatsapp}`} class="flex-1 min-w-[180px] py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_0_20px_rgba(22,163,74,0.3)]">
-                                    <i class="fab fa-whatsapp text-xl"></i> WhatsApp Directo
-                                </a>
-                                <a href="#formulario" class="flex-1 min-w-[180px] py-4 bg-white/5 hover:bg-white/10 text-white border border-white/20 font-bold rounded-2xl flex items-center justify-center gap-3 transition-all">
-                                    <i class="fas fa-paper-plane"></i> Enviar Email
-                                </a>
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-clock text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-white">Horarios de Atención</p>
+                                    <p>{horario.semana}</p>
+                                    <p>{horario.sabado}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-phone-volume text-green-400"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-white">Canales de Comunicación</p>
+                                    <p>Tel de Línea: 6083-4918</p>
+                                    <p>WhatsApp: 1161411842</p>
+                                    <p class="text-primary font-bold mt-1">info@alvarezplacas.com.ar</p>
+                                </div>
                             </div>
                         </div>
-                    ))}
+                    </div>
+
+                    <!-- Vendedores Section -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-user-friends text-primary"></i> Nuestros Vendedores
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {vendedores.map(v => (
+                                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center group hover:bg-white/10 transition-all">
+                                    <div class="w-16 h-16 rounded-full bg-gray-800 mx-auto mb-3 flex items-center justify-center text-2xl text-gray-500 overflow-hidden border-2 border-transparent group-hover:border-primary transition-all">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <h4 class="text-white font-bold text-sm truncate">{v.nombre}</h4>
+                                    <div class="flex justify-center gap-3 mt-3">
+                                        <a href={`https://wa.me/549${v.whatsapp}`} class="text-green-400 hover:text-green-300 transition-colors">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </a>
+                                        <a href={`mailto:${v.email}`} class="text-blue-400 hover:text-blue-300 transition-colors">
+                                            <i class="fas fa-envelope"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
                     <!-- Mapa (Iframe) -->
-                    <div class="rounded-3xl overflow-hidden border border-white/10 h-80 shadow-2xl">
+                    <div class="rounded-3xl overflow-hidden border border-white/10 h-64 shadow-2xl grayscale">
                         <iframe 
-                            src={sucursales[0].maps}
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3283.473!2d-58.6366!3d-34.6152!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzTCsDM2JzU0LjciUyA1OMKwMzgnMTEuNyJX!5e0!3m2!1ses!2sar!4v1700000000000"
                             width="100%" 
                             height="100%" 
-                            style="border:0; filter: grayscale(1) invert(0.9) contrast(1.2);" 
+                            style="border:0;" 
                             allowfullscreen="" 
                             loading="lazy">
                         </iframe>
                     </div>
                 </div>
 
-                <!-- Columna Derecha: Formulario -->
-                <div id="formulario" class="bg-[#1a1a1a]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl">
-                    <h3 class="text-2xl font-bold text-white mb-2">Escribinos</h3>
-                    <p class="text-gray-400 mb-8">Completá el formulario y un asesor se contactará con vos a la brevedad.</p>
+                <!-- Columna Derecha: Formulario y Proveedores -->
+                <div class="space-y-8">
+                    <!-- Formulario General -->
+                    <div id="formulario" class="bg-[#1a1a1a]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+                        <h3 class="text-2xl font-bold text-white mb-2">Escribinos</h3>
+                        <p class="text-gray-400 mb-6 text-sm">Completá el formulario para consultas generales.</p>
 
-                    <form class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="space-y-2">
-                                <label class="text-sm font-semibold text-gray-400 ml-1">Nombre Completo</label>
-                                <input type="text" placeholder="Tu nombre..." class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-colors" />
+                        <form class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input type="text" placeholder="Nombre" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-colors" />
+                                <input type="email" placeholder="Email" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-colors" />
                             </div>
-                            <div class="space-y-2">
-                                <label class="text-sm font-semibold text-gray-400 ml-1">Email</label>
-                                <input type="email" placeholder="tu@email.com" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-colors" />
+                            <textarea rows="4" placeholder="¿En qué podemos ayudarte?" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-colors resize-none"></textarea>
+                            <button type="submit" class="w-full py-4 bg-primary text-black font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest text-sm">
+                                Enviar Consulta
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- ATENCION A PROVEEDORES -->
+                    <div class="bg-gradient-to-br from-blue-900/20 to-black border border-blue-500/20 rounded-3xl p-8 shadow-2xl">
+                        <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                            <i class="fas fa-truck text-blue-400"></i> Atención a Proveedores
+                        </h3>
+                        <p class="text-gray-400 mb-6 text-xs italic">Si sos proveedor de servicios o productos mobiliarios, envianos tu propuesta comercial aquí.</p>
+
+                        <form class="space-y-4">
+                            <input type="text" placeholder="Empresa / Rubro" class="w-full bg-black/40 border border-blue-500/20 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-colors" />
+                            <textarea rows="3" placeholder="Detalle de la propuesta comercial..." class="w-full bg-black/40 border border-blue-500/20 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-colors resize-none"></textarea>
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase font-black mb-2">Correos Directos:</p>
+                                <ul class="text-[11px] text-blue-300 space-y-1">
+                                    <li>• proveedores@alvarezplacas.com.ar</li>
+                                    <li>• Maru@alvarezplacas.com.ar</li>
+                                    <li>• Facundo@alvarezplacas.com.ar</li>
+                                </ul>
                             </div>
-                        </div>
+                            <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all uppercase text-xs tracking-widest">
+                                Enviar a Compras
+                            </button>
+                        </form>
+                    </div>
 
-                        <div class="space-y-2">
-                            <label class="text-sm font-semibold text-gray-400 ml-1">Asunto</label>
-                            <select class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-colors appearance-none">
-                                <option>Consulta sobre Pedido</option>
-                                <option>Presupuesto Especial</option>
-                                <option>Reclamo / Sugerencia</option>
-                                <option>Otro</option>
-                            </select>
-                        </div>
+                    <!-- SECCION PROMOCIONES -->
+                    <div class="bg-gradient-to-br from-yellow-900/20 to-black border border-yellow-500/20 rounded-3xl p-6">
+                        <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                            <i class="fas fa-tag text-yellow-500"></i> Sección Promociones
+                        </h3>
+                        <p class="text-gray-400 text-xs mb-4">¿Querés que tu producto figure en nuestras ofertas semanales?</p>
+                        <a href="mailto:javier@alvarezplacas.com.ar" class="inline-block px-4 py-2 border border-yellow-500/30 text-yellow-500 rounded-lg text-xs font-bold hover:bg-yellow-500 group-hover:text-black transition-all">
+                            javier@alvarezplacas.com.ar
+                        </a>
+                    </div>
 
-                        <div class="space-y-2">
-                            <label class="text-sm font-semibold text-gray-400 ml-1">Mensaje</label>
-                            <textarea rows="5" placeholder="¿En qué podemos ayudarte?" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-colors resize-none"></textarea>
-                        </div>
+        </div>
+    </main>
+</Layout>
 
-                        <button type="submit" class="w-full py-4 bg-primary text-white font-extrabold text-lg rounded-2xl shadow-[0_0_25px_rgba(255,40,0,0.4)] hover:shadow-[0_0_35px_rgba(255,40,0,0.6)] hover:-translate-y-1 transition-all">
-                            Enviar Mensaje <i class="fas fa-chevron-right ml-2 text-sm"></i>
-                        </button>
-                    </form>
-                </div>
+<script is:inline>
+    // General Form Handler
+    const generalForm = document.querySelector('#formulario form');
+    if (generalForm) {
+        generalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = generalForm.querySelector('button');
+            const originalText = btn.innerHTML;
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+                
+                const formData = new FormData(generalForm);
+                const data = {
+                    type: 'contact',
+                    name: generalForm.querySelector('input[placeholder="Nombre"]').value,
+                    email: generalForm.querySelector('input[placeholder="Email"]').value,
+                    message: generalForm.querySelector('textarea').value,
+                    subject: 'Consulta General'
+                };
+
+                const res = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert('¡Mensaje enviado con éxito! Nos contactaremos a la brevedad.');
+                    generalForm.reset();
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                alert('Hubo un error al enviar el mensaje. Por favor intenta más tarde.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+    }
+
+    // Supplier Form Handler
+    const supplierForm = document.querySelector('.bg-gradient-to-br.from-blue-900\\/20 form');
+    if (supplierForm) {
+        supplierForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = supplierForm.querySelector('button');
+            const originalText = btn.innerHTML;
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+                const data = {
+                    type: 'supplier',
+                    company: supplierForm.querySelector('input').value,
+                    message: supplierForm.querySelector('textarea').value,
+                };
+
+                const res = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert('¡Propuesta enviada con éxito! El equipo de compras la revisará.');
+                    supplierForm.reset();
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                alert('Error al enviar la propuesta. Por favor intenta más tarde.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+    }
+</script>
 
             </div>
         </div>

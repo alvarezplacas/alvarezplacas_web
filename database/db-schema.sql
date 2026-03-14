@@ -3,6 +3,7 @@
 CREATE TYPE user_role AS ENUM ('client', 'seller', 'admin');
 CREATE TYPE budget_status AS ENUM ('draft', 'sent', 'approved', 'rejected');
 CREATE TYPE order_status AS ENUM ('pending', 'processing', 'cut', 'delivered');
+CREATE TYPE financial_status AS ENUM ('clean', 'partial', 'debt');
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -13,6 +14,22 @@ CREATE TABLE users (
     phone VARCHAR(50),
     branch VARCHAR(100), -- Sucursal: Villa Tesei, Hurlingham, etc.
     seller_level VARCHAR(50), -- Sr., Jr., etc.
+    
+    -- Club de Clientes fields
+    client_number VARCHAR(20) UNIQUE,
+    points INTEGER DEFAULT 0,
+    address TEXT,
+    last_order_at TIMESTAMP WITH TIME ZONE,
+    points_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    is_club_member BOOLEAN DEFAULT FALSE,
+    assigned_seller_id INTEGER REFERENCES users(id),
+    
+    -- Financial fields
+    fin_status financial_status DEFAULT 'clean',
+    debt_amount DECIMAL(12,2) DEFAULT 0,
+    due_date DATE,
+    financial_notes TEXT,
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -59,10 +76,22 @@ CREATE TABLE budget_items (
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     budget_id INTEGER REFERENCES budgets(id),
+    user_id INTEGER REFERENCES users(id),
+    seller_id INTEGER REFERENCES users(id),
     status order_status DEFAULT 'pending',
+    total_amount DECIMAL(12,2),
     tracking_code VARCHAR(100),
     notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE points_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    amount INTEGER NOT NULL,
+    reason TEXT, -- 'order', 'inactivity_deduction', etc.
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE site_settings (

@@ -1,6 +1,6 @@
 ---
-import AdminLayout from '../../layouts/AdminLayout.astro';
-import { query } from '../../lib/db.js';
+import AdminLayout from '@layouts/AdminLayout.astro';
+import { query } from '@lib/db.js';
 
 // Obtener vendedores reales de la base de datos
 let vendedores = [];
@@ -64,14 +64,58 @@ try {
                              <button class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors" title="Ver Métrica Completa">
                                 <i class="fas fa-chart-line"></i>
                             </button>
-                            <button class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-primary flex items-center justify-center transition-colors" title="Editar Permisos">
-                                <i class="fas fa-cog"></i>
+                            <button class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-primary flex items-center justify-center transition-colors" 
+                                    onclick={`window.editSeller('${v.id}', '${v.nombre}', '${v.sucursal}', '${v.whatsapp || ''}', '${v.email || ''}')`} 
+                                    title="Editar Vendedor">
+                                <i class="fas fa-edit"></i>
                             </button>
                         </div>
                     </div>
                 </div>
             ))}
         </div>
+
+        <script is:inline>
+            window.editSeller = (id, nombre, currentBranch, currentPhone, currentEmail) => {
+                const action = prompt(`Editando a ${nombre}:\n1. Cambiar Contraseña\n2. Cambiar Nombre Ventanilla (${currentBranch})\n3. Cambiar WhatsApp (${currentPhone})\n4. Cambiar Email (${currentEmail})\nIngrese número de opción:`);
+                
+                let data = { id };
+                let value = '';
+
+                switch(action) {
+                    case '1':
+                        value = prompt('Nueva contraseña:');
+                        if (value) data.pass = value;
+                        break;
+                    case '2':
+                        value = prompt('Nuevo nombre (ej: Ventanilla 1):', currentBranch);
+                        if (value) data.branch = value;
+                        break;
+                    case '3':
+                        value = prompt('Nuevo WhatsApp (sin 549, ej: 1161411842):', currentPhone);
+                        if (value) data.phone = value;
+                        break;
+                    case '4':
+                        value = prompt('Nuevo Email:', currentEmail);
+                        if (value) data.email = value;
+                        break;
+                }
+
+                if (Object.keys(data).length > 1) {
+                    fetch('/api/admin/update-seller', {
+                        method: 'POST',
+                        body: JSON.stringify(data),
+                        headers: { 'Content-Type': 'application/json' }
+                    }).then(r => {
+                        if (r.ok) {
+                            alert('Vendedor actualizado');
+                            window.location.reload();
+                        }
+                        else alert('Error actualizando vendedor');
+                    });
+                }
+            };
+        </script>
 
         <!-- Resumen Lateral -->
         <div class="space-y-6">

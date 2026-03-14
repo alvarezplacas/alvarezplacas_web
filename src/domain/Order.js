@@ -2,7 +2,7 @@
  * Entidad de Dominio: Order
  * Maneja el ciclo de vida y la representación visual de un pedido.
  */
-import { ScoringService } from './ScoringService';
+import { ScoringService } from '@features/scoring';
 
 export class Order {
     static STATUS = {

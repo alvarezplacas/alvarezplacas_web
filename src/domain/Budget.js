@@ -2,7 +2,7 @@
  * Entidad de Dominio: Budget
  * Maneja la lógica de presupuestación y aprobación.
  */
-import { ScoringService } from './ScoringService';
+import { ScoringService } from '@features/scoring';
 
 export class Budget {
     static STATUS = {

@@ -1,6 +1,6 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import Header from '../../components/Header.astro';
+import Layout from '@layouts/Layout.astro';
+import Header from '@components/Header.astro';
 ---
 
 <Layout title="Registro de Clientes Profesionales">
@@ -51,12 +51,12 @@ import Header from '../../components/Header.astro';
                     
                     <h2 class="text-2xl font-bold text-white mb-6 text-center">Crear tu Cuenta</h2>
                     
-                    <form class="space-y-4" onsubmit="event.preventDefault(); alert('Formulario simulado. Se conectará a MySQL pronto.')">
+                    <form class="space-y-4" action="/api/auth/register-client" method="POST">
                         
                         <!-- Nombre / Empresa -->
                         <div>
                             <label class="block text-gray-400 text-sm font-semibold mb-2" for="nombre">Nombre o Empresa *</label>
-                            <input type="text" id="nombre" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Ej. Mi Empresa">
+                            <input type="text" id="nombre" name="name" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Ej. Juan Perez o Mi Carpintería">
                         </div>
 
                         <!-- Celular / WhatsApp -->
@@ -64,31 +64,40 @@ import Header from '../../components/Header.astro';
                             <label class="block text-gray-400 text-sm font-semibold mb-2" for="whatsapp">Teléfono / WhatsApp *</label>
                             <div class="relative">
                                 <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">+54 9</span>
-                                <input type="tel" id="whatsapp" required class="w-full bg-black/50 border border-gray-700 rounded-lg pl-14 pr-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="11 2345 6789">
+                                <input type="tel" id="whatsapp" name="phone" required class="w-full bg-black/50 border border-gray-700 rounded-lg pl-14 pr-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="11 2345 6789">
                             </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="email">Correo Electrónico *</label>
+                            <input type="email" id="email" name="email" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="tu@email.com">
                         </div>
 
                         <!-- Dirección -->
                         <div>
                             <label class="block text-gray-400 text-sm font-semibold mb-2" for="direccion">Dirección *</label>
-                            <input type="text" id="direccion" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Ej. Av. San Martín 1234">
+                            <input type="text" id="direccion" name="address" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Ej. Av. San Martín 1234, Ramos Mejía">
                         </div>
 
-                        <!-- CUIT (Opcional) -->
+                        <!-- Password -->
                         <div>
-                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="cuit">CUIT (Opcional - Para facturación)</label>
-                            <input type="text" id="cuit" class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="20-12345678-9">
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="password">Contraseña *</label>
+                            <input type="password" id="password" name="password" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Min. 8 caracteres">
+                        </div>
+
+                        <div class="flex items-start gap-3 py-2">
+                            <input type="checkbox" id="terms" required class="mt-1 accent-primary">
+                            <label for="terms" class="text-xs text-gray-500 leading-tight">
+                                Acepto que mis datos se utilicen exclusivamente para informar el estado de mis pedidos de acuerdo a los <a href="/club/terminos" target="_blank" class="text-primary hover:underline">Términos y Condiciones</a>.
+                            </label>
                         </div>
 
                         <div class="pt-4">
                             <button type="submit" class="w-full bg-primary hover:bg-primary-light text-white font-bold py-3.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(255,40,0,0.4)]">
-                                Registrarme Ahora <i class="fas fa-arrow-right"></i>
+                                Registrarme en el Club <i class="fas fa-arrow-right"></i>
                             </button>
                         </div>
-                        
-                        <p class="text-xs text-gray-500 text-center mt-4">
-                            Al registrarte, aceptas que procesemos tus datos en nuestro sistema. Recibirás tu acceso por WhatsApp en breve.
-                        </p>
                     </form>
                 </div>
             </div>
