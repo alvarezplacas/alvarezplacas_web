@@ -12,11 +12,13 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     let isMaintenanceActive = false;
     try {
         const result = await query("SELECT value FROM site_settings WHERE key = 'maintenance_mode'");
+        console.log('Middleware Maintenance Query:', result?.rows);
         if (result && result.rows && result.rows.length > 0) {
             isMaintenanceActive = result.rows[0].value === 'true';
         }
-    } catch (e) {
-        console.error('Error consultando mantenimiento en DB:', e);
+        console.log('Middleware isMaintenanceActive:', isMaintenanceActive);
+    } catch (e: any) {
+        console.error('Error consultando mantenimiento en DB:', e.message);
     }
 
     const isAdminLogin = context.url.pathname === '/admin/login';
