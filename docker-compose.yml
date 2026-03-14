@@ -11,16 +11,16 @@ services:
     volumes:
       - ./archivos_alvarezplacas:/usr/share/nginx/html/images/catalog
     environment:
-      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@db:5432/alvarezplacas
+      - DATABASE_URL=postgresql://alvarez_admin:JavierMix2026!@db:5432/alvarezplacas
       - NODE_ENV=production
 
   filebrowser:
     image: filebrowser/filebrowser:latest
     container_name: alvarezplacas_files
     restart: always
-    # No public port anymore, proxied by nginx on port 80
-    # ports:
-    #   - "4323:80"
+    # Exposing port for NPM to connect via Host IP if container name fails
+    ports:
+       - "4323:80"
     volumes:
       - ./archivos_alvarezplacas:/srv
       - ./filebrowser.db:/database.db
@@ -34,7 +34,7 @@ services:
     container_name: alvarezplacas_db
     environment:
       POSTGRES_USER: alvarez_admin
-      POSTGRES_PASSWORD: AlvarezAdmin2026
+      POSTGRES_PASSWORD: JavierMix2026!
       POSTGRES_DB: alvarezplacas
     ports:
       - "5432:5432"
