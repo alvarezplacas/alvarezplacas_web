@@ -1,5 +1,5 @@
 import { atom } from 'nanostores';
-import { Order } from '../../domain/Order';
+import { Order } from '../../domain/order.js';
 
 // Store para las órdenes activas en el dashboard
 export const ordersStore = atom([

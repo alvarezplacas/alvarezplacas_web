@@ -1,4 +1,4 @@
-import { catalogItemsStore } from '../../Catalog/store.js';
+import { catalogItemsStore } from '../../catalog/store.js';
 import placasData from '../../../data/placas.json';
 
 /**

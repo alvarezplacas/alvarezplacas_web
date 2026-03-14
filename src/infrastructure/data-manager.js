@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import xlsx from 'xlsx';
 import { parse } from 'csv-parse/sync';
-import { Placa } from '../domain/Placa.js';
+import { Placa } from '../domain/placa.js';
 import { logger } from '../core/utils.js';
 
 /**
