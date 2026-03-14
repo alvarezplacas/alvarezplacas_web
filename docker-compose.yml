@@ -40,7 +40,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./src/infrastructure/db-schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/db-schema.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - alvarez_internal
       - javiermix_network
