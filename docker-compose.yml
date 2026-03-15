@@ -9,9 +9,9 @@ services:
       - alvarez_internal
       - javiermix_network
     volumes:
-      - ./archivos_alvarezplacas:/usr/share/nginx/html/images/catalog
+      - ./archivos_alvarezplacas:/app/public/images/catalog
     environment:
-      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@db:5432/alvarezplacas
+      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@alvarez_db:5432/alvarezplacas
       - NODE_ENV=production
 
   filebrowser:
@@ -27,7 +27,7 @@ services:
       - alvarez_internal
       - javiermix_network
 
-  db:
+  alvarez_db:
     image: postgres:15
     container_name: alvarezplacas_db
     restart: always
