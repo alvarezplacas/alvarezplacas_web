@@ -23,7 +23,7 @@ brandsByCategory["Todas"] = marcasRaw.sort();
 const initialItems = catalogData;
 
 // Obtener ajustes de precios
-import { query } from '../../../../lib/db.js';
+import { query } from '../../../lib/db.js';
 let showPrices = true;
 const settingsRes = await query("SELECT value FROM site_settings WHERE key = 'show_prices'");
 const rows = (settingsRes?.rows || []) as any[];
