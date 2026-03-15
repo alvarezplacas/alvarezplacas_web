@@ -1,5 +1,4 @@
----
-const { placa } = Astro.props;
+const { placa, showPrices = true } = Astro.props;
 
 // Definición de iconos por categoría
 const categoryIcons = {
@@ -13,7 +12,8 @@ const categoryIcons = {
 const icon = categoryIcons[placa.category] || 'fa-box';
 const hasImage = placa.imagen && !placa.imagen.includes('Consultar') && placa.localMatch;
 
-const whatsappMessage = `Hola, quiero consultar por el producto:\n*${placa.name}*\nCódigo: ${placa.code}\nPrecio Sugerido: ${placa.price}`;
+const displayPrice = showPrices ? (placa.price || 'Consultar') : 'Consultar';
+const whatsappMessage = `Hola, quiero consultar por el producto:\n*${placa.name}*\nCódigo: ${placa.code}\nPrecio: ${displayPrice}`;
 ---
 
 <article 
@@ -46,7 +46,7 @@ const whatsappMessage = `Hola, quiero consultar por el producto:\n*${placa.name}
     <div class="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-6 text-center z-10 hidden md:flex backdrop-blur-sm">
         <span class="text-primary text-[10px] font-bold tracking-[0.2em] uppercase mb-2 block">{placa.brand}</span>
         <h4 class="text-white text-lg font-bold mb-1 line-clamp-2">{placa.name}</h4>
-        <p class="text-primary font-mono text-xl mb-4">{placa.price}</p>
+        <p class="text-primary font-mono text-xl mb-4">{displayPrice}</p>
         <div class="w-10 h-0.5 bg-primary/50 mx-auto mb-4"></div>
         <span class="text-gray-400 text-[10px] uppercase tracking-widest">Click para detalles</span>
     </div>
@@ -68,7 +68,7 @@ const whatsappMessage = `Hola, quiero consultar por el producto:\n*${placa.name}
     <div class="mt-auto pt-4 flex items-center justify-between border-t border-gray-900">
       <div class="flex flex-col">
         <span class="text-[10px] text-gray-500 font-mono uppercase">{placa.code}</span>
-        <span class="text-sm font-bold text-primary">{placa.price}</span>
+        <span class="text-sm font-bold text-primary">{displayPrice}</span>
       </div>
       
       <a 

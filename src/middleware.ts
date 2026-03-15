@@ -13,8 +13,9 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     try {
         const result = await query("SELECT value FROM site_settings WHERE key = 'maintenance_mode'");
         console.log('Middleware Maintenance Query:', result?.rows);
-        if (result && result.rows && result.rows.length > 0) {
-            isMaintenanceActive = result.rows[0].value === 'true';
+        const rows = (result?.rows || []) as any[];
+        if (rows.length > 0) {
+            isMaintenanceActive = rows[0].value === 'true';
         }
         console.log('Middleware isMaintenanceActive:', isMaintenanceActive);
     } catch (e: any) {
