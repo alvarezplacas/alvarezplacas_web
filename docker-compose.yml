@@ -11,7 +11,7 @@ services:
     volumes:
       - ./archivos_alvarezplacas:/usr/share/nginx/html/images/catalog
     environment:
-      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas
+      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@db:5432/alvarezplacas
       - NODE_ENV=production
 
   filebrowser:

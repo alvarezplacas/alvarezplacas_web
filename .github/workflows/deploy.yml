@@ -42,7 +42,7 @@ jobs:
             
             echo "DEEP CLEANUP: Stopping and removing everything for a fresh build..."
             docker compose down --remove-orphans || true
-            docker system prune -af --volumes || true
+            docker system prune -af || true
             
             echo "Rebuilding and restarting containers (Version v1.1.9)..."
             docker compose up -d --build
