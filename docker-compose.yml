@@ -6,7 +6,6 @@ services:
     ports:
       - "4325:4321"
     networks:
-      - alvarez_internal
       - javiermix_network
     volumes:
       - ./archivos_alvarezplacas:/app/public/images/catalog
@@ -24,7 +23,6 @@ services:
       - ./archivos_alvarezplacas:/srv
       - ./filebrowser.db:/database.db
     networks:
-      - alvarez_internal
       - javiermix_network
 
   alvarez_db:
@@ -41,12 +39,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/db-schema.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - alvarez_internal
       - javiermix_network
 
 networks:
-  alvarez_internal:
-    driver: bridge
   javiermix_network:
     external: true
 
