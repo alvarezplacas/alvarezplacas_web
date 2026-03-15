@@ -54,5 +54,26 @@ Si ves un 502, el Proxy (NPM) no puede hablar con la aplicación (Astro).
 - **Main Site**: Usa el certificado de Cloudflare (Origin Certificate).
 - **Subdominios (Archivos)**: Usa Let's Encrypt generado en NPM. Asegúrate de que el puerto 80 esté abierto para la validación automática.
 
+## 6. Conclusiones para la Robustez (Alta Disponibilidad)
+
+Para que el sitio sea "a prueba de balas" y no dependa tanto del estado del VPS, estas son las mejoras críticas:
+
+### A. Priorizar el Renderizado Híbrido (Shield de 502)
+El error 502 ocurre porque Node.js está "ocupado" o "caído". 
+- **Conclusión**: Prerenderiza (haz estático) todo lo que no cambie cada minuto.
+- **Acción**: Si el Inicio y el Contacto son estáticos, seguirán funcionando incluso si la base de datos cae. Solo el `/admin` y el `/catalog` deben ser dinámicos.
+
+### B. Implementar Paracaídas (Middleware de Error)
+- **Conclusión**: El middleware debe interceptar cualquier error de base de datos y servir una versión "cacheada" o simplificada del sitio.
+- **Acción**: Hemos mejorado `src/lib/db.js` para que devuelva vacíos si hay error, evitando que Astro se cuelgue intentando renderizar datos inexistentes.
+
+### C. Autorrecuperación Docker (Self-Healing)
+- **Conclusión**: Docker no debe solo "reiniciar siempre", sino "reiniciar si no responde".
+- **Acción**: Añadir `healthcheck` en `docker-compose.yml`. Si el endpoint `/api/health` devuelve error 3 veces, Docker mata el contenedor y lanza uno nuevo limpio automáticamente.
+
+### D. Optimización de Memoria (Limitación)
+- **Conclusión**: Un leak de memoria en un proceso de Node puede congelar todo el VPS.
+- **Acción**: Limitar los recursos en Docker (`deploy.resources.limits.memory: 512M`). Esto protege a los otros sitios (`javiermix.ar`) de ser afectados por un error en este.
+
 ---
 *Este manual garantiza que Alvarez Placas use tecnología de punta (Astro 6) de forma eficiente y profesional.*
