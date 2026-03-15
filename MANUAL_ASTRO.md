@@ -39,5 +39,20 @@ Actualmente el sitio es 100% dinámico (`output: 'server'`).
 2. **SEO Dinámico**: Implementar un generador de `sitemap.xml` dinámico para que Google indexe los productos automáticamente al añadirlos.
 3. **Panel de Vendedores**: Expandir la sección de `/admin/vendedores` para incluir estadísticas de clics en los enlaces de WhatsApp.
 
+## 5. Guía de Resolución de Errores (Troubleshooting)
+
+### Error 502 Bad Gateway
+Si ves un 502, el Proxy (NPM) no puede hablar con la aplicación (Astro).
+- **Causa 1**: El contenedor de la web está reiniciándose (Loop de crash). 
+    - *Solución*: Verifica los logs en el VPS. Casi siempre es por un error de sintaxis en `docker-compose.yml` o una ruta mal escrita en el servidor.
+- **Causa 2**: Conflicto de puertos.
+    - *Solución*: Hemos fijado el puerto interno a **4321**. No lo cambies a menos que actualices NPM también.
+- **Causa 3**: Falta de memoria en el VPS.
+    - *Solución*: Si el servidor tiene poco RAM, Docker puede matar procesos. Intenta reiniciar el servicio con `docker compose down && docker compose up -d`.
+
+### Certificados SSL
+- **Main Site**: Usa el certificado de Cloudflare (Origin Certificate).
+- **Subdominios (Archivos)**: Usa Let's Encrypt generado en NPM. Asegúrate de que el puerto 80 esté abierto para la validación automática.
+
 ---
 *Este manual garantiza que Alvarez Placas use tecnología de punta (Astro 6) de forma eficiente y profesional.*
