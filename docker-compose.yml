@@ -4,7 +4,7 @@ services:
     container_name: alvarezplacas_web
     restart: always
     ports:
-      - "4322:80"
+      - "4325:80"
     networks:
       - alvarez_internal
       - javiermix_network
@@ -18,24 +18,23 @@ services:
     image: filebrowser/filebrowser:latest
     container_name: alvarezplacas_files
     restart: always
-    # Exposing port for NPM to connect via Host IP if container name fails
     ports:
-       - "4323:80"
+      - "4326:80"
     volumes:
       - ./archivos_alvarezplacas:/srv
       - ./filebrowser.db:/database.db
-    command: [ "--database", "/database.db", "--port", "80", "--address", "0.0.0.0" ]
     networks:
       - alvarez_internal
       - javiermix_network
 
   db:
-    image: postgres:16-alpine
+    image: postgres:15
     container_name: alvarezplacas_db
+    restart: always
     environment:
-      POSTGRES_USER: alvarez_admin
-      POSTGRES_PASSWORD: AlvarezAdmin2026
-      POSTGRES_DB: alvarezplacas
+      - POSTGRES_USER=alvarez_admin
+      - POSTGRES_PASSWORD=AlvarezAdmin2026
+      - POSTGRES_DB=alvarezplacas
     ports:
       - "5432:5432"
     volumes:
