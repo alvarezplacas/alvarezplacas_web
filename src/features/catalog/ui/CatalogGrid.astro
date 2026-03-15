@@ -22,18 +22,14 @@ brandsByCategory["Todas"] = marcasRaw.sort();
 // Limitar renderizado inicial por performance
 const initialItems = catalogData;
 
-// Obtener ajustes de precios (DESHABILITADA PARA DEBUG)
+// Obtener ajustes de precios
+import { query } from '../../../../lib/db.js';
 let showPrices = true;
-/*
-try {
-  const settingsRes = await query("SELECT value FROM site_settings WHERE key = 'show_prices'");
-  if (settingsRes && settingsRes.rows && settingsRes.rows.length > 0) {
-    showPrices = settingsRes.rows[0].value !== 'false';
-  }
-} catch (e) {
-  console.error("Error fetching show_prices in CatalogGrid:", e);
+const settingsRes = await query("SELECT value FROM site_settings WHERE key = 'show_prices'");
+const rows = (settingsRes?.rows || []) as any[];
+if (rows.length > 0) {
+  showPrices = rows[0].value !== 'false';
 }
-*/
 ---
 
 <section class="max-w-7xl mx-auto px-4 py-12 relative">
