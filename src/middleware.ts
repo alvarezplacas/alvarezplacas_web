@@ -8,8 +8,9 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     const isAdmin = context.url.pathname.startsWith('/admin');
     const isApi = context.url.pathname.startsWith('/api');
 
-    // Consulta real a la base de datos
+    // Consulta real a la base de datos (DESHABILITADA PARA DEBUG)
     let isMaintenanceActive = false;
+    /*
     try {
         const result = await query("SELECT value FROM site_settings WHERE key = 'maintenance_mode'");
         console.log('Middleware Maintenance Query:', result?.rows);
@@ -21,6 +22,7 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     } catch (e: any) {
         console.error('Error consultando mantenimiento en DB:', e.message);
     }
+    */
 
     const isAdminLogin = context.url.pathname === '/admin/login';
 
