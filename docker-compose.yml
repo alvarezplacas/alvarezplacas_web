@@ -4,7 +4,7 @@ services:
     container_name: alvarezplacas_web
     restart: always
     ports:
-      - "4325:80"
+      - "4325:4321"
     networks:
       - alvarez_internal
       - javiermix_network
