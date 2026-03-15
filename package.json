@@ -13,9 +13,9 @@
         "astro": "astro"
     },
     "dependencies": {
-        "@astrojs/node": "^9.5.5",
+        "@astrojs/node": "^10.0.1",
         "@tailwindcss/vite": "^4.2.1",
-        "astro": "^5.18.0",
+        "astro": "^6.0.4",
         "bcryptjs": "^3.0.3",
         "csv-parse": "^6.1.0",
         "dotenv": "^17.3.1",
