@@ -3,15 +3,35 @@ import AdminLayout from '@layouts/AdminLayout.astro';
 import StatCard from '@features/dashboard/components/StatCard.astro';
 import OrderList from '@features/dashboard/components/OrderList.astro';
 import { Order } from '@domain/order.js';
+import { query } from '@lib/db.js';
 
-// Mock data for processes
-const recentOrders = [
-    { id: '1024', cliente: 'Juan Perez', status: Order.STATUS.EN_PROCESO, logistica: Order.LOGISTICS.ENVIO },
-    { id: '1025', cliente: 'Cliente Ejemplo S.A.', status: Order.STATUS.PENDIENTE, logistica: Order.LOGISTICS.RETIRO },
-    { id: '1026', cliente: 'Muebles Sur', status: Order.STATUS.TERMINADO, logistica: Order.LOGISTICS.RETIRO },
-    { id: '1027', cliente: 'Estudio Q', status: Order.STATUS.EN_PROCESO, logistica: Order.LOGISTICS.ENVIO },
-    { id: '1028', cliente: 'Ricardo G.', status: Order.STATUS.TERMINADO, logistica: Order.LOGISTICS.ENVIO },
-];
+// Fetch real stats from DB
+const statsResult = await Promise.all([
+    query("SELECT COUNT(*) FROM orders WHERE created_at >= NOW() - INTERVAL '1 day'"),
+    query("SELECT COUNT(*) FROM budgets WHERE created_at >= NOW() - INTERVAL '1 day'"),
+    query("SELECT COUNT(*) FROM orders WHERE status IN ('Pendiente', 'En proceso')"),
+    query("SELECT COUNT(*) FROM users WHERE role = 'client'"),
+    query(`
+        SELECT o.*, u.full_name as cliente_name 
+        FROM orders o 
+        LEFT JOIN users u ON o.client_id = u.id 
+        ORDER BY o.created_at DESC 
+        LIMIT 5
+    `)
+]);
+
+const newOrdersCount = parseInt(statsResult[0].rows[0]?.count || '0');
+const budgetsCount = parseInt(statsResult[1].rows[0]?.count || '0');
+const pendingCutsCount = parseInt(statsResult[2].rows[0]?.count || '0');
+const activeClientsCount = parseInt(statsResult[3].rows[0]?.count || '0');
+
+// Map DB orders to the format expected by OrderList
+const recentOrders = statsResult[4].rows.map(row => ({
+    id: row.id.toString(),
+    cliente: row.cliente_name || 'Consumidor Final',
+    status: row.status,
+    logistica: row.logistics
+}));
 ---
 
 <AdminLayout title="Dashboard General">
@@ -26,31 +46,31 @@ const recentOrders = [
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 
             label="Nuevos Pedidos" 
-            value="12" 
+            value={newOrdersCount.toString()} 
             icon="fa-shopping-cart" 
             color="primary" 
-            trend={{ value: '8%', isUp: true, label: 'vs ayer' }}
+            trend={{ value: 'Real', isUp: true, label: 'datos en vivo' }}
         />
         <StatCard 
             label="Presupuestos" 
-            value="45" 
+            value={budgetsCount.toString()}
             icon="fa-calculator" 
             color="blue" 
-            trend={{ value: '12%', isUp: true, label: 'vs ayer' }}
+            trend={{ value: 'Real', isUp: true, label: 'datos en vivo' }}
         />
         <StatCard 
             label="Cortes Pendientes" 
-            value="128" 
+            value={pendingCutsCount.toString()}
             icon="fa-cut" 
             color="purple" 
-            trend={{ value: 'Altos', isUp: false, label: 'requiere atención' }}
+            trend={{ value: 'Filtro', isUp: false, label: 'pendientes/proceso' }}
         />
         <StatCard 
             label="Clientes Activos" 
-            value="892" 
+            value={activeClientsCount.toString()}
             icon="fa-users" 
             color="green" 
-            trend={{ value: '+5', isUp: true, label: 'esta semana' }}
+            trend={{ value: 'Total', isUp: true, label: 'en club' }}
         />
     </div>
 
