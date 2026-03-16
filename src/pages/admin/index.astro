@@ -14,7 +14,7 @@ const statsResult = await Promise.all([
     query(`
         SELECT o.*, u.full_name as cliente_name 
         FROM orders o 
-        LEFT JOIN users u ON o.client_id = u.id 
+        LEFT JOIN users u ON o.user_id = u.id 
         ORDER BY o.created_at DESC 
         LIMIT 5
     `)
@@ -30,7 +30,7 @@ const recentOrders = statsResult[4].rows.map(row => ({
     id: row.id.toString(),
     cliente: row.cliente_name || 'Consumidor Final',
     status: row.status,
-    logistica: row.logistics
+    logistica: row.notes?.includes('Envío') ? 'Envío' : 'Retiro' // Fallback
 }));
 ---
 

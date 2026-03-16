@@ -5,8 +5,13 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     // Definimos las rutas que NO deben ser bloqueadas por mantenimiento
     const isPublicStatic = context.url.pathname.startsWith('/_astro') || context.url.pathname.startsWith('/favicon');
     const isMaintenancePage = context.url.pathname === '/mantenimiento';
-    const isAdmin = context.url.pathname.startsWith('/admin');
+    const isAdmin = context.url.pathname.startsWith('/admin') || context.url.pathname.startsWith('/administrador');
     const isApi = context.url.pathname.startsWith('/api');
+
+    // Friendly redirect for /administrador
+    if (context.url.pathname === '/administrador' || context.url.pathname === '/administrador/') {
+        return context.redirect('/admin');
+    }
 
     // Consulta real a la base de datos
     let isMaintenanceActive = false;
