@@ -10,7 +10,7 @@ services:
     volumes:
       - ./archivos_alvarezplacas:/app/public/images/catalog
     environment:
-      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@alvarez_db:5432/alvarezplacas
+      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas
       - NODE_ENV=production
 
   filebrowser:
