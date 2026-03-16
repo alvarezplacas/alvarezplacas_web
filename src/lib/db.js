@@ -13,12 +13,7 @@ const pool = new Pool({
 });
 
 export const query = async (text, params) => {
-    try {
-        return await pool.query(text, params);
-    } catch (e) {
-        console.error(`Database Query Error [${text.substring(0, 50)}...]:`, e.message);
-        return { rows: [] }; // Retornar vacío en lugar de lanzar error para no romper SSR
-    }
+    return await pool.query(text, params);
 };
 
 export default pool;
