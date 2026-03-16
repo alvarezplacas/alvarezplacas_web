@@ -37,3 +37,23 @@ export async function cleanupMockData() {
         return false;
     }
 }
+
+export async function seedInitialData() {
+    console.log('--- Seeding Initial Data ---');
+    try {
+        // Check if we have at least one seller
+        const sellers = await query("SELECT id FROM users WHERE role = 'seller'");
+        if (sellers.rows.length === 0) {
+            console.log('Creating default seller: Juan Vendedor...');
+            await query(`
+                INSERT INTO users (email, password_hash, role, full_name, phone)
+                VALUES ($1, $2, $3, $4, $5)
+            `, ['vendedor1@alvarezplacas.com.ar', 'no-password-needed-now', 'seller', 'Juan Vendedor', '11-1111-1111']);
+            console.log('✅ Default seller created');
+        }
+        return true;
+    } catch (e) {
+        console.error('❌ Error seeding initial data:', e.message);
+        return false;
+    }
+}

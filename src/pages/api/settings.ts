@@ -63,10 +63,11 @@ export const POST: APIRoute = async ({ request }) => {
 // Endpoint for DB Setup (Internal use for now)
 export const DELETE: APIRoute = async () => {
     try {
-        const { initializeDatabase, cleanupMockData } = await import('../../lib/dbSetup.js');
+        const { initializeDatabase, cleanupMockData, seedInitialData } = await import('../../lib/dbSetup.js');
         await initializeDatabase();
         await cleanupMockData();
-        return new Response(JSON.stringify({ success: true, message: 'DB Initialized and Cleaned' }), { status: 200 });
+        await seedInitialData();
+        return new Response(JSON.stringify({ success: true, message: 'DB Initialized, Cleaned and Seeded' }), { status: 200 });
     } catch (error: any) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });
     }
