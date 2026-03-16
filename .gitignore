@@ -1,8 +1,19 @@
 node_modules
 .astro
 dist
-*.zip
-build_log*.txt
+.env
+.env.production
+.env.local
+.DS_Store
+
+# Infraestructura y Docs Internos
+_infra_docs/
+*.key
+*.pub
+*.bat
+*.txt
+*.png
+!public/
 sync_output.txt
 categorize_log.txt
 credentials.json
