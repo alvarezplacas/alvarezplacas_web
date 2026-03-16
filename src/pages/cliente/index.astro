@@ -5,27 +5,30 @@ import { query } from '@lib/db.js';
 
 const { title = "Mi Cuenta | Alvarez Placas" } = Astro.props;
 
-// In a real app, we get the user ID from the session cookie
+// Strict session check
 const userCookie = Astro.cookies.get('client_session')?.value;
-// MOCK: For demonstration, if no cookie, we'll try to find the first client
-let userId = userCookie ? parseInt(userCookie) : null;
+if (!userCookie) {
+    return Astro.redirect('/cliente/login');
+}
+
+const userId = parseInt(userCookie);
 
 // Fetch Client Data
 const clientResult = await query(`
     SELECT u.*, s.full_name as seller_name, s.phone as seller_phone
     FROM users u
     LEFT JOIN users s ON u.assigned_seller_id = s.id
-    WHERE u.id = $1 OR ($1 IS NULL AND u.role = 'client')
+    WHERE u.id = $1 AND u.role = 'client'
     LIMIT 1
 `, [userId]);
 
-const cliente = clientResult.rows[0] || {
-    full_name: "Invitado",
-    points: 0,
-    client_number: "ALV-XXXX",
-    seller_name: "No asignado",
-    seller_phone: ""
-};
+const cliente = clientResult.rows[0];
+
+// If session is invalid or user not found, clear and redirect
+if (!cliente) {
+    Astro.cookies.delete('client_session', { path: '/' });
+    return Astro.redirect('/cliente/login');
+}
 
 // Fetch Orders
 const ordersResult = await query(`

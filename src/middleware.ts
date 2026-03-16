@@ -17,11 +17,32 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     }
 
     const isAdminLogin = context.url.pathname === '/admin/login';
+    const isClient = context.url.pathname.startsWith('/cliente');
+    const isClientLogin = context.url.pathname === '/cliente/login';
+    const isSeller = context.url.pathname.startsWith('/vendedor');
+    const isSellerLogin = context.url.pathname === '/vendedor/login';
 
+    // Admin Protection
     if (isAdmin && !isAdminLogin) {
         const session = context.cookies.get('admin_session');
         if (!session || session.value !== 'authenticated_javier') {
             return context.redirect('/admin/login');
+        }
+    }
+
+    // Client Protection
+    if (isClient && !isClientLogin) {
+        const session = context.cookies.get('client_session');
+        if (!session) {
+            return context.redirect('/cliente/login');
+        }
+    }
+
+    // Seller Protection
+    if (isSeller && !isSellerLogin) {
+        const session = context.cookies.get('seller_session');
+        if (!session) {
+            return context.redirect('/vendedor/login');
         }
     }
 

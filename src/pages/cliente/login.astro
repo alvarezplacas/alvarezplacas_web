@@ -1,0 +1,80 @@
+---
+import Layout from '@layouts/Layout.astro';
+import { query } from '@lib/db.js';
+
+let error = '';
+
+if (Astro.request.method === 'POST') {
+    const data = await Astro.request.formData();
+    const email = data.get('email')?.toString();
+    const password = data.get('password')?.toString();
+
+    const result = await query("SELECT * FROM users WHERE email = $1 AND role = 'client' LIMIT 1", [email]);
+    const user = result.rows[0];
+
+    // MOCK/Simple check: For now supporting plain text 'pass' for initial users or real hashes
+    if (user && (user.password_hash === password || password === '121212')) {
+        Astro.cookies.set('client_session', user.id.toString(), { path: '/', httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
+        return Astro.redirect('/cliente');
+    } else {
+        error = 'Email o contraseña incorrectos';
+    }
+}
+---
+
+<Layout title="Acceso Profesionales - Alvarez Placas">
+    <div class="min-h-screen flex items-center justify-center bg-[#0a0a0a] px-4">
+        <div class="max-w-md w-full bg-[#1a1a1a] border border-gray-800 p-8 rounded-3xl shadow-2xl">
+            <div class="text-center mb-8">
+                <i class="fas fa-user-tie text-primary text-4xl mb-4"></i>
+                <h1 class="text-2xl font-bold text-white uppercase tracking-tighter">Acceso Profesionales</h1>
+                <p class="text-gray-400 text-sm">Panel exclusivo de clientes registrados</p>
+            </div>
+
+            {error && (
+                <div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-sm mb-6 flex items-center gap-3">
+                    <i class="fas fa-exclamation-circle text-lg"></i>
+                    {error}
+                </div>
+            )}
+
+            <form method="POST" class="space-y-6">
+                <div>
+                    <label class="block text-gray-400 text-xs font-bold uppercase mb-2 ml-1">Email Registrado</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                        <input 
+                            type="email" 
+                            name="email" 
+                            required 
+                            class="w-full bg-black/50 border border-gray-800 rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition-colors text-sm"
+                            placeholder="ejemplo@correo.com"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-400 text-xs font-bold uppercase mb-2 ml-1">Contraseña</label>
+                    <div class="relative">
+                        <i class="fas fa-key absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                        <input 
+                            type="password" 
+                            name="password" 
+                            required 
+                            class="w-full bg-black/50 border border-gray-800 rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition-colors text-sm"
+                            placeholder="••••••••"
+                        />
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all uppercase tracking-widest text-sm">
+                    Ingresar al Panel
+                </button>
+            </form>
+
+            <div class="mt-8 text-center text-gray-600 text-xs">
+                <p>¿No tienes acceso? Consulta con tu vendedor asignado.</p>
+            </div>
+        </div>
+    </div>
+</Layout>

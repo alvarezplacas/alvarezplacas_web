@@ -1,7 +1,7 @@
 ---
 import CatalogItem from '../components/CatalogItem.astro';
 import CatalogFilters from '../components/CatalogFilters.astro';
-import catalogData from '../../../../biblioteca/master_catalog.json';
+import catalogData from '../../../data/biblioteca/master_catalog.json';
 
 // Preparar marcas y categorías para filtros
 const marcasRaw = [...new Set(catalogData.map((item) => item.brand))].filter(m => m && m !== "Sin Marca" && m !== "Generico");
