@@ -8,7 +8,9 @@ if (Astro.request.method === 'POST') {
     const user = data.get('user');
     const pass = data.get('password');
 
-    if (user === 'alvarezjavierh@gmail.com' && pass === 'Tecno121212') {
+    const isAdmin = (user === 'alvarezjavierh@gmail.com' || user === 'Javier' || user === 'javier') && pass === 'Tecno121212';
+
+    if (isAdmin) {
         Astro.cookies.set('admin_session', 'authenticated_javier', { path: '/', httpOnly: true });
         return Astro.redirect('/admin');
     } else {
