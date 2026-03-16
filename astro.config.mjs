@@ -12,6 +12,10 @@ export default defineConfig({
   security: {
     checkOrigin: false
   },
+  server: {
+    host: '0.0.0.0',
+    allowedHosts: ['alvarezplacas.com.ar', 'www.alvarezplacas.com.ar']
+  },
   vite: {
     plugins: [tailwindcss()]
   }
