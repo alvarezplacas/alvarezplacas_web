@@ -1,4 +1,8 @@
 import pg from 'pg';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const { Pool } = pg;
 
@@ -6,10 +10,17 @@ const { Pool } = pg;
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Configuración de conexión
-// En el VPS usaremos la variable DATABASE_URL o campos individuales
+const connectionString = process.env.DATABASE_URL || 'postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas';
+
+console.log(`[Database] Connecting to: ${connectionString.split('@')[1]}`);
+
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas',
+    connectionString,
     ssl: false
+});
+
+pool.on('error', (err) => {
+    console.error('[Database] Unexpected error on idle client', err);
 });
 
 export const query = async (text, params) => {
