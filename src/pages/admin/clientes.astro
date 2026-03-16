@@ -1,13 +1,35 @@
 ---
 import AdminLayout from '@layouts/AdminLayout.astro';
+import { query } from '@lib/db.js';
 
-// Mock data para clientes y sus puntos
-const clientes = [
-    { id: 1, nombre: "Ejemplo de Cliente S.A.", contacto: "1123456789", pedidos: 45, puntos: 12, estado: "Activo", fin_status: "clean", debt_amount: 0 },
-    { id: 2, nombre: "Martín Decoraciones", contacto: "1198765432", pedidos: 12, puntos: 3, estado: "Activo", fin_status: "partial", debt_amount: 25000, due_date: '2026-04-15' },
-    { id: 3, nombre: "Estudio Arquitectura Sur", contacto: "1145678901", pedidos: 3, puntos: 0, estado: "Riesgo Vencimiento", fin_status: "debt", debt_amount: 150000, due_date: '2026-03-20' },
-    { id: 4, nombre: "Juan Perez (Independiente)", contacto: "1156789012", pedidos: 0, puntos: 0, estado: "Inactivo", fin_status: "clean", debt_amount: 0 },
-];
+// Fetch real clients from DB
+let clientes = [];
+let totalClientes = 0;
+let puntosEmitidos = 0;
+
+try {
+    const res = await query(`
+        SELECT 
+            u.id, u.full_name as nombre, u.phone as contacto, u.email, u.address as direccion,
+            u.points as puntos, u.is_club_member,
+            (SELECT COUNT(*) FROM orders o WHERE o.client_id = u.id) as pedidos_count
+        FROM users u 
+        WHERE u.role = 'client' 
+        ORDER BY u.created_at DESC
+    `);
+    clientes = res.rows.map(row => ({
+        ...row,
+        pedidos: parseInt(row.pedidos_count || '0'),
+        estado: row.is_club_member ? "Activo" : "Inactivo",
+        fin_status: "clean", // Placeholder for now
+        debt_amount: 0
+    }));
+    
+    totalClientes = clientes.length;
+    puntosEmitidos = clientes.reduce((acc, c) => acc + (c.puntos || 0), 0);
+} catch (e) {
+    console.error("Error loading clients:", e.message);
+}
 ---
 
 <AdminLayout title="Gestión de Clientes">
@@ -32,7 +54,7 @@ const clientes = [
             </div>
             <div>
                 <p class="text-gray-400 text-sm font-semibold">Total Registrados</p>
-                <h3 class="text-2xl font-bold text-white">892</h3>
+                <h3 class="text-2xl font-bold text-white">{totalClientes}</h3>
             </div>
         </div>
         <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 flex items-center gap-4">
@@ -41,7 +63,7 @@ const clientes = [
             </div>
             <div>
                 <p class="text-gray-400 text-sm font-semibold">Puntos Emitidos</p>
-                <h3 class="text-2xl font-bold text-white">1,450</h3>
+                <h3 class="text-2xl font-bold text-white">{puntosEmitidos.toLocaleString()}</h3>
             </div>
         </div>
         <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 flex items-center gap-4">
@@ -50,7 +72,7 @@ const clientes = [
             </div>
             <div>
                 <p class="text-gray-400 text-sm font-semibold">Para dar de baja (< 90 días)</p>
-                <h3 class="text-2xl font-bold text-white">45</h3>
+                <h3 class="text-2xl font-bold text-white">0</h3>
             </div>
         </div>
     </div>
