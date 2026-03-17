@@ -1,16 +1,12 @@
 import pg from 'pg';
-import dotenv from 'dotenv';
-
-// Load environment variables from .env file
-dotenv.config();
 
 const { Pool } = pg;
 
-// Cargamos variables de entorno si están disponibles
-const isProduction = process.env.NODE_ENV === 'production';
+// Cargamos variables de entorno usando el estándar de Astro
+const isProduction = import.meta.env.PROD;
 
-// Configuración de conexión
-const connectionString = process.env.DATABASE_URL || 'postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas';
+// Configuración de conexión (Astro inyecta .env automáticamente en import.meta.env)
+const connectionString = import.meta.env.DATABASE_URL || 'postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas';
 
 console.log(`[Database] Connecting to: ${connectionString.split('@')[1]}`);
 

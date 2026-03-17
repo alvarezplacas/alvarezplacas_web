@@ -17,6 +17,9 @@ export default defineConfig({
     allowedHosts: ['alvarezplacas.com.ar', 'www.alvarezplacas.com.ar']
   },
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    ssr: {
+      external: ['pg']
+    }
   }
 });

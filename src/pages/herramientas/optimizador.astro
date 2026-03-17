@@ -13,17 +13,157 @@ import Header from '../../components/Header.astro';
             <h1 class="text-4xl font-extrabold text-white tracking-tight uppercase mb-4">Optimizador de <span class="text-blue-500 italic">Corte</span></h1>
             <p class="text-gray-400 text-lg mb-10 max-w-2xl mx-auto">Esta herramienta te permite optimizar tus cortes de placa automáticamente. Estamos migrando el motor de cálculo a la nueva arquitectura.</p>
             
-            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 mb-8">
-                <div class="flex flex-col items-center gap-4 text-amber-400 mb-6 font-bold uppercase tracking-widest text-xs">
-                    <i class="fas fa-tools text-2xl"></i>
-                    <span>Módulo en mantenimiento</span>
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-3xl p-4 sm:p-8 mb-8 text-left">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-list-ol text-blue-500"></i>
+                            Lista de Piezas
+                        </h2>
+                        <p class="text-gray-500 text-sm">Carga las piezas para exportar a Lepton Optimizer</p>
+                    </div>
+                    <button id="exportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 active:scale-95">
+                        <i class="fas fa-file-export"></i>
+                        Exportar para Lepton
+                    </button>
                 </div>
-                <p class="text-sm text-gray-500 mb-8">Para realizar pedidos de cortes hoy, por favor contactate con nuestros vendedores mediante WhatsApp o personalmente en nuestro local en Villa Tesei.</p>
-                <a href="/" class="inline-flex items-center gap-2 text-primary font-bold hover:underline transition-all">
-                    <i class="fas fa-arrow-left"></i>
-                    Volver al Catálogo
-                </a>
+
+                <div class="overflow-x-auto -mx-4 sm:mx-0">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="text-gray-500 text-[10px] uppercase tracking-widest border-b border-gray-800">
+                                <th class="py-4 px-2">Cant</th>
+                                <th class="py-4 px-2">Detalle (Nombre)</th>
+                                <th class="py-4 px-2">Base (mm)</th>
+                                <th class="py-4 px-2">Altura (mm)</th>
+                                <th class="py-4 px-2">Material</th>
+                                <th class="py-4 px-2">Veta</th>
+                                <th class="py-4 px-2 text-center" colspan="4">Tapacantos (S/N)</th>
+                                <th class="py-4 px-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="pieceTableBody">
+                            <!-- Rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <button id="addRowBtn" class="mt-6 w-full py-4 border-2 border-dashed border-gray-800 text-gray-500 rounded-2xl hover:border-blue-500/50 hover:text-blue-500 transition-all flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-xs">
+                    <i class="fas fa-plus-circle"></i>
+                    Agregar Pieza
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                <div class="bg-blue-500/5 border border-blue-500/20 p-6 rounded-2xl">
+                    <h3 class="text-blue-500 font-bold mb-2 flex items-center gap-2">
+                        <i class="fas fa-info-circle"></i>
+                        Instrucciones
+                    </h3>
+                    <ul class="text-gray-400 text-sm space-y-2">
+                        <li>• Las medidas deben ser expresadas en milímetros.</li>
+                        <li>• Indica con "1" o "S" si lleva tapacanto en ese lado.</li>
+                        <li>• El archivo exportado es un CSV compatible con Lepton.</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-800/20 border border-gray-800 p-6 rounded-2xl">
+                    <h3 class="text-gray-300 font-bold mb-2 flex items-center gap-2">
+                        <i class="fas fa-file-import"></i>
+                        ¿Cómo importar en Lepton?
+                    </h3>
+                    <p class="text-gray-500 text-sm">En Lepton Optimus: Archivo > Importar > Importar JSON/Excel y selecciona el archivo descargado.</p>
+                </div>
             </div>
         </div>
     </main>
+
+    <script is:inline>
+        let pieces = [
+            { id: Date.now(), cant: 1, detail: 'Lateral Izq', base: 700, height: 400, material: 'Blanco 18mm', veta: 0, t1: 1, t2: 1, t3: 0, t4: 0 }
+        ];
+
+        function renderTable() {
+            const tbody = document.getElementById('pieceTableBody');
+            tbody.innerHTML = pieces.map(p => `
+                <tr class="border-b border-gray-800/50 group hover:bg-white/5 transition-colors">
+                    <td class="py-3 px-2">
+                        <input type="number" value="${p.cant}" onchange="updatePiece(${p.id}, 'cant', this.value)" class="w-16 bg-[#222] border border-gray-700 rounded-lg px-2 py-1 text-white focus:border-blue-500 outline-none">
+                    </td>
+                    <td class="py-3 px-2">
+                        <input type="text" value="${p.detail}" onchange="updatePiece(${p.id}, 'detail', this.value)" class="w-full bg-[#222] border border-gray-700 rounded-lg px-2 py-1 text-white focus:border-blue-500 outline-none">
+                    </td>
+                    <td class="py-3 px-2">
+                        <input type="number" value="${p.base}" onchange="updatePiece(${p.id}, 'base', this.value)" class="w-20 bg-[#222] border border-gray-700 rounded-lg px-2 py-1 text-white focus:border-blue-500 outline-none">
+                    </td>
+                    <td class="py-3 px-2">
+                        <input type="number" value="${p.height}" onchange="updatePiece(${p.id}, 'height', this.value)" class="w-20 bg-[#222] border border-gray-700 rounded-lg px-2 py-1 text-white focus:border-blue-500 outline-none">
+                    </td>
+                    <td class="py-3 px-2">
+                        <input type="text" value="${p.material}" onchange="updatePiece(${p.id}, 'material', this.value)" class="w-32 bg-[#222] border border-gray-700 rounded-lg px-2 py-1 text-white focus:border-blue-500 outline-none">
+                    </td>
+                    <td class="py-3 px-2">
+                        <select onchange="updatePiece(${p.id}, 'veta', this.value)" class="bg-[#222] border border-gray-700 rounded-lg px-1 py-1 text-white text-xs outline-none">
+                            <option value="0" ${p.veta == 0 ? 'selected' : ''}>No</option>
+                            <option value="1" ${p.veta == 1 ? 'selected' : ''}>Sí</option>
+                        </select>
+                    </td>
+                    <td class="py-3 px-1 text-center font-mono text-[10px]">
+                        <input type="checkbox" ${p.t1 ? 'checked' : ''} onchange="updatePiece(${p.id}, 't1', this.checked ? 1 : 0)" title="Arriba">
+                    </td>
+                    <td class="py-3 px-1 text-center font-mono text-[10px]">
+                        <input type="checkbox" ${p.t2 ? 'checked' : ''} onchange="updatePiece(${p.id}, 't2', this.checked ? 1 : 0)" title="Abajo">
+                    </td>
+                    <td class="py-3 px-1 text-center font-mono text-[10px]">
+                        <input type="checkbox" ${p.t3 ? 'checked' : ''} onchange="updatePiece(${p.id}, 't3', this.checked ? 1 : 0)" title="Der">
+                    </td>
+                    <td class="py-3 px-1 text-center font-mono text-[10px]">
+                        <input type="checkbox" ${p.t4 ? 'checked' : ''} onchange="updatePiece(${p.id}, 't4', this.checked ? 1 : 0)" title="Izq">
+                    </td>
+                    <td class="py-3 px-2 text-right">
+                        <button onclick="removePiece(${p.id})" class="text-gray-600 hover:text-red-500 transition-colors p-2">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.updatePiece = function(id, field, value) {
+            const index = pieces.findIndex(p => p.id === id);
+            if (index !== -1) {
+                pieces[index][field] = value;
+            }
+        }
+
+        window.removePiece = function(id) {
+            pieces = pieces.filter(p => p.id !== id);
+            renderTable();
+        }
+
+        document.getElementById('addRowBtn').addEventListener('click', () => {
+            pieces.push({ id: Date.now(), cant: 1, detail: 'Nueva Pieza', base: 0, height: 0, material: 'Blanco 18mm', veta: 0, t1: 0, t2: 0, t3: 0, t4: 0 });
+            renderTable();
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            // Mapping to Lepton format: Cant;Base;Altura;Detalle;Material;Rota;T1;T2;T3;T4
+            const header = "Cant;Base;Altura;Detalle;Material;Rota;T1;T2;T3;T4\n";
+            const rows = pieces.map(p => 
+                `${p.cant};${p.base};${p.height};${p.detail};${p.material};${p.veta};${p.t1};${p.t2};${p.t3};${p.t4}`
+            ).join("\n");
+            
+            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `pedido_alvarezplacas_${Date.now()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        renderTable();
+    </script>
 </Layout>
+

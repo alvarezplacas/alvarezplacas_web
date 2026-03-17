@@ -19,7 +19,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // 2. Generate Client Number (ALV-XXXX)
-        const lastClient: any = await query("SELECT client_number FROM users WHERE client_number LIKE 'ALV-%' ORDER BY id DESC LIMIT 1");
+        const lastClient: any = await query("SELECT client_number FROM \"Clientes\" WHERE client_number LIKE 'ALV-%' ORDER BY id DESC LIMIT 1");
         let nextNumber = 1;
         if (lastClient.rows && lastClient.rows.length > 0) {
             const lastNum = parseInt(lastClient.rows[0].client_number.split('-')[1]);
@@ -28,30 +28,27 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         const clientNumber = `ALV-${nextNumber.toString().padStart(4, '0')}`;
 
         // 3. Assign Seller (The one with fewer clients)
-        const sellers = await query("SELECT id FROM users WHERE role = 'seller' ORDER BY id ASC");
         let assignedSellerId = null;
-        if (sellers.rows.length > 0) {
-            // Basic assignment: Random or round-robin if we don't have a complex metric yet
-            // Based on user request: "se le asigna el que menos venta tiene" (assuming fewer clients for now)
-            const sellerStats: any = await query(`
-                SELECT u.id, COUNT(c.id) as client_count 
-                FROM users u 
-                LEFT JOIN users c ON c.assigned_seller_id = u.id 
-                WHERE u.role = 'seller' 
-                GROUP BY u.id 
-                ORDER BY client_count ASC 
-                LIMIT 1
-            `);
-            assignedSellerId = sellerStats.rows[0]?.id;
+        const sellerStats: any = await query(`
+            SELECT v.id, COUNT(c.id) as client_count 
+            FROM "Vendedores" v 
+            LEFT JOIN "Clientes" c ON c.vendedor_asignado = v.id 
+            GROUP BY v.id 
+            ORDER BY client_count ASC 
+            LIMIT 1
+        `);
+        
+        if (sellerStats.rows.length > 0) {
+            assignedSellerId = sellerStats.rows[0].id;
         }
 
-        // 4. Insert User
+        // 4. Insert into new "Clientes" table
         await query(`
-            INSERT INTO users (
-                email, password_hash, role, full_name, phone, address, 
-                client_number, is_club_member, assigned_seller_id, points
-            ) VALUES ($1, $2, 'client', $3, $4, $5, $6, TRUE, $7, 1)
-        `, [email, hashedPassword, name, phone, address, clientNumber, assignedSellerId]);
+            INSERT INTO "Clientes" (
+                nombre_empresa, whatsapp, direccion, email, 
+                password_hash, client_number, vendedor_asignado, puntaje, status
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 'published')
+        `, [name, phone, address, email, hashedPassword, clientNumber, assignedSellerId]);
 
         // Redirect to success / login
         return redirect('/login?registered=true');

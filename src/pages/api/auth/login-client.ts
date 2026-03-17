@@ -12,13 +12,21 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     }
 
     try {
-        const result: any = await query("SELECT id, password_hash, role FROM users WHERE email = $1", [email]);
+        // 1. Check in new "Clientes" table first
+        const clienteResult: any = await query("SELECT id, password_hash, 'client' as role FROM \"Clientes\" WHERE email = $1", [email]);
         
-        if (result.rows.length === 0) {
-            return new Response('Usuario no encontrado', { status: 404 });
+        let user;
+        if (clienteResult.rows.length > 0) {
+            user = clienteResult.rows[0];
+        } else {
+            // 2. Fallback to legacy "users" table
+            const legacyResult: any = await query("SELECT id, password_hash, role FROM users WHERE email = $1", [email]);
+            if (legacyResult.rows.length === 0) {
+                return new Response('Usuario no encontrado', { status: 404 });
+            }
+            user = legacyResult.rows[0];
         }
 
-        const user = result.rows[0];
         const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
         if (!isPasswordValid) {
