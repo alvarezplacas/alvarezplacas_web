@@ -217,8 +217,7 @@ const adminUser = {
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
-                document.cookie = "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                window.location.href = '/admin/login';
+                window.location.href = '/api/auth/logout';
             });
         }
 

@@ -53,7 +53,16 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         // Redirect to success / login
         return redirect('/login?registered=true');
     } catch (e: any) {
-        console.error(e);
-        return new Response('Error en el registro: ' + e.message, { status: 500 });
+        console.error('Registration Error:', e);
+        
+        // PostgreSQL "Unique Violation" error code
+        if (e.code === '23505') {
+            return new Response('Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.', { 
+                status: 400,
+                statusText: 'Email Already Registered'
+            });
+        }
+
+        return new Response('Error en el registro: ' + (e.message || 'Error desconocido'), { status: 500 });
     }
 };
