@@ -50,19 +50,29 @@ export const POST: APIRoute = async ({ request, redirect }) => {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 'published')
         `, [name, phone, address, email, hashedPassword, clientNumber, assignedSellerId]);
 
-        // Redirect to success / login
-        return redirect('/login?registered=true');
+        // Return JSON for AJAX requests
+        return new Response(JSON.stringify({ 
+            success: true, 
+            message: 'Registro exitoso. Redirigiendo...' 
+        }), { status: 200 });
+
     } catch (e: any) {
         console.error('Registration Error:', e);
         
-        // PostgreSQL "Unique Violation" error code
+        let message = 'Error en el registro: ' + (e.message || 'Error desconocido');
+        let status = 500;
+
         if (e.code === '23505') {
-            return new Response('Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.', { 
-                status: 400,
-                statusText: 'Email Already Registered'
-            });
+            message = 'Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.';
+            status = 400;
         }
 
-        return new Response('Error en el registro: ' + (e.message || 'Error desconocido'), { status: 500 });
+        return new Response(JSON.stringify({ 
+            success: false, 
+            message: message 
+        }), { 
+            status: status,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 };
