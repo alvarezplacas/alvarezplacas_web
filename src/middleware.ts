@@ -24,6 +24,7 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     const isAdminLogin = context.url.pathname === '/admin/login';
     const isClient = context.url.pathname.startsWith('/cliente');
     const isClientLogin = context.url.pathname === '/cliente/login';
+    const isClientRegister = context.url.pathname === '/cliente/registro';
     const isSeller = context.url.pathname.startsWith('/vendedor');
     const isSellerLogin = context.url.pathname === '/vendedor/login';
 
@@ -36,7 +37,7 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     }
 
     // Client Protection
-    if (isClient && !isClientLogin) {
+    if (isClient && !isClientLogin && !isClientRegister) {
         const session = context.cookies.get('client_session');
         if (!session) {
             return context.redirect('/cliente/login');
