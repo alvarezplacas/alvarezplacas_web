@@ -21,7 +21,7 @@ const whatsappMessage = `Hola, quiero consultar por el producto:\n*${placa.name}
   class="group bg-[#151515] rounded-2xl overflow-hidden border border-gray-800 hover:border-primary/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(180,155,110,0.15)] flex flex-col h-full catalog-item"
   data-category={placa.category}
   data-brand={placa.brand}
-  data-search={`${placa.name} ${placa.code} ${placa.brand} ${placa.category}`.toLowerCase()}
+  data-search={`${placa.name} ${placa.code} ${placa.brand} ${placa.category} ${placa.tags?.join(' ') || ''}`.toLowerCase()}
   data-full={JSON.stringify(placa)}
 >
   <!-- Imagen o Icono -->
