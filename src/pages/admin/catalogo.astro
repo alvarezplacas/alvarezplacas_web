@@ -1,9 +1,67 @@
 ---
 import AdminLayout from '@layouts/AdminLayout.astro';
-import catalogData from '@data/biblioteca/master_catalog.json';
+import { query } from '@lib/db.js';
 
-// Tomamos algunas placas para la vista previa en la tabla paginada
-const previewPlacas = catalogData.slice(0, 8);
+let previewPlacas = [];
+let totalPlacas = 0;
+
+try {
+  const countRes = await query("SELECT count(*) as total FROM productos p JOIN variantes_sku v ON p.id = v.producto_id WHERE p.status = 'published'");
+  totalPlacas = countRes.rows[0]?.total || 0;
+
+  const catalogRes = await query(`
+    SELECT
+      p.id,
+      p.nombre as name,
+      m.nombre as brand,
+      c.nombre as category,
+      v.especificacion,
+      v.acabado,
+      v.precio_efectivo,
+      v.codigo_proveedor as code,
+      p.imagen_cover as imagen
+    FROM productos p
+    LEFT JOIN marcas m ON p.marca_id = m.id
+    LEFT JOIN categorias c ON p.categoria_id = c.id
+    LEFT JOIN variantes_sku v ON p.id = v.producto_id
+    WHERE p.status = 'published'
+    ORDER BY p.nombre ASC
+    LIMIT 8
+  `);
+
+  previewPlacas = catalogRes.rows.map(row => {
+    // Determine image URL
+    let imageUrl = null;
+    if (row.imagen) {
+      if (row.imagen.includes('/images/')) {
+        imageUrl = row.imagen;
+      } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.imagen)) {
+        imageUrl = `https://admin.alvarezplacas.com.ar/assets/${row.imagen}`;
+      } else {
+        imageUrl = row.imagen;
+      }
+    }
+
+    let priceFormatted = "0.00";
+    if (row.precio_efectivo) {
+       const p = parseFloat(row.precio_efectivo);
+       if (!isNaN(p)) {
+         priceFormatted = p.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+       }
+    }
+
+    return {
+      name: row.name,
+      code: row.code || \`ID-\${row.id}\`,
+      brand: row.brand || "Generico",
+      specs: [row.especificacion, row.acabado].filter(Boolean),
+      price: priceFormatted,
+      imagen: imageUrl || '/images/placeholder.jpg'
+    };
+  });
+} catch (e) {
+  console.error("Error fetching admin catalog preview:", e);
+}
 ---
 
 <AdminLayout title="Gestión de Catálogo">
@@ -108,7 +166,7 @@ const previewPlacas = catalogData.slice(0, 8);
         
         <!-- Paginación -->
         <div class="p-4 border-t border-gray-800 flex items-center justify-between text-sm text-gray-400">
-            <p>Mostrando <span class="text-white font-medium">1</span> a <span class="text-white font-medium">8</span> de <span class="text-white font-medium">{placasData.length}</span> placas</p>
+            <p>Mostrando <span class="text-white font-medium">1</span> a <span class="text-white font-medium">{previewPlacas.length}</span> de <span class="text-white font-medium">{totalPlacas}</span> placas</p>
             <div class="flex gap-1">
                 <button class="px-3 py-1 bg-black/50 border border-gray-700 rounded hover:bg-gray-800 text-gray-500 cursor-not-allowed">Anterior</button>
                 <button class="px-3 py-1 bg-primary border border-primary rounded text-white font-medium">1</button>
@@ -241,10 +299,11 @@ const previewPlacas = catalogData.slice(0, 8);
             });
         }
 
-        function handleFileSelection(file: File) {
+        let selectedFile = null;
+
+        function handleFileSelection(file) {
             if(!dropzone || !processBtn) return;
-            // Solo logica visual para el Frontend. 
-            // En un futuro se parsearía con SheetJS (xlsx)
+            selectedFile = file;
             
             dropzone.innerHTML = `
                 <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
@@ -257,6 +316,40 @@ const previewPlacas = catalogData.slice(0, 8);
             processBtn.disabled = false;
             processBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             processBtn.classList.add('shadow-[0_0_15px_rgba(255,40,0,0.5)]');
+        }
+
+        if(processBtn) {
+            processBtn.addEventListener('click', async () => {
+                if(!selectedFile) return;
+
+                processBtn.disabled = true;
+                processBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
+
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                try {
+                    const res = await fetch('/api/admin/upload-catalog', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if(res.ok) {
+                        alert(`¡Catálogo actualizado con éxito!\nProductos procesados: ${data.processed || 0}`);
+                        window.location.reload();
+                    } else {
+                        alert(`Error al procesar el catálogo: ${data.error || 'Desconocido'}`);
+                    }
+                } catch (error) {
+                    console.error('Upload Error:', error);
+                    alert('Error técnico al comunicarse con el servidor.');
+                } finally {
+                    processBtn.disabled = false;
+                    processBtn.innerHTML = 'Procesar Archivo';
+                }
+            });
         }
     });
 </script>

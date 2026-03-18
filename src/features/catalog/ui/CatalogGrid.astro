@@ -1,11 +1,75 @@
 ---
 import CatalogItem from '../components/CatalogItem.astro';
 import CatalogFilters from '../components/CatalogFilters.astro';
-import catalogData from '../../../data/biblioteca/master_catalog.json';
+import { query } from '../../../lib/db.js';
+
+let initialItems = [];
+try {
+  const catalogRes = await query(`
+    SELECT
+      p.id,
+      p.nombre as name,
+      m.nombre as brand,
+      c.nombre as category,
+      v.especificacion as specs_0,
+      v.acabado as specs_1,
+      v.precio_efectivo,
+      v.codigo_proveedor as code,
+      p.imagen_cover as imagen,
+      p.tags
+    FROM productos p
+    LEFT JOIN marcas m ON p.marca_id = m.id
+    LEFT JOIN categorias c ON p.categoria_id = c.id
+    LEFT JOIN variantes_sku v ON p.id = v.producto_id
+    WHERE p.status = 'published'
+    ORDER BY p.nombre ASC
+  `);
+
+  initialItems = catalogRes.rows.map(row => {
+    // Determine image URL
+    let imageUrl = null;
+    let localMatch = false;
+    if (row.imagen) {
+      if (row.imagen.includes('/images/')) {
+        imageUrl = row.imagen;
+        localMatch = true;
+      } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.imagen)) {
+        imageUrl = `https://admin.alvarezplacas.com.ar/assets/${row.imagen}`;
+        localMatch = true;
+      } else {
+        imageUrl = row.imagen;
+      }
+    }
+
+    // Format price
+    let priceFormatted = "Consultar";
+    if (row.precio_efectivo) {
+       const p = parseFloat(row.precio_efectivo);
+       if (!isNaN(p)) {
+         priceFormatted = `$${p.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+       }
+    }
+
+    return {
+      original: row.name,
+      brand: row.brand || "Generico",
+      category: row.category || "OTROS",
+      name: row.name,
+      specs: [row.specs_0, row.specs_1].filter(Boolean),
+      price: priceFormatted,
+      code: row.code || `ID-${row.id}`,
+      imagen: imageUrl,
+      localMatch: localMatch,
+      status: "Directus"
+    };
+  });
+} catch (e) {
+  console.error("Error fetching catalog from DB:", e);
+}
 
 // Preparar marcas y categorías para filtros
-const marcasRaw = [...new Set(catalogData.map((item) => item.brand))].filter(m => m && m !== "Sin Marca" && m !== "Generico");
-const categoriasRaw = [...new Set(catalogData.map((item) => item.category))].filter(c => c);
+const marcasRaw = [...new Set(initialItems.map((item) => item.brand))].filter(m => m && m !== "Sin Marca" && m !== "Generico");
+const categoriasRaw = [...new Set(initialItems.map((item) => item.category))].filter(c => c);
 
 const marcas = ["Todos", ...marcasRaw.sort()];
 const categorias = ["Todas", ...categoriasRaw.sort()];
@@ -13,15 +77,12 @@ const categorias = ["Todas", ...categoriasRaw.sort()];
 // Construir mapa de Marcas por Categoría
 const brandsByCategory = {};
 categoriasRaw.forEach(cat => {
-  brandsByCategory[cat] = [...new Set(catalogData.filter(i => i.category === cat).map(i => i.brand))].filter(b => b && b !== "Sin Marca" && b !== "Generico").sort();
+  brandsByCategory[cat] = [...new Set(initialItems.filter(i => i.category === cat).map(i => i.brand))].filter(b => b && b !== "Sin Marca" && b !== "Generico").sort();
 });
 brandsByCategory["Todas"] = marcasRaw.sort();
 
-// Limitar renderizado inicial por performance
-const initialItems = catalogData;
 
 // Obtener ajustes de precios
-import { query } from '../../../lib/db.js';
 let showPrices = true;
 const settingsRes = await query("SELECT value FROM site_settings WHERE key = 'show_prices'");
 const rows = (settingsRes?.rows || []) as any[];
