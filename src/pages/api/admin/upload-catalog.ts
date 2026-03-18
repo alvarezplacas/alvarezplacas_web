@@ -33,6 +33,9 @@ export const POST: APIRoute = async ({ request }) => {
             const espesor = row['Espesor'] || row['espesor'] || '18mm';
 
             if(!nombre) continue;
+            
+            // Excluir Madergold (Proveedor, no marca de producto)
+            if (marca.toLowerCase().includes('madergold')) continue;
 
             // 1. Manejo de Marca
             let marcaId = null;
@@ -59,8 +62,8 @@ export const POST: APIRoute = async ({ request }) => {
             try {
                 // Primero buscamos por nombre exacto en directus_files
                 const resImg = await query("SELECT id FROM directus_files WHERE filename_download ILIKE $1 OR title ILIKE $1 LIMIT 1", [`%${nombre}%`]);
-                if (resImg.rows.length > 0) {
-                    imagenCover = resImg.rows[0].id;
+                if (resImg.rows && resImg.rows.length > 0) {
+                    imagenCover = (resImg.rows as any[])[0].id;
                 } else {
                     // Intento de búsqueda por estructura de carpetas (Simplificado: busca por nombre en cualquier carpeta)
                     // En el futuro se puede filtrar por folder_id si se mapean las carpetas de Directus
