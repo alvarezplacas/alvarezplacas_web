@@ -183,6 +183,8 @@
     </div>
 </div>
 
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
     import { currentSheetItems, addPiece, removePiece, sheetConfig, updateSheetConfig, finalizeSheet, allSheets, getLeptonExport, getVisualSummary, assignSeller } from '@features/budget/budgetStore.js';
 
@@ -371,10 +373,7 @@
 
     window.removeSmartPiece = (id) => removePiece(id);
 
-    // PDF EXPORT TOOL
-    import { jsPDF } from 'jspdf';
-    import autoTable from 'jspdf-autotable';
-
+    // PDF EXPORT TOOL (Using window globals from CDN loaded below)
     document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
         const sheets = allSheets.get();
         const current = currentSheetItems.get();
@@ -387,7 +386,7 @@
 
         if (allData.length === 0) return alert('Cargue piezas antes de exportar.');
 
-        const doc = new jsPDF();
+        const doc = new window.jspdf.jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
 
         // Header
@@ -418,7 +417,7 @@
                 `${item.edges.top > 0 ? 'S' : ''}${item.edges.bottom > 0 ? 'I' : ''}${item.edges.left > 0 ? 'Iz' : ''}${item.edges.right > 0 ? 'D' : ''}` || '-'
             ]);
 
-            autoTable(doc, {
+            doc.autoTable({
                 startY: yPos,
                 head: [['Identificador', 'Medidas (mm)', 'Cant.', 'Tapacantos']],
                 body: tableData,
