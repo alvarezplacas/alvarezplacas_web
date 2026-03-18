@@ -1,28 +1,176 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
+
+// Strict session check
+const userCookie = Astro.cookies.get('client_session')?.value;
+if (!userCookie) {
+    return Astro.redirect('/login');
+}
 ---
 
 <Layout title="Calculadora Cúbica | Alvarez Placas">
     <Header />
-    <main class="pt-24 min-h-screen bg-[#111111] px-4 sm:px-6">
-        <div class="max-w-4xl mx-auto text-center">
-            <div class="w-20 h-20 bg-green-500/10 text-green-500 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-green-500/20 shadow-xl shadow-green-500/5">
-                <i class="fas fa-calculator text-3xl"></i>
-            </div>
-            <h1 class="text-4xl font-extrabold text-white tracking-tight uppercase mb-4">Calculadora <span class="text-green-500 italic">Cúbica</span></h1>
-            <p class="text-gray-400 text-lg mb-10 max-w-2xl mx-auto">Calculá el stock necesario para tu próximo proyecto en segundos.</p>
-            
-            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 mb-8">
-                <div class="flex flex-col items-center gap-4 text-green-500 mb-6 font-bold uppercase tracking-widest text-xs">
-                    <i class="fas fa-hammer text-2xl"></i>
-                    <span>Obra en construcción</span>
+    <main class="pt-24 min-h-screen bg-[#111111] px-4 sm:px-6 mb-20">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4 border border-primary/20 shadow-xl">
+                    <i class="fas fa-cube text-2xl"></i>
                 </div>
-                <p class="text-sm text-gray-500 mb-8">Estamos ajustando los algoritmos de desperdicio y stock real para brindarte el cálculo más preciso del mercado.</p>
-                <a href="/catalogo" class="text-primary font-bold hover:underline transition-all">
-                    Explorar el Catálogo mientras tanto
-                </a>
+                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight uppercase mb-2">Calculadora <span class="text-primary italic">Cúbica</span></h1>
+                <p class="text-gray-400 text-sm sm:text-base max-w-2xl mx-auto">Estimá rápidamente cuántas placas necesitas para tu próximo mueble de diseño.</p>
             </div>
+            
+            <div class="bg-yellow-400 text-black px-6 py-4 rounded-xl shadow-[0_0_30px_rgba(250,204,21,0.2)] flex items-center justify-center gap-3 font-black uppercase tracking-widest text-sm sm:text-lg mb-10 mx-auto max-w-lg border-2 border-yellow-500">
+                <i class="fas fa-exclamation-triangle"></i>
+                Cálculo Aproximado
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Form Inputs -->
+                <div class="bg-[#1a1a1a] border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+                    <h2 class="text-xl font-black text-white uppercase mb-6 border-b border-gray-800 pb-4">
+                        <i class="fas fa-ruler-combined text-primary mr-2"></i> Medidas del Mueble
+                    </h2>
+
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Alto (mm)</label>
+                                <input type="number" id="calc-h" placeholder="Ej: 2000" class="w-full bg-[#0a0a0a] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-lg" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Ancho (mm)</label>
+                                <input type="number" id="calc-w" placeholder="Ej: 1800" class="w-full bg-[#0a0a0a] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-lg" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Profundidad (mm)</label>
+                            <input type="number" id="calc-d" placeholder="Ej: 600" class="w-full bg-[#0a0a0a] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-lg" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 pt-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Puertas</label>
+                                <div class="flex items-center bg-[#0a0a0a] border border-gray-800 rounded-xl overflow-hidden">
+                                    <button class="px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 transition-colors" onclick="adjVal('calc-doors', -1)"><i class="fas fa-minus"></i></button>
+                                    <input type="number" id="calc-doors" value="2" min="0" class="w-full bg-transparent text-center text-white font-bold outline-none text-lg pointer-events-none" readonly />
+                                    <button class="px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 transition-colors" onclick="adjVal('calc-doors', 1)"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Estantes</label>
+                                <div class="flex items-center bg-[#0a0a0a] border border-gray-800 rounded-xl overflow-hidden">
+                                    <button class="px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 transition-colors" onclick="adjVal('calc-shelves', -1)"><i class="fas fa-minus"></i></button>
+                                    <input type="number" id="calc-shelves" value="4" min="0" class="w-full bg-transparent text-center text-white font-bold outline-none text-lg pointer-events-none" readonly />
+                                    <button class="px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 transition-colors" onclick="adjVal('calc-shelves', 1)"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result Panel -->
+                <div class="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col justify-center relative overflow-hidden">
+                    <div class="absolute -top-32 -right-32 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none"></div>
+                    
+                    <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest text-center mb-8 relative z-10">Estimación de Material</h2>
+                    
+                    <div class="text-center space-y-8 relative z-10">
+                        <div>
+                            <p class="text-[10px] text-primary font-black uppercase tracking-widest mb-2">Placas Necesarias</p>
+                            <div class="flex items-baseline justify-center gap-2">
+                                <span class="text-7xl font-black text-white tracking-tighter" id="res-sheets">0</span>
+                                <span class="text-xl text-gray-500 font-bold uppercase">un.</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2 font-bold bg-white/5 py-1 px-3 rounded-full inline-block">Placa Estándar: 2.60 x 1.83 mts</p>
+                        </div>
+                        
+                        <div class="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent w-full"></div>
+                        
+                        <div>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Superficie Total Estimada</p>
+                            <div class="text-4xl font-black text-white">
+                                <span id="res-m2">0.00</span> <span class="text-primary text-2xl">m²</span>
+                            </div>
+                            <p class="text-[10px] text-gray-600 mt-2 font-bold tracking-wide">*Incluye 25% de desperdicio por cortes y refilado.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
         </div>
     </main>
 </Layout>
+
+<script is:inline>
+    // Spinner logic for buttons
+    window.adjVal = (id, delta) => {
+        const el = document.getElementById(id);
+        const val = Math.max(0, parseInt(el.value) + delta);
+        el.value = val;
+        calculateCubic();
+    };
+
+    // Auto calculate on type
+    const inputs = ['calc-h', 'calc-w', 'calc-d'];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', calculateCubic);
+    });
+
+    function calculateCubic() {
+        const h = parseInt(document.getElementById('calc-h').value) || 0;
+        const w = parseInt(document.getElementById('calc-w').value) || 0;
+        const d = parseInt(document.getElementById('calc-d').value) || 0;
+        const doors = parseInt(document.getElementById('calc-doors').value) || 0;
+        const shelves = parseInt(document.getElementById('calc-shelves').value) || 0;
+
+        if (h === 0 || w === 0 || d === 0) {
+            document.getElementById('res-sheets').innerText = '0';
+            document.getElementById('res-m2').innerText = '0.00';
+            return;
+        }
+
+        // Calculation Logic (in mm^2)
+        // Laterales: 2 un. * (Alto x Profundidad)
+        const areaLaterales = 2 * (h * d);
+        
+        // Base y Techo: 2 un. * (Ancho x Profundidad)
+        const areaBaseTecho = 2 * (w * d);
+        
+        // Puertas: Alto x Ancho (area total cubierta por las puertas en el frente estimativa)
+        const areaPuertas = doors > 0 ? (h * w) : 0;
+        
+        // Estantes: Cantidad * (Ancho interior aprox x Profundidad)
+        const innerW = w > 36 ? w - 36 : w;
+        const areaEstantes = shelves * (innerW * d);
+
+        const totalAreaMm2 = areaLaterales + areaBaseTecho + areaPuertas + areaEstantes;
+        
+        // Convert to square meters (m2)
+        const totalAreaM2 = totalAreaMm2 / 1000000;
+        
+        // Optimize factor: Add 25% waste/kerf
+        const totalWithWaste = totalAreaM2 * 1.25;
+
+        // Standard sheet area: 2.6m x 1.83m = 4.758 m2
+        const SHEET_AREA = 4.758;
+        
+        // Number of sheets needed
+        const totalSheets = Math.ceil(totalWithWaste / SHEET_AREA);
+
+        // Update UI
+        document.getElementById('res-sheets').innerText = totalSheets;
+        document.getElementById('res-m2').innerText = totalWithWaste.toFixed(2);
+    }
+</script>
+
+<style>
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+</style>

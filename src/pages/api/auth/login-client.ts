@@ -12,15 +12,15 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     }
 
     try {
-        // 1. Check in new "Clientes" table first
-        const clienteResult: any = await query("SELECT id, password_hash, 'client' as role FROM \"Clientes\" WHERE email = $1", [email]);
+        // 1. Check in new "Clientes" table first (Case-insensitive)
+        const clienteResult: any = await query("SELECT id, password_hash, 'client' as role FROM \"Clientes\" WHERE email ILIKE $1", [email]);
         
         let user;
         if (clienteResult.rows.length > 0) {
             user = clienteResult.rows[0];
         } else {
             // 2. Fallback to legacy "users" table
-            const legacyResult: any = await query("SELECT id, password_hash, role FROM users WHERE email = $1", [email]);
+            const legacyResult: any = await query("SELECT id, password_hash, role FROM users WHERE email ILIKE $1", [email]);
             if (legacyResult.rows.length === 0) {
                 return new Response('Usuario no encontrado', { status: 404 });
             }

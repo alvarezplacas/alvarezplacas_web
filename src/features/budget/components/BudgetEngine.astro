@@ -158,8 +158,12 @@
                     <i class="fas fa-layer-group"></i> AGREGAR PLACA NUEVA
                 </button>
 
+                <button id="btn-export-pdf" class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl border border-white/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg">
+                    <i class="fas fa-file-pdf"></i> GENERAR PDF CLIENTE
+                </button>
+
                 <button id="final-send-seller" class="w-full py-6 bg-primary text-black font-black rounded-2xl uppercase tracking-widest transition-all group shadow-[0_0_30px_rgba(255,40,0,0.3)] hover:scale-[1.02] active:scale-95">
-                    <i class="fas fa-paper-plane group-hover:translate-x-1 transition-transform"></i> ENVIAR PEDIDO
+                    <i class="fas fa-paper-plane group-hover:translate-x-1 transition-transform"></i> ENVIAR A ALVAREZ PLACAS
                 </button>
             </div>
             <p class="text-[10px] text-white/30 uppercase tracking-widest font-bold text-center">Revisa tus piezas arriba antes de enviar</p>
@@ -366,6 +370,86 @@
     }
 
     window.removeSmartPiece = (id) => removePiece(id);
+
+    // PDF EXPORT TOOL
+    import { jsPDF } from 'jspdf';
+    import autoTable from 'jspdf-autotable';
+
+    document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
+        const sheets = allSheets.get();
+        const current = currentSheetItems.get();
+        const currentConf = sheetConfig.get();
+        
+        const allData = [...sheets];
+        if (current.length > 0) {
+            allData.push({ config: currentConf, items: current });
+        }
+
+        if (allData.length === 0) return alert('Cargue piezas antes de exportar.');
+
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        // Header
+        doc.setFillColor(30, 30, 30);
+        doc.rect(0, 0, pageWidth, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('PRESUPUESTO DE MATERIALES', 15, 25);
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, pageWidth - 15, 25, { align: 'right' });
+
+        let yPos = 50;
+
+        allData.forEach((s, idx) => {
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`PLACA #${idx + 1}: ${s.config.brand} ${s.config.thickness}mm (${s.config.width}x${s.config.height}mm)`, 15, yPos);
+            yPos += 7;
+
+            const tableData = s.items.map(item => [
+                item.label || 'Pieza',
+                `${item.length} x ${item.width}`,
+                item.quantity,
+                `${item.edges.top > 0 ? 'S' : ''}${item.edges.bottom > 0 ? 'I' : ''}${item.edges.left > 0 ? 'Iz' : ''}${item.edges.right > 0 ? 'D' : ''}` || '-'
+            ]);
+
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Identificador', 'Medidas (mm)', 'Cant.', 'Tapacantos']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [255, 40, 0], textColor: [255, 255, 255] },
+                margin: { left: 15, right: 15 },
+                didDrawPage: (data) => {
+                    yPos = data.cursor.y + 15;
+                }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 15;
+            
+            // Si la siguiente placa no cabe, saltar página
+            if (yPos > doc.internal.pageSize.getHeight() - 40 && idx < allData.length - 1) {
+                doc.addPage();
+                yPos = 20;
+            }
+        });
+
+        // Footer Legend
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(9);
+            doc.setTextColor(150, 150, 150);
+            doc.text('Proveedor de los productos Alvarezplacas SRL', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+        }
+
+        doc.save(`Presupuesto_AlvarezPlacas_${new Date().getTime()}.pdf`);
+    });
 
     // EXPORT ACTIONS
     document.getElementById('final-send-seller')?.addEventListener('click', () => {

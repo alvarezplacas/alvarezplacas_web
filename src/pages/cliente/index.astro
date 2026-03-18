@@ -8,7 +8,7 @@ const { title = "Mi Cuenta | Alvarez Placas" } = Astro.props;
 // Strict session check
 const userCookie = Astro.cookies.get('client_session')?.value;
 if (!userCookie) {
-    return Astro.redirect('/cliente/login');
+    return Astro.redirect('/login');
 }
 
 const userId = parseInt(userCookie);
@@ -90,12 +90,12 @@ const pedidos = ordersResult.rows.map(p => ({
                     <i class="fas fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-all"></i>
                 </a>
 
-                <div class="flex items-center justify-between px-4 py-3 rounded-xl text-gray-600 cursor-not-allowed">
+                <a href="/herramientas/calculadora" class="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-cube"></i> Calculadora Cúbica
                     </div>
-                    <span class="text-[8px] bg-white/5 px-2 py-0.5 rounded uppercase">Próximamente</span>
-                </div>
+                    <i class="fas fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-all"></i>
+                </a>
 
                 <div class="flex items-center justify-between px-4 py-3 rounded-xl text-gray-600 cursor-not-allowed">
                     <div class="flex items-center gap-3">
@@ -188,12 +188,12 @@ const pedidos = ordersResult.rows.map(p => ({
                             <span class="text-[10px] font-bold text-white uppercase tracking-tighter leading-tight">Presupuestador <br/>Online</span>
                         </a>
 
-                        <div class="bg-[#141414] border border-white/5 p-6 rounded-[2rem] flex flex-col items-center text-center opacity-30 cursor-not-allowed shadow-xl relative overflow-hidden group">
-                            <div class="w-12 h-12 rounded-2xl bg-gray-500/10 text-gray-500 flex items-center justify-center text-xl mb-3">
+                        <a href="/herramientas/calculadora" class="bg-[#141414] border border-white/5 p-6 rounded-[2rem] flex flex-col items-center text-center hover:bg-white/5 transition-all group shadow-xl">
+                            <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform">
                                 <i class="fas fa-cube"></i>
                             </div>
-                            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Calculadora <br/>Cúbica</span>
-                        </div>
+                            <span class="text-[10px] font-bold text-white uppercase tracking-tighter leading-tight">Calculadora <br/>Cúbica</span>
+                        </a>
 
                         <div class="bg-[#141414] border border-white/5 p-6 rounded-[2rem] flex flex-col items-center text-center opacity-30 cursor-not-allowed shadow-xl relative overflow-hidden group">
                             <div class="w-12 h-12 rounded-2xl bg-gray-500/10 text-gray-500 flex items-center justify-center text-xl mb-3">

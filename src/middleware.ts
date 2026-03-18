@@ -40,7 +40,7 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     if (isClient && !isClientLogin && !isClientRegister) {
         const session = context.cookies.get('client_session');
         if (!session) {
-            return context.redirect('/cliente/login');
+            return context.redirect('/login');
         }
     }
 
