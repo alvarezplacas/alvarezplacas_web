@@ -1,6 +1,7 @@
 ---
 import CatalogItem from '../components/CatalogItem.astro';
 import CatalogFilters from '../components/CatalogFilters.astro';
+import { createDirectus, rest, readItems } from '@directus/sdk';
 
 const getEnv = () => {
     if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env;
@@ -9,30 +10,34 @@ const getEnv = () => {
 
 const env = getEnv();
 const DIRECTUS_URL = env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 let initialItems = [];
 let showPrices = true;
 
 try {
-  // 1. Obtener Ajustes de Sitio (vía API)
-  const settingsRes = await fetch(`${DIRECTUS_URL}/items/site_settings?filter[key][_eq]=show_prices`);
-  const settingsData = await settingsRes.json();
-  if (settingsData.data && settingsData.data.length > 0) {
-    showPrices = settingsData.data[0].value !== 'false';
+  // 1. Obtener Ajustes de Sitio
+  const settings = await directus.request(readItems('site_settings', {
+    filter: { key: { _eq: 'show_prices' } },
+    limit: 1
+  }));
+  if (settings && settings.length > 0) {
+    showPrices = settings[0].value !== 'false';
   }
 
-  // 2. Obtener Catálogo Completo (vía API con campos relacionados)
-  // Campos: nombre, sku, precio, marca_id.nombre, categoria_id.nombre, linea_id.nombre, atributos, tags
-  const catalogRes = await fetch(`${DIRECTUS_URL}/items/productos?limit=-1&fields=nombre,sku,precio,marca_id.nombre,categoria_id.nombre,linea_id.nombre,atributos,tags&filter[status][_eq]=published`);
-  const catalogData = await catalogRes.json();
+  // 2. Obtener Catálogo Completo
+  const productos = await directus.request(readItems('productos', {
+    limit: -1,
+    fields: ['*','marca_id.nombre','categoria_id.nombre','linea_id.nombre'],
+    filter: { status: { _eq: 'published' } }
+  }));
 
-  initialItems = (catalogData.data || []).map(prod => {
+  initialItems = (productos || []).map(prod => {
     const marca = prod.marca_id?.nombre || "Varios";
     const linea = prod.linea_id?.nombre || "Estándar";
     const categoria = prod.categoria_id?.nombre || "General";
     
-    // Construcción de Imagen Jerárquica según especificación: /Placas/Marca/Linea/Nombre.avif
-    // Nota: Limpiamos espacios y caracteres especiales si es necesario, pero el usuario pidió ruta concatenada.
+    // Imagen Jerárquica: /Placas/Marca/Linea/Nombre.avif
     const imagePath = `/Placas/${marca}/${linea}/${prod.nombre}.avif`;
 
     // Formato de Precio
@@ -45,6 +50,7 @@ try {
     }
 
     return {
+      id: prod.id,
       original: prod.nombre,
       brand: marca,
       category: categoria,
@@ -53,13 +59,13 @@ try {
       price: priceFormatted,
       code: prod.sku || `SKU-${prod.id}`,
       imagen: imagePath,
-      localMatch: true,
+      localMatch: true, // Asumimos true para que intente cargar .avif
       status: "Directus",
       tags: prod.tags || []
     };
   });
 } catch (e) {
-  console.error("Error fetching catalog from Directus API:", e);
+  console.error("Error fetching catalog from Directus SDK:", e);
 }
 
 // Preparar marcas y categorías para filtros
@@ -98,6 +104,14 @@ brandsByCategory["Todas"] = marcasRaw.sort();
       <CatalogItem placa={item} showPrices={showPrices} />
     ))}
   </div>
+
+  {initialItems.length === 0 && (
+    <div class="text-center py-24 bg-[#151515] rounded-3xl border border-dashed border-gray-800" id="noResults">
+      <i class="fas fa-search text-5xl text-gray-700 mb-6"></i>
+      <h3 class="text-xl font-bold text-white mb-2">No se encontraron productos</h3>
+      <p class="text-gray-500">Estamos actualizando el catálogo. Por favor, intenta de nuevo en unos minutos.</p>
+    </div>
+  )}
 
   <!-- Modal Desktop (Horizontal Layout) -->
   <div id="productModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">

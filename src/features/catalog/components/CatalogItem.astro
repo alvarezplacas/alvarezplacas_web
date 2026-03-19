@@ -26,22 +26,22 @@ const whatsappMessage = `Hola, quiero consultar por el producto:\n*${placa.name}
 >
   <!-- Imagen o Icono -->
   <div class="aspect-square w-full bg-[#101010] relative overflow-hidden flex-shrink-0 flex items-center justify-center">
-    {hasImage ? (
-      <>
-        <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <img 
-          src={placa.imagen} 
-          alt={placa.name} 
-          class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          loading="lazy"
-        />
-      </>
-    ) : (
-      <div class="flex flex-col items-center justify-center text-gray-700 group-hover:text-primary/40 transition-colors">
-        <i class={`fas ${icon} text-6xl mb-4`}></i>
-        <span class="text-[10px] uppercase tracking-[0.3em] font-bold opacity-40">{placa.category}</span>
-      </div>
-    )}
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+    
+    <img 
+      src={placa.imagen} 
+      alt={placa.name} 
+      class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+      onerror="this.style.opacity='0'; this.parentElement.querySelector('.placeholder-icon').classList.remove('hidden');"
+      loading="lazy"
+    />
+
+    <!-- Placeholder Icon (Provisional) -->
+    <div class="placeholder-icon absolute inset-0 hidden flex-col items-center justify-center text-gray-700 group-hover:text-primary/40 transition-colors bg-[#101010]">
+      <i class={`fas ${icon} text-6xl mb-4`}></i>
+      <span class="text-[10px] uppercase tracking-[0.3em] font-bold opacity-40">{placa.category}</span>
+      <span class="text-[8px] mt-2 opacity-30 italic">Imagen en carga...</span>
+    </div>
     
     <!-- Info Overlay (Desktop) -->
     <div class="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-6 text-center z-10 hidden md:flex backdrop-blur-sm">
