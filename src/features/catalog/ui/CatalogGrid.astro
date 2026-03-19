@@ -2,7 +2,13 @@
 import CatalogItem from '../components/CatalogItem.astro';
 import CatalogFilters from '../components/CatalogFilters.astro';
 
-const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const getEnv = () => {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env;
+    return process.env;
+};
+
+const env = getEnv();
+const DIRECTUS_URL = env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 
 let initialItems = [];
 let showPrices = true;
@@ -80,7 +86,12 @@ brandsByCategory["Todas"] = marcasRaw.sort();
     <p class="text-gray-400">Todo lo que necesitás en un solo lugar. Placas, Herrajes, Químicos y Herramientas.</p>
   </div>
 
-  <CatalogFilters marcas={marcas} categorias={categorias} brandsByCategory={brandsByCategory} />
+  <CatalogFilters 
+    marcas={marcas} 
+    categorias={categorias} 
+    brandsByCategory={brandsByCategory} 
+    totalProducts={initialItems.length}
+  />
 
   <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" id="catalogGrid">
     {initialItems.map((item) => (
