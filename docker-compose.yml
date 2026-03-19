@@ -5,13 +5,17 @@ services:
     restart: always
     ports:
       - "4325:4321"
-    networks:
-      - javiermix_network
-    volumes:
-      - ./archivos_alvarezplacas:/app/public/images/catalog
     environment:
       - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas
+      - DIRECTUS_URL=http://alvarezplacas_directus:8055
+      - DIRECTUS_ADMIN_EMAIL=admin@alvarezplacas.com.ar
+      - DIRECTUS_ADMIN_PASSWORD=JavierMix2026!
       - NODE_ENV=production
+    depends_on:
+      - alvarezplacas_db
+      - alvarezplacas_directus
+    networks:
+      - javiermix_network
 
   filebrowser:
     image: filebrowser/filebrowser:latest
@@ -25,8 +29,8 @@ services:
     networks:
       - javiermix_network
 
-  alvarez_db:
-    image: postgres:15
+  alvarezplacas_db:
+    image: postgres:16
     container_name: alvarezplacas_db
     restart: always
     environment:
@@ -37,9 +41,30 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/db-schema.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - javiermix_network
+
+  alvarezplacas_directus:
+    image: directus/directus:latest
+    container_name: alvarezplacas_directus
+    restart: always
+    ports:
+      - "8055:8055"
+    environment:
+      KEY: "alvarez-placas-secret-key-2026"
+      SECRET: "alvarez-placas-secret-token-2026"
+      DB_CLIENT: "pg"
+      DB_HOST: "alvarezplacas_db"
+      DB_PORT: "5432"
+      DB_DATABASE: "alvarezplacas"
+      DB_USER: "alvarez_admin"
+      DB_PASSWORD: "AlvarezAdmin2026"
+      ADMIN_EMAIL: "admin@alvarezplacas.com.ar"
+      ADMIN_PASSWORD: "JavierMix2026!"
+    networks:
+      - javiermix_network
+    depends_on:
+      - alvarezplacas_db
 
 networks:
   javiermix_network:
