@@ -20,52 +20,41 @@ try {
   const settings = await directus.request(readItems('site_settings', {
     filter: { key: { _eq: 'show_prices' } },
     limit: 1
-  }));
+  })).catch(() => []);
   if (settings && settings.length > 0) {
     showPrices = settings[0].value !== 'false';
   }
 
   // 2. Obtener Catálogo Completo
   const productos = await directus.request(readItems('productos', {
-    limit: -1,
-    fields: ['*','marca_id.nombre','categoria_id.nombre','linea_id.nombre'],
+    limit: 100, // Limitar para debug
+    fields: ['id','status','nombre','sku','precio','marca_id.nombre','categoria_id.nombre','linea_id.nombre','atributos','tags'],
     filter: { status: { _eq: 'published' } }
-  }));
+  })).catch(() => []);
 
-  initialItems = (productos || []).map(prod => {
-    const marca = prod.marca_id?.nombre || "Varios";
-    const linea = prod.linea_id?.nombre || "Estándar";
-    const categoria = prod.categoria_id?.nombre || "General";
-    
-    // Imagen Jerárquica: /Placas/Marca/Linea/Nombre.avif
-    const imagePath = `/Placas/${marca}/${linea}/${prod.nombre}.avif`;
+  if (productos && productos.length > 0) {
+      initialItems = productos.map(prod => {
+        const marca = prod.marca_id?.nombre || "Varios";
+        const linea = prod.linea_id?.nombre || "Estándar";
+        const categoria = prod.categoria_id?.nombre || "General";
+        const imagePath = `/Placas/${marca}/${linea}/${prod.nombre}.avif`;
 
-    // Formato de Precio
-    let priceFormatted = "Consultar";
-    if (prod.precio) {
-       const p = parseFloat(prod.precio);
-       if (!isNaN(p)) {
-         priceFormatted = `$${p.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-       }
-    }
-
-    return {
-      id: prod.id,
-      original: prod.nombre,
-      brand: marca,
-      category: categoria,
-      name: prod.nombre,
-      specs: prod.atributos ? Object.values(prod.atributos).filter(Boolean) : [],
-      price: priceFormatted,
-      code: prod.sku || `SKU-${prod.id}`,
-      imagen: imagePath,
-      localMatch: true, // Asumimos true para que intente cargar .avif
-      status: "Directus",
-      tags: prod.tags || []
-    };
-  });
+        return {
+          id: prod.id,
+          brand: marca,
+          category: categoria,
+          name: prod.nombre,
+          specs: prod.atributos ? Object.values(prod.atributos).filter(Boolean) : [],
+          price: prod.precio ? `$${parseFloat(prod.precio).toLocaleString('es-AR')}` : "Consultar",
+          code: prod.sku || `P-${prod.id}`,
+          imagen: imagePath,
+          localMatch: true,
+          tags: prod.tags || []
+        };
+      });
+  }
 } catch (e) {
-  console.error("Error fetching catalog from Directus SDK:", e);
+  console.error("Critical Catalog Grid Error:", e);
 }
 
 // Preparar marcas y categorías para filtros
