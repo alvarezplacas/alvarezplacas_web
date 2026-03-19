@@ -1,74 +1,63 @@
 ---
 import CatalogItem from '../components/CatalogItem.astro';
 import CatalogFilters from '../components/CatalogFilters.astro';
-import { query } from '../../../lib/db.js';
+
+const DIRECTUS_URL = 'https://admin.alvarezplacas.com.ar';
 
 let initialItems = [];
+let showPrices = true;
+
 try {
-  const catalogRes = await query(`
-    SELECT
-      p.id,
-      p.nombre as name,
-      m.nombre as brand,
-      c.nombre as category,
-      v.especificacion as specs_0,
-      v.acabado as specs_1,
-      v.precio_efectivo,
-      v.codigo_proveedor as code,
-      p.imagen_cover as imagen,
-      p.tags
-    FROM productos p
-    LEFT JOIN marcas m ON p.marca_id = m.id
-    LEFT JOIN categorias c ON p.categoria_id = c.id
-    LEFT JOIN variantes_sku v ON p.id = v.producto_id
-    WHERE p.status = 'published'
-    ORDER BY p.nombre ASC
-  `);
+  // 1. Obtener Ajustes de Sitio (vía API)
+  const settingsRes = await fetch(`${DIRECTUS_URL}/items/site_settings?filter[key][_eq]=show_prices`);
+  const settingsData = await settingsRes.json();
+  if (settingsData.data && settingsData.data.length > 0) {
+    showPrices = settingsData.data[0].value !== 'false';
+  }
 
-  initialItems = catalogRes.rows.map(row => {
-    // Determine image URL
-    let imageUrl = null;
-    let localMatch = false;
-    if (row.imagen) {
-      if (row.imagen.includes('/images/')) {
-        imageUrl = row.imagen;
-        localMatch = true;
-      } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.imagen)) {
-        imageUrl = `https://admin.alvarezplacas.com.ar/assets/${row.imagen}`;
-        localMatch = true;
-      } else {
-        imageUrl = row.imagen;
-      }
-    }
+  // 2. Obtener Catálogo Completo (vía API con campos relacionados)
+  // Campos: nombre, sku, precio, marca_id.nombre, categoria_id.nombre, linea_id.nombre, atributos, tags
+  const catalogRes = await fetch(`${DIRECTUS_URL}/items/productos?limit=-1&fields=nombre,sku,precio,marca_id.nombre,categoria_id.nombre,linea_id.nombre,atributos,tags&filter[status][_eq]=published`);
+  const catalogData = await catalogRes.json();
 
-    // Format price
+  initialItems = (catalogData.data || []).map(prod => {
+    const marca = prod.marca_id?.nombre || "Varios";
+    const linea = prod.linea_id?.nombre || "Estándar";
+    const categoria = prod.categoria_id?.nombre || "General";
+    
+    // Construcción de Imagen Jerárquica según especificación: /Placas/Marca/Linea/Nombre.avif
+    // Nota: Limpiamos espacios y caracteres especiales si es necesario, pero el usuario pidió ruta concatenada.
+    const imagePath = `/Placas/${marca}/${linea}/${prod.nombre}.avif`;
+
+    // Formato de Precio
     let priceFormatted = "Consultar";
-    if (row.precio_efectivo) {
-       const p = parseFloat(row.precio_efectivo);
+    if (prod.precio) {
+       const p = parseFloat(prod.precio);
        if (!isNaN(p)) {
-         priceFormatted = `$${p.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+         priceFormatted = `$${p.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
        }
     }
 
     return {
-      original: row.name,
-      brand: row.brand || "Generico",
-      category: row.category || "OTROS",
-      name: row.name,
-      specs: [row.specs_0, row.specs_1].filter(Boolean),
+      original: prod.nombre,
+      brand: marca,
+      category: categoria,
+      name: prod.nombre,
+      specs: prod.atributos ? Object.values(prod.atributos).filter(Boolean) : [],
       price: priceFormatted,
-      code: row.code || `ID-${row.id}`,
-      imagen: imageUrl,
-      localMatch: localMatch,
-      status: "Directus"
+      code: prod.sku || `SKU-${prod.id}`,
+      imagen: imagePath,
+      localMatch: true,
+      status: "Directus",
+      tags: prod.tags || []
     };
   });
 } catch (e) {
-  console.error("Error fetching catalog from DB:", e);
+  console.error("Error fetching catalog from Directus API:", e);
 }
 
 // Preparar marcas y categorías para filtros
-const marcasRaw = [...new Set(initialItems.map((item) => item.brand))].filter(m => m && m !== "Sin Marca" && m !== "Generico");
+const marcasRaw = [...new Set(initialItems.map((item) => item.brand))].filter(m => m && m !== "Varios");
 const categoriasRaw = [...new Set(initialItems.map((item) => item.category))].filter(c => c);
 
 const marcas = ["Todos", ...marcasRaw.sort()];
@@ -77,19 +66,11 @@ const categorias = ["Todas", ...categoriasRaw.sort()];
 // Construir mapa de Marcas por Categoría
 const brandsByCategory = {};
 categoriasRaw.forEach(cat => {
-  brandsByCategory[cat] = [...new Set(initialItems.filter(i => i.category === cat).map(i => i.brand))].filter(b => b && b !== "Sin Marca" && b !== "Generico").sort();
+  brandsByCategory[cat] = [...new Set(initialItems.filter(i => i.category === cat).map(i => i.brand))].filter(b => b && b !== "Varios").sort();
 });
 brandsByCategory["Todas"] = marcasRaw.sort();
-
-
-// Obtener ajustes de precios
-let showPrices = true;
-const settingsRes = await query("SELECT value FROM site_settings WHERE key = 'show_prices'");
-const rows = (settingsRes?.rows || []) as any[];
-if (rows.length > 0) {
-  showPrices = rows[0].value !== 'false';
-}
 ---
+
 
 <section class="max-w-7xl mx-auto px-4 py-12 relative">
   <div class="text-center mb-12">
