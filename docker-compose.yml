@@ -6,7 +6,7 @@ services:
     ports:
       - "4325:4321"
     environment:
-      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas
+      - DATABASE_URL=postgresql://alvarez_admin:alvarez_password@alvarezplacas_db:5432/alvarezplacas
       - DIRECTUS_URL=http://alvarezplacas_directus:8055
       - DIRECTUS_ADMIN_EMAIL=admin@alvarezplacas.com.ar
       - DIRECTUS_ADMIN_PASSWORD=JavierMix2026!
@@ -30,12 +30,12 @@ services:
       - javiermix_network
 
   alvarezplacas_db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: alvarezplacas_db
     restart: always
     environment:
       - POSTGRES_USER=alvarez_admin
-      - POSTGRES_PASSWORD=AlvarezAdmin2026
+      - POSTGRES_PASSWORD=alvarez_password
       - POSTGRES_DB=alvarezplacas
     ports:
       - "5433:5432"
@@ -58,7 +58,7 @@ services:
       DB_PORT: "5432"
       DB_DATABASE: "alvarezplacas"
       DB_USER: "alvarez_admin"
-      DB_PASSWORD: "AlvarezAdmin2026"
+      DB_PASSWORD: "alvarez_password"
       ADMIN_EMAIL: "admin@alvarezplacas.com.ar"
       ADMIN_PASSWORD: "JavierMix2026!"
     networks:
