@@ -4,7 +4,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
 import { createDirectus, rest, readItems } from '@directus/sdk';
 
 const getEnv = () => {
-    if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env;
+    if (typeof import.meta !== 'undefined' && import.meta.env) return import.meta.env;
     return process.env;
 };
 
