@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
 import * as xlsx from 'xlsx';
 
-const DIRECTUS_URL = 'https://admin.alvarezplacas.com.ar';
-const ADMIN_EMAIL = 'admin@alvarezplacas.com.ar';
-const ADMIN_PASSWORD = 'JavierMix2026!';
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const ADMIN_EMAIL = process.env.DIRECTUS_ADMIN_EMAIL || 'admin@alvarezplacas.com.ar';
+const ADMIN_PASSWORD = process.env.DIRECTUS_ADMIN_PASSWORD || 'JavierMix2026!';
 
 // Helper: Corregida para Directus (Según sugerencia del usuario)
 async function upsertItem(collection: string, filter: any, data: any, token: string) {
