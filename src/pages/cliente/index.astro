@@ -1,6 +1,7 @@
 ---
 import '@styles/global.css';
 import { createDirectus, rest, readItems, readItem } from '@directus/sdk';
+import BottomNav from '@components/BottomNav.astro';
 
 const getEnv = () => {
     if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env;
