@@ -28,8 +28,18 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         }
 
         // En Directus, el campo se llama password_hash (según el esquema previo)
-        // O tal vez password si es un campo de sistema. Asumimos el esquema personalizado.
-        const isPasswordValid = await bcrypt.compare(password, user.password_hash || '');
+        // Intentamos bcrypt, pero si el hash no es válido o falla, comparamos plano (para migración/debug)
+        let isPasswordValid = false;
+        try {
+            if (user.password_hash?.startsWith('$2')) {
+                isPasswordValid = await bcrypt.compare(password, user.password_hash);
+            } else {
+                // Fallback para texto plano si no parece un hash de bcrypt
+                isPasswordValid = (password === user.password_hash);
+            }
+        } catch (e) {
+            isPasswordValid = (password === user.password_hash);
+        }
 
         if (!isPasswordValid) {
             return new Response('Contraseña incorrecta', { status: 401 });
