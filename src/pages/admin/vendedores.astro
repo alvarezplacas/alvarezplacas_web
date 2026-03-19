@@ -1,26 +1,34 @@
 ---
 import AdminLayout from '@layouts/AdminLayout.astro';
-import { query } from '@lib/db.js';
+import { createDirectus, rest, readItems } from '@directus/sdk';
 
-// Obtener vendedores reales de la base de datos
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
+
+// Obtener vendedores reales de Directus
 let vendedores = [];
 let totalVendedores = 0;
 let activosVendedores = 0;
 
 try {
-    const res = await query(
-        "SELECT id, full_name as nombre, role, branch as sucursal, seller_level as rol FROM users WHERE role = 'seller' OR role = 'admin' ORDER BY id ASC"
-    );
-    vendedores = res.rows.map(v => ({
+    const res = await directus.request(readItems('vendedores', {
+        sort: ['id'],
+        fields: ['*']
+    } as any));
+
+    vendedores = (res || []).map((v: any) => ({
         ...v,
-        estado: 'Activo', // Por ahora lo dejamos fijo o podrías mapear un campo 'active'
-        ventasMes: Math.floor(Math.random() * 50) // Mock de ventas hasta conectar con presupuestos
+        nombre: v.Nombre || v.nombre || 'Sin nombre',
+        sucursal: v.Nombre || 'Sucursal Principal', // Ajustar según campos reales
+        rol: v.role === 'admin' ? 'Administrador' : 'Vendedor',
+        estado: 'Activo',
+        ventasMes: Math.floor(Math.random() * 50)
     }));
     
     totalVendedores = vendedores.length;
     activosVendedores = vendedores.filter(v => v.estado === 'Activo').length;
-} catch (e) {
-    console.error("Error cargando vendedores:", e);
+} catch (e: any) {
+    console.error("Error cargando vendedores:", e.message);
 }
 ---
 

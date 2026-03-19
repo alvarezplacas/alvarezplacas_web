@@ -1,7 +1,9 @@
 ---
 import '@styles/global.css';
-import BottomNav from '@components/BottomNav.astro';
-import { query } from '@lib/db.js';
+import { createDirectus, rest, readItems, readItem } from '@directus/sdk';
+
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 const { title = "Mi Cuenta | Alvarez Placas" } = Astro.props;
 
@@ -11,18 +13,28 @@ if (!userCookie) {
     return Astro.redirect('/login');
 }
 
-const userId = parseInt(userCookie);
+// En Directus, el ID suele ser UUID o ID incremental. Asumimos el cookie es el ID.
+const userId = userCookie;
 
-// Fetch Client Data from NEW architecture
-const clientResult = await query(`
-    SELECT c.*, v."Nombre" as seller_name, v."Whatsapp" as seller_phone
-    FROM "Clientes" c
-    LEFT JOIN "Vendedores" v ON c.vendedor_asignado = v.id
-    WHERE c.id = $1
-    LIMIT 1
-`, [userId]);
+let cliente = null;
+let pedidos = [];
 
-let cliente = clientResult.rows[0];
+try {
+    // Buscar cliente por ID en Directus
+    // Asumimos relación con vendedores se llama 'vendedor_asignado' (m2o)
+    cliente = await directus.request(readItem('clientes', userId, {
+        fields: ['*', { vendedor_asignado: ['Nombre', 'Whatsapp'] }]
+    } as any));
+
+    // Buscar pedidos del cliente
+    pedidos = await directus.request(readItems('pedidos', {
+        filter: { cliente_id: { _eq: userId } },
+        sort: ['-fecha_pedido']
+    } as any));
+
+} catch (e) {
+    console.error('Error fetching client from Directus:', e);
+}
 
 // If session is invalid or user not found, clear and redirect
 if (!cliente) {
@@ -30,21 +42,19 @@ if (!cliente) {
     return Astro.redirect('/login');
 }
 
-// Map new field names for the template compatibility
+// Map Directus fields to template compatibility
 const templateData = {
     ...cliente,
-    full_name: cliente.nombre_empresa,
+    seller_name: cliente.vendedor_asignado?.Nombre || 'Sin asignar',
+    seller_phone: cliente.vendedor_asignado?.Whatsapp || '',
+    full_name: cliente.nombre_empresa || cliente.nombre,
     points: cliente.puntaje || 0,
     debt_amount: cliente.debt_amount || 0,
-    fin_status: cliente.fin_status || 'clean'
+    fin_status: cliente.fin_status || 'clean',
+    client_number: cliente.id
 };
 
-// Fetch Orders from NEW table (using fecha_pedido)
-const ordersResult = await query(`
-    SELECT * FROM "Pedidos" WHERE cliente_id = $1 ORDER BY fecha_pedido DESC
-`, [cliente.id]);
-
-const pedidos = ordersResult.rows.map(p => ({
+const processedPedidos = (pedidos || []).map((p: any) => ({
     ...p,
     created_at: p.fecha_pedido,
     total_amount: p.total,
@@ -285,7 +295,7 @@ const pedidos = ordersResult.rows.map(p => ({
                         </h2>
                     </div>
 
-                    {pedidos.length > 0 ? (
+                    {processedPedidos.length > 0 ? (
                         <div class="bg-[#141414] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left">
@@ -298,7 +308,7 @@ const pedidos = ordersResult.rows.map(p => ({
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-white/5">
-                                        {pedidos.map(p => (
+                                        {processedPedidos.map((p: any) => (
                                             <tr class="hover:bg-white/2 transition-colors">
                                                 <td class="px-8 py-6 text-sm text-gray-400">{new Date(p.created_at).toLocaleDateString()}</td>
                                                 <td class="px-8 py-6 text-sm font-mono text-primary font-bold">{p.tracking_code || '---'}</td>

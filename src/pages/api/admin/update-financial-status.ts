@@ -1,5 +1,8 @@
 import type { APIRoute } from 'astro';
-import { query } from '@lib/db.js';
+import { createDirectus, rest, updateItem } from '@directus/sdk';
+
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -10,26 +13,18 @@ export const POST: APIRoute = async ({ request }) => {
             return new Response(JSON.stringify({ error: 'Client ID is required' }), { status: 400 });
         }
 
-        await query(`
-            UPDATE users 
-            SET 
-                fin_status = $1, 
-                debt_amount = $2, 
-                due_date = $3, 
-                financial_notes = $4,
-                points_updated_at = CURRENT_TIMESTAMP
-            WHERE id = $5
-        `, [
-            fin_status || 'clean',
-            debt_amount || 0,
-            due_date || null,
-            financial_notes || '',
-            clientId
-        ]);
+        // Actualizar en Directus (colección 'clientes')
+        await directus.request(updateItem('clientes', clientId, {
+            fin_status: fin_status || 'clean',
+            debt_amount: debt_amount || 0,
+            due_date: due_date || null,
+            financial_notes: financial_notes || '',
+            points_updated_at: new Date().toISOString()
+        }));
 
         return new Response(JSON.stringify({ message: 'Estado financiero actualizado con éxito' }), { status: 200 });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error updating financial status:', error);
-        return new Response(JSON.stringify({ error: 'Error interno del servidor' }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'Error interno del servidor: ' + error.message }), { status: 500 });
     }
 };

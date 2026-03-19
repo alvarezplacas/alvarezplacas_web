@@ -1,23 +1,36 @@
 ---
 import Layout from '@layouts/Layout.astro';
-import { query } from '@lib/db.js';
+import { createDirectus, rest, readItems } from '@directus/sdk';
+
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 let error = '';
 
 if (Astro.request.method === 'POST') {
-    const data = await Astro.request.formData();
-    const email = data.get('email')?.toString();
-    const password = data.get('password')?.toString();
+    try {
+        const data = await Astro.request.formData();
+        const email = data.get('email')?.toString();
+        const password = data.get('password')?.toString();
 
-    const result = await query("SELECT * FROM users WHERE email = $1 AND role = 'seller' LIMIT 1", [email]);
-    const user = result.rows[0];
+        // Buscar el vendedor en Directus
+        const results = await directus.request(readItems('vendedores', {
+            filter: { email: { _eq: email } },
+            limit: 1
+        }));
+        
+        const user = results?.[0];
 
-    // Simple check: 'pass' or correct password
-    if (user && (user.password_hash === password || password === '121212')) {
-        Astro.cookies.set('seller_session', user.id.toString(), { path: '/', httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
-        return Astro.redirect('/vendedor');
-    } else {
-        error = 'Credenciales de vendedor incorrectas';
+        // Verificación simple para vendedores (según lógica previa)
+        if (user && (user.password_hash === password || password === '121212')) {
+            Astro.cookies.set('seller_session', user.id.toString(), { path: '/', httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
+            return Astro.redirect('/vendedor');
+        } else {
+            error = 'Credenciales de vendedor incorrectas';
+        }
+    } catch (e: any) {
+        console.error('Login error:', e);
+        error = 'Error de conexión con el servidor.';
     }
 }
 ---

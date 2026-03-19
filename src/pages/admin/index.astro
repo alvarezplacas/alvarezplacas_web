@@ -3,35 +3,68 @@ import AdminLayout from '@layouts/AdminLayout.astro';
 import StatCard from '@features/dashboard/components/StatCard.astro';
 import OrderList from '@features/dashboard/components/OrderList.astro';
 import { Order } from '@domain/order.js';
-import { query } from '@lib/db.js';
+import { createDirectus, rest, readItems, aggregate } from '@directus/sdk';
 
-// Fetch real stats from DB
-const statsResult = await Promise.all([
-    query("SELECT COUNT(*) FROM orders WHERE created_at >= NOW() - INTERVAL '1 day'"),
-    query("SELECT COUNT(*) FROM budgets WHERE created_at >= NOW() - INTERVAL '1 day'"),
-    query("SELECT COUNT(*) FROM orders WHERE status IN ('Pendiente', 'En proceso')"),
-    query("SELECT COUNT(*) FROM users WHERE role = 'client'"),
-    query(`
-        SELECT o.*, u.full_name as cliente_name 
-        FROM orders o 
-        LEFT JOIN users u ON o.user_id = u.id 
-        ORDER BY o.created_at DESC 
-        LIMIT 5
-    `)
-]);
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
 
-const newOrdersCount = parseInt(statsResult[0].rows[0]?.count || '0');
-const budgetsCount = parseInt(statsResult[1].rows[0]?.count || '0');
-const pendingCutsCount = parseInt(statsResult[2].rows[0]?.count || '0');
-const activeClientsCount = parseInt(statsResult[3].rows[0]?.count || '0');
+// Fetch real stats from Directus
+let newOrdersCount = 0;
+let budgetsCount = 0;
+let pendingCutsCount = 0;
+let activeClientsCount = 0;
+let recentOrders = [];
 
-// Map DB orders to the format expected by OrderList
-const recentOrders = statsResult[4].rows.map(row => ({
-    id: row.id.toString(),
-    cliente: row.cliente_name || 'Consumidor Final',
-    status: row.status,
-    logistica: row.notes?.includes('Envío') ? 'Envío' : 'Retiro' // Fallback
-}));
+try {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    // 1. Nuevos Pedidos (últimas 24h)
+    const ordersStats = await directus.request(aggregate('pedidos', {
+        aggregate: { count: '*' },
+        query: { filter: { date_created: { _gte: yesterday } } }
+    } as any));
+    newOrdersCount = parseInt(ordersStats[0]?.count || '0');
+
+    // 2. Presupuestos (últimas 24h) - Si existe la colección 'presupuestos'
+    try {
+        const budgetStats = await directus.request(aggregate('presupuestos', {
+            aggregate: { count: '*' },
+            query: { filter: { date_created: { _gte: yesterday } } }
+        } as any));
+        budgetsCount = parseInt(budgetStats[0]?.count || '0');
+    } catch (e) { /* Colección opcional */ }
+
+    // 3. Cortes/Pedidos Pendientes
+    const pendingStats = await directus.request(aggregate('pedidos', {
+        aggregate: { count: '*' },
+        query: { filter: { status: { _in: ['pending', 'processing'] } } }
+    } as any));
+    pendingCutsCount = parseInt(pendingStats[0]?.count || '0');
+
+    // 4. Clientes Activos
+    const clientsStats = await directus.request(aggregate('clientes', {
+        aggregate: { count: '*' },
+        query: { filter: { status: { _eq: 'published' } } }
+    } as any));
+    activeClientsCount = parseInt(clientsStats[0]?.count || '0');
+
+    // 5. Pedidos Recientes
+    const orders = await directus.request(readItems('pedidos', {
+        sort: ['-date_created'],
+        limit: 5,
+        fields: ['id', 'status', 'total', 'metodo_entrega', { cliente_id: ['nombre', 'nombre_empresa'] }]
+    } as any));
+
+    recentOrders = (orders || []).map((o: any) => ({
+        id: o.id.toString(),
+        cliente: o.cliente_id?.nombre_empresa || o.cliente_id?.nombre || 'Consumidor Final',
+        status: o.status,
+        logistica: o.metodo_entrega || 'Retiro'
+    }));
+
+} catch (e: any) {
+    console.error("Error loading admin stats:", e.message);
+}
 ---
 
 <AdminLayout title="Dashboard General">

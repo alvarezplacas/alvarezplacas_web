@@ -1,66 +1,64 @@
 ---
 import AdminLayout from '@layouts/AdminLayout.astro';
-import { query } from '@lib/db.js';
+import { createDirectus, rest, readItems, aggregate } from '@directus/sdk';
+
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 let previewPlacas = [];
 let totalPlacas = 0;
 
 try {
-  const countRes = await query("SELECT count(*) as total FROM productos p JOIN variantes_sku v ON p.id = v.producto_id WHERE p.status = 'published'");
-  totalPlacas = countRes.rows[0]?.total || 0;
+  // Get total count using Directus aggregate
+  const countRes = await directus.request(aggregate('productos', {
+    aggregate: { count: '*' },
+    query: { filter: { status: { _eq: 'published' } } }
+  } as any));
+  totalPlacas = parseInt(countRes[0]?.count || '0');
 
-  const catalogRes = await query(`
-    SELECT
-      p.id,
-      p.nombre as name,
-      m.nombre as brand,
-      c.nombre as category,
-      v.especificacion,
-      v.acabado,
-      v.precio_efectivo,
-      v.codigo_proveedor as code,
-      p.imagen_cover as imagen
-    FROM productos p
-    LEFT JOIN marcas m ON p.marca_id = m.id
-    LEFT JOIN categorias c ON p.categoria_id = c.id
-    LEFT JOIN variantes_sku v ON p.id = v.producto_id
-    WHERE p.status = 'published'
-    ORDER BY p.nombre ASC
-    LIMIT 8
-  `);
+  // Fetch products with their relations from Directus
+  const products = await directus.request(readItems('productos', {
+    filter: { status: { _eq: 'published' } },
+    sort: ['nombre'],
+    limit: 8,
+    fields: [
+      'id', 'nombre', 'imagen_cover',
+      { marca_id: ['nombre'] },
+      { categoria_id: ['nombre'] },
+      { variantes: ['*'] }
+    ]
+  } as any));
 
-  previewPlacas = catalogRes.rows.map(row => {
+  previewPlacas = (products || []).map((p: any) => {
+    const mainVariant = p.variantes?.[0] || {};
+    
     // Determine image URL
     let imageUrl = null;
-    if (row.imagen) {
-      if (row.imagen.includes('/images/')) {
-        imageUrl = row.imagen;
-      } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.imagen)) {
-        imageUrl = `https://admin.alvarezplacas.com.ar/assets/${row.imagen}`;
+    if (p.imagen_cover) {
+      if (p.imagen_cover.includes('/images/') || p.imagen_cover.includes('http')) {
+        imageUrl = p.imagen_cover;
       } else {
-        imageUrl = row.imagen;
+        imageUrl = `https://admin.alvarezplacas.com.ar/assets/${p.imagen_cover}`;
       }
     }
 
     let priceFormatted = "0.00";
-    if (row.precio_efectivo) {
-       const p = parseFloat(row.precio_efectivo);
-       if (!isNaN(p)) {
-         priceFormatted = p.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-       }
+    const price = parseFloat(mainVariant.precio_efectivo || '0');
+    if (!isNaN(price)) {
+      priceFormatted = price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
     return {
-      name: row.name,
-      code: row.code || \`ID-\${row.id}\`,
-      brand: row.brand || "Generico",
-      specs: [row.especificacion, row.acabado].filter(Boolean),
+      name: p.nombre,
+      code: mainVariant.codigo_proveedor || `ID-${p.id}`,
+      brand: p.marca_id?.nombre || "Generico",
+      specs: [mainVariant.especificacion, mainVariant.acabado].filter(Boolean),
       price: priceFormatted,
       imagen: imageUrl || '/images/placeholder.jpg'
     };
   });
-} catch (e) {
-  console.error("Error fetching admin catalog preview:", e);
+} catch (e: any) {
+  console.error("Error fetching admin catalog preview:", e.message);
 }
 ---
 

@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
-import { query } from '@lib/db.js';
+import { createDirectus, rest, readItems } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
+
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const formData = await request.formData();
@@ -12,22 +15,21 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     }
 
     try {
-        // 1. Check in new "Clientes" table first (Case-insensitive)
-        const clienteResult: any = await query("SELECT id, password_hash, 'client' as role FROM \"Clientes\" WHERE email ILIKE $1", [email]);
-        
-        let user;
-        if (clienteResult.rows.length > 0) {
-            user = clienteResult.rows[0];
-        } else {
-            // 2. Fallback to legacy "users" table
-            const legacyResult: any = await query("SELECT id, password_hash, role FROM users WHERE email ILIKE $1", [email]);
-            if (legacyResult.rows.length === 0) {
-                return new Response('Usuario no encontrado', { status: 404 });
-            }
-            user = legacyResult.rows[0];
+        // Buscar en la colección de 'clientes' en Directus (Case-insensitive)
+        const clientResults = await directus.request(readItems('clientes', {
+            filter: { email: { _icontains: email } },
+            limit: 1
+        }));
+
+        const user = clientResults?.[0];
+
+        if (!user) {
+            return new Response('Usuario no encontrado', { status: 404 });
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+        // En Directus, el campo se llama password_hash (según el esquema previo)
+        // O tal vez password si es un campo de sistema. Asumimos el esquema personalizado.
+        const isPasswordValid = await bcrypt.compare(password, user.password_hash || '');
 
         if (!isPasswordValid) {
             return new Response('Contraseña incorrecta', { status: 401 });
@@ -39,13 +41,15 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
             maxAge: 60 * 60 * 24 * 30
         });
 
-        // Redirect based on role
-        if (user.role === 'admin') return redirect('/admin');
-        if (user.role === 'seller') return redirect('/vendedor');
+        // El rol en el esquema Directus suele estar en un campo 'role'
+        const role = user.role || 'client';
+
+        if (role === 'admin') return redirect('/admin');
+        if (role === 'seller') return redirect('/vendedor');
         return redirect('/cliente');
 
     } catch (e: any) {
-        console.error(e);
+        console.error('Login error:', e);
         return new Response('Error en el login: ' + e.message, { status: 500 });
     }
 };

@@ -3,7 +3,10 @@ import VendedorLayout from '@layouts/VendedorLayout.astro';
 import StatCard from '@features/dashboard/components/StatCard.astro';
 import OrderProcessCard from '@features/dashboard/components/OrderProcessCard.astro';
 import { Order } from '@domain/order.js';
-import { query } from '@lib/db.js';
+import { createDirectus, rest, readItems, readItem } from '@directus/sdk';
+
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 // Strict session check
 const sellerCookie = Astro.cookies.get('seller_session')?.value;
@@ -11,30 +14,41 @@ if (!sellerCookie) {
     return Astro.redirect('/vendedor/login');
 }
 
-const sellerId = parseInt(sellerCookie);
+const sellerId = sellerCookie;
 
-// Verify Seller
-const sellerResult = await query("SELECT * FROM users WHERE id = $1 AND role = 'seller'", [sellerId]);
-const seller = sellerResult.rows[0];
+let seller = null;
+let pendingOrders = [];
 
-if (!seller) {
+try {
+    // Verify Seller
+    seller = await directus.request(readItem('vendedores', sellerId));
+
+    if (!seller) {
+        Astro.cookies.delete('seller_session', { path: '/' });
+        return Astro.redirect('/vendedor/login');
+    }
+
+    // Fetch Real Pending Orders for this seller
+    const orders = await directus.request(readItems('pedidos', {
+        filter: { 
+            vendedor_asignado: { _eq: sellerId },
+            status: { _eq: 'pending' }
+        },
+        sort: ['-fecha_pedido']
+    } as any));
+
+    pendingOrders = (orders || []).map((o: any) => new Order({
+        id: o.id.toString(),
+        cliente: 'Cargando...', 
+        status: o.status,
+        total: o.total
+    }));
+
+} catch (e) {
+    console.error('Seller panel error:', e);
     Astro.cookies.delete('seller_session', { path: '/' });
     return Astro.redirect('/vendedor/login');
 }
-
-// Fetch Real Pending Orders for this seller
-const ordersResult = await query(`
-    SELECT * FROM orders 
-    WHERE seller_id = $1 AND status = 'pending' 
-    ORDER BY created_at DESC
-`, [sellerId]);
-
-const pendingOrders = ordersResult.rows.map(o => new Order({
-    id: o.id.toString(),
-    cliente: 'Cargando...', // In a real view we might join with users
-    status: o.status,
-    total: o.total_amount
-}));
 
 // Mocking stats for now until full finance logic is in DB
 const stats = {
