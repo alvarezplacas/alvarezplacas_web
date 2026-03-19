@@ -2,13 +2,21 @@ import type { APIRoute } from 'astro';
 import { createDirectus, rest, readItems } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
 
-const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const getEnv = () => {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env;
+    return process.env;
+};
+
+const env = getEnv();
+const DIRECTUS_URL = env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const formData = await request.formData();
     const email = formData.get('email')?.toString();
     const password = formData.get('password')?.toString();
+
+    console.log(`[Login] Attempt for: ${email} using ${DIRECTUS_URL}`);
 
     if (!email || !password) {
         return new Response('Email y contraseña requeridos', { status: 400 });
@@ -24,6 +32,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         const user = clientResults?.[0];
 
         if (!user) {
+            console.log(`[Login] User not found: ${email}`);
             return new Response('Usuario no encontrado', { status: 404 });
         }
 
@@ -38,10 +47,12 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
                 isPasswordValid = (password === user.password_hash);
             }
         } catch (e) {
+            console.warn('[Login] Bcrypt error, falling back to plain text', e);
             isPasswordValid = (password === user.password_hash);
         }
 
         if (!isPasswordValid) {
+            console.log(`[Login] Invalid password for: ${email}`);
             return new Response('Contraseña incorrecta', { status: 401 });
         }
 
@@ -51,15 +62,15 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
             maxAge: 60 * 60 * 24 * 30
         });
 
-        // El rol en el esquema Directus suele estar en un campo 'role'
+        // Redirección
         const role = user.role || 'client';
-
         if (role === 'admin') return redirect('/admin');
         if (role === 'seller') return redirect('/vendedor');
         return redirect('/cliente');
 
     } catch (e: any) {
-        console.error('Login error:', e);
-        return new Response('Error en el login: ' + e.message, { status: 500 });
+        console.error('[Login Error Detail]:', JSON.stringify(e, null, 2));
+        const errMsg = e.message || (e.errors ? JSON.stringify(e.errors) : 'Error desconocido');
+        return new Response('Error en el login: ' + errMsg, { status: 500 });
     }
 };
