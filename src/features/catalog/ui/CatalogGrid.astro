@@ -3,34 +3,53 @@ import CatalogItem from '../components/CatalogItem.astro';
 import CatalogFilters from '../components/CatalogFilters.astro';
 import { createDirectus, rest, readItems } from '@directus/sdk';
 
-const getEnv = () => {
-    if (typeof import.meta !== 'undefined' && import.meta.env) return import.meta.env;
-    return process.env;
-};
-
-const env = getEnv();
-const DIRECTUS_URL = env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const DIRECTUS_URL = import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 let initialItems = [];
 let showPrices = true;
 
 try {
+  console.log(`[CatalogGrid] Conectando a Directus: ${DIRECTUS_URL}`);
+  
+  // Función auxiliar para timeout manual
+  const withTimeout = (promise, ms, label) => {
+    const timeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(`Timeout de ${ms}ms en ${label}`)), ms)
+    );
+    return Promise.race([promise, timeout]);
+  };
+
   // 1. Obtener Ajustes de Sitio
-  const settings = await directus.request(readItems('site_settings', {
-    filter: { key: { _eq: 'show_prices' } },
-    limit: 1
-  })).catch(() => []);
-  if (settings && settings.length > 0) {
-    showPrices = settings[0].value !== 'false';
+  const siteSettings = await withTimeout(
+    directus.request(readItems('site_settings', {
+      filter: { key: { _eq: 'show_prices' } },
+      limit: 1
+    })), 
+    3000, 
+    'Ajustes'
+  ).catch(err => {
+    console.warn(`[CatalogGrid] No se pudieron obtener ajustes (usando defecto): ${err.message}`);
+    return [];
+  });
+
+  if (siteSettings && siteSettings.length > 0) {
+    showPrices = siteSettings[0].value !== 'false';
   }
 
   // 2. Obtener Catálogo Completo
-  const productos = await directus.request(readItems('productos', {
-    limit: 100, // Limitar para debug
-    fields: ['id','status','nombre','sku','precio','marca_id.nombre','categoria_id.nombre','linea_id.nombre','atributos','tags'],
-    filter: { status: { _eq: 'published' } }
-  })).catch(() => []);
+  const productos = await withTimeout(
+    directus.request(readItems('productos', {
+      limit: 100,
+      fields: ['id','status','nombre','sku','precio','marca_id.nombre','categoria_id.nombre','linea_id.nombre','atributos','tags'],
+      filter: { status: { _eq: 'published' } }
+    })),
+    7000,
+    'Productos'
+  ).catch(err => {
+    console.error(`[CatalogGrid] Error al cargar productos: ${err.message}`);
+    return [];
+  });
 
   if (productos && productos.length > 0) {
       initialItems = productos.map(prod => {

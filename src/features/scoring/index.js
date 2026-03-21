@@ -1,4 +1,7 @@
-import { query } from '@lib/db.js';
+import { createDirectus, rest, updateItem, createItem, readItems } from '@directus/sdk';
+
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 /**
  * Domain Service: ScoringService
@@ -25,34 +28,60 @@ export class ScoringService {
  * Application Logic: Scoring Actions
  */
 export async function addPointsForOrder(userId, amount = 1) {
-    await query(`
-        UPDATE users 
-        SET points = points + $2, 
-            last_order_at = CURRENT_TIMESTAMP,
-            points_updated_at = CURRENT_TIMESTAMP
-        WHERE id = $1
-    `, [userId, amount]);
+    // 1. Obtener puntos actuales
+    const client = await directus.request(readItems('clientes', {
+        filter: { id: { _eq: userId } },
+        fields: ['puntaje']
+    }));
+
+    const currentPoints = client[0]?.puntaje || 0;
+
+    // 2. Actualizar puntos en Directus
+    await directus.request(updateItem('clientes', userId, {
+        puntaje: currentPoints + amount,
+        last_order_at: new Date().toISOString(),
+        points_updated_at: new Date().toISOString()
+    }));
     
-    await query(`
-        INSERT INTO points_log (user_id, amount, reason)
-        VALUES ($1, $2, 'order_completed')
-    `, [userId, amount]);
+    // 3. Registrar log (opcional si existe la colección)
+    try {
+        await directus.request(createItem('puntos_log', {
+            cliente_id: userId,
+            cantidad: amount,
+            motivo: 'order_completed'
+        }));
+    } catch (e) { /* Colección opcional */ }
 }
 
 export async function processInactivityDeductions() {
-    const inactiveUsers = await query(`
-        SELECT id, points, last_order_at, points_updated_at 
-        FROM users 
-        WHERE is_club_member = TRUE 
-          AND points > 0 
-          AND last_order_at < (CURRENT_TIMESTAMP - INTERVAL '60 days')
-          AND points_updated_at < (CURRENT_TIMESTAMP - INTERVAL '30 days')
-    `);
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    for (const user of inactiveUsers.rows) {
+    const inactiveUsers = await directus.request(readItems('clientes', {
+        filter: {
+            _and: [
+                { puntaje: { _gt: 0 } },
+                { last_order_at: { _lt: sixtyDaysAgo } },
+                { points_updated_at: { _lt: thirtyDaysAgo } }
+            ]
+        }
+    }));
+
+    for (const user of (inactiveUsers || [])) {
         const deduction = 1;
-        const newPoints = Math.max(0, user.points - deduction);
-        await query(`UPDATE users SET points = $2, points_updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [user.id, newPoints]);
-        await query(`INSERT INTO points_log (user_id, amount, reason) VALUES ($1, $2, 'inactivity_deduction')`, [user.id, -deduction]);
+        const newPoints = Math.max(0, (user.puntaje || 0) - deduction);
+        
+        await directus.request(updateItem('clientes', user.id, {
+            puntaje: newPoints,
+            points_updated_at: new Date().toISOString()
+        }));
+
+        try {
+            await directus.request(createItem('puntos_log', {
+                cliente_id: user.id,
+                cantidad: -deduction,
+                motivo: 'inactivity_deduction'
+            }));
+        } catch (e) { /* Colección opcional */ }
     }
 }
