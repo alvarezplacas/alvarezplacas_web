@@ -1,0 +1,34 @@
+name: Deploy Modular to VPS
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Alvarezplacas_proyecto/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: 144.217.163.13
+          username: root
+          password: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            echo "Desplegando Arquitectura Modular..."
+            mkdir -p /home/ubuntu/alvarezplacas_modular
+            cd /home/ubuntu/alvarezplacas_modular
+            
+            # Sincronizar solo la carpeta del proyecto modular
+            git clone https://github.com/alvarezplacas/alvarezplacas_web.git . || git pull origin main
+            
+            cd Alvarezplacas_proyecto
+            
+            # Reconstruir el contenedor con la nueva estructura
+            docker compose down || true
+            docker compose up -d --build

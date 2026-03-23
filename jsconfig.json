@@ -2,14 +2,13 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@components/*": ["./src/components/*"],
-      "@features/*": ["./src/features/*"],
-      "@lib/*": ["./src/lib/*"],
-      "@domain/*": ["./src/domain/*"],
-      "@layouts/*": ["./src/layouts/*"],
-      "@styles/*": ["./src/styles/*"],
-      "@data/*": ["./src/data/*"]
+      "@backend/*": ["Backend/*"],
+      "@frontend/*": ["Frontend/*"],
+      "@conexiones/*": ["Backend/conexiones/*"],
+      "@home/*": ["Frontend/home/*"],
+      "@catalogo/*": ["Frontend/catalogo/*"],
+      "@herramientas/*": ["Frontend/herramientas/*"],
+      "@dashboard/*": ["Backend/dashboard/*"]
     }
-  },
-  "exclude": ["node_modules", "dist", "codigo_basura"]
+  }
 }

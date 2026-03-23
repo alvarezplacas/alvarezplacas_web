@@ -1,0 +1,23 @@
+# Manual de Consulta para Agentes - Alvarez Placas
+
+Este manual define la arquitectura y los estándares para la evolución del sitio web Alvarez Placas en el nuevo modelo modular.
+
+## 1. Estructura de Jurisdicciones (5 Agentes)
+
+El proyecto se divide en 5 sectores aislados dentro de `/Alvarezplacas_proyecto`:
+
+- **Agente 1: Frontend/Home** -> Landing, Headers, Footers y Layouts base.
+- **Agente 2: Backend/Dashboard** -> Administracion de Vendedores (Ventanillas), Clientes y Catalogo.
+- **Agente 3: Frontend/Catalogo** -> Filtros dinámicos, Grilla de placas y lógica de materiales.
+- **Agente 4: Backend/Conexiones** -> Directus SDK, Variables de Entorno y Tipos globales.
+- **Agente 5: Frontend/Herramientas** -> Presupuestador de Cortes, Scoring y Smart Match.
+
+## 2. Estándares Técnicos
+- **Astro.js**: Usar Island Architecture cuando sea necesario.
+- **Tailwind CSS**: Estilizado premium obligatorio.
+- **Directus SDK**: Única fuente de datos.
+- **Extreme Order**: La lógica de negocio debe ir en carpetas `/logic` y la UI en `/components`.
+
+## 3. Protocolo de Despliegue (VPS)
+- **Puerto**: 4321 (Default Astro).
+- **Proxy**: Nginx gestiona el SSL y el redireccionamiento al contenedor.

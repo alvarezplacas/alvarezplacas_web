@@ -1,5 +1,5 @@
 {
-    "name": "alvarezplacas-astro",
+    "name": "alvarezplacas-modular",
     "type": "module",
     "version": "1.0.0",
     "engines": {
@@ -14,7 +14,7 @@
     },
     "dependencies": {
         "@astrojs/check": "^0.9.8",
-        "@astrojs/node": "^10.0.1",
+        "@astrojs/node": "^11.0.0",
         "@directus/sdk": "^18.0.3",
         "@tailwindcss/vite": "^4.2.1",
         "astro": "^6.0.4",
@@ -29,8 +29,5 @@
         "typescript": "^5.9.3",
         "vite": "^6.1.1",
         "xlsx": "^0.18.5"
-    },
-    "devDependencies": {
-        "@types/node": "^25.3.0"
     }
 }

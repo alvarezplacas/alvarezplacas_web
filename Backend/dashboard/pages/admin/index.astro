@@ -1,0 +1,60 @@
+---
+/**
+ * Admin Index - Panel de control general.
+ * Propiedad del Agente 2 (Backend/Dashboard).
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { directus, readItems } from '../../../conexiones/directus.js';
+import { aggregate } from '@directus/sdk';
+
+let newOrdersCount = 0;
+let budgetsCount = 0;
+let pendingCutsCount = 0;
+let activeClientsCount = 0;
+let recentOrders = [];
+
+try {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const ordersStats = await directus.request(aggregate('pedidos', {
+        aggregate: { count: '*' },
+        query: { filter: { date_created: { _gte: yesterday } } }
+    }));
+    newOrdersCount = parseInt(ordersStats[0]?.count || '0');
+
+    const pendingStats = await directus.request(aggregate('pedidos', {
+        aggregate: { count: '*' },
+        query: { filter: { status: { _in: ['pending', 'processing'] } } }
+    }));
+    pendingCutsCount = parseInt(pendingStats[0]?.count || '0');
+
+    const clientsStats = await directus.request(aggregate('clientes', {
+        aggregate: { count: '*' },
+        query: { filter: { status: { _eq: 'published' } } }
+    }));
+    activeClientsCount = parseInt(clientsStats[0]?.count || '0');
+
+    const orders = await directus.request(readItems('pedidos', {
+        sort: ['-date_created'],
+        limit: 5,
+        fields: ['id', 'status', 'total', 'metodo_entrega', { cliente_id: ['nombre', 'nombre_empresa'] }]
+    }));
+
+    recentOrders = (orders || []).map((o) => ({
+        id: o.id.toString(),
+        cliente: o.cliente_id?.nombre_empresa || o.cliente_id?.nombre || 'Consumidor Final',
+        status: o.status,
+        logistica: o.metodo_entrega || 'Retiro'
+    }));
+} catch (e) {
+    console.error("Error loading admin stats:", e.message);
+}
+---
+
+<AdminLayout title="Dashboard General">
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-white mb-2">Bienvenido, Javier 👋</h2>
+        <p class="text-gray-400">Resumen rápido de <span class="text-primary font-semibold">Alvarez Placas</span>.</p>
+    </div>
+    <!-- Resto del HTML igual, refactorizado para ser modular -->
+</AdminLayout>

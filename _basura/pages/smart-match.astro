@@ -1,0 +1,56 @@
+---
+import Layout from '@layouts/Layout.astro';
+import Header from '@components/Header.astro';
+import { getSmartMatch } from '@features/smart-match/logic/smartMatchLogic.js';
+import SmartMatchProposal from '@features/smart-match/ui/SmartMatchProposal.astro';
+
+// Obtenemos el ID de la placa desde la URL
+const url = new URL(Astro.request.url);
+const placaId = url.searchParams.get('id');
+
+const matchResult = placaId ? getSmartMatch(placaId) : null;
+---
+
+<Layout title="Smart Match | Alvarez Placas">
+    <Header />
+    
+    <main class="pt-24 pb-20 min-h-screen bg-[#0a0a0a] text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Hero Section -->
+            <div class="mb-12">
+                <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tighter">
+                    Smart <span class="text-primary italic">Match</span>
+                </h1>
+                <p class="text-gray-400 text-lg max-w-2xl leading-relaxed">
+                    Nuestra IA analiza tu elección basándose en la regla <span class="text-white font-bold">60-30-10</span> de los grandes maestros del interiorismo para sugerirte la combinación perfecta.
+                </p>
+            </div>
+
+            {matchResult ? (
+                <SmartMatchProposal matchResult={matchResult} />
+            ) : (
+                <div class="py-20 text-center">
+                    <div class="mb-8 inline-flex items-center justify-center w-24 h-24 rounded-full bg-[#1a1a1a] border border-gray-800">
+                         <svg class="w-10 h-10 text-primary animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    </div>
+                    <h2 class="text-3xl font-bold mb-4">No seleccionaste una placa</h2>
+                    <p class="text-gray-400 mb-8 max-w-md mx-auto">Para usar el Smart Match, primero debes elegir un color base de nuestro catálogo de materiales.</p>
+                    <a href="/catalogo" class="bg-primary hover:bg-primary/90 text-white font-bold py-4 px-8 rounded-xl transition-all shadow-lg shadow-primary/20">
+                        Ir al Catálogo
+                    </a>
+                </div>
+            )}
+
+        </div>
+    </main>
+</Layout>
+
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .text-print { color: black !important; }
+        body { background: white !important; }
+        main { padding-top: 50px !important; background: white !important; }
+    }
+</style>

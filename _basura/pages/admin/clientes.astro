@@ -1,0 +1,303 @@
+---
+import AdminLayout from '@layouts/AdminLayout.astro';
+import { createDirectus, rest, readItems } from '@directus/sdk';
+
+const DIRECTUS_URL = import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const directus = createDirectus(DIRECTUS_URL).with(rest());
+
+// Fetch real clients from Directus
+let clientes = [];
+let totalClientes = 0;
+let puntosEmitidos = 0;
+
+try {
+    const res = await directus.request(readItems('clientes', {
+        sort: ['-date_created'],
+        fields: ['*', { pedidos: ['id'] }] // Asumimos relación o simplemente traemos datos básicos
+    }));
+
+    clientes = (res || []).map((row) => ({
+        ...row,
+        nombre: row.nombre_empresa || row.nombre || 'Sin nombre',
+        contacto: row.whatsapp || row.phone,
+        pedidos: row.pedidos?.length || 0,
+        estado: row.status === 'published' ? "Activo" : "Inactivo",
+        fin_status: row.fin_status || "clean",
+        debt_amount: row.debt_amount || 0,
+        puntos: row.puntaje || 0
+    }));
+    
+    totalClientes = clientes.length;
+    puntosEmitidos = clientes.reduce((acc, c) => acc + (c.puntos || 0), 0);
+} catch (e) {
+    console.error("Error loading clients:", e.message);
+}
+---
+
+<AdminLayout title="Gestión de Clientes">
+    
+    <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-white mb-2">Cartera de Clientes</h2>
+            <p class="text-gray-400">Administra los profesionales registrados, sus pedidos y el sistema de Scoring.</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="px-4 py-2 bg-primary hover:bg-primary-light text-white rounded-lg transition-colors shadow-[0_0_15px_rgba(255,40,0,0.3)] flex items-center gap-2 font-bold">
+                <i class="fas fa-plus"></i> Añadir Manualmente
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center text-xl">
+                <i class="fas fa-users"></i>
+            </div>
+            <div>
+                <p class="text-gray-400 text-sm font-semibold">Total Registrados</p>
+                <h3 class="text-2xl font-bold text-white">{totalClientes}</h3>
+            </div>
+        </div>
+        <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xl">
+                <i class="fas fa-star"></i>
+            </div>
+            <div>
+                <p class="text-gray-400 text-sm font-semibold">Puntos Emitidos</p>
+                <h3 class="text-2xl font-bold text-white">{puntosEmitidos.toLocaleString()}</h3>
+            </div>
+        </div>
+        <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center text-xl">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div>
+                <p class="text-gray-400 text-sm font-semibold">Para dar de baja (< 90 días)</p>
+                <h3 class="text-2xl font-bold text-white">0</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Clientes -->
+    <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black/20">
+            <div class="relative w-full max-w-sm">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <input type="text" placeholder="Buscar por Nombre, Empresa o Email..." class="w-full bg-black/50 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-primary text-sm transition-colors">
+            </div>
+            <button class="text-sm text-gray-400 hover:text-white flex items-center gap-2">
+                <i class="fas fa-filter"></i> Filtrar
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-800 text-xs uppercase tracking-wider text-gray-500">
+                        <th class="p-4 font-semibold">Nombre / Empresa</th>
+                        <th class="p-4 font-semibold">Apellido</th>
+                        <th class="p-4 font-semibold text-center">WhatsApp / Email</th>
+                        <th class="p-4 font-semibold text-center">Dirección</th>
+                        <th class="p-4 font-semibold text-center">Puntaje</th>
+                        <th class="p-4 font-semibold text-center">Finanzas</th>
+                        <th class="p-4 font-semibold text-center">Estado Pedidos</th>
+                        <th class="p-4 font-semibold text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/50">
+                    {clientes.map((cliente) => (
+                        <tr class="hover:bg-white/5 transition-colors group">
+                            <td class="p-4 text-white font-medium text-sm">
+                                {cliente.nombre}
+                            </td>
+                            <td class="p-4 text-white text-sm">
+                                {cliente.apellido || '-'}
+                            </td>
+                            <td class="p-4 text-center">
+                                <div class="flex flex-col items-center gap-1">
+                                    <a href={`https://wa.me/549${cliente.contacto}`} target="_blank" class="text-green-400 hover:text-green-300 transition-colors text-xs font-bold">
+                                        <i class="fab fa-whatsapp"></i> {cliente.contacto}
+                                    </a>
+                                    <span class="text-[10px] text-gray-500">{cliente.email || 'sin email'}</span>
+                                </div>
+                            </td>
+                            <td class="p-4 text-center text-gray-400 text-xs">
+                                {cliente.direccion || 'No especificada'}
+                            </td>
+                            <td class="p-4 text-center">
+                                <div class="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-[#111111] border border-gray-700 text-sm font-bold">
+                                    <span class="text-primary">{cliente.puntos}</span>
+                                    <i class="fas fa-star text-[10px] text-yellow-500"></i>
+                                </div>
+                            </td>
+                            <td class="p-4 text-center">
+                                <div class={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                    cliente.fin_status === 'clean' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                    cliente.fin_status === 'partial' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                    'bg-red-500/10 text-red-500 border-red-500/20'
+                                }`}>
+                                    {cliente.fin_status === 'clean' ? 'Al día' : 
+                                     cliente.fin_status === 'partial' ? 'Pago Parcial' : 'Deuda/Pagar'}
+                                </div>
+                                {cliente.debt_amount > 0 && (
+                                    <p class="text-[10px] text-gray-400 mt-1 font-bold">
+                                        ${cliente.debt_amount.toLocaleString()}
+                                    </p>
+                                )}
+                            </td>
+                            <td class="p-4 text-center">
+                                <div class="flex flex-wrap justify-center gap-1">
+                                    <span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] rounded uppercase font-bold" title="Pedido #123">Procesado</span>
+                                    <span class="px-2 py-0.5 bg-yellow-500/10 text-yellow-400 text-[10px] rounded uppercase font-bold" title="Pedido #124">Producción</span>
+                                    <span class="px-2 py-0.5 bg-green-500/10 text-green-400 text-[10px] rounded uppercase font-bold" title="Pedido #125">Entregado</span>
+                                </div>
+                            </td>
+                            <td class="p-4 text-right">
+                                <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button 
+                                        class="p-2 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 rounded transition-colors" 
+                                        title="Gestionar Finanzas"
+                                        onclick={`openFinModal(${JSON.stringify(cliente)})`}
+                                    >
+                                        <i class="fas fa-hand-holding-usd"></i>
+                                    </button>
+                                    <button class="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors" title="Editar Cliente">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Finanzas -->
+    <div id="finModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="bg-[#1a1a1a] border border-gray-800 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-black/40">
+                <div>
+                    <h3 class="text-xl font-bold text-white uppercase tracking-tighter" id="finTitle">Gestión Financiera</h3>
+                    <p class="text-xs text-gray-500 uppercase font-black tracking-widest mt-1" id="finClientName"></p>
+                </div>
+                <button onclick="closeFinModal()" class="text-gray-500 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="finForm" class="p-8 space-y-6">
+                <input type="hidden" id="finClientId" name="clientId">
+                
+                <div>
+                    <label class="block text-xs font-black text-gray-500 uppercase mb-3 ml-1 tracking-widest">Estado de Cuenta</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <label class="relative cursor-pointer group">
+                            <input type="radio" name="fin_status" value="clean" class="sr-only peer" checked>
+                            <div class="p-3 text-center rounded-xl bg-black border border-gray-800 peer-checked:border-green-500 peer-checked:bg-green-500/10 transition-all">
+                                <i class="fas fa-check-circle text-green-500 mb-2 block text-xl"></i>
+                                <span class="text-[10px] font-bold text-gray-400 peer-checked:text-green-500">AL DÍA</span>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer group">
+                            <input type="radio" name="fin_status" value="partial" class="sr-only peer">
+                            <div class="p-3 text-center rounded-xl bg-black border border-gray-800 peer-checked:border-yellow-500 peer-checked:bg-yellow-500/10 transition-all">
+                                <i class="fas fa-hourglass-half text-yellow-500 mb-2 block text-xl"></i>
+                                <span class="text-[10px] font-bold text-gray-400 peer-checked:text-yellow-500">PARCIAL</span>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer group">
+                            <input type="radio" name="fin_status" value="debt" class="sr-only peer">
+                            <div class="p-3 text-center rounded-xl bg-black border border-gray-800 peer-checked:border-red-500 peer-checked:bg-red-500/10 transition-all">
+                                <i class="fas fa-exclamation-circle text-red-500 mb-2 block text-xl"></i>
+                                <span class="text-[10px] font-bold text-gray-400 peer-checked:text-red-500">PAGAR</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-2 ml-1">Monto de Deuda</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+                            <input type="number" id="debt_amount" name="debt_amount" class="w-full bg-black/50 border border-gray-800 rounded-xl pl-8 pr-4 py-3 text-white outline-none focus:border-primary transition-all font-bold" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-2 ml-1">Fecha Límite</label>
+                        <input type="date" id="due_date" name="due_date" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-all font-bold">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black text-gray-500 uppercase mb-2 ml-1">Observaciones Internas</label>
+                    <textarea id="financial_notes" name="financial_notes" rows="3" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-all resize-none text-sm" placeholder="Detalles visibles solo para el equipo..."></textarea>
+                </div>
+
+                <div class="pt-4 flex gap-4">
+                    <button type="button" onclick="closeFinModal()" class="flex-1 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all uppercase tracking-widest text-xs border border-white/5">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 py-4 bg-primary hover:bg-primary-dark text-white font-black rounded-xl transition-all uppercase tracking-widest text-xs shadow-[0_0_20px_rgba(255,40,0,0.3)]">
+                        Confirmar Cuenta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script is:inline>
+        window.openFinModal = (cliente) => {
+            const modal = document.getElementById('finModal');
+            document.getElementById('finClientId').value = cliente.id;
+            document.getElementById('finClientName').textContent = cliente.nombre;
+            document.getElementById('debt_amount').value = cliente.debt_amount || 0;
+            document.getElementById('due_date').value = cliente.due_date || '';
+            document.getElementById('financial_notes').value = cliente.financial_notes || '';
+            
+            const radios = document.getElementsByName('fin_status');
+            for (let r of radios) {
+                if (r.value === (cliente.fin_status || 'clean')) {
+                    r.checked = true;
+                }
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeFinModal = () => {
+            const modal = document.getElementById('finModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        };
+
+        document.getElementById('finForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const res = await fetch('/api/admin/update-financial-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert('Estado financiero actualizado correctamente');
+                    location.reload();
+                } else {
+                    alert('Error al actualizar: ' + (await res.json()).error);
+                }
+            } catch (err) {
+                alert('Error de conexión');
+            }
+        });
+    </script>
+
+</AdminLayout>

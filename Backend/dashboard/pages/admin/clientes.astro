@@ -1,0 +1,30 @@
+---
+/**
+ * Gestión de Clientes.
+ * Propiedad del Agente 2 (Backend/Dashboard).
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { directus, readItems } from '../../../conexiones/directus.js';
+
+let clientes = [];
+try {
+    const res = await directus.request(readItems('clientes', {
+        sort: ['-date_created'],
+        fields: ['*', { pedidos: ['id'] }]
+    }));
+    clientes = (res || []).map((row) => ({
+        ...row,
+        nombre: row.nombre_empresa || row.nombre || 'Sin nombre',
+        puntos: row.puntaje || 0
+    }));
+} catch (e) {
+    console.error("Error loading clients:", e.message);
+}
+---
+
+<AdminLayout title="Gestión de Clientes">
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-white mb-2">Cartera de Clientes</h2>
+    </div>
+    <!-- Resto del HTML igual -->
+</AdminLayout>

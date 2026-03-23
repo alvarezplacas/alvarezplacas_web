@@ -1,0 +1,118 @@
+---
+/**
+ * CatalogGrid - Componente principal del sector Catálogo.
+ * Propiedad del Agente 4 (Frontend/Catalogo).
+ */
+import CatalogItem from './components/CatalogItem.astro';
+import CatalogFilters from './components/CatalogFilters.astro';
+import { directus, readItems } from '../../Backend/conexiones/directus.js';
+
+let initialItems = [];
+let showPrices = true;
+
+try {
+  // 1. Obtener Ajustes de Sitio (Usando lógica centralizada)
+  const siteSettings = await directus.request(readItems('site_settings', {
+      filter: { key: { _eq: 'show_prices' } },
+      limit: 1
+  })).catch(err => {
+    console.warn(`[CatalogGrid] Error site_settings: ${err.message}`);
+    return [];
+  });
+
+  if (siteSettings && siteSettings.length > 0) {
+    showPrices = siteSettings[0].value !== 'false';
+  }
+
+  // 2. Obtener Catálogo Completo
+  const productos = await directus.request(readItems('productos', {
+      limit: 100,
+      fields: ['id','status','nombre','sku','precio','marca_id.nombre','categoria_id.nombre','linea_id.nombre','atributos','tags'],
+      filter: { status: { _eq: 'published' } }
+  })).catch(err => {
+    console.error(`[CatalogGrid] Error productos: ${err.message}`);
+    return [];
+  });
+
+  if (productos && productos.length > 0) {
+      initialItems = productos.map(prod => {
+        const marca = prod.marca_id?.nombre || "Varios";
+        const linea = prod.linea_id?.nombre || "Estándar";
+        const categoria = prod.categoria_id?.nombre || "General";
+        const imagePath = `/Placas/${marca}/${linea}/${prod.nombre}.avif`;
+
+        return {
+          id: prod.id,
+          brand: marca,
+          category: categoria,
+          name: prod.nombre,
+          specs: prod.atributos ? Object.values(prod.atributos).filter(Boolean) : [],
+          price: prod.precio ? `$${parseFloat(prod.precio).toLocaleString('es-AR')}` : "Consultar",
+          code: prod.sku || `P-${prod.id}`,
+          imagen: imagePath,
+          localMatch: true,
+          tags: prod.tags || []
+        };
+      });
+  }
+} catch (e) {
+  console.error("Critical Catalog Grid Error:", e);
+}
+
+// Preparar marcas y categorías para filtros
+const marcasRaw = [...new Set(initialItems.map((item) => item.brand))].filter(m => m && m !== "Varios");
+const categoriasRaw = [...new Set(initialItems.map((item) => item.category))].filter(c => c);
+
+const marcas = ["Todos", ...marcasRaw.sort()];
+const categorias = ["Todas", ...categoriasRaw.sort()];
+
+const brandsByCategory = {};
+categoriasRaw.forEach(cat => {
+  brandsByCategory[cat] = [...new Set(initialItems.filter(i => i.category === cat).map(i => i.brand))].filter(b => b && b !== "Varios").sort();
+});
+brandsByCategory["Todas"] = marcasRaw.sort();
+---
+
+<section class="max-w-7xl mx-auto px-4 py-12 relative">
+  <div class="text-center mb-12">
+    <h2 class="text-3xl md:text-5xl font-bold text-white mb-4">
+      Catálogo <span class="text-primary">Unificado</span>
+    </h2>
+    <p class="text-gray-400">Todo lo que necesitás en un solo lugar. Placas, Herrajes, Químicos y Herramientas.</p>
+  </div>
+
+  <CatalogFilters 
+    marcas={marcas} 
+    categorias={categorias} 
+    brandsByCategory={brandsByCategory} 
+    totalProducts={initialItems.length}
+  />
+
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" id="catalogGrid">
+    {initialItems.map((item) => (
+      <CatalogItem placa={item} showPrices={showPrices} />
+    ))}
+  </div>
+
+  {initialItems.length === 0 && (
+    <div class="text-center py-24 bg-[#151515] rounded-3xl border border-dashed border-gray-800" id="noResults">
+      <i class="fas fa-search text-5xl text-gray-700 mb-6"></i>
+      <h3 class="text-xl font-bold text-white mb-2">No se encontraron productos</h3>
+      <p class="text-gray-500">Estamos actualizando el catálogo. Por favor, intenta de nuevo en unos minutos.</p>
+    </div>
+  )}
+</section>
+
+<script>
+  import { initCatalog } from './logic/catalog-logic.js';
+  
+  document.addEventListener('astro:page-load', () => {
+    initCatalog();
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCatalog);
+  } else {
+    initCatalog();
+  }
+</script>

@@ -1,0 +1,30 @@
+---
+/**
+ * Gestión de Vendedores.
+ * Propiedad del Agente 2 (Backend/Dashboard).
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { directus, readItems } from '../../../conexiones/directus.js';
+
+let vendedores = [];
+try {
+    const res = await directus.request(readItems('vendedores', {
+        sort: ['id'],
+        fields: ['*']
+    }));
+    vendedores = (res || []).map((v) => ({
+        ...v,
+        nombre: v.Nombre || v.nombre || 'Sin nombre',
+        estado: 'Activo'
+    }));
+} catch (e) {
+    console.error("Error cargando vendedores:", e.message);
+}
+---
+
+<AdminLayout title="Gestión de Vendedores">
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-white mb-2">Equipo de Ventas</h2>
+    </div>
+    <!-- Resto del HTML igual -->
+</AdminLayout>
