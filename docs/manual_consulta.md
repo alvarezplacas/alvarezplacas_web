@@ -13,11 +13,13 @@ El proyecto se divide en 5 sectores aislados dentro de `/Alvarezplacas_proyecto`
 - **Agente 5: Frontend/Herramientas** -> Presupuestador de Cortes, Scoring y Smart Match.
 
 ## 2. Estándares Técnicos
+
 - **Astro.js**: Usar Island Architecture cuando sea necesario.
 - **Tailwind CSS**: Estilizado premium obligatorio.
 - **Directus SDK**: Única fuente de datos.
 - **Extreme Order**: La lógica de negocio debe ir en carpetas `/logic` y la UI en `/components`.
 
 ## 3. Protocolo de Despliegue (VPS)
+
 - **Puerto**: 4321 (Default Astro).
 - **Proxy**: Nginx gestiona el SSL y el redireccionamiento al contenedor.
