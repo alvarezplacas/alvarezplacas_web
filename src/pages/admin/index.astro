@@ -22,7 +22,7 @@ try {
     const ordersStats = await directus.request(aggregate('pedidos', {
         aggregate: { count: '*' },
         query: { filter: { date_created: { _gte: yesterday } } }
-    } as any));
+    }));
     newOrdersCount = parseInt(ordersStats[0]?.count || '0');
 
     // 2. Presupuestos (últimas 24h) - Si existe la colección 'presupuestos'
@@ -30,7 +30,7 @@ try {
         const budgetStats = await directus.request(aggregate('presupuestos', {
             aggregate: { count: '*' },
             query: { filter: { date_created: { _gte: yesterday } } }
-        } as any));
+        }));
         budgetsCount = parseInt(budgetStats[0]?.count || '0');
     } catch (e) { /* Colección opcional */ }
 
@@ -38,14 +38,14 @@ try {
     const pendingStats = await directus.request(aggregate('pedidos', {
         aggregate: { count: '*' },
         query: { filter: { status: { _in: ['pending', 'processing'] } } }
-    } as any));
+    }));
     pendingCutsCount = parseInt(pendingStats[0]?.count || '0');
 
     // 4. Clientes Activos
     const clientsStats = await directus.request(aggregate('clientes', {
         aggregate: { count: '*' },
         query: { filter: { status: { _eq: 'published' } } }
-    } as any));
+    }));
     activeClientsCount = parseInt(clientsStats[0]?.count || '0');
 
     // 5. Pedidos Recientes
@@ -53,16 +53,16 @@ try {
         sort: ['-date_created'],
         limit: 5,
         fields: ['id', 'status', 'total', 'metodo_entrega', { cliente_id: ['nombre', 'nombre_empresa'] }]
-    } as any));
+    }));
 
-    recentOrders = (orders || []).map((o: any) => ({
+    recentOrders = (orders || []).map((o) => ({
         id: o.id.toString(),
         cliente: o.cliente_id?.nombre_empresa || o.cliente_id?.nombre || 'Consumidor Final',
         status: o.status,
         logistica: o.metodo_entrega || 'Retiro'
     }));
 
-} catch (e: any) {
+} catch (e) {
     console.error("Error loading admin stats:", e.message);
 }
 ---

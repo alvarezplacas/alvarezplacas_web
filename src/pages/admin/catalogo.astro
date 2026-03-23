@@ -2,7 +2,7 @@
 import AdminLayout from '@layouts/AdminLayout.astro';
 import { createDirectus, rest, readItems, aggregate } from '@directus/sdk';
 
-const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const DIRECTUS_URL = import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 let previewPlacas = [];
@@ -13,7 +13,7 @@ try {
   const countRes = await directus.request(aggregate('productos', {
     aggregate: { count: '*' },
     query: { filter: { status: { _eq: 'published' } } }
-  } as any));
+  }));
   totalPlacas = parseInt(countRes[0]?.count || '0');
 
   // Fetch products with their relations from Directus
@@ -27,9 +27,9 @@ try {
       { categoria_id: ['nombre'] },
       { variantes: ['*'] }
     ]
-  } as any));
+  }));
 
-  previewPlacas = (products || []).map((p: any) => {
+  previewPlacas = (products || []).map((p) => {
     const mainVariant = p.variantes?.[0] || {};
     
     // Determine image URL
@@ -57,7 +57,7 @@ try {
       imagen: imageUrl || '/images/placeholder.jpg'
     };
   });
-} catch (e: any) {
+} catch (e) {
   console.error("Error fetching admin catalog preview:", e.message);
 }
 ---

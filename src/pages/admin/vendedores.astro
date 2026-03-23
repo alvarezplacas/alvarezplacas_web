@@ -2,7 +2,7 @@
 import AdminLayout from '@layouts/AdminLayout.astro';
 import { createDirectus, rest, readItems } from '@directus/sdk';
 
-const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const DIRECTUS_URL = import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 // Obtener vendedores reales de Directus
@@ -14,9 +14,9 @@ try {
     const res = await directus.request(readItems('vendedores', {
         sort: ['id'],
         fields: ['*']
-    } as any));
+    }));
 
-    vendedores = (res || []).map((v: any) => ({
+    vendedores = (res || []).map((v) => ({
         ...v,
         nombre: v.Nombre || v.nombre || 'Sin nombre',
         sucursal: v.Nombre || 'Sucursal Principal', // Ajustar según campos reales
@@ -27,7 +27,7 @@ try {
     
     totalVendedores = vendedores.length;
     activosVendedores = vendedores.filter(v => v.estado === 'Activo').length;
-} catch (e: any) {
+} catch (e) {
     console.error("Error cargando vendedores:", e.message);
 }
 ---

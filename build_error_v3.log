@@ -1,0 +1,61 @@
+
+> alvarezplacas-astro@1.0.0 build
+> astro build
+
+[2m08:38:09[22m [34m[@astrojs/node][39m Enabling sessions with filesystem storage
+[2m08:38:09[22m [34m[types][39m Generated [2m62ms[22m
+[2m08:38:09[22m [34m[build][39m output: [34m"server"[39m
+[2m08:38:09[22m [34m[build][39m mode: [34m"server"[39m
+[2m08:38:09[22m [34m[build][39m directory: [34mD:\Alvarezplacas_2026\WEB-alvarezplacas_astro\Alvarezplacas\dist\[39m
+[2m08:38:09[22m [34m[build][39m adapter: [32m@astrojs/node[39m
+[2m08:38:09[22m [34m[build][39m Collecting build info...
+[2m08:38:09[22m [34m[build][39m [32mÔ£ô Completed in 100ms.[39m
+[2m08:38:09[22m [34m[build][39m Building server entrypoints...
+[33m[1m08:38:11[22m [WARN] [vite][39m [33m"matchHostname", "matchPathname", "matchPort" and "matchProtocol" are imported from external module "@astrojs/internal-helpers/remote" but never used in "node_modules/astro/dist/assets/utils/index.js".[39m
+[33m[1m08:38:11[22m [WARN] [vite][39m [33m[esbuild css minify]
+Ôû▓ [WARNING] Expected identifier but found "#111111" [css-syntax-error]
+
+    <stdin>:1:127:
+      1 Ôöé ...t;color:black!important}.bg-[#111111]{background:white!important...
+        ÔòÁ                                 ~~~~~~~
+
+
+Ôû▓ [WARNING] Expected identifier but found "#1a1a1a" [css-syntax-error]
+
+    <stdin>:1:168:
+      1 Ôöé ...kground:white!important}.bg-[#1a1a1a],.bg-black\/40{background:#...
+        ÔòÁ                                 ~~~~~~~
+
+[39m
+[2m08:38:11[22m [34m[vite][39m [32mÔ£ô built in 2.04s[39m
+[33m[1m08:38:11[22m [WARN] [vite][39m [33m"matchHostname", "matchPathname", "matchPort" and "matchProtocol" are imported from external module "@astrojs/internal-helpers/remote" but never used in "node_modules/astro/dist/assets/utils/index.js".[39m
+[2m08:38:11[22m [34m[vite][39m [32mÔ£ô built in 519ms[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:path" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/shared.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:url" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/shared.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:fs" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/shared.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:fs" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/standalone.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:http" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/standalone.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:https" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/standalone.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:async_hooks" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/serve-app.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:fs" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/serve-app.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:path" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/serve-app.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:stream" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/serve-app.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[2m08:38:13[22m [34m[vite][39m [32mÔ£ô built in 1.78s[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:https" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/log-listening-on.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:os" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/log-listening-on.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:fs" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/serve-static.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:path" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/@astrojs/node/dist/serve-static.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:fs" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/astro/dist/core/app/node.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "node:http2" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/astro/dist/core/app/node.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "fs" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/send/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "path" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/send/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "stream" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/send/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "util" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/send/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "crypto" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/etag/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "fs" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/etag/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "path" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/mime-types/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[1m08:38:13[22m [WARN] [vite][39m [33m[plugin vite:resolve] Module "async_hooks" has been externalized for browser compatibility, imported by "D:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/node_modules/on-finished/index.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[2m08:38:13[22m [34m[build][39m Rearranging server assets...
+[2m08:38:14[22m [34m[build][39m [32mÔ£ô Completed in 4.83s.[39m
+[2m08:38:14[22m [34m[build][39m Server built in [1m4.93s[22m
+[2m08:38:14[22m [34m[build][39m [1mComplete![22m
