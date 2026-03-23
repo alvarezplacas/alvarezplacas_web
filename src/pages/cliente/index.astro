@@ -4,7 +4,8 @@ import { createDirectus, rest, readItems, readItem } from '@directus/sdk';
 import BottomNav from '@components/BottomNav.astro';
 
 const getEnv = () => {
-    if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env;
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env) return import.meta.env;
     return process.env;
 };
 
@@ -31,13 +32,13 @@ try {
     // Asumimos relación con vendedores se llama 'vendedor_asignado' (m2o)
     cliente = await directus.request(readItem('clientes', userId, {
         fields: ['*', { vendedor_asignado: ['Nombre', 'Whatsapp'] }]
-    } as any));
+    }));
 
     // Buscar pedidos del cliente
     pedidos = await directus.request(readItems('pedidos', {
         filter: { cliente_id: { _eq: userId } },
         sort: ['-fecha_pedido']
-    } as any));
+    }));
 
 } catch (e) {
     console.error('Error fetching client from Directus:', e);
@@ -61,7 +62,7 @@ const templateData = {
     client_number: cliente.id
 };
 
-const processedPedidos = (pedidos || []).map((p: any) => ({
+const processedPedidos = (pedidos || []).map((p) => ({
     ...p,
     created_at: p.fecha_pedido,
     total_amount: p.total,

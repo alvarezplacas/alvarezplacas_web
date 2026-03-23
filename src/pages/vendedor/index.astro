@@ -6,7 +6,8 @@ import { Order } from '@domain/order.js';
 import { createDirectus, rest, readItems, readItem } from '@directus/sdk';
 
 const getEnv = () => {
-    if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env;
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env) return import.meta.env;
     return process.env;
 };
 
@@ -41,9 +42,9 @@ try {
             status: { _eq: 'pending' }
         },
         sort: ['-fecha_pedido']
-    } as any));
+    }));
 
-    pendingOrders = (orders || []).map((o: any) => new Order({
+    pendingOrders = (orders || []).map((o) => new Order({
         id: o.id.toString(),
         cliente: 'Cargando...', 
         status: o.status,
