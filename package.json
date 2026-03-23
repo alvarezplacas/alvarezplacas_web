@@ -14,10 +14,10 @@
     },
     "dependencies": {
         "@astrojs/check": "^0.9.8",
-        "@astrojs/node": "^11.0.0",
+        "@astrojs/node": "^10.0.3",
         "@directus/sdk": "^18.0.3",
-        "@tailwindcss/vite": "^4.2.1",
-        "astro": "^6.0.4",
+        "@tailwindcss/vite": "^4.2.2",
+        "astro": "^6.0.8",
         "bcryptjs": "^3.0.3",
         "csv-parse": "^6.1.0",
         "dotenv": "^17.3.1",
