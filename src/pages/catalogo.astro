@@ -1,4 +1,9 @@
 ---
+import Layout from '@home/layouts/Layout.astro';
+import Header from '@components/Header.astro';
 import Page from '@frontend/catalogo/CatalogGrid.astro';
 ---
-<Page />
+<Layout title="Catálogo de Productos - Alvarez Placas">
+    <Header />
+    <Page />
+</Layout>
