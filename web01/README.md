@@ -1,67 +1,40 @@
-# 🚀 Alvarez Placas - Arquitectura Modular (web01)
+# 🚀 Alvarez Placas - Web Modular (web01)
 
-Este es el esqueleto oficial y modular de la plataforma **Alvarez Placas**. Diseñado para ser escalable, desacoplado y listo para el trabajo colaborativo entre múltiples agentes de IA y desarrolladores.
+Sito web oficial de Alvarez Placas, migrado a una arquitectura modular de alto rendimiento basada en Astro y Directus.
 
-## 🏗️ Estructura del Proyecto (El Esqueleto)
+## 🧬 Arquitectura y Guía para Desarrolladores (IA y Humanos)
+Para comprender el esqueleto modular, el sistema de proxies y la lógica de conexiones con Directus, consulta la guía maestra:
+👉 [**Guía Arquitectónica Web01**](./docs/ARQUITECTURA_WEB01_PEDAGOGICA.md)
 
-El proyecto se divide en módulos lógicos para evitar conflictos y facilitar la expansión:
-
-```text
-web01/
-├── src/
-│   └── pages/          <-- 🟢 CAPA DE PROXIES (Rutas oficiales de Astro)
-├── Frontend/           <-- 🔵 UI & COMPONENTES (Propiedad del Agente Frontend)
-│   ├── home/           <-- Landing, Contacto, Layouts generales
-│   ├── catalogo/       <-- Grilla de productos, Modales de detalle
-│   ├── cliente/        <-- Login, Registro, Dashboard Cliente
-│   └── herramientas/   <-- Presupuestador, Smart Match
-├── Backend/            <-- 🟡 LÓGICA & DASHBOARDS (Propiedad del Agente Backend)
-│   ├── dashboard/      <-- Panel Admin y Panel Vendedores
-│   └── conexiones/     <-- Singleton de Directus y APIs
-└── public/             <-- Assets estáticos (Imágenes, Fuentes)
-```
-
-## 🧠 Lógica de Funcionamiento: Los "Proxies"
-
-Para mantener la modularidad, los archivos en `src/pages/` actúan únicamente como **punteros** o proxies. 
-
-**Ejemplo de un archivo proxy (`src/pages/catalogo.astro`):**
-```astro
 ---
-import Page from '../Frontend/catalogo/CatalogGrid.astro';
----
-<Page />
-```
-*Esto permite mover o refactorizar el código en `Frontend/` sin romper las URLs del sitio.*
 
-## 🔌 Conexión con Directus (API-First)
+## 🛠️ Tecnologías y Módulos
+- **Astro (SSR)** en modo `web01`.
+- **Tailwind CSS** para un diseño premium y reactivo.
+- **Directus CMS** como motor de datos (API-First).
+- **NanoStores** para gestión de estado en herramientas interactivas.
 
-Toda la data (Productos, Pedidos, Clientes, Mensajes) vive en **Directus CMS**. 
-La conexión se centraliza en `web01/Backend/conexiones/directus.js`.
+## 📁 Estructura del Proyecto
+- `/src/pages/`: Proxies de ruta (mantener ligeros).
+- `/Frontend/`: Todo el UI y lógica visual.
+- `/Backend/`: Conexiones, Dashboards y lógica de negocio pesada.
 
-- **Catálogo**: Hidratación dinámica desde la colección `productos`.
-- **Dashboards**: Autenticación persistente mediante cookies y consultas SDK.
-- **Contacto**: Envío de formularios vía API route (`src/pages/api/contacto.ts`) hacia Directus.
-
-## 💻 Desarrollo Local
-
+## 👨‍💻 Desarrollo Local
 Para correr este proyecto en tu máquina y que funcione con la data real de Alvarez Placas:
 
-1.  **Clonar** el repositorio.
-2.  Entrar a la carpeta: `cd web01/`.
-3.  **Instalar dependencias**: `npm install`.
-4.  **Configurar Entorno**: Copia `.env.example` a `.env` y asegúrate de tener:
-    ```env
-    PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
-    ```
-5.  **Iniciar**: `npm run dev`.
-6.  Abre [http://localhost:4321](http://localhost:4321).
+1. **Clonar** el repositorio.
+2. **Instalar dependencias**: `npm install`.
+3. **Configurar Entorno**: Copia `.env.example` a `.env` y asegúrate de tener:
+   ```env
+   PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
+   ```
+4. **Iniciar**: `npm run dev`.
+5. Abre [http://localhost:4321](http://localhost:4321).
 
 ## 🚢 Despliegue en VPS
-
-El sitio se gestiona con Docker en una instancia Ubuntu. 
-- **Archivo de Config**: `docker-compose.vps.yml`.
-- **Comando de reinicio**: `docker compose -f docker-compose.vps.yml restart web`.
+El despliegue se realiza mediante Docker:
+1. `git pull origin main`
+2. `docker compose -f docker-compose.vps.yml restart web`
 
 ---
-*Manual mantenido por Antigravity AI - Arquitecto de Sistemas.*
+*Mantenido por el Agente Antigravity - Marzo 2026*
