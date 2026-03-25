@@ -69,16 +69,39 @@ export const finalizeSheet = () => {
     return true;
 };
 
-export const getLeptonExport = () => {
+/**
+ * Genera el formato listo para copiar en Leptom Optimizer
+ * Formato: Cant;Base;Altura;Detalle;Material;Rota;CArr;CAbj;CDer;CIzq
+ */
+export const getLeptomExport = () => {
     const sheets = allSheets.get();
     const current = currentSheetItems.get();
-    const totalItems = [...sheets.flatMap(s => s.items), ...current];
-    if (totalItems.length === 0) return '';
+    const allData = [...sheets];
+    if (current.length > 0) {
+        allData.push({ config: sheetConfig.get(), items: current });
+    }
+
+    if (allData.length === 0) return '';
     
-    let exportText = "";
-    totalItems.forEach((item) => {
-        exportText += `${item.quantity}, ${item.length}, ${item.width}, ${item.thickness || 18}, ${item.label || '(sin nombre)'}\r\n`;
+    let exportText = "(copia esto en tu leptom)\r\n";
+    
+    allData.forEach((s) => {
+        const materialName = `${s.config.brand} ${s.config.thickness}mm`.substring(0, 30);
+        
+        s.items.forEach((item) => {
+            const rotaVal = item.canRotate ? 1 : 0;
+            // Mapeo de tapacantos (0, 0.45, 1, 2)
+            const cArr = item.edges?.top || 0;
+            const cAbj = item.edges?.bottom || 0;
+            const cDer = item.edges?.right || 0;
+            const cIzq = item.edges?.left || 0;
+            const detalle = (item.label || 'Pieza').substring(0, 30).replace(/;/g, ',');
+
+            // Formato: Cant;Base;Altura;Detalle;Material;Rota;CArr;CAbj;CDer;CIzq
+            exportText += `${item.quantity};${item.length};${item.width};${detalle};${materialName};${rotaVal};${cArr};${cAbj};${cDer};${cIzq}\r\n`;
+        });
     });
+    
     return exportText;
 };
 
