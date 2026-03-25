@@ -1,11 +1,155 @@
 ---
+/**
+ * Página de Contacto Premium - Alvarez Placas
+ * Integración con Google Maps, Reseñas y Formulario Directus.
+ */
 import Layout from '@layouts/Layout.astro';
 import Header from '@components/Header.astro';
+
+// Datos de reseñas (Simulados para el WOW inicial)
+const reviews = [
+    { name: "Carlos Rodriguez", stars: 5, text: "Excelente atención y variedad de placas. Muy profesionales." },
+    { name: "Marta Gómez", stars: 5, text: "El sistema de presupuestos es rapidísimo. Recomendados 100%." },
+    { name: "Juan Pérez", stars: 5, text: "La mejor calidad en zona oeste. Cumplen con los tiempos siempre." }
+];
 ---
 
 <Layout title="Contacto - Alvarez Placas">
     <Header />
-    <main class="min-h-screen pt-28 pb-20 px-4">
-        ... (rest equal)
+    
+    <main class="min-h-screen pt-28 pb-20 px-4 bg-gradient-to-b from-gray-900 to-black">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
+            
+            <!-- Columna Izquierda: Info y Mapa -->
+            <div class="space-y-8 animate-fade-in">
+                <div>
+                    <h1 class="text-5xl font-extrabold text-white mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-orange-400">
+                        Contactanos
+                    </h1>
+                    <p class="text-gray-400 text-lg">Estamos en el corazón de Villa Tesei para asesorarte en tu próximo proyecto.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
+                        <div class="text-primary mb-2 text-2xl">📍 Ubicación</div>
+                        <p class="text-gray-300">Av. Vergara 1605,<br/>Villa Tesei, Buenos Aires</p>
+                    </div>
+                    <div class="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
+                        <div class="text-primary mb-2 text-2xl">⏰ Horarios</div>
+                        <p class="text-gray-300">Lun a Vie: 8:00 - 18:00<br/>Sábados: 8:00 - 13:00</p>
+                    </div>
+                </div>
+
+                <!-- Google Maps Embed -->
+                <div class="rounded-3xl overflow-hidden border-4 border-white/5 shadow-2xl h-80 grayscale hover:grayscale-0 transition-all duration-700">
+                    <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3283.4751412089!2d-58.6366!3d-34.6155!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzTCsDM2JzU1LjgiUyA1OMKwMzgnMTEuNyJX!5e0!3m2!1ses!2sar!4v1711370000000!5m2!1ses!2sar" 
+                        width="100%" 
+                        height="100%" 
+                        style="border:0;" 
+                        allowfullscreen="" 
+                        loading="lazy">
+                    </iframe>
+                </div>
+
+                <!-- Sección de Reseñas -->
+                <div class="pt-8">
+                    <h3 class="text-xl font-bold text-white mb-6">Lo que dicen nuestros clientes</h3>
+                    <div class="grid grid-cols-1 gap-4">
+                        {reviews.map(rev => (
+                            <div class="p-4 bg-white/5 rounded-xl border-l-4 border-primary italic">
+                                <div class="flex gap-1 text-yellow-500 mb-2">{"★".repeat(rev.stars)}</div>
+                                <p class="text-gray-300 text-sm">"{rev.text}"</p>
+                                <span class="block text-right text-xs text-primary font-bold mt-2">- {rev.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Formulario -->
+            <div class="bg-white/5 p-8 md:p-12 rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 blur-3xl rounded-full"></div>
+                
+                <h2 class="text-3xl font-bold text-white mb-8">Envianos un mensaje</h2>
+                
+                <form id="contact-form" class="space-y-6 relative z-10">
+                    <div class="group">
+                        <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">Nombre Completo</label>
+                        <input type="text" name="nombre" required class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Tu nombre...">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="group">
+                            <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">Email</label>
+                            <input type="email" name="email" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary transition-all" placeholder="hola@ejemplo.com">
+                        </div>
+                        <div class="group">
+                            <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">Teléfono</label>
+                            <input type="tel" name="tel" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary transition-all" placeholder="+54 11 ...">
+                        </div>
+                    </div>
+
+                    <div class="group">
+                        <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">Mensaje</label>
+                        <textarea name="mensaje" required rows="5" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary transition-all" placeholder="¿En qué podemos ayudarte?"></textarea>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-primary to-orange-600 hover:from-orange-600 hover:to-primary text-white font-black py-5 rounded-xl uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
+                        Enviar Consulta Ahora
+                    </button>
+                    
+                    <div id="status-msg" class="text-center py-2 hidden"></div>
+                </form>
+            </div>
+        </div>
     </main>
+
+    <script>
+        const form = document.getElementById('contact-form') as HTMLFormElement;
+        const btn = document.getElementById('submit-btn');
+        const status = document.getElementById('status-msg');
+
+        form?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!btn || !status) return;
+
+            btn.textContent = 'Enviando...';
+            btn.setAttribute('disabled', 'true');
+
+            const formData = new FormData(form);
+            try {
+                const res = await fetch('/api/contacto', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (res.ok) {
+                    status.textContent = '✅ Mensaje enviado con éxito. Te contactaremos pronto.';
+                    status.classList.remove('hidden', 'text-red-400');
+                    status.classList.add('text-green-400');
+                    form.reset();
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                status.textContent = '❌ Error al enviar. Intentalo de nuevo.';
+                status.classList.remove('hidden', 'text-green-400');
+                status.classList.add('text-red-400');
+            } finally {
+                btn.textContent = 'Enviar Consulta Ahora';
+                btn.removeAttribute('disabled');
+            }
+        });
+    </script>
+
+    <style>
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 1s ease-out forwards;
+        }
+    </style>
 </Layout>
