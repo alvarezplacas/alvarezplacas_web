@@ -1,7 +1,7 @@
 ---
 /**
  * Página de Contacto Premium - Alvarez Placas
- * Integración con Google Maps, Reseñas y Formulario Directus.
+ * Integración con Google Maps, Reseñas y Formulario especializado (Clientes/Proveedores).
  */
 import Layout from '@layouts/Layout.astro';
 import Header from '@components/Header.astro';
@@ -36,7 +36,10 @@ const reviews = [
                     </div>
                     <div class="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
                         <div class="text-primary mb-2 text-2xl">⏰ Horarios</div>
-                        <p class="text-gray-300">Lun a Vie: 8:00 - 18:00<br/>Sábados: 8:00 - 13:00</p>
+                        <p class="text-gray-300 text-sm">
+                            <span class="text-white font-bold">Lun a Vie:</span> 8:00 - 13:00 y 14:00 - 17:00<br/>
+                            <span class="text-white font-bold">Sábados:</span> 8:00 - 13:00
+                        </p>
                     </div>
                 </div>
 
@@ -74,8 +77,18 @@ const reviews = [
                 <h2 class="text-3xl font-bold text-white mb-8">Envianos un mensaje</h2>
                 
                 <form id="contact-form" class="space-y-6 relative z-10">
+                    <!-- Selector de Tipo de Consulta -->
                     <div class="group">
-                        <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">Nombre Completo</label>
+                        <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">¿Cómo podemos ayudarte?</label>
+                        <select id="tipo_mensaje" name="tipo" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer">
+                            <option value="general" class="bg-gray-900">Consulta General</option>
+                            <option value="cliente" class="bg-gray-900">Soy Cliente (Ventas / Soporte)</option>
+                            <option value="proveedor" class="bg-gray-900">Soy Proveedor (Propuesta Comercial)</option>
+                        </select>
+                    </div>
+
+                    <div class="group">
+                        <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">Nombre Completo / Empresa</label>
                         <input type="text" name="nombre" required class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Tu nombre...">
                     </div>
 
@@ -91,12 +104,12 @@ const reviews = [
                     </div>
 
                     <div class="group">
-                        <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">Mensaje</label>
-                        <textarea name="mensaje" required rows="5" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary transition-all" placeholder="¿En qué podemos ayudarte?"></textarea>
+                        <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">Tu Mensaje</label>
+                        <textarea name="mensaje" required rows="4" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary transition-all" placeholder="Escribí aquí los detalles..."></textarea>
                     </div>
 
                     <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-primary to-orange-600 hover:from-orange-600 hover:to-primary text-white font-black py-5 rounded-xl uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
-                        Enviar Consulta Ahora
+                        Enviar Mensaje
                     </button>
                     
                     <div id="status-msg" class="text-center py-2 hidden"></div>
@@ -125,7 +138,7 @@ const reviews = [
                 });
                 
                 if (res.ok) {
-                    status.textContent = '✅ Mensaje enviado con éxito. Te contactaremos pronto.';
+                    status.textContent = '✅ Mensaje enviado con éxito al equipo de Alvarez Placas.';
                     status.classList.remove('hidden', 'text-red-400');
                     status.classList.add('text-green-400');
                     form.reset();
@@ -133,11 +146,11 @@ const reviews = [
                     throw new Error();
                 }
             } catch (err) {
-                status.textContent = '❌ Error al enviar. Intentalo de nuevo.';
+                status.textContent = '❌ Error al enviar. Intentalo de nuevo o contactanos por WhatsApp.';
                 status.classList.remove('hidden', 'text-green-400');
                 status.classList.add('text-red-400');
             } finally {
-                btn.textContent = 'Enviar Consulta Ahora';
+                btn.textContent = 'Enviar Mensaje';
                 btn.removeAttribute('disabled');
             }
         });
@@ -150,6 +163,9 @@ const reviews = [
         }
         .animate-fade-in {
             animation: fade-in 1s ease-out forwards;
+        }
+        select option {
+            padding: 10px;
         }
     </style>
 </Layout>
