@@ -1,0 +1,26 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '@components/Header.astro';
+---
+
+<Layout title="Contacto - Alvarez Placas">
+    <Header />
+    <main class="min-h-screen pt-28 pb-20 px-4">
+        <div class="max-w-7xl mx-auto text-center">
+             <h1 class="text-4xl md:text-6xl font-extrabold text-white mb-6">Estamos para <span class="text-primary italic">ayudarte</span></h1>
+             <p class="text-gray-400 text-lg mb-10">Av. Vergara 1605, Villa Tesei, Hurlingham</p>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                 <div class="bg-white/5 p-8 rounded-2xl border border-white/10">
+                     <i class="fab fa-whatsapp text-green-500 text-4xl mb-4"></i>
+                     <p class="text-white font-bold">WhatsApp</p>
+                     <p class="text-gray-400">11-6141-1842</p>
+                 </div>
+                 <div class="bg-white/5 p-8 rounded-2xl border border-white/10">
+                     <i class="fas fa-envelope text-blue-500 text-4xl mb-4"></i>
+                     <p class="text-white font-bold">Email</p>
+                     <p class="text-gray-400">info@alvarezplacas.com.ar</p>
+                 </div>
+             </div>
+        </div>
+    </main>
+</Layout>

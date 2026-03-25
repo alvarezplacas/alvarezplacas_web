@@ -1,0 +1,162 @@
+---
+import '../../../Frontend/home/styles/global.css';
+
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+
+// Seller info for UI
+const sellerUser = {
+    name: "Vendedor Pro",
+    role: "Gestión de Ventas",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+};
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title} | Portal Vendedores</title>
+		<!-- Google Fonts & FontAwesome -->
+		<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+	</head>
+	<body class="bg-[#111111] text-gray-200 font-sans antialiased flex h-screen overflow-hidden">
+		
+        <!-- Mobile Sidebar Overlay -->
+        <div id="ven-mobile-overlay" class="fixed inset-0 bg-black/80 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+
+        <!-- Sidebar Navigation -->
+        <aside id="ven-sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-72 bg-[#1a1a1a] border-r border-gray-800 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+            <!-- Logo Area -->
+            <div class="h-20 flex items-center justify-center border-b border-gray-800 px-6 shrink-0">
+                <a href="/vendedor" class="text-xl font-bold tracking-tight text-white flex items-center gap-2 w-full">
+                    <i class="fas fa-headset text-blue-500 flex-shrink-0"></i>
+                    <span class="truncate">PORTAL <span class="text-blue-500">VENTAS</span></span>
+                </a>
+                <button id="ven-close-sidebar" class="md:hidden text-gray-400 hover:text-white p-2">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- User Profile Area -->
+            <div class="p-6 border-b border-gray-800 shrink-0 bg-primary/5">
+                <div class="flex items-center gap-4">
+                    <img src={sellerUser.avatar} alt="Vendedor" class="w-12 h-12 rounded-full border-2 border-primary/50 shadow-lg" />
+                    <div class="overflow-hidden">
+                        <h4 class="text-white font-bold text-sm truncate">{sellerUser.name}</h4>
+                        <p class="text-primary-light font-medium text-[10px] uppercase tracking-tighter truncate">{sellerUser.role}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-2 custom-scrollbar">
+                
+                <p class="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Operaciones</p>
+                <a href="/vendedor" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-all group active-nav-marker relative">
+                    <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-0 bg-primary rounded-r-full transition-all group-hover:h-8 hidden marker-div shadow-[0_0_10px_rgba(255,40,0,0.8)]"></div>
+                    <i class="fas fa-bolt w-5 text-center group-hover:text-primary transition-colors"></i>
+                    <span class="font-bold text-sm tracking-tight">Acciones Rápidas</span>
+                </a>
+
+                <div class="h-4"></div>
+                
+                <p class="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Documentación</p>
+                <a href="/vendedor/pedidos" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-all group active-nav-marker relative">
+                    <i class="fas fa-file-invoice w-5 text-center group-hover:text-primary transition-colors"></i>
+                    <span class="font-bold text-sm tracking-tight">Pedidos y Estados</span>
+                </a>
+                <a href="/vendedor/presupuestos" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-all group active-nav-marker relative">
+                    <i class="fas fa-clipboard-list w-5 text-center group-hover:text-primary transition-colors"></i>
+                    <span class="font-bold text-sm tracking-tight">Presupuestos Recibidos</span>
+                </a>
+
+                <div class="h-4"></div>
+
+                <p class="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Comunidad</p>
+                <a href="/vendedor/clientes" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-all group relative">
+                    <i class="fas fa-id-badge w-5 text-center group-hover:text-primary transition-colors"></i>
+                    <span class="font-bold text-sm tracking-tight">Mis Clientes</span>
+                </a>
+                <a href="/vendedor/mensajes" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-all group relative">
+                    <i class="fas fa-comment-alt w-5 text-center group-hover:text-primary transition-colors"></i>
+                    <span class="font-bold text-sm tracking-tight">Mensajería Interna</span>
+                    <span class="ml-auto w-5 h-5 bg-primary text-[10px] flex items-center justify-center rounded-full text-white font-bold">3</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-800 shrink-0">
+                <button id="logout-btn" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all w-full text-left">
+                    <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                    <span class="font-medium">Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+            <header class="h-20 bg-[#1a1a1a]/80 backdrop-blur-md border-b border-gray-800 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-30 shrink-0">
+                <div class="flex items-center gap-4">
+                    <button id="ven-open-sidebar" class="md:hidden text-gray-400 hover:text-white p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <h1 class="text-xl font-bold text-white hidden sm:block">{title}</h1>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-[#111111] custom-scrollbar relative">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-32 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
+                <div class="relative z-10 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+                    <slot />
+                </div>
+            </main>
+        </div>
+
+	</body>
+</html>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+</style>
+
+<script>
+    document.addEventListener('astro:page-load', () => {
+        const sidebar = document.getElementById('ven-sidebar');
+        const openBtn = document.getElementById('ven-open-sidebar');
+        const closeBtn = document.getElementById('ven-close-sidebar');
+        const overlay = document.getElementById('ven-mobile-overlay');
+
+        if(openBtn && sidebar && overlay) {
+            openBtn.addEventListener('click', () => {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden', 'opacity-0');
+            });
+        }
+        
+        const closeMenu = () => {
+            if(sidebar && overlay) {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        };
+
+        if(closeBtn) closeBtn.addEventListener('click', closeMenu);
+        if(overlay) overlay.addEventListener('click', closeMenu);
+
+        // Logout logic
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                window.location.href = '/api/auth/logout';
+            });
+        }
+    });
+</script>
