@@ -1,0 +1,73 @@
+---
+/**
+ * Herramientas Index - Centro de utilidades para el usuario.
+ * Propiedad del Agente 5 (Frontend/Herramientas).
+ */
+import Layout from '../../home/layouts/Layout.astro';
+import Header from '@components/Header.astro';
+
+const tools = [
+  {
+    title: "Smart Match",
+    description: "IA que sugiere combinaciones de colores usando la regla 60-30-10.",
+    icon: "fa-magic",
+    link: "/herramientas/smart-match",
+    color: "from-primary to-orange-600"
+  },
+  {
+    title: "Envío de Cortes",
+    description: "Calcula tus cortes y envíalos directamente a nuestro equipo.",
+    icon: "fa-calculator",
+    link: "/herramientas/presupuestador",
+    color: "from-green-500 to-emerald-700"
+  },
+  {
+    title: "Presupuestos Online",
+    description: "Herramienta exclusiva para miembros del Club para generar PDFs profesionales.",
+    icon: "fa-file-invoice-dollar",
+    link: "/cliente/creador-presupuestos",
+    color: "from-blue-500 to-indigo-700"
+  }
+];
+---
+
+<Layout title="Herramientas Útiles | Alvarez Placas">
+  <Header />
+  
+  <main class="pt-24 pb-20 min-h-screen bg-[#0a0a0a]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Titular -->
+      <div class="mb-16 text-center">
+        <h1 class="text-5xl md:text-7xl font-black mb-6 tracking-tighter text-white">
+          Herramientas <span class="text-primary italic">Expertas</span>
+        </h1>
+        <p class="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed">
+          Potencia tus proyectos con nuestras utilidades inteligentes diseñadas para carpinteros y entusiastas del diseño.
+        </p>
+      </div>
+
+      <!-- Grid de Herramientas -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        {tools.map(tool => (
+          <a href={tool.link} class="group relative block">
+            <div class={`absolute -inset-1 bg-gradient-to-r ${tool.color} rounded-2xl blur opacity-25 group-hover:opacity-60 transition duration-500`}></div>
+            <div class="relative bg-[#151515] p-10 rounded-2xl border border-gray-800 hover:border-primary/50 transition-colors h-full flex flex-col items-center text-center">
+              <div class={`w-20 h-20 rounded-2xl bg-gradient-to-br ${tool.color} flex items-center justify-center mb-8 shadow-xl shadow-black/50 group-hover:scale-110 transition-transform duration-500`}>
+                <i class={`fas ${tool.icon} text-3xl text-white`}></i>
+              </div>
+              <h2 class="text-3xl font-bold text-white mb-4">{tool.title}</h2>
+              <p class="text-gray-400 group-hover:text-gray-300 transition-colors">
+                {tool.description}
+              </p>
+              <div class="mt-8 flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                Explorar Herramienta <i class="fas fa-arrow-right"></i>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+
+    </div>
+  </main>
+</Layout>

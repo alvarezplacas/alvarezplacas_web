@@ -1,0 +1,259 @@
+---
+/**
+ * Creador de Presupuestos - Propiedad del Agente 5 (Herramientas).
+ */
+import Layout from '../../home/layouts/Layout.astro';
+import Header from '@components/Header.astro';
+
+// Strict session check
+const userCookie = Astro.cookies.get('client_session')?.value;
+if (!userCookie) {
+    return Astro.redirect('/login');
+}
+---
+
+<Layout title="Creador de Presupuestos | Alvarez Placas">
+    <Header />
+    <main class="pt-24 min-h-screen bg-[#0a0a0a] px-4 sm:px-6 pb-20">
+        <div class="max-w-5xl mx-auto">
+            
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <a href="/cliente" class="text-primary hover:text-white transition-colors text-sm font-bold tracking-widest uppercase mb-4 inline-block">
+                        &larr; Volver al Panel
+                    </a>
+                    <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight uppercase">
+                        Creador de <span class="text-blue-500 italic">Presupuestos</span>
+                    </h1>
+                    <p class="text-gray-400 mt-2 text-sm">Genera presupuestos profesionales en PDF para entregar a tus clientes finales.</p>
+                </div>
+                <div class="hidden sm:flex w-16 h-16 bg-blue-500/10 text-blue-500 rounded-2xl items-center justify-center border border-blue-500/20 shadow-xl">
+                    <i class="fas fa-file-pdf text-3xl"></i>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Left Column: Form -->
+                <div class="lg:col-span-2 space-y-8">
+                    
+                    <!-- Datos del Proyecto -->
+                    <div class="bg-[#151515] border border-gray-800 rounded-3xl p-6 shadow-2xl">
+                        <h2 class="text-sm font-black text-gray-500 uppercase tracking-widest mb-6 border-b border-gray-800/50 pb-3">1. Datos del Cliente y Proyecto</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Nombre del Cliente</label>
+                                <input type="text" id="bp-client" placeholder="Ej: Juan Pérez" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-700" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Fecha / Validez</label>
+                                <input type="text" id="bp-date" placeholder="Ej: Válido por 15 días" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-700" />
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Descripción del Proyecto</label>
+                                <input type="text" id="bp-project" placeholder="Ej: Amoblamiento de Cocina Alacena y Bajo Mesada" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-700" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Items -->
+                    <div class="bg-[#151515] border border-gray-800 rounded-3xl p-6 shadow-2xl">
+                        <div class="flex items-center justify-between border-b border-gray-800/50 pb-3 mb-6">
+                            <h2 class="text-sm font-black text-gray-500 uppercase tracking-widest">2. Ítems y Materiales</h2>
+                            <button id="btn-add-item" class="text-blue-500 hover:text-white bg-blue-500/10 hover:bg-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors">
+                                <i class="fas fa-plus mr-1"></i> Agregar
+                            </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="text-[10px] uppercase tracking-widest text-gray-600 border-b border-gray-800/50">
+                                        <th class="pb-3 font-bold w-1/2">Descripción</th>
+                                        <th class="pb-3 font-bold text-center w-16">Cant.</th>
+                                        <th class="pb-3 font-bold text-right w-24">Precio Un.</th>
+                                        <th class="pb-3 font-bold text-right w-24">Subtotal</th>
+                                        <th class="pb-3 font-bold text-center w-12"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budget-items-tbody"></tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-4 flex flex-col md:flex-row gap-2 bg-black/30 p-3 rounded-xl border border-gray-800/50">
+                            <input type="text" id="new-item-desc" placeholder="Ej: Mano de obra, Herrajes, Placas..." class="flex-1 bg-transparent text-white text-sm outline-none px-2" />
+                            <div class="flex gap-2">
+                                <input type="number" id="new-item-qty" placeholder="Cant." min="1" value="1" class="w-16 bg-[#151515] border border-gray-800 rounded-lg text-white text-sm text-center outline-none px-2 py-1" />
+                                <input type="number" id="new-item-price" placeholder="$ Precio" min="0" class="w-24 bg-[#151515] border border-gray-800 rounded-lg text-white text-sm text-right outline-none px-2 py-1" />
+                                <button id="btn-submit-item" class="bg-blue-500 hover:bg-blue-400 text-white w-8 h-8 rounded-lg flex items-center justify-center transition-colors">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Summary & Export -->
+                <div class="space-y-8">
+                    <div class="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden h-fit sticky top-24">
+                        <div class="absolute -top-32 -right-32 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none"></div>
+                        <h2 class="text-sm font-black text-gray-500 uppercase tracking-widest text-center mb-8 relative z-10">Resumen y Totales</h2>
+                        <div class="space-y-4 relative z-10">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-400 font-bold uppercase">Subtotal</span>
+                                <span class="text-white font-bold" id="summ-sub">$ 0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm border-t border-gray-800/50 pt-4">
+                                <span class="text-gray-400 font-bold uppercase">Ajuste ($)</span>
+                                <input type="number" id="summ-adjust" placeholder="0" class="w-24 bg-black/50 border border-gray-800 rounded-lg text-right text-white font-bold outline-none px-2 py-1" />
+                            </div>
+                            <div class="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent w-full my-4"></div>
+                            <div class="text-center">
+                                <p class="text-[10px] text-blue-500 font-black uppercase tracking-widest mb-1">Total Final</p>
+                                <p class="text-4xl font-black text-white tracking-tighter" id="summ-total">$ 0.00</p>
+                            </div>
+                        </div>
+                        <button id="btn-export-pdf" class="w-full mt-8 bg-blue-600 hover:bg-white text-white hover:text-black font-black uppercase tracking-widest py-4 rounded-xl transition-all shadow-xl hover:shadow-white/20 text-xs flex items-center justify-center gap-2 relative z-10">
+                            <i class="fas fa-file-pdf"></i> Generar PDF Profesional
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="pdf-preview-modal" class="fixed inset-0 z-[110] hidden items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-md close-pdf-modal"></div>
+        <div class="bg-[#1a1a1a] rounded-2xl border border-gray-800 shadow-2xl w-full max-w-5xl h-[90vh] relative z-10 flex flex-col transform scale-95 transition-transform duration-300" id="pdfModalCard">
+            <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black/50 rounded-t-2xl">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-file-pdf text-red-500"></i> Vista Previa
+                </h3>
+                <div class="flex gap-3">
+                    <button id="btn-download-pdf-final" class="bg-blue-500 hover:bg-blue-400 text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors shadow-lg">
+                        <i class="fas fa-download"></i> Descargar
+                    </button>
+                    <button class="text-gray-400 hover:text-white p-2 close-pdf-modal transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-grow p-4 bg-gray-900 overflow-hidden">
+                <iframe id="pdf-iframe" class="w-full h-full rounded bg-white shadow-inner" src="" title="PDF Preview"></iframe>
+            </div>
+        </div>
+    </div>
+</Layout>
+
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<script is:inline>
+    const budgetItems = [];
+    const tBody = document.getElementById('budget-items-tbody');
+    const inputDesc = document.getElementById('new-item-desc');
+    const inputQty = document.getElementById('new-item-qty');
+    const inputPrice = document.getElementById('new-item-price');
+    const inputAdjust = document.getElementById('summ-adjust');
+    const summSub = document.getElementById('summ-sub');
+    const summTotal = document.getElementById('summ-total');
+
+    function renderTable() {
+        tBody.innerHTML = '';
+        let subtotal = 0;
+        budgetItems.forEach((item, index) => {
+            const rowSub = item.qty * item.price;
+            subtotal += rowSub;
+            const tr = document.createElement('tr');
+            tr.className = 'text-sm border-b border-gray-800/30 hover:bg-white/5 transition-colors group';
+            tr.innerHTML = `
+                <td class="py-3 text-gray-300 font-medium">${item.desc}</td>
+                <td class="py-3 text-center text-gray-400 font-bold">${item.qty}</td>
+                <td class="py-3 text-right text-gray-400">$${item.price.toFixed(2)}</td>
+                <td class="py-3 text-right text-white font-bold">$${rowSub.toFixed(2)}</td>
+                <td class="py-3 text-center">
+                    <button onclick="window.removeBudgetItem(${index})" class="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"><i class="fas fa-trash-alt"></i></button>
+                </td>
+            `;
+            tBody.appendChild(tr);
+        });
+        summSub.innerText = `$ ${subtotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+        const adjust = parseFloat(inputAdjust.value) || 0;
+        const finalTotal = subtotal + adjust;
+        summTotal.innerText = `$ ${finalTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+    }
+
+    function addItem() {
+        const desc = inputDesc.value.trim();
+        const qty = parseFloat(inputQty.value) || 1;
+        const price = parseFloat(inputPrice.value) || 0;
+        if (!desc) return;
+        budgetItems.push({ desc, qty, price });
+        inputDesc.value = '';
+        inputQty.value = '1';
+        inputPrice.value = '';
+        inputDesc.focus();
+        renderTable();
+    }
+
+    window.removeBudgetItem = (index) => {
+        budgetItems.splice(index, 1);
+        renderTable();
+    };
+
+    document.getElementById('btn-submit-item').addEventListener('click', addItem);
+    inputAdjust.addEventListener('input', renderTable);
+    
+    document.getElementById('btn-export-pdf').addEventListener('click', () => {
+        if (budgetItems.length === 0) return;
+        const clientName = document.getElementById('bp-client').value.trim() || 'Consumidor Final';
+        const dateVal = document.getElementById('bp-date').value.trim() || new Date().toLocaleDateString();
+        const projectDesc = document.getElementById('bp-project').value.trim() || 'Presupuesto de Materiales';
+        
+        const doc = new window.jspdf.jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        doc.setFillColor(20, 20, 20);
+        doc.rect(0, 0, pageWidth, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.text('PRESUPUESTO', 15, 25);
+        doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text(`Fecha: ${new Date().toLocaleDateString()}`, pageWidth - 15, 25, { align: 'right' });
+        doc.setTextColor(0, 0, 0); doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(`Cliente: ${clientName}`, 15, 55);
+        doc.setFont('helvetica', 'normal'); doc.text(`Validez: ${dateVal}`, 15, 62); doc.text(`Proyecto: ${projectDesc}`, 15, 69);
+
+        let tableData = budgetItems.map((item, i) => [i + 1, item.desc, item.qty, `$${item.price.toFixed(2)}`, `$${(item.qty * item.price).toFixed(2)}`]);
+        doc.autoTable({
+            startY: 80,
+            head: [['#', 'Descripción', 'Cant.', 'Precio Un.', 'Subtotal']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [59, 130, 246] },
+            columnStyles: { 0: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'right' }, 4: { halign: 'right' } }
+        });
+
+        const finalY = doc.lastAutoTable.finalY + 15;
+        let subtotal = budgetItems.reduce((acc, it) => acc + (it.qty * it.price), 0);
+        let adjust = parseFloat(inputAdjust.value) || 0;
+        doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.text('TOTAL FINAL:', pageWidth - 70, finalY);
+        doc.text(`$${(subtotal + adjust).toFixed(2)}`, pageWidth - 15, finalY, { align: 'right' });
+
+        const blobUrl = doc.output('bloburl');
+        const iframe = document.getElementById('pdf-iframe');
+        iframe.src = blobUrl;
+        const modal = document.getElementById('pdf-preview-modal');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('pdfModalCard').classList.remove('scale-95'); }, 10);
+        window.currentPdfDoc = doc; window.currentPdfName = `Presupuesto_${clientName}.pdf`;
+    });
+
+    document.getElementById('btn-download-pdf-final').addEventListener('click', () => {
+        if(window.currentPdfDoc) window.currentPdfDoc.save(window.currentPdfName);
+    });
+
+    document.querySelectorAll('.close-pdf-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modal = document.getElementById('pdf-preview-modal');
+            modal.classList.add('opacity-0'); document.getElementById('pdfModalCard').classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+        });
+    });
+</script>

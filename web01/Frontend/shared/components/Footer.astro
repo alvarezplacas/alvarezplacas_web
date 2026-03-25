@@ -1,0 +1,41 @@
+---
+// Footer.astro
+// Discreto y elegante para los créditos y accesos técnicos
+---
+
+<footer class="w-full bg-black py-8 px-4 border-t border-white/5 mt-10">
+  <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+    
+    <!-- Créditos -->
+    <div class="text-[10px] text-gray-500 uppercase tracking-widest font-medium">
+      &copy; Todos los derechos reservados 2026 <span class="text-gray-400">Javier Mix</span>
+    </div>
+
+    <!-- Accesos Técnicos (Muy pequeños) -->
+    <div class="flex gap-4 items-center">
+      <a href="/admin" class="text-[9px] text-gray-600 hover:text-primary transition-colors uppercase tracking-tighter opacity-50 hover:opacity-100">
+        Acceso Admin
+      </a>
+      <span class="w-1 h-1 bg-gray-800 rounded-full"></span>
+      <a href="/vendedor" class="text-[9px] text-gray-600 hover:text-primary transition-colors uppercase tracking-tighter opacity-50 hover:opacity-100">
+        Panel Vendedores
+      </a>
+      <span class="w-1 h-1 bg-gray-800 rounded-full"></span>
+      <a href="/files/" class="text-[9px] text-gray-600 hover:text-primary transition-colors uppercase tracking-tighter opacity-50 hover:opacity-100">
+        Gestor de Archivos
+      </a>
+      <p class="text-[9px] text-gray-600 mt-4 opacity-50">
+          v1.2.0 - {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR')}
+      </p>
+    </div>
+
+  </div>
+</footer>
+
+<style>
+  /* Asegurar que no quede flotando en pantallas cortas */
+  footer {
+    position: relative;
+    z-index: 10;
+  }
+</style>

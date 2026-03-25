@@ -1,0 +1,70 @@
+---
+/**
+ * CatalogFilters - Barra de búsqueda y selectores de filtros.
+ * Propiedad del Agente 4 (Frontend/Catalogo).
+ */
+const { marcas, categorias, brandsByCategory, totalProducts = 0 } = Astro.props;
+---
+
+<div class="mb-10 flex flex-col items-center gap-6">
+  <p class="text-gray-400 text-sm">Buscá entre más de <span class="text-white font-bold text-lg">{totalProducts || 2200}</span> productos por <span class="text-white font-medium">nombre, código, marca o categoría</span></p>
+  
+  <div class="relative w-full max-w-lg">
+    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+      <svg class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    </div>
+    <input
+      type="text"
+      id="catalogSearch"
+      placeholder="Ej: Gola, Egger Blanco, Tornillo, Einhell..."
+      class="w-full bg-[#151515] border border-gray-800 text-white rounded-full py-4 pl-12 pr-6 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-300 placeholder-gray-600 shadow-2xl"
+    />
+  </div>
+
+  <!-- Filtros de Categoría -->
+  <div class="flex flex-wrap justify-center gap-2" id="categoryFilters">
+    {categorias.map((cat) => (
+      <button
+        class={`px-4 py-1.5 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+          cat === "Todas" 
+            ? 'bg-primary text-black border-primary category-btn active' 
+            : 'bg-transparent text-gray-400 border-gray-800 hover:border-gray-500 hover:text-white category-btn'
+        }`}
+        data-category={cat}
+      >
+        {cat}
+      </button>
+    ))}
+  </div>
+
+  <!-- Filtros de Marca (Dinámicos) -->
+  <div class="flex flex-wrap justify-center gap-3 overflow-x-auto max-w-full py-2 transition-all duration-500" id="brandFilters">
+    {marcas.map((marca) => {
+      const categoriesForBrand = Object.keys(brandsByCategory).filter(cat => 
+        cat !== "Todas" && brandsByCategory[cat].includes(marca)
+      );
+      
+      return (
+        <button
+          class={`px-6 py-2 rounded-full border text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+            marca === "Todos" 
+              ? 'bg-gray-800 text-white border-gray-600 brand-btn active' 
+              : 'bg-transparent text-gray-400 border-gray-800 hover:border-gray-600 hover:text-white brand-btn'
+          }`}
+          data-filter={marca}
+          data-brand-categories={categoriesForBrand.join(',')}
+          style={marca === "Todos" ? "" : "display: none;"} 
+        >
+          {marca}
+        </button>
+      )
+    })}
+  </div>
+</div>
+
+<script define:vars={{ brandsByCategory }}>
+  // Enviar la relación al scope global para que catalog-logic.js pueda usarla
+  window.CATALOG_RELATIONS = brandsByCategory;
+</script>

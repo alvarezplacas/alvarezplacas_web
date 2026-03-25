@@ -1,0 +1,187 @@
+---
+/**
+ * Registro de Clientes - Propiedad del Agente 3 (Frontend/Home) / Agente 5 (Herramientas).
+ */
+import Layout from '../../home/layouts/Layout.astro';
+import Header from '@components/Header.astro';
+---
+
+<Layout title="Registro de Clientes Profesionales | Alvarez Placas">
+    <Header />
+
+    <section class="min-h-screen pt-24 pb-12 flex items-center justify-center bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-neutral-900 relative overflow-hidden">
+        
+        <!-- Background Glow -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div class="max-w-4xl w-full mx-auto px-4 sm:px-6 relative z-10 flex flex-col md:flex-row gap-8 lg:gap-16 items-center">
+            
+            <!-- Left Info Side -->
+            <div class="w-full md:w-1/2 text-center md:text-left">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
+                    Únete a nuestro <br/><span class="text-primary tracking-wide uppercase">Club de Clientes</span>
+                </h1>
+                <p class="text-gray-400 text-lg mb-8 leading-relaxed">
+                    Accede a herramientas digitales exclusivas para profesionales, suma puntos con tus pedidos y participa en increíbles sorteos a fin de año.
+                </p>
+                
+                <div class="space-y-4 text-left">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                            <i class="fas fa-boxes text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold text-lg">Sistema de Scoring</h3>
+                            <p class="text-gray-500 text-sm mt-1">Suma 1 punto por cada pedido mensual. Mantén tu cuenta activa realizando pedidos periódicos.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center shrink-0">
+                            <i class="fab fa-whatsapp text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold text-lg">Acceso Rápido</h3>
+                            <p class="text-gray-500 text-sm mt-1">Al registrarte, recibirás un mensaje por WhatsApp con un enlace mágico para ingresar rápidamente a tu cuenta.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Form Side -->
+            <div class="w-full md:w-1/2">
+                <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm relative">
+                    <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-orange-500 rounded-t-2xl"></div>
+                    
+                    <h2 class="text-2xl font-bold text-white mb-6 text-center">Crear tu Cuenta</h2>
+                    
+                    <form class="space-y-4" action="/api/auth/register-client" method="POST">
+                        
+                        <!-- Nombre / Empresa -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="nombre">Nombre o Empresa *</label>
+                            <input type="text" id="nombre" name="name" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Ej. Juan Perez o Mi Carpintería">
+                        </div>
+
+                        <!-- Celular / WhatsApp -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="whatsapp">Teléfono / WhatsApp *</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">+54 9</span>
+                                <input type="tel" id="whatsapp" name="phone" required class="w-full bg-black/50 border border-gray-700 rounded-lg pl-14 pr-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="11 2345 6789">
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="email">Correo Electrónico *</label>
+                            <input type="email" id="email" name="email" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="tu@email.com">
+                        </div>
+
+                        <!-- Dirección -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="direccion">Dirección *</label>
+                            <input type="text" id="direccion" name="address" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Ej. Av. San Martín 1234, Ramos Mejía">
+                        </div>
+
+                        <!-- Password -->
+                        <div>
+                            <label class="block text-gray-400 text-sm font-semibold mb-2" for="password">Contraseña *</label>
+                            <input type="password" id="password" name="password" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary" placeholder="Min. 8 caracteres">
+                        </div>
+
+                        <div class="flex items-start gap-3 py-2">
+                            <input type="checkbox" id="terms" required class="mt-1 accent-primary">
+                            <label for="terms" class="text-xs text-gray-500 leading-tight">
+                                Acepto que mis datos se utilicen exclusivamente para informar el estado de mis pedidos de acuerdo a los <a href="/club/terminos" target="_blank" class="text-primary hover:underline">Términos y Condiciones</a>.
+                            </label>
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit" class="w-full bg-primary hover:bg-primary-light text-white font-bold py-3.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(255,40,0,0.4)]">
+                                Registrarme en el Club <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Toast Notification Container -->
+        <div id="toast-container" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-4"></div>
+
+    </section>
+
+    <script is:inline>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.querySelector('form');
+            const toastContainer = document.getElementById('toast-container');
+
+            if (!form || !toastContainer) return;
+
+            function showToast(message, type = 'error') {
+                const toast = document.createElement('div');
+                toast.className = `flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md transform transition-all duration-500 translate-y-10 opacity-0 ${
+                    type === 'error' 
+                    ? 'bg-red-500/10 border-red-500/20 text-red-500' 
+                    : 'bg-green-500/10 border-green-500/20 text-green-500'
+                }`;
+                
+                toast.innerHTML = `
+                    <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} text-lg"></i>
+                    <span class="font-bold text-sm text-white">${message}</span>
+                `;
+
+                toastContainer.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-10', 'opacity-0');
+                }, 10);
+
+                setTimeout(() => {
+                    toast.classList.add('translate-y-[-10px]', 'opacity-0');
+                    setTimeout(() => toast.remove(), 500);
+                }, 6000);
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnContent = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Accept': 'application/json' }
+                    });
+
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            showToast(result.message, 'success');
+                            setTimeout(() => { window.location.href = '/login?registered=true'; }, 2000);
+                        } else {
+                            showToast(result.message || 'Error en el registro', 'error');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnContent;
+                        }
+                    } else {
+                        const text = await response.text();
+                        showToast('Error en el servidor', 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnContent;
+                    }
+                } catch (error) {
+                    showToast('Error de conexión', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnContent;
+                }
+            });
+        });
+    </script>
+</Layout>

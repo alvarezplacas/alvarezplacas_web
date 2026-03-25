@@ -1,0 +1,95 @@
+---
+/**
+ * CatalogItem - Representación individual de un producto.
+ * Propiedad del Agente 4 (Frontend/Catalogo).
+ */
+const { placa, showPrices = true } = Astro.props;
+
+// Definición de iconos por categoría
+const categoryIcons = {
+    'PLACAS': 'fa-layer-group',
+    'HERRAJES': 'fa-cog',
+    'QUIMICOS': 'fa-flask',
+    'HERRAMIENTAS ELECTRICAS': 'fa-tools',
+    'OTROS': 'fa-box'
+};
+
+const icon = categoryIcons[placa.category] || 'fa-box';
+const displayPrice = showPrices ? (placa.price || 'Consultar') : 'Consultar';
+const whatsappMessage = `Hola, quiero consultar por el producto:\n*${placa.name}*\nCódigo: ${placa.code}\nPrecio: ${displayPrice}`;
+---
+
+<article 
+  class="group bg-[#151515] rounded-2xl overflow-hidden border border-gray-800 hover:border-primary/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(180,155,110,0.15)] flex flex-col h-full catalog-item"
+  data-category={placa.category}
+  data-brand={placa.brand}
+  data-search={`${placa.name} ${placa.code} ${placa.brand} ${placa.category} ${placa.tags?.join(' ') || ''}`.toLowerCase()}
+  data-full={JSON.stringify(placa)}
+>
+  <!-- Imagen o Icono -->
+  <div class="aspect-square w-full bg-[#101010] relative overflow-hidden flex-shrink-0 flex items-center justify-center">
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+    
+    <img 
+      src={placa.imagen} 
+      alt={placa.name} 
+      class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+      onerror="this.style.opacity='0'; this.parentElement.querySelector('.placeholder-icon').classList.remove('hidden');"
+      loading="lazy"
+    />
+
+    <!-- Placeholder Icon -->
+    <div class="placeholder-icon absolute inset-0 hidden flex-col items-center justify-center text-gray-700 group-hover:text-primary/40 transition-colors bg-[#101010]">
+      <i class={`fas ${icon} text-6xl mb-4`}></i>
+      <span class="text-[10px] uppercase tracking-[0.3em] font-bold opacity-40">{placa.category}</span>
+      <span class="text-[8px] mt-2 opacity-30 italic">Imagen en carga...</span>
+    </div>
+    
+    <!-- Info Overlay (Desktop) -->
+    <div class="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-6 text-center z-10 hidden md:flex backdrop-blur-sm">
+        <span class="text-primary text-[10px] font-bold tracking-[0.2em] uppercase mb-2 block">{placa.brand}</span>
+        <h4 class="text-white text-lg font-bold mb-1 line-clamp-2">{placa.name}</h4>
+        <p class="text-primary font-mono text-xl mb-4">{displayPrice}</p>
+        <div class="w-10 h-0.5 bg-primary/50 mx-auto mb-4"></div>
+        <span class="text-gray-400 text-[10px] uppercase tracking-widest">Click para detalles</span>
+    </div>
+
+    <!-- Badge Categoría -->
+    <div class="absolute top-4 left-4 z-20">
+       <span class="bg-black/60 backdrop-blur-md text-white text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-tighter border border-white/10 group-hover:border-primary/50 transition-colors">
+         {placa.category}
+       </span>
+    </div>
+  </div>
+
+  <!-- Contenido Visible Siempre -->
+  <div class="p-4 flex flex-col flex-grow">
+    <h3 class="text-sm font-bold text-gray-200 line-clamp-2 mb-2 group-hover:text-white transition-colors">
+      {placa.name}
+    </h3>
+    
+    <div class="mt-2 mb-4 space-y-1">
+      {placa.specs && placa.specs.map(spec => (
+        <span class="text-[10px] text-gray-500 block border-l-2 border-primary/20 pl-2 leading-tight">
+          {spec}
+        </span>
+      ))}
+    </div>
+    
+    <div class="mt-auto pt-4 flex items-center justify-between border-t border-gray-900">
+      <div class="flex flex-col">
+        <span class="text-[10px] text-gray-500 font-mono uppercase">{placa.code}</span>
+        <span class="text-sm font-bold text-primary">{displayPrice}</span>
+      </div>
+      
+      <a 
+        href={`https://wa.me/5491100000000?text=${encodeURIComponent(whatsappMessage)}`}
+        target="_blank"
+        class="p-2.5 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white rounded-lg transition-all duration-300"
+        title="Consultar por WhatsApp"
+      >
+        <i class="fab fa-whatsapp"></i>
+      </a>
+    </div>
+  </div>
+</article>

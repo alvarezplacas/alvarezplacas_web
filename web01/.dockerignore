@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.astro
+.vercel
+.vscode
+.env
+npm-debug.log
+docker-compose.yml
+Dockerfile
+.dockerignore
+build_*.log
+remote_build.log
+codigo_basura

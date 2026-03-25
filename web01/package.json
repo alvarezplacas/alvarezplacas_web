@@ -1,0 +1,33 @@
+{
+    "name": "alvarezplacas-modular",
+    "type": "module",
+    "version": "1.0.0",
+    "engines": {
+        "node": ">=20.3.0"
+    },
+    "scripts": {
+        "dev": "astro dev",
+        "start": "astro dev",
+        "build": "astro build",
+        "preview": "astro preview",
+        "astro": "astro"
+    },
+    "dependencies": {
+        "@astrojs/check": "^0.9.8",
+        "@astrojs/node": "^10.0.3",
+        "@directus/sdk": "^18.0.3",
+        "@tailwindcss/vite": "^4.2.2",
+        "astro": "^6.0.8",
+        "bcryptjs": "^3.0.3",
+        "csv-parse": "^6.1.0",
+        "dotenv": "^17.3.1",
+        "googleapis": "^171.4.0",
+        "jsonwebtoken": "^9.0.3",
+        "nanostores": "^1.1.1",
+        "pg": "^8.20.0",
+        "tailwindcss": "^4.2.1",
+        "typescript": "^5.9.3",
+        "vite": "^6.1.1",
+        "xlsx": "^0.18.5"
+    }
+}

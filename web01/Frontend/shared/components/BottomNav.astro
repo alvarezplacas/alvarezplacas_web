@@ -1,0 +1,43 @@
+---
+// BottomNav.astro
+// Sticky bottom navigation bar for mobile devices
+---
+
+<nav class="md:hidden fixed bottom-0 w-full z-[100] bg-black/90 backdrop-blur-lg border-t border-white/10 pb-safe">
+  <div class="flex justify-around items-center h-16 px-2">
+    
+    <!-- Home Icon -->
+    <a href="/" class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors group">
+      <i class="fas fa-home text-xl mb-1 group-hover:-translate-y-1 transition-transform"></i>
+      <span class="text-[10px] font-semibold uppercase tracking-wider">Inicio</span>
+    </a>
+
+    <!-- Search/Catalog Icon (Highlighted) -->
+    <a href="/catalogo" class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-primary hover:bg-white/5 rounded-lg transition-colors group relative">
+      <div class="absolute -top-3 bg-primary text-white w-12 h-12 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(255,40,0,0.5)] border-4 border-black group-hover:scale-110 transition-transform">
+        <i class="fas fa-search text-lg"></i>
+      </div>
+      <span class="text-[10px] font-semibold uppercase tracking-wider mt-6 group-hover:text-primary">Buscar</span>
+    </a>
+
+    <!-- Contact Icon -->
+    <a href="/contacto" class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors group">
+      <i class="fas fa-envelope text-xl mb-1 group-hover:-translate-y-1 transition-transform"></i>
+      <span class="text-[10px] font-semibold uppercase tracking-wider">Contacto</span>
+    </a>
+
+    <!-- Account Icon -->
+    <a href="/cliente" class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-primary hover:bg-white/5 rounded-lg transition-colors group">
+      <i class="fas fa-user-circle text-xl mb-1 group-hover:-translate-y-1 transition-transform"></i>
+      <span class="text-[10px] font-semibold uppercase tracking-wider">Mi Cuenta</span>
+    </a>
+
+  </div>
+</nav>
+
+<style>
+  /* Safe area padding for iOS devices with home indicator */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+</style>

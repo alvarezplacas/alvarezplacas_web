@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@backend/*": ["Backend/*"],
+      "@frontend/*": ["Frontend/*"],
+      "@conexiones/*": ["Backend/conexiones/*"],
+      "@home/*": ["Frontend/home/*"],
+      "@catalogo/*": ["Frontend/catalogo/*"],
+      "@herramientas/*": ["Frontend/herramientas/*"],
+      "@dashboard/*": ["Backend/dashboard/*"]
+    }
+  }
+}

@@ -1,0 +1,45 @@
+services:
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:latest
+    container_name: mailserver
+    hostname: mail
+    domainname: alvarezplacas.com.ar
+    env_file: mailserver.env
+    ports:
+      - "25:25"
+      - "143:143"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - ./docker-data/dms/mail-data/:/var/mail/
+      - ./docker-data/dms/mail-state/:/var/mail-state/
+      - ./docker-data/dms/mail-logs/:/var/log/mail/
+      - ./docker-data/dms/config/:/tmp/docker-mailserver/
+      - /etc/localtime:/etc/localtime:ro
+      - /home/ubuntu/nginx-proxy-manager/data/custom_ssl/npm-8/fullchain.pem:/etc/letsencrypt/live/alvarezplacas.com.ar/fullchain.pem:ro
+      - /home/ubuntu/nginx-proxy-manager/data/custom_ssl/npm-8/privkey.pem:/etc/letsencrypt/live/alvarezplacas.com.ar/privkey.pem:ro
+    restart: always
+    stop_grace_period: 1m
+    networks:
+      - default
+
+  roundcube:
+    image: roundcube/roundcubemail:latest
+    container_name: roundcube
+    restart: always
+    environment:
+      - ROUNDCUBEMAIL_DEFAULT_HOST=mailserver
+      - ROUNDCUBEMAIL_DEFAULT_PORT=143
+      - ROUNDCUBEMAIL_SMTP_SERVER=mailserver
+      - ROUNDCUBEMAIL_SMTP_PORT=587
+    depends_on:
+      - mailserver
+    networks:
+      - default
+      - npm_network
+
+networks:
+  default:
+  npm_network:
+    external: true
+    name: nginx-proxy-manager_default

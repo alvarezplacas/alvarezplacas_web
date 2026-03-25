@@ -1,0 +1,58 @@
+---
+/**
+ * Términos y Condiciones - Club de Clientes.
+ * Propiedad del Agente 3 (Frontend/Home).
+ */
+import Layout from '../../home/layouts/Layout.astro';
+import Header from '@components/Header.astro';
+---
+
+<Layout title="Términos y Condiciones - Club de Clientes | Alvarez Placas">
+    <Header />
+    
+    <main class="min-h-screen pt-32 pb-20 px-4 bg-[#0a0a0a]">
+        <div class="max-w-3xl mx-auto bg-[#1a1a1a] border border-gray-800 rounded-3xl p-8 md:p-12 shadow-2xl">
+            <h1 class="text-3xl font-bold text-white mb-8 border-b border-gray-800 pb-4 tracking-tight">
+                Términos y Condiciones del <span class="text-primary italic">Club de Clientes</span>
+            </h1>
+            
+            <div class="space-y-6 text-gray-300 leading-relaxed text-sm md:text-base">
+                <section>
+                    <h2 class="text-xl font-bold text-white mb-3">1. Introducción</h2>
+                    <p>Al registrarse en el Club de Clientes de Alvarez Placas, usted acepta que sus datos serán tratados de acuerdo con las condiciones aquí descritas para acceder a servicios exclusivos de presupuestación, seguimiento de pedidos y beneficios de fidelidad.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-bold text-white mb-3">2. Uso de Datos Personales</h2>
+                    <p>Sus datos personales (Nombre, Empresa, WhatsApp, Email, Dirección) serán utilizados exclusivamente por Alvarez Placas con los siguientes fines:</p>
+                    <ul class="list-disc ml-6 mt-2 space-y-2">
+                        <li>Identificación y asignación de un número de cliente único.</li>
+                        <li>Notificación del estado de sus pedidos mediante WhatsApp o Email.</li>
+                        <li>Gestión del sistema de Scoring y puntos acumulados.</li>
+                        <li>Comunicación directa con su vendedor asignado.</li>
+                    </ul>
+                    <p class="mt-4 font-bold text-primary">Alvarez Placas garantiza que sus datos no serán cedidos ni vendidos a terceros en ninguna circunstancia.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-bold text-white mb-3">3. Sistema de Puntos y Scoring</h2>
+                    <ul class="list-disc ml-6 space-y-2">
+                        <li>Los puntos se generan a partir de la realización periódica de pedidos.</li>
+                        <li>En caso de no registrar pedidos en un plazo mayor a <span class="text-white font-black">60 días</span>, el sistema procederá a un descuento mensual automático de puntos.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-bold text-white mb-3">4. Eliminación de Cuenta</h2>
+                    <p>Usted puede solicitar la eliminación total de su cuenta y datos personales directamente desde su Dashboard bajo la sección "Configuración / Baja de Cuenta".</p>
+                </section>
+
+                <div class="pt-8 border-t border-gray-800 mt-10">
+                    <a href="/cliente/registro" class="inline-flex items-center gap-2 text-primary font-bold hover:underline">
+                        <i class="fas fa-arrow-left"></i> Volver al Registro
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+</Layout>

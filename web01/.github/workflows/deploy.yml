@@ -1,0 +1,76 @@
+name: Deploy to VPS
+# Triggering run after secrets configuration
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: 144.217.163.13
+          username: root
+          password: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            echo "Starting deployment for Alvarez Placas..."
+            echo "Directorio actual antes del despliegue:"
+            pwd
+            mkdir -p /home/ubuntu/alvarezplacas_web
+            cd /home/ubuntu/alvarezplacas_web
+            echo "Directorio de trabajo:"
+            pwd
+            if [ ! -d .git ]; then
+              echo "Cloning repository for the first time..."
+              git clone https://github.com/alvarezplacas/alvarezplacas_web.git .
+            else
+              echo "Updating existing repository..."
+              git remote set-url origin https://github.com/alvarezplacas/alvarezplacas_web.git
+              git fetch origin main
+              git reset --hard origin/main
+              git clean -fd
+            fi
+            echo "Ensuring networks exist..."
+            docker network create javiermix_network || true
+            
+            echo "DEEP CLEANUP: Stopping and removing everything for a fresh build..."
+            docker compose down --remove-orphans || true
+            docker system prune -af || true
+            
+            echo "Rebuilding and restarting containers (Version v1.1.9)..."
+            docker compose up -d --build
+            
+            echo "Waiting for services to stabilize (60s)..."
+            sleep 60
+            
+            echo "Checking Database connection from web container..."
+            docker exec alvarezplacas_web curl -s http://localhost/api/settings || echo "API check failed, but continuing..."
+            
+            echo "Injecting FileBrowser credentials..."
+            # Forzar puerto y db en el comando de ejecución si es necesario, pero aquí solo añadimos usuarios
+            docker exec alvarezplacas_files /filebrowser users add "alvarezjavierh@gmail.com" "Tecno121212" --perm.admin || \
+            docker exec alvarezplacas_files /filebrowser users update 1 --username "alvarezjavierh@gmail.com" --password "Tecno121212"
+            
+            docker exec alvarezplacas_files /filebrowser users add "javier" "Tecno121212" --perm.admin || true
+            
+            echo "Final user list in FileBrowser:"
+            docker exec alvarezplacas_files /filebrowser users ls
+            
+            echo "Deployment finished! DEEP DIAGNOSTIC:"
+            echo "Current Commit: $(git rev-parse --short HEAD)"
+            echo "Running Containers (All):"
+            docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "Checking for 'nginx' or 'proxy' directories in home:"
+            ls -d ~/*/ | grep -E "nginx|proxy|nx" || echo "No proxy dirs found in ~"
+            echo "Checking Nginx Logs (Astro Container) for 502 errors:"
+            docker logs alvarezplacas_web --tail 20
+            echo "Checking listening ports on host:"
+            # ss -tulpn | grep LISTEN || echo "ss command failed"
+            echo "Diagnostic finish."
