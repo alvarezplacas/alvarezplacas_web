@@ -5,20 +5,18 @@
  */
 import CatalogItem from './components/CatalogItem.astro';
 import CatalogFilters from './components/CatalogFilters.astro';
-import { directus, readItems } from '../../Backend/conexiones/directus.js';
+import { directus, readItems } from '@conexiones/directus.js';
+import placasData from '@conexiones/data/placas.json';
 
 let initialItems = [];
 let showPrices = true;
 
 try {
-  // 1. Obtener Ajustes de Sitio (Usando lógica centralizada)
+  // 1. Obtener Ajustes de Sitio
   const siteSettings = await directus.request(readItems('site_settings', {
       filter: { key: { _eq: 'show_prices' } },
       limit: 1
-  })).catch(err => {
-    console.warn(`[CatalogGrid] Error site_settings: ${err.message}`);
-    return [];
-  });
+  })).catch(() => []);
 
   if (siteSettings && siteSettings.length > 0) {
     showPrices = siteSettings[0].value !== 'false';
@@ -29,29 +27,45 @@ try {
       limit: 100,
       fields: ['id','status','nombre','sku','precio','marca_id.nombre','categoria_id.nombre','linea_id.nombre','atributos','tags'],
       filter: { status: { _eq: 'published' } }
-  })).catch(err => {
-    console.error(`[CatalogGrid] Error productos: ${err.message}`);
-    return [];
-  });
+  })).catch(() => []);
 
   if (productos && productos.length > 0) {
       initialItems = productos.map(prod => {
         const marca = prod.marca_id?.nombre || "Varios";
         const linea = prod.linea_id?.nombre || "Estándar";
         const categoria = prod.categoria_id?.nombre || "General";
-        const imagePath = `/Placas/${marca}/${linea}/${prod.nombre}.avif`;
+        
+        // Buscar correspondencia en placas.json por nombre o SKU
+        const extraInfo = placasData.find(p => 
+          (p.codigo && prod.sku && p.codigo.toString() === prod.sku.toString()) || 
+          (p.nombre?.toLowerCase().trim() === prod.nombre?.toLowerCase().trim())
+        );
+
+        // Construir ruta de imagen robusta
+        let imagePath = '';
+        if (extraInfo && extraInfo.imagen) {
+          // Si tenemos imagen en el JSON, la usamos ajustando la base
+          imagePath = extraInfo.imagen.replace('/images/catalog/Placas/', '/Placas/');
+        } else {
+          // Fallback con marca en minúsculas y estructura básica
+          imagePath = `/Placas/${marca.toLowerCase()}/${linea}/${prod.nombre}.avif`;
+        }
 
         return {
           id: prod.id,
           brand: marca,
           category: categoria,
           name: prod.nombre,
-          specs: prod.atributos ? Object.values(prod.atributos).filter(Boolean) : [],
+          specs: extraInfo ? [
+            extraInfo.medida ? `Medida: ${extraInfo.medida}` : null,
+            extraInfo.acabado ? `Acabado: ${extraInfo.acabado}` : null,
+            extraInfo.tono ? `Tono: ${extraInfo.tono}` : null
+          ].filter(Boolean) : (prod.atributos ? Object.values(prod.atributos).filter(Boolean) : []),
           price: prod.precio ? `$${parseFloat(prod.precio).toLocaleString('es-AR')}` : "Consultar",
-          code: prod.sku || `P-${prod.id}`,
+          code: prod.sku || extraInfo?.codigo || `P-${prod.id}`,
           imagen: imagePath,
-          localMatch: true,
-          tags: prod.tags || []
+          localMatch: !!extraInfo,
+          tags: prod.tags || extraInfo?.tags || []
         };
       });
   }
@@ -101,6 +115,49 @@ brandsByCategory["Todas"] = marcasRaw.sort();
       <p class="text-gray-500">Estamos actualizando el catálogo. Por favor, intenta de nuevo en unos minutos.</p>
     </div>
   )}
+
+  <!-- Modal Detalle de Producto -->
+  <div id="productModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm modal-backdrop close-modal"></div>
+    
+    <div class="bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl shadow-primary/20 w-full max-w-5xl relative z-10 flex flex-col md:flex-row max-h-[90vh] transform scale-95 transition-transform duration-300" id="modalCard">
+      
+      <button class="absolute top-4 right-4 z-30 p-2 bg-black/50 hover:bg-primary text-white rounded-full backdrop-blur-md transition-colors close-modal outline-none">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+
+      <!-- Imagen -->
+      <div class="w-full md:w-3/5 bg-[#101010] relative min-h-[300px] md:min-h-0">
+        <img id="modalImage" src="" alt="Producto" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute top-4 left-4 z-20">
+          <span id="modalMarcaBadge" class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded uppercase tracking-wider shadow-lg"></span>
+        </div>
+      </div>
+
+      <!-- Detalles -->
+      <div class="w-full md:w-2/5 p-8 flex flex-col bg-[#1a1a1a] md:border-l border-gray-800 overflow-y-auto">
+        <div class="mb-8">
+          <h2 id="modalNombre" class="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight"></h2>
+          <p id="modalCategory" class="text-primary text-xs font-bold uppercase tracking-widest"></p>
+        </div>
+
+        <div class="space-y-4 mb-8 flex-grow" id="modalSpecsContainer">
+          <!-- Se llena dinámicamente -->
+        </div>
+
+        <div class="flex flex-col gap-4 mt-auto">
+          <a id="modalWhatsAppBtn" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg">
+            <i class="fab fa-whatsapp text-xl"></i>
+            Consultar Presupuesto
+          </a>
+          <button id="modalSmartMatchBtn" class="w-full bg-primary hover:bg-primary-light text-white font-bold py-4 px-6 rounded-xl hidden items-center justify-center gap-3 transition-colors shadow-lg shadow-primary/20">
+            <i class="fas fa-magic"></i>
+            Sugerir Combinación
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <script>

@@ -68,6 +68,14 @@ const whatsappMessage = `Hola, quiero consultar por el producto:\n*${placa.name}
       {placa.name}
     </h3>
     
+    <div class="mt-2 mb-4 space-y-1">
+      {placa.specs && placa.specs.map(spec => (
+        <span class="text-[10px] text-gray-500 block border-l-2 border-primary/20 pl-2 leading-tight">
+          {spec}
+        </span>
+      ))}
+    </div>
+    
     <div class="mt-auto pt-4 flex items-center justify-between border-t border-gray-900">
       <div class="flex flex-col">
         <span class="text-[10px] text-gray-500 font-mono uppercase">{placa.code}</span>

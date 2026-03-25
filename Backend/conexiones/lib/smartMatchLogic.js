@@ -53,10 +53,18 @@ export function getSmartMatch(placaId) {
         explicacion = "Una combinación equilibrada de tonos neutros que garantiza sobriedad y buen gusto en cualquier ambiente.";
     }
 
+    const fixPath = (p) => {
+        if (!p) return null;
+        return {
+            ...p,
+            imagen: p.imagen ? p.imagen.replace('/images/catalog/Placas/', '/Placas/') : ''
+        };
+    };
+
     return {
-        base: basePlaca,
-        secundario: secundario || basePlaca, // Fallback a si misma si no hay datos
-        acento: acento || basePlaca,
+        base: fixPath(basePlaca),
+        secundario: fixPath(secundario || basePlaca),
+        acento: fixPath(acento || basePlaca),
         explicacion
     };
 }

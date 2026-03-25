@@ -16,8 +16,11 @@ export function initCatalog() {
     const mImage = document.getElementById('modalImage');
     const mMarcaBadge = document.getElementById('modalMarcaBadge');
     const mNombre = document.getElementById('modalNombre');
+    const mCategory = document.getElementById('modalCategory');
     const mCodigo = document.getElementById('modalCodigo');
+    const mSpecsContainer = document.getElementById('modalSpecsContainer');
     const mWhatsAppBtn = document.getElementById('modalWhatsAppBtn');
+    const mSmartMatchBtn = document.getElementById('modalSmartMatchBtn');
 
     if (!searchInput || !cards.length) {
         return;
@@ -149,13 +152,49 @@ export function initCatalog() {
 
             if (mMarcaBadge) mMarcaBadge.textContent = data.brand;
             if (mNombre) mNombre.textContent = data.name;
+            if (mCategory) mCategory.textContent = data.category;
             if (mCodigo) mCodigo.textContent = data.code || "-";
+
+            // Fill Specs
+            if (mSpecsContainer) {
+                mSpecsContainer.innerHTML = '';
+                if (data.specs && data.specs.length > 0) {
+                    data.specs.forEach(spec => {
+                        const div = document.createElement('div');
+                        div.className = 'flex flex-col border-b border-gray-800 pb-3 last:border-0';
+                        const [label, ...valParts] = spec.split(':');
+                        const value = valParts.join(':').trim();
+                        
+                        div.innerHTML = `
+                            <span class="text-gray-500 text-[10px] font-semibold uppercase tracking-wider mb-1">${label}</span>
+                            <span class="text-white font-medium text-base">${value || spec}</span>
+                        `;
+                        mSpecsContainer.appendChild(div);
+                    });
+                }
+            }
 
             if (mWhatsAppBtn) {
                 const showPrices = localStorage.getItem('admin_show_prices') !== 'false';
                 const priceText = showPrices ? data.price : "Consultar";
                 const msg = `Hola, quiero pedir presupuesto por el producto:\n*${data.name}*\nCódigo: ${data.code}\nPrecio: ${priceText}`;
                 mWhatsAppBtn.href = `https://wa.me/5491100000000?text=${encodeURIComponent(msg)}`;
+            }
+
+            // Smart Match Button
+            if (mSmartMatchBtn) {
+                const cat = data.category.toUpperCase();
+                const isPlaca = cat.includes('PLACA') || cat.includes('TABLERO');
+                if (isPlaca) {
+                    mSmartMatchBtn.classList.remove('hidden');
+                    mSmartMatchBtn.classList.add('flex');
+                    mSmartMatchBtn.onclick = () => {
+                        window.location.href = `/herramientas/smart-match?id=${data.id}`;
+                    };
+                } else {
+                    mSmartMatchBtn.classList.add('hidden');
+                    mSmartMatchBtn.classList.remove('flex');
+                }
             }
 
             if (modal) {
