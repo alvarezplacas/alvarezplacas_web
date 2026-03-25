@@ -1,0 +1,72 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Gestión de Materiales - Admin">
+    <div class="mb-8">
+        <h2 class="text-3xl font-black text-white mb-2">Gestión de <span class="text-primary">Materiales</span></h2>
+        <p class="text-gray-400">Carga masiva por Excel, actualización de precios y gestión de fotos.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Excel Upload Section -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-file-excel text-green-500"></i> Actualización Masiva
+                </h3>
+                <p class="text-xs text-gray-500 mb-6">
+                    Sube un archivo .xlsx o .csv con las columnas: Nombre, Marca, Espesor, Precio m2.
+                </p>
+                
+                <div class="border-2 border-dashed border-gray-800 rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer group" id="drop-zone">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-700 group-hover:text-primary transition-colors mb-4"></i>
+                    <p class="text-sm text-gray-400 mb-2">Arrastra tu archivo aquí</p>
+                    <p class="text-xs text-gray-600">o haz clic para buscar</p>
+                    <input type="file" id="excel-input" class="hidden" accept=".xlsx, .xls, .csv" />
+                </div>
+
+                <button id="process-excel" class="w-full mt-6 py-3 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-xl transition-all border border-primary/20">
+                    PROCESAR ARCHIVO
+                </button>
+            </div>
+        </div>
+
+        <!-- Material List / Results -->
+        <div class="lg:col-span-2">
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black/20">
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 bg-primary text-black text-xs font-bold rounded">Todos</button>
+                    </div>
+                </div>
+
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-900/50 text-gray-500 uppercase text-[10px] font-bold">
+                        <tr>
+                            <th class="px-4 py-3">Material</th>
+                            <th class="px-4 py-3">Marca</th>
+                            <th class="px-4 py-3">Precio m2</th>
+                            <th class="px-4 py-3 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800">
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="px-4 py-4 flex items-center gap-3">
+                                <span class="text-white font-medium">Ejemplo de Material</span>
+                            </td>
+                            <td class="px-4 py-4 text-gray-400">---</td>
+                            <td class="px-4 py-4 text-white font-bold">$0.00</td>
+                            <td class="px-4 py-4 text-right">
+                                <button class="text-gray-500 hover:text-primary p-2">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</AdminLayout>

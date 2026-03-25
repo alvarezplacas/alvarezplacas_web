@@ -1,0 +1,49 @@
+---
+import VendedorLayout from '../../layouts/VendedorLayout.astro';
+import { directus, readItems } from '../../../conexiones/directus.js';
+
+let pedidos = [];
+try {
+    pedidos = await directus.request(readItems('pedidos', {
+        sort: ['-date_created'],
+        limit: 20,
+        fields: ['id', 'status', 'total', 'date_created', { cliente_id: ['nombre', 'nombre_empresa'] }]
+    }));
+} catch (e) {
+    console.error("Error loading seller orders:", e);
+}
+---
+
+<VendedorLayout title="Pedidos y Estados">
+    <div class="mb-8">
+        <h2 class="text-3xl font-black text-white mb-2">Gestión de <span class="text-primary">Pedidos</span></h2>
+        <p class="text-gray-400">Seguimiento en tiempo real de las órdenes de tus clientes.</p>
+    </div>
+
+    <div class="bg-[#1a1a1a] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-black/40 text-gray-500 uppercase text-[10px] font-bold">
+                <tr>
+                    <th class="px-6 py-4">ID</th>
+                    <th class="px-6 py-4">Cliente</th>
+                    <th class="px-6 py-4">Fecha</th>
+                    <th class="px-6 py-4">Total</th>
+                    <th class="px-6 py-4">Estado</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800">
+                {pedidos.map(p => (
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-6 py-4 font-mono text-primary">#{p.id}</td>
+                        <td class="px-6 py-4 text-white font-bold">{p.cliente_id?.nombre_empresa || p.cliente_id?.nombre || 'Consumidor Final'}</td>
+                        <td class="px-6 py-4 text-gray-400">{new Date(p.date_created).toLocaleDateString()}</td>
+                        <td class="px-6 py-4 text-white font-black">${Number(p.total).toLocaleString()}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 bg-white/5 rounded-full text-[9px] font-bold uppercase text-gray-400">{p.status}</span>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
+</VendedorLayout>
