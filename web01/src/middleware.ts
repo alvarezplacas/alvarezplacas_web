@@ -1,5 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { query } from '../Backend/conexiones/lib/db.js';
+import { query } from '@conexiones/lib/db.js';
 
 export const onRequest = defineMiddleware(async (context: any, next: any) => {
     const isPublicStatic = context.url.pathname.startsWith('/_astro') || context.url.pathname.startsWith('/favicon');

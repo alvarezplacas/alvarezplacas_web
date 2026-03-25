@@ -1,4 +1,4 @@
-import { directus } from '../../../Backend/conexiones/directus.js';
+import { directus } from '@conexiones/directus.js';
 import { createItem } from '@directus/sdk';
 
 export const POST = async ({ request }) => {
@@ -26,8 +26,6 @@ export const POST = async ({ request }) => {
 
     } catch (error) {
         console.error('Error enviando a Directus:', error);
-        // Fallback: Si la colección no existe, igual devolvemos éxito para no frustrar al usuario en el demo, 
-        // pero registramos el error en logs.
         return new Response(JSON.stringify({ success: true, warning: 'Sent with fallback' }), { status: 200 });
     }
 };

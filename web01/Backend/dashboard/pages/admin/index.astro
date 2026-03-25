@@ -3,8 +3,8 @@
  * Admin Index - Panel de control general.
  * Propiedad del Agente 2 (Backend/Dashboard).
  */
-import AdminLayout from '../../layouts/AdminLayout.astro';
-import { directus, readItems } from '../../../conexiones/directus.js';
+import AdminLayout from '@dashboard/layouts/AdminLayout.astro';
+import { directus, readItems } from '@conexiones/directus.js';
 import { aggregate } from '@directus/sdk';
 
 let newOrdersCount = 0;
@@ -44,7 +44,7 @@ try {
         id: o.id.toString(),
         cliente: o.cliente_id?.nombre_empresa || o.cliente_id?.nombre || 'Consumidor Final',
         status: o.status,
-        logistica: o.metodo_entrega || 'Retiro'
+        logistics: o.metodo_entrega || 'Retiro'
     }));
 } catch (e) {
     console.error("Error loading admin stats:", e.message);
@@ -56,5 +56,4 @@ try {
         <h2 class="text-3xl font-bold text-white mb-2">Bienvenido, Javier 👋</h2>
         <p class="text-gray-400">Resumen rápido de <span class="text-primary font-semibold">Alvarez Placas</span>.</p>
     </div>
-    <!-- Resto del HTML igual, refactorizado para ser modular -->
 </AdminLayout>
