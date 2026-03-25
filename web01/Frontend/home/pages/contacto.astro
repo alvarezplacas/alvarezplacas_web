@@ -1,26 +1,160 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '@components/Header.astro';
+import Footer from '@components/Footer.astro';
+
+const googleMapUrl = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m12!1m3!1d3283.433898124844!2d-58.6366556!3d-34.6184518!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcb99355555555%3A0x5555555555555555!2sAlvarez%20Placas!5e0!3m2!1ses-419!2sar!4v1711361234567!5m2!1ses-419!2sar";
+
+const reviews = [
+    { name: "Carlos G.", text: "Excelente atención y variedad de placas. Muy profesionales.", score: 5 },
+    { name: "Mariana R.", text: "El optimizador de cortes me ahorró mucho dinero. 100% recomendado.", score: 5 },
+    { name: "Jorge L.", text: "La mejor placa del mercado y el servicio de entrega puntual.", score: 5 }
+];
 ---
 
 <Layout title="Contacto - Alvarez Placas">
     <Header />
-    <main class="min-h-screen pt-28 pb-20 px-4">
-        <div class="max-w-7xl mx-auto text-center">
-             <h1 class="text-4xl md:text-6xl font-extrabold text-white mb-6">Estamos para <span class="text-primary italic">ayudarte</span></h1>
-             <p class="text-gray-400 text-lg mb-10">Av. Vergara 1605, Villa Tesei, Hurlingham</p>
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                 <div class="bg-white/5 p-8 rounded-2xl border border-white/10">
-                     <i class="fab fa-whatsapp text-green-500 text-4xl mb-4"></i>
-                     <p class="text-white font-bold">WhatsApp</p>
-                     <p class="text-gray-400">11-6141-1842</p>
-                 </div>
-                 <div class="bg-white/5 p-8 rounded-2xl border border-white/10">
-                     <i class="fas fa-envelope text-blue-500 text-4xl mb-4"></i>
-                     <p class="text-white font-bold">Email</p>
-                     <p class="text-gray-400">info@alvarezplacas.com.ar</p>
-                 </div>
-             </div>
+    
+    <main class="min-h-screen pt-32 pb-20 px-4 bg-[#0a0a0a]">
+        <div class="max-w-7xl mx-auto">
+            
+            <!-- Hero Contact -->
+            <div class="text-center mb-16">
+                 <h1 class="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter">
+                     Estamos para <span class="text-primary italic">ayudarte</span>
+                 </h1>
+                 <p class="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                     Visitá nuestro showroom en Villa Tesei o escribinos para asesoramiento profesional.
+                 </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
+                <!-- Info & Form -->
+                <div class="space-y-12">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <a href="https://wa.me/5491161411842" class="group bg-white/5 p-8 rounded-3xl border border-white/10 hover:border-green-500/50 transition-all flex flex-col items-center text-center shadow-xl">
+                            <i class="fab fa-whatsapp text-green-500 text-5xl mb-4 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-white font-black uppercase text-xs tracking-widest mb-1">WhatsApp</p>
+                            <p class="text-gray-300 font-bold">11-6141-1842</p>
+                        </a>
+                        <div class="bg-white/5 p-8 rounded-3xl border border-white/10 flex flex-col items-center text-center shadow-xl">
+                            <i class="fas fa-envelope text-blue-500 text-5xl mb-4"></i>
+                            <p class="text-white font-black uppercase text-xs tracking-widest mb-1">Email</p>
+                            <p class="text-gray-300 font-bold">info@alvarezplacas.com.ar</p>
+                        </div>
+                    </div>
+
+                    <!-- Contact Form -->
+                    <div class="bg-[#151515] p-8 sm:p-10 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
+                        <div class="absolute -top-32 -right-32 w-64 h-64 bg-primary/5 rounded-full blur-[80px]"></div>
+                        <h2 class="text-2xl font-black text-white mb-8 uppercase tracking-tighter relative z-10">Envianos un <span class="text-primary">Mensaje</span></h2>
+                        <form id="contact-form" class="space-y-6 relative z-10">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <input type="text" name="nombre" placeholder="Nombre completo" required class="bg-black/40 border border-gray-800 rounded-2xl px-6 py-4 text-white outline-none focus:border-primary transition-all text-sm" />
+                                <input type="email" name="email" placeholder="Email de contacto" required class="bg-black/40 border border-gray-800 rounded-2xl px-6 py-4 text-white outline-none focus:border-primary transition-all text-sm" />
+                            </div>
+                            <input type="tel" name="tel" placeholder="Teléfono" class="w-full bg-black/40 border border-gray-800 rounded-2xl px-6 py-4 text-white outline-none focus:border-primary transition-all text-sm" />
+                            <textarea name="mensaje" rows="4" placeholder="¿En qué podemos ayudarte?" required class="w-full bg-black/40 border border-gray-800 rounded-2xl px-6 py-4 text-white outline-none focus:border-primary transition-all text-sm resize-none"></textarea>
+                            <button type="submit" class="w-full bg-primary hover:bg-white text-white hover:text-black font-black uppercase tracking-widest py-5 rounded-2xl transition-all shadow-xl shadow-primary/10">
+                                Enviar Consulta
+                            </button>
+                        </form>
+                        <div id="form-status" class="mt-4 text-center text-sm font-bold hidden flex items-center justify-center gap-2"></div>
+                    </div>
+                </div>
+
+                <!-- Map & Stats -->
+                <div class="space-y-8">
+                    <div class="w-full h-[400px] bg-gray-900 rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl">
+                        <iframe 
+                            src={googleMapUrl} 
+                            width="100%" 
+                            height="100%" 
+                            style="border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy" 
+                            referrerpolicy="no-referrer-when-downgrade"
+                            class="grayscale contrast-125 opacity-80"
+                        ></iframe>
+                    </div>
+                    
+                    <!-- Google Reviews Card -->
+                    <div class="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 shadow-xl">
+                        <div class="flex items-center justify-between mb-8">
+                            <div>
+                                <h3 class="text-white font-black uppercase tracking-tight">Experiencia Alvarez</h3>
+                                <div class="flex text-yellow-500 gap-1 mt-1">
+                                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                            <i class="fab fa-google text-4xl text-gray-500/30"></i>
+                        </div>
+                        <div class="space-y-6">
+                            {reviews.map(rev => (
+                                <div class="border-l-2 border-primary/20 pl-4">
+                                    <p class="text-gray-400 text-sm italic mb-2">"{rev.text}"</p>
+                                    <p class="text-white text-[10px] font-black uppercase tracking-widest">{rev.name}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Address Bar -->
+            <div class="bg-primary/5 border border-primary/10 rounded-3xl p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 bg-primary text-white flex items-center justify-center rounded-2xl text-2xl shadow-lg shadow-primary/20">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-black text-xl tracking-tight">Showroom Hurlingham</h4>
+                        <p class="text-gray-400 font-medium">Av. Vergara 1605, Villa Tesei, Buenos Aires</p>
+                    </div>
+                </div>
+                <div class="text-center sm:text-right">
+                    <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Horarios de Atención</p>
+                    <p class="text-white font-bold">Lun a Vie: 8:00 - 18:00hs</p>
+                    <p class="text-white font-bold">Sábados: 8:30 - 13:00hs</p>
+                </div>
+            </div>
         </div>
     </main>
+    <Footer />
 </Layout>
+
+<script>
+    document.addEventListener('astro:page-load', () => {
+        const form = document.getElementById('contact-form');
+        const status = document.getElementById('form-status');
+
+        if (form && status) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form as HTMLFormElement);
+                
+                status.classList.remove('hidden', 'text-red-500', 'text-green-500');
+                status.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Enviando...';
+                status.classList.add('flex', 'text-white/50');
+
+                try {
+                    const res = await fetch('/api/contacto', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (res.ok) {
+                        status.innerHTML = '<i class="fas fa-check-circle text-green-500"></i> ¡Gracias! Tu mensaje fue recibido en el Dashboard.';
+                        status.classList.replace('text-white/50', 'text-green-500');
+                        (form as HTMLFormElement).reset();
+                    } else {
+                        throw new Error('Server Error');
+                    }
+                } catch (err) {
+                    status.innerHTML = '<i class="fas fa-exclamation-triangle text-red-500"></i> Error al enviar. Por favor por WhatsApp.';
+                    status.classList.replace('text-white/50', 'text-red-500');
+                }
+            });
+        }
+    });
+</script>
