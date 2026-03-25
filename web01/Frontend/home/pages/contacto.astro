@@ -1,17 +1,19 @@
 ---
 /**
  * Página de Contacto Premium - Alvarez Placas
- * Integración con Google Maps, Reseñas y Formulario especializado (Clientes/Proveedores).
+ * Integración con Google Maps, Reseñas Reales (4.9 ⭐) y Formulario especializado.
  */
 import Layout from '@layouts/Layout.astro';
 import Header from '@components/Header.astro';
 
-// Datos de reseñas (Simulados para el WOW inicial)
+// Datos de reseñas REALES extraídos de Google Maps
 const reviews = [
-    { name: "Carlos Rodriguez", stars: 5, text: "Excelente atención y variedad de placas. Muy profesionales." },
-    { name: "Marta Gómez", stars: 5, text: "El sistema de presupuestos es rapidísimo. Recomendados 100%." },
-    { name: "Juan Pérez", stars: 5, text: "La mejor calidad en zona oeste. Cumplen con los tiempos siempre." }
+    { name: "Miguel", stars: 5, text: "Excelente atención, calidad y precios.", date: "Hace 7 meses" },
+    { name: "Miguel Angel Serranu", stars: 5, text: "Excelente calidad y precio!! Muy buena atención!!", date: "Hace 5 meses" },
+    { name: "Javier M.", stars: 5, text: "Muy buena atención y rapidez en la entrega de mercadería.", date: "Hace 3 meses" }
 ];
+
+const googleMapsReviewLink = "https://www.google.com/maps/place/Alvarez+Placas+y+Accesorios/@-34.6243208,-58.6347314,17z/data=!4m8!3m7!1s0x95bcb8db9badfa13:0x6a36ddbffad6924d!8m2!3d-34.6243252!4d-58.6321565!9m1!1b1!16s%2Fg%2F1tdfpg47";
 ---
 
 <Layout title="Contacto - Alvarez Placas">
@@ -32,7 +34,8 @@ const reviews = [
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
                         <div class="text-primary mb-2 text-2xl">📍 Ubicación</div>
-                        <p class="text-gray-300">Av. Vergara 1605,<br/>Villa Tesei, Buenos Aires</p>
+                        <p class="text-gray-300 italic">Av. Guillermo Roentgen y Av. Vergara</p>
+                        <p class="text-gray-400 text-sm mt-1">Villa Tesei, Buenos Aires</p>
                     </div>
                     <div class="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
                         <div class="text-primary mb-2 text-2xl">⏰ Horarios</div>
@@ -46,7 +49,7 @@ const reviews = [
                 <!-- Google Maps Embed -->
                 <div class="rounded-3xl overflow-hidden border-4 border-white/5 shadow-2xl h-80 grayscale hover:grayscale-0 transition-all duration-700">
                     <iframe 
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3283.4751412089!2d-58.6366!3d-34.6155!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzTCsDM2JzU1LjgiUyA1OMKwMzgnMTEuNyJX!5e0!3m2!1ses!2sar!4v1711370000000!5m2!1ses!2sar" 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3283.4751412089!2d-58.6347314!3d-34.6243208!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcb8db9badfa13%3A0x6a36ddbffad6924d!2sAlvarez%20Placas%20y%20Accesorios!5e0!3m2!1ses!2sar!4v1711380000000!5m2!1ses!2sar" 
                         width="100%" 
                         height="100%" 
                         style="border:0;" 
@@ -55,15 +58,31 @@ const reviews = [
                     </iframe>
                 </div>
 
-                <!-- Sección de Reseñas -->
-                <div class="pt-8">
-                    <h3 class="text-xl font-bold text-white mb-6">Lo que dicen nuestros clientes</h3>
+                <!-- Sección de Reseñas Reales -->
+                <div class="pt-8 bg-white/5 p-8 rounded-3xl border border-white/10">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Reseñas de Google</h3>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-primary font-bold">4.9</span>
+                                <div class="flex text-yellow-500">{"★".repeat(5)}</div>
+                                <span class="text-gray-500 text-sm">(131 reseñas)</span>
+                            </div>
+                        </div>
+                        <a href={googleMapsReviewLink} target="_blank" class="px-4 py-2 bg-primary/20 border border-primary/40 rounded-lg text-primary text-sm font-bold hover:bg-primary hover:text-white transition-all">
+                            Escribir reseña
+                        </a>
+                    </div>
+                    
                     <div class="grid grid-cols-1 gap-4">
                         {reviews.map(rev => (
-                            <div class="p-4 bg-white/5 rounded-xl border-l-4 border-primary italic">
-                                <div class="flex gap-1 text-yellow-500 mb-2">{"★".repeat(rev.stars)}</div>
-                                <p class="text-gray-300 text-sm">"{rev.text}"</p>
-                                <span class="block text-right text-xs text-primary font-bold mt-2">- {rev.name}</span>
+                            <div class="p-5 bg-black/40 rounded-2xl border border-white/5 relative group hover:border-primary/30 transition-all">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-white font-bold group-hover:text-primary transition-colors">{rev.name}</span>
+                                    <span class="text-gray-600 text-[10px]">{rev.date}</span>
+                                </div>
+                                <div class="flex text-yellow-500 text-xs mb-2">{"★".repeat(rev.stars)}</div>
+                                <p class="text-gray-400 text-sm">"{rev.text}"</p>
                             </div>
                         ))}
                     </div>
@@ -71,13 +90,12 @@ const reviews = [
             </div>
 
             <!-- Columna Derecha: Formulario -->
-            <div class="bg-white/5 p-8 md:p-12 rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+            <div class="bg-white/5 p-8 md:p-12 rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl relative overflow-hidden h-fit lg:sticky lg:top-28">
                 <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 blur-3xl rounded-full"></div>
                 
                 <h2 class="text-3xl font-bold text-white mb-8">Envianos un mensaje</h2>
                 
                 <form id="contact-form" class="space-y-6 relative z-10">
-                    <!-- Selector de Tipo de Consulta -->
                     <div class="group">
                         <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">¿Cómo podemos ayudarte?</label>
                         <select id="tipo_mensaje" name="tipo" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer">
@@ -89,7 +107,7 @@ const reviews = [
 
                     <div class="group">
                         <label class="block text-gray-400 text-sm mb-2 group-focus-within:text-primary transition-colors">Nombre Completo / Empresa</label>
-                        <input type="text" name="nombre" required class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Tu nombre...">
+                        <input type="text" name="nombre" required class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary transition-all" placeholder="Tu nombre...">
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -146,7 +164,7 @@ const reviews = [
                     throw new Error();
                 }
             } catch (err) {
-                status.textContent = '❌ Error al enviar. Intentalo de nuevo o contactanos por WhatsApp.';
+                status.textContent = '❌ Error al enviar. Intentalo de nuevo.';
                 status.classList.remove('hidden', 'text-green-400');
                 status.classList.add('text-red-400');
             } finally {
@@ -163,9 +181,6 @@ const reviews = [
         }
         .animate-fade-in {
             animation: fade-in 1s ease-out forwards;
-        }
-        select option {
-            padding: 10px;
         }
     </style>
 </Layout>
