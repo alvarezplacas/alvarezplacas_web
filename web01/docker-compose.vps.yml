@@ -16,7 +16,7 @@ services:
     container_name: alvarezplacas_web
     working_dir: /app
     volumes:
-      - /home/ubuntu/alvarezplacas_web:/app
+      - /home/ubuntu/alvarezplacas_web/web01:/app
       - /opt/alvarezplacas/placas:/app/public/Placas
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     environment:
