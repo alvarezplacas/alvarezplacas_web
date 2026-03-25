@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { query } from '../../lib/db.js';
+import { query } from '@conexiones/lib/db.js';
 
 const ENSURE_TABLE = `
 CREATE TABLE IF NOT EXISTS site_settings (
@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
 // Endpoint for DB Setup (Internal use for now)
 export const DELETE: APIRoute = async () => {
     try {
-        const { initializeDatabase, cleanupMockData, seedInitialData } = await import('../../lib/dbSetup.js');
+        const { initializeDatabase, cleanupMockData, seedInitialData } = await import('@conexiones/lib/dbSetup.js');
         await initializeDatabase();
         await cleanupMockData();
         await seedInitialData();

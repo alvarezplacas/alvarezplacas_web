@@ -5,7 +5,7 @@ import { createDirectus, rest, readItems, readItem, staticToken } from '@directu
  * Este archivo es propiedad del Agente 1 (Backend/Conexiones).
  */
 
-const DIRECTUS_URL = import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const DIRECTUS_URL = import.meta.env.DIRECTUS_URL_INTERNAL || import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const DIRECTUS_TOKEN = import.meta.env.DIRECTUS_TOKEN; // Opcional para requests privados
 
 const directus = createDirectus(DIRECTUS_URL).with(rest());

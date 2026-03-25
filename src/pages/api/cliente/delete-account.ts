@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { query } from '../../../lib/db.js';
+import { query } from '@conexiones/lib/db.js';
 
 export const POST: APIRoute = async ({ cookies, redirect }) => {
     // Note: In a real app, we'd check the session token

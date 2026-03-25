@@ -10,6 +10,23 @@ Este repositorio contiene el sitio web de Alvarez Placas, migrado a una estructu
 - **/docs**: Guías técnicas y manuales de consulta.
 - **/_basura**: Depósito temporal de archivos legacy, scripts de migración y logs (CUIDADO: no borrar hasta estabilidad total).
 
+### Arquitectura Modular (V2)
+El sitio ahora utiliza una estructura modular para escalar mejor:
+- `/Backend`: Lógica de servidor, conexiones a DB y Directus.
+- `/Frontend`: Vistas y componentes de usuario.
+- `/Frontend/shared/components`: Componentes comunes (Header, Footer, Nav) con alias `@components`.
+- `/docs`: Documentación técnica y condiciones del VPS.
+
+#### Aliases de Ruta
+Para mantener el código limpio, se deben usar estos aliases:
+- `@backend`: `path.resolve('./Backend')`
+- `@frontend`: `path.resolve('./Frontend')`
+- `@conexiones`: `path.resolve('./Backend/conexiones')`
+- `@components`: `path.resolve('./Frontend/shared/components')`
+
+### Despliegue en VPS
+El despliegue se realiza mediante `git pull` en la carpeta `/home/ubuntu/alvarezplacas_web` del servidor, seguido de un reinicio de contenedores usando `docker-compose.vps.yml`.
+
 ## 🌍 Condiciones del VPS (CRÍTICO)
 
 Para que el sitio funcione correctamente en el servidor de producción:
