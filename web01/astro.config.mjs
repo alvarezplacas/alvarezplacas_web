@@ -22,6 +22,7 @@ export default defineConfig({
         '@frontend': path.resolve('./Frontend'),
         '@conexiones': path.resolve('./Backend/conexiones'),
         '@home': path.resolve('./Frontend/home'),
+        '@club': path.resolve('./Frontend/club'),
         '@components': path.resolve('./Frontend/shared/components'),
         '@layouts': path.resolve('./Frontend/home/layouts'),
         '@dashboard': path.resolve('./Backend/dashboard')

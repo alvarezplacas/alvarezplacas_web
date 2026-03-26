@@ -6,10 +6,10 @@ import { atom, computed } from 'nanostores';
  */
 
 export const BRANDS = {
-    'EGGER': { width: 2600, height: 1830, netWidth: 2595, netHeight: 1825 },
-    'FAPLAC': { width: 2750, height: 1830, netWidth: 2745, netHeight: 1825 },
-    'SADEPAN': { width: 2820, height: 1830, netWidth: 2815, netHeight: 1825 },
-    'OTRO': { width: 2600, height: 1830, netWidth: 2595, netHeight: 1825 }
+    'EGGER': { width: 2600, height: 1830, netWidth: 2590, netHeight: 1820 },
+    'FAPLAC': { width: 2750, height: 1830, netWidth: 2740, netHeight: 1820 },
+    'SADEPAN': { width: 2820, height: 1830, netWidth: 2810, netHeight: 1820 },
+    'OTRO': { width: 2600, height: 1830, netWidth: 2590, netHeight: 1820 }
 };
 
 export const sellers = atom([
