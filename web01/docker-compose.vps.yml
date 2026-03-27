@@ -5,7 +5,7 @@ services:
     ports:
       - "8081:80"
     volumes:
-      - /home/ubuntu/alvarezplacas_web:/srv
+      - /home/ubuntu/alvarezplacas_web/web01:/srv
       - /opt/alvarezplacas/filebrowser.db:/database.db
     networks:
       - javiermix_network
@@ -18,46 +18,11 @@ services:
     volumes:
       - /home/ubuntu/alvarezplacas_web/web01:/app
       - /opt/alvarezplacas/placas:/app/public/Placas
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    # Removed npm install to prevent 504 timeouts on startup
+    command: sh -c "npm run dev -- --host 0.0.0.0"
     environment:
-      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@alvarezplacas_db:5432/alvarezplacas
-      - DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055
-    networks:
-      - javiermix_network
-    restart: always
-
-  alvarez_db:
-    image: postgres:15
-    container_name: alvarezplacas_db
-    restart: always
-    environment:
-      - POSTGRES_USER=alvarez_admin
-      - POSTGRES_PASSWORD=AlvarezAdmin2026
-      - POSTGRES_DB=alvarezplacas
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - javiermix_network
-
-  directus:
-    image: directus/directus:latest
-    container_name: alvarezplacas_directus
-    ports:
-      - "8055:8055"
-    environment:
-      KEY: "alvarez-placas-secret-key-2026"
-      SECRET: "alvarez-placas-secret-token-2026"
-      DB_CLIENT: "pg"
-      DB_HOST: "alvarezplacas_db"
-      DB_PORT: "5432"
-      DB_DATABASE: "alvarezplacas"
-      DB_USER: "alvarez_admin"
-      DB_PASSWORD: "AlvarezAdmin2026"
-      # Admin Credentials para el primer login
-      ADMIN_EMAIL: "admin@alvarezplacas.com.ar"
-      ADMIN_PASSWORD: "JavierMix2026!"
+      - DIRECTUS_URL_INTERNAL=http://javiermix_directus:8055
+      - NODE_ENV=production
     networks:
       - javiermix_network
     restart: always
@@ -65,6 +30,3 @@ services:
 networks:
   javiermix_network:
     external: true
-
-volumes:
-  postgres_data:
