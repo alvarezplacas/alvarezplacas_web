@@ -7,6 +7,7 @@ import Layout from '../../home/layouts/Layout.astro';
 import Header from '@components/Header.astro';
 import BottomNav from '@components/BottomNav.astro';
 import { createDirectus, rest, readItems, readItem } from '@directus/sdk';
+import { CommunicationService } from '@dashboard/logic/communication.js';
 
 const PUBLIC_DIRECTUS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const directus = createDirectus(PUBLIC_DIRECTUS_URL).with(rest());
@@ -56,6 +57,10 @@ const processedPedidos = (pedidos || []).map((p) => ({
     tracking_code: p.tracking_id,
     status: p.status
 }));
+
+const unreadCount = await CommunicationService.getUnreadCount(userId);
+const sellerId = cliente.vendedor_asignado?.id;
+const chatMessages = sellerId ? await CommunicationService.getChat(userId, sellerId) : [];
 ---
 
 <Layout title="Mi Panel | Alvarez Placas">
@@ -149,6 +154,46 @@ const processedPedidos = (pedidos || []).map((p) => ({
                     </div>
                 </div>
 
+                <!-- Chat Interno Section -->
+                <section id="chat-interno" class="bg-[#141414] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+                    <div class="p-6 border-b border-white/5 flex items-center justify-between">
+                        <h2 class="text-xl font-black text-white uppercase tracking-tighter">Mensajería Interna</h2>
+                        {unreadCount > 0 && <span class="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded-full">{unreadCount} nuevos</span>}
+                    </div>
+                    
+                    <div class="h-80 overflow-y-auto p-6 space-y-4 bg-black/20" id="client-chat-box">
+                        {chatMessages.length === 0 ? (
+                            <div class="h-full flex flex-col items-center justify-center text-center opacity-30">
+                                <i class="fas fa-comments text-4xl mb-2"></i>
+                                <p class="text-xs font-bold uppercase">Inicia una conversación con {templateData.seller_name}</p>
+                            </div>
+                        ) : (
+                            chatMessages.map(m => (
+                                <div class={`flex ${m.remitente_id === userId ? 'justify-end' : 'justify-start'}`}>
+                                    <div class={`max-w-[85%] p-4 rounded-2xl text-sm ${m.remitente_id === userId ? 'bg-primary/20 text-white rounded-tr-none border border-primary/20' : 'bg-[#222] text-gray-300 rounded-tl-none border border-white/5'}`}>
+                                        <p>{m.mensaje}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <div class="p-4 border-t border-white/5 bg-black/40">
+                        <form id="client-chat-form" class="flex gap-2">
+                            <input 
+                                type="text" 
+                                id="client-chat-input" 
+                                placeholder="Escribe tu consulta aquí..." 
+                                class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-primary transition-all"
+                                autocomplete="off"
+                            />
+                            <button type="submit" class="bg-primary hover:bg-white text-white hover:text-black px-6 rounded-xl font-black uppercase text-xs transition-all flex items-center justify-center">
+                                Enviar
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
                 <!-- Pedidos -->
                 <section class="space-y-4">
                     <h2 class="text-xl font-black text-white uppercase tracking-tighter px-2">Mis Pedidos Recientes</h2>
@@ -178,4 +223,38 @@ const processedPedidos = (pedidos || []).map((p) => ({
     </div>
 
     <BottomNav />
+
+    <script>
+        const chatForm = document.getElementById('client-chat-form') as HTMLFormElement;
+        const chatInput = document.getElementById('client-chat-input') as HTMLInputElement;
+        const chatBox = document.getElementById('client-chat-box');
+
+        if (chatForm && chatInput) {
+            chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const msg = chatInput.value.trim();
+                if (!msg) return;
+
+                // Simple integration using our new API
+                // We'll pass the IDs from the template data if available or let the backend extract from session
+                // Since this is a demo, we'll try to fetch the essential IDs
+                try {
+                    const response = await fetch('/api/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: msg, isClient: true }) // Backend can identify role from session
+                    });
+
+                    if (response.ok) {
+                        chatInput.value = '';
+                        location.reload();
+                    }
+                } catch (err) {
+                    console.error("Chat error:", err);
+                }
+            });
+
+            if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
 </Layout>
