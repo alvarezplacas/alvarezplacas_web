@@ -30,7 +30,7 @@ services:
       - javiermix_network
 
   alvarezplacas_db:
-    image: postgres:16-alpine
+    image: postgres:15-alpine
     container_name: alvarezplacas_db
     restart: always
     environment:
