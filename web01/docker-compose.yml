@@ -16,6 +16,7 @@ services:
       - alvarezplacas_directus
     networks:
       - javiermix_network
+      - alvarez_internal
 
   filebrowser:
     image: filebrowser/filebrowser:latest
@@ -42,7 +43,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - javiermix_network
+      - alvarez_internal
 
   alvarezplacas_directus:
     image: directus/directus:latest
@@ -63,12 +64,15 @@ services:
       ADMIN_PASSWORD: "JavierMix2026!"
     networks:
       - javiermix_network
+      - alvarez_internal
     depends_on:
       - alvarezplacas_db
 
 networks:
   javiermix_network:
     external: true
+  alvarez_internal:
+    driver: bridge
 
 volumes:
   postgres_data:
