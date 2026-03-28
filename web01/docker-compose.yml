@@ -43,7 +43,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - alvarez_data_v2:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U alvarez_admin -d alvarezplacas"]
       interval: 10s
@@ -65,7 +65,7 @@ services:
       DB_HOST: "alvarezplacas_db"
       DB_PORT: "5432"
       DB_DATABASE: "alvarezplacas"
-      DB_USER: "postgres"
+      DB_USER: "alvarez_admin"
       DB_PASSWORD: "AlvarezAdmin2026"
       ADMIN_EMAIL: "admin@alvarezplacas.com.ar"
       ADMIN_PASSWORD: "JavierMix2026!"
@@ -87,4 +87,4 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  alvarez_data_v2:
