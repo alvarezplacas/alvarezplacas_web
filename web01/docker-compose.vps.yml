@@ -21,7 +21,7 @@ services:
     # Removed npm install to prevent 504 timeouts on startup
     command: sh -c "npm run dev -- --host 0.0.0.0"
     environment:
-      - DIRECTUS_URL_INTERNAL=http://javiermix_directus:8055
+      - DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055
       - NODE_ENV=production
     networks:
       - javiermix_network

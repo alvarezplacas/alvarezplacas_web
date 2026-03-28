@@ -18,22 +18,25 @@ let initialItems = [];
 let showPrices = true;
 
 try {
-  // 1. Obtener Ajustes de Sitio
-  const siteSettings = await directus.request(readItems('site_settings', {
-      filter: { key: { _eq: 'show_prices' } },
-      limit: 1
-  })).catch(() => []);
+  // 1 & 2. Obtener Ajustes y Productos en paralelo
+  const [siteSettingsResult, productosResult] = await Promise.all([
+    directus.request(readItems('site_settings', {
+        filter: { key: { _eq: 'show_prices' } },
+        limit: 1
+    })).catch(() => []),
+    directus.request(readItems('productos', {
+        limit: 100,
+        fields: ['id','status','nombre','sku','precio','marca_id.nombre','categoria_id.nombre','linea_id.nombre','atributos','tags'],
+        filter: { status: { _eq: 'published' } }
+    })).catch(() => [])
+  ]);
+
+  const siteSettings = siteSettingsResult;
+  const productos = productosResult;
 
   if (siteSettings && siteSettings.length > 0) {
     showPrices = siteSettings[0].value !== 'false';
   }
-
-  // 2. Obtener Catálogo Completo
-  const productos = await directus.request(readItems('productos', {
-      limit: 100,
-      fields: ['id','status','nombre','sku','precio','marca_id.nombre','categoria_id.nombre','linea_id.nombre','atributos','tags'],
-      filter: { status: { _eq: 'published' } }
-  })).catch(() => []);
 
   if (productos && productos.length > 0) {
       const PUBLIC_DIRECTUS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://alvarezplacas.com.ar';

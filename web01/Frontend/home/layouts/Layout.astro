@@ -39,8 +39,49 @@ const {
 		<!-- Analytics -->
 		<script defer src="https://stats.javiermix.ar/script.js" data-website-id="d70f2548-e4c6-4aa9-bd21-00b8d3e93995"></script>
 		<ClientRouter />
+
+		<style is:inline>
+			#nprogress-bar {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 3px;
+				background: #ff4d00;
+				z-index: 9999;
+				transform: translateX(-100%);
+				transition: transform 0.4s ease-out;
+				pointer-events: none;
+			}
+			#nprogress-bar.loading {
+				transform: translateX(-20%);
+			}
+			#nprogress-bar.finished {
+				transform: translateX(0);
+				opacity: 0;
+				transition: transform 0.2s ease-out, opacity 0.5s ease-out 0.2s;
+			}
+		</style>
+		<script is:inline>
+			document.addEventListener('astro:before-preparation', () => {
+				const bar = document.getElementById('nprogress-bar');
+				if (bar) {
+					bar.classList.remove('finished');
+					bar.style.opacity = '1';
+					bar.classList.add('loading');
+				}
+			});
+			document.addEventListener('astro:after-navigation', () => {
+				const bar = document.getElementById('nprogress-bar');
+				if (bar) {
+					bar.classList.remove('loading');
+					bar.classList.add('finished');
+				}
+			});
+		</script>
 	</head>
 	<body class="bg-jet-black text-white font-sans antialiased pb-20 md:pb-0 min-h-screen flex flex-col">
+		<div id="nprogress-bar"></div>
 		<main class="flex-grow">
 			<slot />
 		</main>
