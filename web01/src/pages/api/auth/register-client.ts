@@ -5,18 +5,28 @@ import bcrypt from 'bcryptjs';
 const DIRECTUS_URL = process.env.DIRECTUS_URL_INTERNAL || process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const STATIC_TOKEN = 'jb-_twuOduXRpNMS_mN5-6jKKlE1ddH8';
 
-const directus = createDirectus(DIRECTUS_URL)
+// Inicialización correcta del cliente de Directus
+const directusClient = createDirectus(DIRECTUS_URL)
     .with(staticToken(STATIC_TOKEN))
     .with(rest());
 
+// Todo debe estar envuelto en una función HTTP, en este caso POST
+export const POST: APIRoute = async ({ request }) => {
     let data: any = {};
     const contentType = request.headers.get('content-type') || '';
 
-    if (contentType.includes('application/json')) {
-        data = await request.json();
-    } else {
-        const formData = await request.formData();
-        data = Object.fromEntries(formData.entries());
+    try {
+        if (contentType.includes('application/json')) {
+            data = await request.json();
+        } else {
+            const formData = await request.formData();
+            data = Object.fromEntries(formData.entries());
+        }
+    } catch (e) {
+        return new Response(JSON.stringify({
+            success: false,
+            message: 'Error procesando la solicitud. Formato inválido.'
+        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const name = (data.name || data.nombre)?.toString();
@@ -26,10 +36,10 @@ const directus = createDirectus(DIRECTUS_URL)
     const password = data.password?.toString();
 
     if (!name || !email || !password) {
-        return new Response(JSON.stringify({ 
-            success: false, 
-            message: 'Campos obligatorios faltantes (Nombre, Email o Password)' 
-        }), { 
+        return new Response(JSON.stringify({
+            success: false,
+            message: 'Campos obligatorios faltantes (Nombre, Email o Password)'
+        }), {
             status: 400,
             headers: { 'Content-Type': 'application/json' }
         });
@@ -40,7 +50,7 @@ const directus = createDirectus(DIRECTUS_URL)
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // 2. Generate Client Number (ALV-XXXX) via Directus
-        const clientResults = await directus.request(readItems('clientes', {
+        const clientResults = await directusClient.request(readItems('clientes', {
             filter: { client_number: { _starts_with: 'ALV-' } },
             sort: ['-id'],
             limit: 1,
@@ -49,22 +59,23 @@ const directus = createDirectus(DIRECTUS_URL)
 
         let nextNumber = 1;
         if (clientResults && clientResults.length > 0) {
-            const lastNum = parseInt(clientResults[0].client_number.split('-')[1]);
-            nextNumber = lastNum + 1;
+            const lastNumString = clientResults[0].client_number.split('-')[1];
+            if (lastNumString) {
+                const lastNum = parseInt(lastNumString, 10);
+                if (!isNaN(lastNum)) nextNumber = lastNum + 1;
+            }
         }
         const clientNumber = `ALV-${nextNumber.toString().padStart(4, '0')}`;
 
-        // 3. Assign Seller (The one with fewer clients)
-        // En Directus esto requiere un poco más de lógica si no tenemos SQL directo para COUNT/GROUP BY
-        // Por ahora, traemos vendedores y asignamos el primero o buscamos uno.
-        const sellers = await directus.request(readItems('vendedores', {
-            fields: ['id', 'Nombre']
+        // 3. Assign Seller
+        const sellers = await directusClient.request(readItems('vendedores', {
+            fields: ['id']
         }));
 
-        let assignedSellerId = sellers?.[0]?.id || null;
+        const assignedSellerId = sellers?.[0]?.id || null;
 
         // 4. Insert into "clientes" collection
-        const createItemResult: any = await directus.request(createItem('clientes', {
+        const createItemResult: any = await directusClient.request(createItem('clientes', {
             nombre_empresa: name,
             whatsapp: phone,
             direccion: address,
@@ -76,17 +87,17 @@ const directus = createDirectus(DIRECTUS_URL)
             status: 'published'
         }));
 
-        // Set session cookie (logged in directly)
+        // Set session cookie
         const userId = createItemResult?.id || createItemResult?.key || 'unknown';
         const cookieValue = `client_session=${encodeURIComponent(userId.toString())}; Path=/; Max-Age=${60 * 60 * 24 * 30}; SameSite=Lax`;
 
-        return new Response(JSON.stringify({ 
-            success: true, 
+        return new Response(JSON.stringify({
+            success: true,
             message: '¡Bienvenido al Club! Tu registro ha sido exitoso.',
             redirectUrl: '/cliente'
-        }), { 
+        }), {
             status: 200,
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'Set-Cookie': cookieValue
             }
@@ -94,20 +105,19 @@ const directus = createDirectus(DIRECTUS_URL)
 
     } catch (e: any) {
         console.error('Registration Error:', e);
-        
+
         let message = 'Error en el registro: ' + (e.message || 'Error desconocido');
         let status = 500;
 
-        // Manejo de errores específicos de Directus (duplicados, etc.)
         if (e.errors?.[0]?.extensions?.code === 'RECORD_NOT_UNIQUE') {
             message = 'Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.';
             status = 400;
         }
 
-        return new Response(JSON.stringify({ 
-            success: false, 
-            message: message 
-        }), { 
+        return new Response(JSON.stringify({
+            success: false,
+            message: message
+        }), {
             status: status,
             headers: { 'Content-Type': 'application/json' }
         });
