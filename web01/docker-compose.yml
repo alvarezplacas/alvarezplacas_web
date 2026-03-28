@@ -39,13 +39,13 @@ services:
     environment:
       - POSTGRES_USER=alvarez_admin
       - POSTGRES_PASSWORD=AlvarezAdmin2026
-      - POSTGRES_DB=alvarezplacas
+      - POSTGRES_DB=alvarez_db_v2
     ports:
       - "5433:5432"
     volumes:
       - alvarez_data_v2:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U alvarez_admin -d alvarezplacas"]
+      test: ["CMD-SHELL", "pg_isready -U alvarez_admin -d alvarez_db_v2"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -64,7 +64,7 @@ services:
       DB_CLIENT: "pg"
       DB_HOST: "alvarezplacas_db"
       DB_PORT: "5432"
-      DB_DATABASE: "alvarezplacas"
+      DB_DATABASE: "alvarez_db_v2"
       DB_USER: "alvarez_admin"
       DB_PASSWORD: "AlvarezAdmin2026"
       ADMIN_EMAIL: "admin@alvarezplacas.com.ar"
