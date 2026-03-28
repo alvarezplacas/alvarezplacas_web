@@ -69,7 +69,7 @@ try {
         if (extraInfo?.imagen) {
           imagePath = extraInfo.imagen.replace('/images/catalog/Placas/', '/Placas/');
         } else if (prod.imagen_principal) {
-          imagePath = `${PUBLIC_DIRECTUS_URL}/assets/${prod.imagen_principal}`;
+          imagePath = `${PUBLIC_DIRECTUS_URL}/assets/${prod.imagen_principal}?width=600&format=avif&quality=80`;
         } else {
           // Fallback robusto
           imagePath = `/Placas/${marca}/${linea}/${prod.nombre}.avif`;
@@ -151,7 +151,7 @@ brandsByCategory["Todas"] = marcasRaw.sort();
 
       <!-- Imagen -->
       <div class="w-full md:w-3/5 bg-[#101010] relative min-h-[300px] md:min-h-0">
-        <img id="modalImage" src="" alt="Producto" class="absolute inset-0 w-full h-full object-cover" />
+        <img id="modalImage" src="" alt="Producto" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
         <div class="absolute top-4 left-4 z-20">
           <span id="modalMarcaBadge" class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded uppercase tracking-wider shadow-lg"></span>
         </div>
