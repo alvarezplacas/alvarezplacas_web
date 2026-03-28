@@ -1,20 +1,38 @@
 import type { APIRoute } from 'astro';
-import { createDirectus, rest, readItems, createItem } from '@directus/sdk';
+import { createDirectus, rest, readItems, createItem, staticToken } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
 
-const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const directus = createDirectus(DIRECTUS_URL).with(rest());
+const DIRECTUS_URL = process.env.DIRECTUS_URL_INTERNAL || process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const STATIC_TOKEN = 'jb-_twuOduXRpNMS_mN5-6jKKlE1ddH8';
 
-export const POST: APIRoute = async ({ request }) => {
-    const formData = await request.formData();
-    const name = formData.get('name')?.toString();
-    const email = formData.get('email')?.toString();
-    const phone = formData.get('phone')?.toString();
-    const address = formData.get('address')?.toString();
-    const password = formData.get('password')?.toString();
+const directus = createDirectus(DIRECTUS_URL)
+    .with(staticToken(STATIC_TOKEN))
+    .with(rest());
+
+    let data: any = {};
+    const contentType = request.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+        data = await request.json();
+    } else {
+        const formData = await request.formData();
+        data = Object.fromEntries(formData.entries());
+    }
+
+    const name = (data.name || data.nombre)?.toString();
+    const email = data.email?.toString();
+    const phone = (data.phone || data.whatsapp)?.toString();
+    const address = (data.address || data.direccion)?.toString();
+    const password = data.password?.toString();
 
     if (!name || !email || !password) {
-        return new Response('Campos obligatorios faltantes', { status: 400 });
+        return new Response(JSON.stringify({ 
+            success: false, 
+            message: 'Campos obligatorios faltantes (Nombre, Email o Password)' 
+        }), { 
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 
     try {
@@ -46,7 +64,7 @@ export const POST: APIRoute = async ({ request }) => {
         let assignedSellerId = sellers?.[0]?.id || null;
 
         // 4. Insert into "clientes" collection
-        await directus.request(createItem('clientes', {
+        const createItemResult: any = await directus.request(createItem('clientes', {
             nombre_empresa: name,
             whatsapp: phone,
             direccion: address,
@@ -58,13 +76,20 @@ export const POST: APIRoute = async ({ request }) => {
             status: 'published'
         }));
 
-        // Return JSON for AJAX requests
+        // Set session cookie (logged in directly)
+        const userId = createItemResult?.id || createItemResult?.key || 'unknown';
+        const cookieValue = `client_session=${encodeURIComponent(userId.toString())}; Path=/; Max-Age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+
         return new Response(JSON.stringify({ 
             success: true, 
-            message: 'Registro exitoso. Redirigiendo...' 
+            message: '¡Bienvenido al Club! Tu registro ha sido exitoso.',
+            redirectUrl: '/cliente'
         }), { 
             status: 200,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+                'Content-Type': 'application/json',
+                'Set-Cookie': cookieValue
+            }
         });
 
     } catch (e: any) {
