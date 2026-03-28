@@ -9,6 +9,9 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
+  security: {
+    checkOrigin: false
+  },
   prefetch: true,
   server: {
     host: '0.0.0.0',
