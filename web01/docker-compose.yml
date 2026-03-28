@@ -65,7 +65,7 @@ services:
       DB_HOST: "alvarezplacas_db"
       DB_PORT: "5432"
       DB_DATABASE: "alvarezplacas"
-      DB_USER: "alvarez_admin"
+      DB_USER: "postgres"
       DB_PASSWORD: "AlvarezAdmin2026"
       ADMIN_EMAIL: "admin@alvarezplacas.com.ar"
       ADMIN_PASSWORD: "JavierMix2026!"
