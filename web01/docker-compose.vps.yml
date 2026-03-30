@@ -18,10 +18,13 @@ services:
     volumes:
       - /home/ubuntu/alvarezplacas_web/web01:/app
       - /opt/alvarezplacas/placas:/app/public/Placas
-    # Removed npm install to prevent 504 timeouts on startup
-    command: sh -c "npm run dev -- --host 0.0.0.0"
+    # Build + run SSR standalone (modo producción correcto para Astro node adapter)
+    command: sh -c "npm run build && node ./dist/server/entry.mjs"
     environment:
+      - PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
       - DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055
+      - HOST=0.0.0.0
+      - PORT=4321
       - NODE_ENV=production
     networks:
       - javiermix_network
