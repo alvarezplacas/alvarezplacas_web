@@ -23,6 +23,7 @@ services:
     environment:
       - PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
       - DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055
+      - DATABASE_URL=postgresql://alvarez_admin:AlvarezAdmin2026@172.21.0.2:5432/alvarezplacas
       - HOST=0.0.0.0
       - PORT=4321
       - NODE_ENV=production
