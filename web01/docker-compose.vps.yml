@@ -28,8 +28,11 @@ services:
       - NODE_ENV=production
     networks:
       - javiermix_network
+      - web01_alvarez_internal
     restart: always
 
 networks:
   javiermix_network:
+    external: true
+  web01_alvarez_internal:
     external: true
