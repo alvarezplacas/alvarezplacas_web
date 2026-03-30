@@ -7,7 +7,6 @@ import Layout from '../../home/layouts/Layout.astro';
 import Header from '@components/Header.astro';
 import BottomNav from '@components/BottomNav.astro';
 import { createDirectus, rest, readItems, readItem } from '@directus/sdk';
-import { CommunicationService } from '@dashboard/logic/communication.js';
 
 const PUBLIC_DIRECTUS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const directus = createDirectus(PUBLIC_DIRECTUS_URL).with(rest());
@@ -58,9 +57,30 @@ const processedPedidos = (pedidos || []).map((p) => ({
     status: p.status
 }));
 
-const unreadCount = await CommunicationService.getUnreadCount(userId);
 const sellerId = cliente.vendedor_asignado?.id;
-const chatMessages = sellerId ? await CommunicationService.getChat(userId, sellerId) : [];
+let unreadCount = 0;
+let chatMessages = [];
+try {
+    const unreadRes = await directus.request(readItems('mensajes', {
+        filter: { destinatario_id: { _eq: userId }, visto: { _eq: false } },
+        aggregate: { count: ['*'] }
+    }));
+    unreadCount = parseInt(unreadRes[0]?.count?.['*'] || '0');
+    if (sellerId) {
+        chatMessages = await directus.request(readItems('mensajes', {
+            filter: {
+                _or: [
+                    { remitente_id: { _eq: userId }, destinatario_id: { _eq: sellerId } },
+                    { remitente_id: { _eq: sellerId }, destinatario_id: { _eq: userId } }
+                ]
+            },
+            sort: ['fecha_envio'],
+            limit: 100
+        }));
+    }
+} catch (e) {
+    console.error('Error mensajería:', e);
+}
 ---
 
 <Layout title="Mi Panel | Alvarez Placas">
