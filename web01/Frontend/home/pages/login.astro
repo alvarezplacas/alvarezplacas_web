@@ -10,8 +10,12 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
 ---
 
 <Layout title="Iniciar Sesión - Alvarez Placas">
-    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#0a0a0a]">
-        <div class="max-w-md w-full space-y-8 bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 shadow-2xl">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#0a0a0a] relative overflow-hidden">
+        
+        <!-- Background Glow -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div class="max-w-md w-full space-y-8 bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 shadow-2xl relative z-10">
             <div>
                 <a href="/" class="flex justify-center flex-shrink-0 items-center gap-1 text-4xl font-bold tracking-tight text-white hover:opacity-90 transition-opacity">
                     ALVAREZ<span class="text-primary">PLACAS</span>
@@ -26,15 +30,16 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
                     O <a href="/cliente/registro" class="font-medium text-primary hover:text-primary-light">crea una cuenta si no tienes una</a>
                 </p>
             </div>
-            <form class="mt-8 space-y-6" action={action} method="POST">
+
+            <form class="mt-8 space-y-6" id="login-form" action={action} method="POST">
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div class="mb-4">
                         <label for="email-address" class="sr-only">Correo electrónico</label>
-                        <input id="email-address" name="email" type="email" autocomplete="email" required class="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" placeholder="Correo electrónico" />
+                        <input id="email-address" name="email" type="email" autocomplete="email" required class="appearance-none rounded-lg relative block w-full px-3 py-4 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm transition-all" placeholder="Correo electrónico" />
                     </div>
                     <div>
                         <label for="password" class="sr-only">Contraseña</label>
-                        <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" placeholder="Contraseña" />
+                        <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-lg relative block w-full px-3 py-4 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm transition-all" placeholder="Contraseña" />
                     </div>
                 </div>
 
@@ -54,11 +59,86 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
                 </div>
 
                 <div>
-                    <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all shadow-[0_0_20px_rgba(255,40,0,0.2)]">
-                        Iniciar Sesión
+                    <button type="submit" id="submit-btn" class="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all shadow-[0_0_20px_rgba(255,40,0,0.2)]">
+                        Iniciar Sesión <i class="fas fa-arrow-right ml-2 opacity-0 group-hover:opacity-100 transition-all"></i>
                     </button>
                 </div>
             </form>
         </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-4"></div>
     </div>
+
+    <script is:inline>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.querySelector('#login-form');
+            const submitBtn = document.querySelector('#submit-btn');
+            const toastContainer = document.getElementById('toast-container');
+
+            if (!form || !toastContainer) return;
+
+            function showToast(message, type = 'error') {
+                const toast = document.createElement('div');
+                toast.className = `flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md transform transition-all duration-500 translate-y-10 opacity-0 ${
+                    type === 'error' 
+                    ? 'bg-red-500/10 border-red-500/20 text-red-500' 
+                    : 'bg-green-500/10 border-green-500/20 text-green-500'
+                }`;
+                
+                toast.innerHTML = `
+                    <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} text-lg"></i>
+                    <span class="font-bold text-sm text-white">${message}</span>
+                `;
+
+                toastContainer.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-10', 'opacity-0');
+                }, 10);
+
+                setTimeout(() => {
+                    toast.classList.add('translate-y-[-10px]', 'opacity-0');
+                    setTimeout(() => toast.remove(), 500);
+                }, 6000);
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const originalBtnContent = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Verificando...';
+
+                try {
+                    const formData = new FormData(form);
+                    
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        showToast(result.message, 'success');
+                        setTimeout(() => { 
+                            window.location.href = result.redirectUrl || '/'; 
+                        }, 1000);
+                    } else {
+                        showToast(result.message || 'Error en el inicio de sesión', 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnContent;
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showToast('Error de conexión con el servidor', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnContent;
+                }
+            });
+        });
+    </script>
+
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </Layout>

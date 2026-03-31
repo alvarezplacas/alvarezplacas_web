@@ -15,18 +15,25 @@ const directus = createDirectus(DIRECTUS_URL)
     .with(staticToken(STATIC_TOKEN))
     .with(rest());
 
-export const POST: APIRoute = async ({ request, cookies, redirect }) => {
-    const formData = await request.formData();
-    const email = formData.get('email')?.toString();
-    const password = formData.get('password')?.toString();
+export const GET: APIRoute = ({ redirect }) => {
+    return redirect('/login');
+};
 
-    console.log(`[Login] Attempt for: ${email} using ${DIRECTUS_URL}`);
-
-    if (!email || !password) {
-        return new Response('Email y contraseña requeridos', { status: 400 });
-    }
-
+export const POST: APIRoute = async ({ request, cookies }) => {
     try {
+        const formData = await request.formData();
+        const email = formData.get('email')?.toString();
+        const password = formData.get('password')?.toString();
+
+        console.log(`[Login] Attempt for: ${email}`);
+
+        if (!email || !password) {
+            return new Response(JSON.stringify({ 
+                success: false, 
+                message: 'Email y contraseña requeridos' 
+            }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+
         // Buscar en la colección de 'clientes' en Directus (Case-insensitive)
         const clientResults = await directus.request(readItems('clientes', {
             filter: { email: { _icontains: email } },
@@ -36,45 +43,52 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         const user = clientResults?.[0];
 
         if (!user) {
-            console.log(`[Login] User not found: ${email}`);
-            return new Response('Usuario no encontrado', { status: 404 });
+            return new Response(JSON.stringify({ 
+                success: false, 
+                message: 'Usuario no encontrado' 
+            }), { status: 404, headers: { 'Content-Type': 'application/json' } });
         }
 
-        // En Directus, el campo se llama password_hash (según el esquema previo)
-        // Intentamos bcrypt, pero si el hash no es válido o falla, comparamos plano (para migración/debug)
         let isPasswordValid = false;
         try {
             if (user.password_hash?.startsWith('$2')) {
                 isPasswordValid = await bcrypt.compare(password, user.password_hash);
             } else {
-                // Fallback para texto plano si no parece un hash de bcrypt
                 isPasswordValid = (password === user.password_hash);
             }
         } catch (e) {
-            console.warn('[Login] Bcrypt error, falling back to plain text', e);
             isPasswordValid = (password === user.password_hash);
         }
 
         if (!isPasswordValid) {
-            console.log(`[Login] Invalid password for: ${email}`);
-            return new Response('Contraseña incorrecta', { status: 401 });
+            return new Response(JSON.stringify({ 
+                success: false, 
+                message: 'Contraseña incorrecta' 
+            }), { status: 401, headers: { 'Content-Type': 'application/json' } });
         }
 
-        // Set cookie (valid for 30 days)
+        // Set cookie
         cookies.set('client_session', user.id.toString(), {
             path: '/',
             maxAge: 60 * 60 * 24 * 30
         });
 
-        // Redirección
         const role = user.role || 'client';
-        if (role === 'admin') return redirect('/admin');
-        if (role === 'seller') return redirect('/vendedor');
-        return redirect('/cliente');
+        let redirectUrl = '/cliente';
+        if (role === 'admin') redirectUrl = '/admin';
+        else if (role === 'seller') redirectUrl = '/vendedor';
+
+        return new Response(JSON.stringify({ 
+            success: true, 
+            message: 'Sesión iniciada correctamente',
+            redirectUrl 
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
     } catch (e: any) {
         console.error('[Login Error Detail]:', JSON.stringify(e, null, 2));
-        const errMsg = e.message || (e.errors ? JSON.stringify(e.errors) : 'Error desconocido');
-        return new Response('Error en el login: ' + errMsg, { status: 500 });
+        return new Response(JSON.stringify({ 
+            success: false, 
+            message: 'Error interno: ' + (e.message || 'Error desconocido')
+        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 };

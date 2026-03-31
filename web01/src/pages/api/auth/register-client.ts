@@ -11,121 +11,100 @@ const env = getEnv();
 const DIRECTUS_URL = env.DIRECTUS_URL_INTERNAL || env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const STATIC_TOKEN = env.DIRECTUS_TOKEN || 'sv47_8QErnkx0-EBKFBnAoBw433CJs13';
 
-// Inicialización correcta del cliente de Directus
+// Inicialización del cliente de Directus
 const directusClient = createDirectus(DIRECTUS_URL)
     .with(staticToken(STATIC_TOKEN))
     .with(rest());
 
-// Todo debe estar envuelto en una función HTTP, en este caso POST
-export const POST: APIRoute = async ({ request }) => {
-    let data: any = {};
-    const contentType = request.headers.get('content-type') || '';
+export const GET: APIRoute = ({ redirect }) => {
+    return redirect('/cliente/registro');
+};
 
+export const POST: APIRoute = async ({ request }) => {
     try {
+        let body: any = {};
+        const contentType = request.headers.get('content-type') || '';
+
         if (contentType.includes('application/json')) {
-            data = await request.json();
+            body = await request.json();
         } else {
             const formData = await request.formData();
-            data = Object.fromEntries(formData.entries());
+            body = Object.fromEntries(formData.entries());
         }
-    } catch (e) {
-        return new Response(JSON.stringify({
-            success: false,
-            message: 'Error procesando la solicitud. Formato inválido.'
-        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
 
-    const name = (data.name || data.nombre)?.toString();
-    const email = data.email?.toString();
-    const phone = (data.phone || data.whatsapp)?.toString();
-    const address = (data.address || data.direccion)?.toString();
-    const password = data.password?.toString();
+        const { name, email, phone, address, password } = body;
 
-    if (!name || !email || !password) {
-        return new Response(JSON.stringify({
-            success: false,
-            message: 'Campos obligatorios faltantes (Nombre, Email o Password)'
-        }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
+        if (!name || !email || !password) {
+            return new Response(JSON.stringify({ 
+                success: false, 
+                message: 'Faltan campos obligatorios' 
+            }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
 
-    try {
-        // 1. Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // 1. Verificar si el usuario ya existe
+        const existing = await directusClient.request(readItems('clientes', {
+            filter: { email: { _eq: email.toLowerCase() } }
+        }));
 
-        // 2. Generate Client Number (ALV-XXXX) via Directus
-        const clientResults = await directusClient.request(readItems('clientes', {
-            filter: { client_number: { _starts_with: 'ALV-' } },
+        if (existing.length > 0) {
+            return new Response(JSON.stringify({ 
+                success: false, 
+                message: 'El correo electrónico ya está registrado' 
+            }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // 2. Generar Número de Cliente (ALV-XXXX)
+        const lastClient = await directusClient.request(readItems('clientes', {
             sort: ['-id'],
             limit: 1,
             fields: ['client_number']
         }));
 
-        let nextNumber = 1;
-        if (clientResults && clientResults.length > 0) {
-            const lastNumString = clientResults[0].client_number.split('-')[1];
-            if (lastNumString) {
-                const lastNum = parseInt(lastNumString, 10);
-                if (!isNaN(lastNum)) nextNumber = lastNum + 1;
-            }
+        let nextNum = 1001;
+        if (lastClient.length > 0 && lastClient[0].client_number) {
+            const match = lastClient[0].client_number.match(/\d+/);
+            if (match) nextNum = parseInt(match[0]) + 1;
         }
-        const clientNumber = `ALV-${nextNumber.toString().padStart(4, '0')}`;
+        const client_number = `ALV-${nextNum}`;
 
-        // 3. Assign Seller
-        const sellers = await directusClient.request(readItems('vendedores', {
-            fields: ['id']
-        }));
+        // 3. Hashear password
+        const password_hash = await bcrypt.hash(password, 10);
 
-        const assignedSellerId = sellers?.[0]?.id || null;
+        // 4. Crear en Directus
+        console.log(`[Register] Creating client: ${email} (${client_number})`);
+        
+        try {
+            await directusClient.request(createItem('clientes', {
+                name,
+                email: email.toLowerCase(),
+                phone: phone || '',
+                address: address || '',
+                password_hash,
+                client_number,
+                status: 'active',
+                scoring: 1,
+                registration_date: new Date().toISOString()
+            }));
 
-        // 4. Insert into "clientes" collection
-        const createItemResult: any = await directusClient.request(createItem('clientes', {
-            nombre_empresa: name,
-            whatsapp: phone,
-            direccion: address,
-            email: email,
-            password_hash: hashedPassword,
-            client_number: clientNumber,
-            vendedor_asignado: assignedSellerId,
-            puntaje: 1,
-            status: 'published'
-        }));
+            return new Response(JSON.stringify({ 
+                success: true, 
+                message: 'Registro exitoso. ¡Bienvenido al Club!',
+                redirectUrl: '/login'
+            }), { status: 201, headers: { 'Content-Type': 'application/json' } });
 
-        // Set session cookie
-        const userId = createItemResult?.id || createItemResult?.key || 'unknown';
-        const cookieValue = `client_session=${encodeURIComponent(userId.toString())}; Path=/; Max-Age=${60 * 60 * 24 * 30}; SameSite=Lax`;
-
-        return new Response(JSON.stringify({
-            success: true,
-            message: '¡Bienvenido al Club! Tu registro ha sido exitoso.',
-            redirectUrl: '/cliente'
-        }), {
-            status: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Set-Cookie': cookieValue
-            }
-        });
+        } catch (directusError: any) {
+            console.error('[Directus Create Error]:', JSON.stringify(directusError, null, 2));
+            return new Response(JSON.stringify({ 
+                success: false, 
+                message: 'Error en Directus: ' + (directusError.message || 'Verifique campos obligatorios')
+            }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        }
 
     } catch (e: any) {
-        console.error('Registration Error:', e);
-
-        let message = 'Error en el registro: ' + (e.message || 'Error desconocido');
-        let status = 500;
-
-        if (e.errors?.[0]?.extensions?.code === 'RECORD_NOT_UNIQUE') {
-            message = 'Este correo electrónico ya está registrado. Por favor, intenta iniciar sesión.';
-            status = 400;
-        }
-
-        return new Response(JSON.stringify({
-            success: false,
-            message: message
-        }), {
-            status: status,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        console.error('[Registration General Error]:', e);
+        return new Response(JSON.stringify({ 
+            success: false, 
+            message: 'Error en el servidor: ' + e.message 
+        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 };
