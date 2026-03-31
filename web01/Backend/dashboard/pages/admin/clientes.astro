@@ -18,8 +18,9 @@ try {
         puntos: row.scoring || row.puntaje || 0,
         email: row.email || 'Sin email'
     }));
-} catch (e) {
-    console.error("Error loading clients:", e.message);
+} catch (e: any) {
+    const errorDetails = e.errors ? JSON.stringify(e.errors) : (e.message || 'Error desconocido');
+    console.error("[Backend Clients Error]:", errorDetails);
 }
 ---
 

@@ -4,6 +4,8 @@
  * Propiedad del Agente 2 (Backend/Dashboard).
  */
 import AdminLayout from '@dashboard/layouts/AdminLayout.astro';
+import StatCard from '@dashboard/components/StatCard.astro';
+import OrderList from '@dashboard/components/OrderList.astro';
 import { directus, readItems } from '@conexiones/directus.js';
 import { aggregate } from '@directus/sdk';
 
@@ -30,7 +32,7 @@ try {
 
     const clientsStats = await directus.request(aggregate('clientes', {
         aggregate: { count: '*' },
-        query: { filter: { status: { _eq: 'published' } } }
+        query: { filter: { status: { _in: ['published', 'active'] } } }
     }));
     activeClientsCount = parseInt(clientsStats[0]?.count || '0');
 
@@ -46,14 +48,65 @@ try {
         status: o.status,
         logistics: o.metodo_entrega || 'Retiro'
     }));
-} catch (e) {
-    console.error("Error loading admin stats:", e.message);
+} catch (e: any) {
+    const errorDetails = e.errors ? JSON.stringify(e.errors) : (e.message || 'Error desconocido');
+    console.error("[Dashboard Stats Error]:", errorDetails);
 }
 ---
 
 <AdminLayout title="Dashboard General">
-    <div class="mb-8">
-        <h2 class="text-3xl font-bold text-white mb-2">Bienvenido, Javier 👋</h2>
-        <p class="text-gray-400">Resumen rápido de <span class="text-primary font-semibold">Alvarez Placas</span>.</p>
+    <div class="mb-8 overflow-hidden relative">
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none"></div>
+        <h2 class="text-3xl font-black text-white mb-2 uppercase tracking-tight">Bienvenido, <span class="text-primary italic">Javier</span> 👋</h2>
+        <p class="text-gray-400 font-medium">Panel de control unificado - <span class="text-white">Alvarez Placas</span>.</p>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard 
+            label="Pedidos Hoy" 
+            value={newOrdersCount} 
+            icon="fa-shopping-cart" 
+            color="primary"
+        />
+        <StatCard 
+            label="Procesando" 
+            value={pendingCutsCount} 
+            icon="fa-cog" 
+            color="blue"
+        />
+        <StatCard 
+            label="Clientes Activos" 
+            value={activeClientsCount} 
+            icon="fa-users" 
+            color="green"
+        />
+        <StatCard 
+            label="Ventas Mes" 
+            value="$ 0.00" 
+            icon="fa-chart-line" 
+            color="amber"
+        />
+    </div>
+
+    <!-- Main Content Section -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div class="xl:col-span-2 space-y-8">
+            <OrderList orders={recentOrders} title="Últimos Pedidos" />
+        </div>
+        
+        <div class="space-y-6">
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Acciones Rápidas</h3>
+                <div class="grid grid-cols-1 gap-2">
+                    <a href="/admin/materiales" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors text-sm font-bold">
+                        <i class="fas fa-layer-group text-primary"></i> Gestionar Materiales
+                    </a>
+                    <a href="/admin/vendedores" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors text-sm font-bold">
+                        <i class="fas fa-user-tie text-blue-500"></i> Control de Vendedores
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </AdminLayout>
