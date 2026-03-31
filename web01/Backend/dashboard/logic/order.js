@@ -3,7 +3,7 @@
  * Maneja el ciclo de vida y la representación visual de un pedido.
  * Propiedad del Agente 2 (Backend/Dashboard).
  */
-import { ScoringService } from '../../herramientas/logic/scoring.js';
+import { ScoringService } from '../../../Frontend/herramientas/logic/scoring.js';
 
 export class Order {
     static STATUS = {
