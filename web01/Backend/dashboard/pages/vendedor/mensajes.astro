@@ -1,0 +1,150 @@
+---
+/**
+ * Mensajería del Vendedor.
+ * Propiedad del Agente 2 (Backend/Dashboard).
+ */
+import VendedorLayout from '../../layouts/VendedorLayout.astro';
+import { CommunicationService } from '../../logic/communication.js';
+import { directus, readItems } from '@conexiones/directus.js';
+
+let sellerId = Astro.cookies.get('seller_session')?.value || '1';
+let clients = [];
+let selectedClientId = Astro.url.searchParams.get('client');
+let messages = [];
+
+try {
+    // Fetch clients assigned to this seller
+    const resClients = await directus.request(readItems('clientes', {
+        filter: { vendedor_asignado: { _eq: sellerId } },
+        fields: ['id', 'nombre', 'nombre_empresa']
+    }));
+    clients = resClients.map(c => ({
+        ...c,
+        displayName: c.nombre_empresa || c.nombre || 'Cliente #' + c.id
+    }));
+
+    if (selectedClientId) {
+        messages = await CommunicationService.getChat(selectedClientId, sellerId);
+        // Mark as seen
+        const unreadIds = messages.filter(m => m.destinatario_id === sellerId && !m.visto).map(m => m.id);
+        if (unreadIds.length > 0) await CommunicationService.markAsSeen(unreadIds);
+    }
+} catch (e) {
+    console.error("Error loading Chat:", e);
+}
+---
+
+<VendedorLayout title="Centro de Mensajería">
+    <div class="flex flex-col h-[calc(100vh-12rem)] bg-[#1a1a1a] border border-gray-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar: Clients List -->
+            <aside class="w-80 border-r border-gray-800 bg-black/20 flex flex-col">
+                <div class="p-6 border-b border-gray-800">
+                    <h3 class="text-sm font-black text-white uppercase tracking-widest">Conversaciones</h3>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 space-y-2">
+                    {clients.map(c => (
+                        <a href={`?client=${c.id}`} class={`flex items-center gap-4 p-4 rounded-2xl transition-all ${selectedClientId == c.id ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20' : 'text-gray-400 hover:bg-white/5'}`}>
+                            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold">
+                                {c.displayName.charAt(0)}
+                            </div>
+                            <div class="overflow-hidden">
+                                <p class="text-sm font-bold truncate">{c.displayName}</p>
+                                <p class="text-[10px] opacity-60 uppercase tracking-tighter">Cliente #{c.id}</p>
+                            </div>
+                        </a>
+                    ))}
+                </div>
+            </aside>
+
+            <!-- Main Chat Area -->
+            <main class="flex-1 flex flex-col bg-black/40 relative">
+                {!selectedClientId ? (
+                    <div class="flex-1 flex flex-col items-center justify-center text-center p-8">
+                        <div class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-3xl text-gray-600 mb-4">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h4 class="text-white font-bold">Selecciona un cliente</h4>
+                        <p class="text-gray-500 text-sm mt-2 max-w-xs">Elige una conversación de la lista de la izquierda para empezar a chatear.</p>
+                    </div>
+                ) : (
+                    <>
+                        <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-black/20">
+                            <h3 class="text-lg font-bold text-white uppercase tracking-tight">Chateando con <span class="text-blue-500 italic">{clients.find(c => c.id == selectedClientId)?.displayName}</span></h3>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-6 space-y-4" id="chat-messages">
+                            {messages.map(m => (
+                                <div class={`flex ${m.remitente_id === sellerId ? 'justify-end' : 'justify-start'}`}>
+                                    <div class={`max-w-[70%] p-4 rounded-2xl text-sm ${m.remitente_id === sellerId ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-[#2a2a2a] text-gray-200 rounded-tl-none border border-white/5'}`}>
+                                        <p>{m.mensaje}</p>
+                                        <p class={`text-[9px] mt-2 opacity-50 uppercase font-bold text-right`}>
+                                            {new Date(m.fecha_envio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div class="p-6 border-t border-gray-800 bg-black/40">
+                            <form id="chat-form" class="flex gap-4">
+                                <input type="hidden" id="to-id" value={selectedClientId} />
+                                <input type="hidden" id="from-id" value={sellerId} />
+                                <input 
+                                    type="text" 
+                                    id="chat-input" 
+                                    placeholder="Escribe un mensaje..." 
+                                    class="flex-1 bg-black/50 border border-gray-800 rounded-2xl px-6 py-4 text-white outline-none focus:border-blue-500 transition-all shadow-inner"
+                                    autocomplete="off"
+                                />
+                                <button type="submit" class="bg-blue-600 hover:bg-white text-white hover:text-black w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-xl shadow-blue-600/20 active:scale-95">
+                                    <i class="fas fa-paper-plane text-xl"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </>
+                )}
+            </main>
+        </div>
+    </div>
+</VendedorLayout>
+
+<script>
+    import { CommunicationService } from '../../logic/communication.js';
+
+    const chatForm = document.getElementById('chat-form') as HTMLFormElement;
+    const chatInput = document.getElementById('chat-input') as HTMLInputElement;
+    const chatMessages = document.getElementById('chat-messages');
+
+    if (chatForm && chatInput) {
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = chatInput.value.trim();
+            const toId = (document.getElementById('to-id') as HTMLInputElement).value;
+            const fromId = (document.getElementById('from-id') as HTMLInputElement).value;
+
+            if (!msg) return;
+
+            try {
+                // Here we would ideally use an API endpoint to send the message 
+                // but since this is an Astro page with SSR, we can use a fetch to a local API route
+                // For logic demo, we'll assume there's an API route at /api/messages
+                const response = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fromId, toId, content: msg })
+                });
+
+                if (response.ok) {
+                    chatInput.value = '';
+                    location.reload(); // Simple way to refresh chat for now
+                }
+            } catch (err) {
+                console.error("Error sending message:", err);
+            }
+        });
+
+        // Scroll to bottom
+        if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+</script>

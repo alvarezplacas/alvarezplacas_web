@@ -2,11 +2,13 @@
 import VendedorLayout from '../../layouts/VendedorLayout.astro';
 import { directus, readItems } from '../../../conexiones/directus.js';
 
+let sellerId = Astro.cookies.get('seller_session')?.value || '1';
 let pedidos = [];
 try {
     pedidos = await directus.request(readItems('pedidos', {
+        filter: { vendedor_id: { _eq: sellerId } },
         sort: ['-date_created'],
-        limit: 20,
+        limit: 50,
         fields: ['id', 'status', 'total', 'date_created', { cliente_id: ['nombre', 'nombre_empresa'] }]
     }));
 } catch (e) {

@@ -23,27 +23,6 @@ services:
     networks:
       - default
 
-#  roundcube:
-#    image: roundcube/roundcubemail:latest
-#    container_name: roundcube
-#    restart: always
-#    ports:
-#      - "8080:80"
-#    environment:
-#      - ROUNDCUBEMAIL_DB_TYPE=sqlite
-#      - ROUNDCUBEMAIL_DEFAULT_HOST=mailserver
-#      - ROUNDCUBEMAIL_DEFAULT_PORT=143
-#      - ROUNDCUBEMAIL_SMTP_SERVER=mailserver
-#      - ROUNDCUBEMAIL_SMTP_PORT=25
-#    volumes:
-#      - roundcube_db:/var/www/html/db/
-#      - roundcube_logs:/var/www/html/logs/
-#    depends_on:
-#      - mailserver
-#    networks:
-#      - default
-#      - npm_network
-
   snappymail:
     image: ghcr.io/the-djmaze/snappymail:latest
     container_name: snappymail
@@ -62,8 +41,6 @@ services:
       - javiermix_network
 
 volumes:
-  roundcube_db:
-  roundcube_logs:
 
 networks:
   default:
