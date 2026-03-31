@@ -6,13 +6,11 @@ import { createDirectus, rest, readItems, readItem, staticToken } from '@directu
  */
 
 const DIRECTUS_URL = import.meta.env.DIRECTUS_URL_INTERNAL || import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const DIRECTUS_TOKEN = import.meta.env.DIRECTUS_TOKEN; // Opcional para requests privados
+const DIRECTUS_TOKEN = import.meta.env.DIRECTUS_TOKEN || 'sv47_8QErnkx0-EBKFBnAoBw433CJs13';
 
-const directus = createDirectus(DIRECTUS_URL).with(rest());
-
-if (DIRECTUS_TOKEN) {
-    directus.with(staticToken(DIRECTUS_TOKEN));
-}
+const directus = createDirectus(DIRECTUS_URL)
+    .with(staticToken(DIRECTUS_TOKEN))
+    .with(rest());
 
 export { directus, readItems, readItem };
 export default directus;

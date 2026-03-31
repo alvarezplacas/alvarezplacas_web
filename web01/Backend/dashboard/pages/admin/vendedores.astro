@@ -14,7 +14,8 @@ try {
     }));
     vendedores = (res || []).map((v) => ({
         ...v,
-        nombre: v.Nombre || v.nombre || 'Sin nombre',
+        nombre: v.name || v.Nombre || v.nombre || 'Sin nombre',
+        whatsapp: v.whatsapp || v.Whatsapp || 'N/A',
         estado: 'Activo'
     }));
 } catch (e) {
@@ -23,8 +24,48 @@ try {
 ---
 
 <AdminLayout title="Gestión de Vendedores">
-    <div class="mb-8">
-        <h2 class="text-3xl font-bold text-white mb-2">Equipo de Ventas</h2>
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h2 class="text-3xl font-black text-white mb-2 uppercase tracking-tight">Equipo de <span class="text-primary italic">Ventas</span></h2>
+            <p class="text-gray-400 font-medium">Gestión de ventanillas y atención al cliente.</p>
+        </div>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i> Nuevo Vendedor
+        </button>
     </div>
-    <!-- Resto del HTML igual -->
+
+    <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-white/2 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-800">
+                    <th class="px-6 py-4">ID</th>
+                    <th class="px-6 py-4">Nombre</th>
+                    <th class="px-6 py-4">Whatsapp</th>
+                    <th class="px-6 py-4">Estado</th>
+                    <th class="px-6 py-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800">
+                {vendedores.map(v => (
+                    <tr class="hover:bg-white/2 transition-colors group">
+                        <td class="px-6 py-4 text-sm font-mono text-gray-500">{v.id}</td>
+                        <td class="px-6 py-4">
+                            <p class="text-white font-bold text-sm">{v.nombre}</p>
+                            <p class="text-[10px] text-gray-500">Ventanilla {v.id}</p>
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-400">
+                            {v.Whatsapp || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded text-[10px] font-black uppercase">Activo</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="p-2 hover:text-blue-500 transition-colors"><i class="fas fa-eye"></i></button>
+                            <button class="p-2 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
 </AdminLayout>
