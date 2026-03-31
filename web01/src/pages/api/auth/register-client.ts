@@ -9,7 +9,7 @@ const getEnv = () => {
 
 const env = getEnv();
 const DIRECTUS_URL = env.DIRECTUS_URL_INTERNAL || env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const STATIC_TOKEN = env.DIRECTUS_TOKEN || 'jb-_twuOduXRpNMS_mN5-6jKKlE1ddH8';
+const STATIC_TOKEN = env.DIRECTUS_TOKEN || 'sv47_8QErnkx0-EBKFBnAoBw433CJs13';
 
 // Inicialización correcta del cliente de Directus
 const directusClient = createDirectus(DIRECTUS_URL)
