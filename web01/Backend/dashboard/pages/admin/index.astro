@@ -48,9 +48,9 @@ try {
         status: o.status,
         logistics: o.metodo_entrega || 'Retiro'
     }));
-} catch (e: any) {
-    const errorDetails = e.errors ? JSON.stringify(e.errors) : (e.message || 'Error desconocido');
-    console.error("[Dashboard Stats Error]:", errorDetails);
+} catch (e) {
+    const errorString = (e && typeof e === 'object' && 'errors' in e) ? JSON.stringify((e as any).errors) : (e instanceof Error ? e.message : 'Error desconocido');
+    console.error("[Dashboard Stats Error]:", errorString);
 }
 ---
 

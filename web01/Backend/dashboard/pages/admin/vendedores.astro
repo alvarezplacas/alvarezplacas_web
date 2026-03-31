@@ -18,9 +18,9 @@ try {
         whatsapp: v.whatsapp || v.Whatsapp || 'N/A',
         estado: 'Activo'
     }));
-} catch (e: any) {
-    const errorDetails = e.errors ? JSON.stringify(e.errors) : (e.message || 'Error desconocido');
-    console.error("[Backend Sellers Error]:", errorDetails);
+} catch (e) {
+    const errorString = (e && typeof e === 'object' && 'errors' in e) ? JSON.stringify((e as any).errors) : (e instanceof Error ? e.message : 'Error desconocido');
+    console.error("[Backend Sellers Error]:", errorString);
 }
 ---
 

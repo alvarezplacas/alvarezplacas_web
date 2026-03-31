@@ -18,9 +18,9 @@ try {
         puntos: row.scoring || row.puntaje || 0,
         email: row.email || 'Sin email'
     }));
-} catch (e: any) {
-    const errorDetails = e.errors ? JSON.stringify(e.errors) : (e.message || 'Error desconocido');
-    console.error("[Backend Clients Error]:", errorDetails);
+} catch (e) {
+    const errorString = (e && typeof e === 'object' && 'errors' in e) ? JSON.stringify((e as any).errors) : (e instanceof Error ? e.message : 'Error desconocido');
+    console.error("[Backend Clients Error]:", errorString);
 }
 ---
 
