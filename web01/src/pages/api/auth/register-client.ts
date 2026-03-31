@@ -2,8 +2,14 @@ import type { APIRoute } from 'astro';
 import { createDirectus, rest, readItems, createItem, staticToken } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
 
-const DIRECTUS_URL = process.env.DIRECTUS_URL_INTERNAL || process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const STATIC_TOKEN = 'jb-_twuOduXRpNMS_mN5-6jKKlE1ddH8';
+const getEnv = () => {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env;
+    return process.env;
+};
+
+const env = getEnv();
+const DIRECTUS_URL = env.DIRECTUS_URL_INTERNAL || env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const STATIC_TOKEN = env.DIRECTUS_TOKEN || 'jb-_twuOduXRpNMS_mN5-6jKKlE1ddH8';
 
 // Inicialización correcta del cliente de Directus
 const directusClient = createDirectus(DIRECTUS_URL)

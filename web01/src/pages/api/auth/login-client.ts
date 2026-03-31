@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { createDirectus, rest, readItems } from '@directus/sdk';
+import { createDirectus, rest, readItems, staticToken } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
 
 const getEnv = () => {
@@ -8,8 +8,12 @@ const getEnv = () => {
 };
 
 const env = getEnv();
-const DIRECTUS_URL = env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const directus = createDirectus(DIRECTUS_URL).with(rest());
+const DIRECTUS_URL = env.DIRECTUS_URL_INTERNAL || env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const STATIC_TOKEN = 'jb-_twuOduXRpNMS_mN5-6jKKlE1ddH8';
+
+const directus = createDirectus(DIRECTUS_URL)
+    .with(staticToken(STATIC_TOKEN))
+    .with(rest());
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const formData = await request.formData();

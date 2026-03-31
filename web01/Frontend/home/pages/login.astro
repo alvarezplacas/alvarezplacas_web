@@ -3,6 +3,10 @@
  * Login Page - Modular.
  */
 import Layout from '../../home/layouts/Layout.astro';
+
+// Determinamos a dónde enviar el POST basándonos en la URL actual
+const { pathname } = Astro.url;
+const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/auth/login-client';
 ---
 
 <Layout title="Iniciar Sesión - Alvarez Placas">
@@ -22,7 +26,7 @@ import Layout from '../../home/layouts/Layout.astro';
                     O <a href="/cliente/registro" class="font-medium text-primary hover:text-primary-light">crea una cuenta si no tienes una</a>
                 </p>
             </div>
-            <form class="mt-8 space-y-6" action="/api/auth/login-client" method="POST">
+            <form class="mt-8 space-y-6" action={action} method="POST">
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div class="mb-4">
                         <label for="email-address" class="sr-only">Correo electrónico</label>

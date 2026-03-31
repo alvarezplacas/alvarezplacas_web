@@ -20,11 +20,17 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
 
     const isAdminLogin = context.url.pathname === '/admin/login';
     const isClient = context.url.pathname.startsWith('/cliente');
-    const isClientLogin = context.url.pathname === '/login'; // Ajustado según ruteo actual
+    const isVendedor = context.url.pathname.startsWith('/vendedor');
+    const isClientLogin = context.url.pathname === '/login'; 
 
     if (isAdmin && !isAdminLogin) {
         const session = context.cookies.get('admin_session');
         if (!session || session.value !== 'authenticated_javier') return context.redirect('/admin/login');
+    }
+
+    if (isVendedor && context.url.pathname !== '/vendedor/login') {
+        const session = context.cookies.get('seller_session');
+        if (!session) return context.redirect('/vendedor/login');
     }
 
     if (isMaintenanceActive && !isMaintenancePage && !isAdmin && !isApi && !isPublicStatic) {
