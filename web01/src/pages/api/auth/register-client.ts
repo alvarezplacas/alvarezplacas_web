@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { createDirectus, rest, readItems, createItem, staticToken } from '@directus/sdk';
+import { createDirectus, rest, readItems, createItem, staticToken, updateItem } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
 
 const getEnv = () => {
@@ -32,7 +32,7 @@ export const POST: APIRoute = async ({ request }) => {
             body = Object.fromEntries(formData.entries());
         }
 
-        const { name, email, phone, address, password } = body;
+        const { name, email, phone, address, password, vendedor_id } = body;
 
         if (!name || !email || !password) {
             return new Response(JSON.stringify({ 
@@ -70,8 +70,29 @@ export const POST: APIRoute = async ({ request }) => {
         // 3. Hashear password
         const password_hash = await bcrypt.hash(password, 10);
 
-        // 4. Crear en Directus
-        console.log(`[Register] Creating client: ${email} (${client_number})`);
+        // 4. Asignación de Vendedor
+        let assignedSellerId = vendedor_id;
+        
+        if (!assignedSellerId || assignedSellerId === 'auto') {
+            try {
+                // Obtener todos los vendedores
+                const allSellers = await directusClient.request(readItems('vendedores', {
+                    fields: ['id', 'name']
+                }));
+                
+                if (allSellers.length > 0) {
+                    // Obtener conteo de clientes por vendedor para balancear (Simplificado)
+                    // En una versión más robusta, usaríamos una consulta de agregación
+                    const randomIndex = Math.floor(Math.random() * allSellers.length);
+                    assignedSellerId = allSellers[randomIndex].id;
+                }
+            } catch (e) {
+                console.error("Error trayendo vendedores para auto-asignación:", e);
+            }
+        }
+
+        // 5. Crear en Directus
+        console.log(`[Register] Creating client: ${email} (${client_number}) - Seller: ${assignedSellerId}`);
         
         try {
             await directusClient.request(createItem('clientes', {
@@ -83,6 +104,7 @@ export const POST: APIRoute = async ({ request }) => {
                 client_number,
                 status: 'active',
                 scoring: 1,
+                vendedor_id: assignedSellerId, // Relacionamos con el vendedor
                 registration_date: new Date().toISOString()
             }));
 

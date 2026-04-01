@@ -12,18 +12,26 @@ export const BRANDS = {
     'OTRO': { width: 2600, height: 1830, netWidth: 2590, netHeight: 1820 }
 };
 
-export const sellers = atom([
-    { id: 1, name: 'Ventanilla 1', phone: '123456789', orders: 0, email: 'vendedor1@alvarezplacas.com' },
-    { id: 2, name: 'Ventanilla 2', phone: '987654321', orders: 0, email: 'vendedor2@alvarezplacas.com' },
-    { id: 3, name: 'Ventanilla 3', phone: '555555555', orders: 0, email: 'vendedor3@alvarezplacas.com' }
-]);
+export const sellers = atom([]);
+export const userContext = atom(null); // { id, name, seller: { id, name, phone } }
 
 export const preferredSellerId = atom(null);
 export const currentSheetItems = atom([]);
-export const allSheets = atom([]);
+
+// Persistence logic for allSheets (sessionStorage)
+const savedSheets = typeof window !== 'undefined' ? sessionStorage.getItem('alvarez_budget_history') : null;
+export const allSheets = atom(savedSheets ? JSON.parse(savedSheets) : []);
+
+if (typeof window !== 'undefined') {
+    allSheets.subscribe(sheets => {
+        sessionStorage.setItem('alvarez_budget_history', JSON.stringify(sheets));
+    });
+}
+
 export const sheetConfig = atom({
     brand: 'FAPLAC',
     thickness: 18,
+    plateName: '', // Ejemplo: CEDRO
     width: 2750,
     height: 1830,
     netWidth: 2745,
@@ -65,81 +73,102 @@ export const finalizeSheet = () => {
     
     allSheets.set([...allSheets.get(), { config: { ...config }, items: [...items] }]);
     currentSheetItems.set([]);
-    sheetConfig.set({ ...config, isSetup: false });
+    sheetConfig.set({ ...config, plateName: '', isSetup: false });
     return true;
 };
 
 /**
- * Genera el formato listo para copiar en Leptom Optimizer
- * Formato: Cant;Base;Altura;Detalle;Material;Rota;CArr;CAbj;CDer;CIzq
+ * Genera el string crudo para Leptom
  */
-export const getLeptomExport = () => {
-    const sheets = allSheets.get();
-    const current = currentSheetItems.get();
-    const allData = [...sheets];
-    if (current.length > 0) {
-        allData.push({ config: sheetConfig.get(), items: current });
-    }
-
-    if (allData.length === 0) return '';
-    
-    let exportText = "(copia esto en tu leptom)\r\n";
-    
+export const getLeptomRaw = (allData) => {
+    let exportText = "";
     allData.forEach((s) => {
-        const materialName = `${s.config.brand} ${s.config.thickness}mm`.substring(0, 30);
-        
+        const materialName = `${s.config.plateName || s.config.brand} ${s.config.thickness}mm`.substring(0, 30);
         s.items.forEach((item) => {
             const rotaVal = item.canRotate ? 1 : 0;
-            // Mapeo de tapacantos (0, 0.45, 1, 2)
             const cArr = item.edges?.top || 0;
             const cAbj = item.edges?.bottom || 0;
             const cDer = item.edges?.right || 0;
             const cIzq = item.edges?.left || 0;
             const detalle = (item.label || 'Pieza').substring(0, 30).replace(/;/g, ',');
-
-            // Formato: Cant;Base;Altura;Detalle;Material;Rota;CArr;CAbj;CDer;CIzq
-            exportText += `${item.quantity};${item.length};${item.width};${detalle};${materialName};${rotaVal};${cArr};${cAbj};${cDer};${cIzq}\r\n`;
+            exportText += `${item.quantity};${item.length};${item.width};${detalle};${materialName};${rotaVal};${cArr};${cAbj};${cDer};${cIzq}\n`;
         });
     });
-    
     return exportText;
 };
 
+/**
+ * Genera el mensaje combinado para WhatsApp (Humano + Leptom)
+ */
 export const getVisualSummary = () => {
     const sheets = allSheets.get();
     const current = currentSheetItems.get();
     const currentConf = sheetConfig.get();
+    const user = userContext.get();
     
-    let summary = `*RESUMEN DE PEDIDO - ALVAREZ PLACAS*\n`;
+    let allData = [...sheets];
+    if (current.length > 0) allData.push({ config: currentConf, items: current });
+
+    if (allData.length === 0) return 'No hay piezas cargadas.';
+
+    let summary = `*PEDIDO: ${user ? user.name : 'Cliente Web'}*\n`;
     summary += `===================================\n\n`;
     
-    const renderSheet = (config, items, idx) => {
-        let s = `*PLACA #${idx + 1}: ${config.brand} ${config.thickness}mm*\n`;
-        s += `_Medida: ${config.width}x${config.height}mm_\n`;
-        items.forEach((item, i) => {
-            s += `• ${item.quantity}un | ${item.length}x${item.width} [${item.label || '-'}]\n`;
+    allData.forEach((s, idx) => {
+        summary += `*PLACA #${idx + 1}: ${s.config.plateName || s.config.brand} (${s.config.thickness}mm)*\n`;
+        summary += `_Medida: ${s.config.width}x${s.config.height}mm_\n`;
+        s.items.forEach((item) => {
+            summary += `• ${item.quantity}un | ${item.length}x${item.width} [${item.label || '-'}]\n`;
         });
-        s += `\n`;
-        return s;
-    };
-
-    sheets.forEach((s, i) => summary += renderSheet(s.config, s.items, i));
-    if (current.length > 0) summary += renderSheet(currentConf, current, sheets.length);
+        summary += `\n`;
+    });
     
+    summary += `-----------------------------------\n`;
+    summary += `*COPIAR Y PEGAR EN LEPTOM:*\n`;
+    summary += `\`\`\`\n`;
+    summary += getLeptomRaw(allData);
+    summary += `\`\`\`\n`;
     summary += `===================================\n`;
-    summary += `_Generado en Alvarezplacas_`;
+    summary += `_Generado en Alvarezplacas.com.ar_`;
+    
     return summary;
 };
 
-export const assignSeller = () => {
-    const currentSellers = sellers.get();
-    const prefId = preferredSellerId.get();
-    let assigned;
-    if (prefId) assigned = currentSellers.find(s => s.id === prefId);
-    if (!assigned) {
-        const sorted = [...currentSellers].sort((a, b) => a.orders - b.orders);
-        assigned = sorted[0];
+/**
+ * Guarda el pedido en Directus si el usuario está logueado
+ */
+export const savePedidoToDirectus = async () => {
+    const user = userContext.get();
+    if (!user) return null;
+
+    const summary = getVisualSummary();
+    const leptomData = getLeptomRaw([...allSheets.get(), { config: sheetConfig.get(), items: currentSheetItems.get() }]);
+
+    try {
+        const response = await fetch('/api/cliente/save-budget', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cliente_id: user.id,
+                vendedor_id: user.vendedor?.id,
+                resumen: summary,
+                leptom_data: leptomData,
+                total_m2: document.getElementById('stat-m2')?.textContent || '0'
+            })
+        });
+        return await response.json();
+    } catch (e) {
+        console.error("Error al guardar pedido:", e);
+        return { success: false };
     }
-    sellers.set(currentSellers.map(s => s.id === assigned.id ? { ...s, orders: s.orders + 1 } : s));
-    return assigned;
+};
+
+export const fetchSellers = async () => {
+    try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (data.sellers) sellers.set(data.sellers);
+    } catch (e) {
+        console.error("Error al cargar vendedores");
+    }
 };
