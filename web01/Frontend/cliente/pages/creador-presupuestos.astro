@@ -158,6 +158,27 @@ if (!userCookie) {
     const summSub = document.getElementById('summ-sub');
     const summTotal = document.getElementById('summ-total');
 
+    // IMPORT LOGIC: Check if we come from BudgetEngine
+    const importData = sessionStorage.getItem('alvarez_budget_import');
+    if (importData) {
+        try {
+            const items = JSON.parse(importData);
+            items.forEach(it => {
+                budgetItems.push({
+                    desc: it.description,
+                    qty: it.quantity,
+                    price: 0 // Price must be set manually by user
+                });
+            });
+            sessionStorage.removeItem('alvarez_budget_import');
+            // Small hint for the user
+            setTimeout(() => {
+                alert("Se han importado " + items.length + " piezas de tu cálculo de cortes. Por favor, asigna los precios correspondientes.");
+            }, 500);
+            renderTable();
+        } catch (e) { console.error("Error importing budget data:", e); }
+    }
+
     function renderTable() {
         tBody.innerHTML = '';
         let subtotal = 0;

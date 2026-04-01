@@ -1,41 +1,77 @@
 ---
 /**
- * Admin Index - Panel de control general.
- * Propiedad del Agente 2 (Backend/Dashboard).
+ * Admin Index - Centro de Inteligencia de Negocios (BI).
+ * Propiedad del Agente Antigravity (Google Deepmind).
  */
 import AdminLayout from '@dashboard/layouts/AdminLayout.astro';
 import StatCard from '@dashboard/components/StatCard.astro';
 import OrderList from '@dashboard/components/OrderList.astro';
 import { directus, readItems } from '@conexiones/directus.js';
 import { aggregate } from '@directus/sdk';
+import { getMarketData } from '@dashboard/logic/market.js';
 
-let newOrdersCount = 0;
-let budgetsCount = 0;
-let pendingCutsCount = 0;
-let activeClientsCount = 0;
+let stats = {
+    newOrders: 0,
+    processing: 0,
+    activeClients: 0,
+    monthlySales: 0,
+    totalDebt: 0
+};
+
 let recentOrders = [];
+let topSellers = [];
+let market = { usd: {}, stocks: [] };
 
 try {
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-    const ordersStats = await directus.request(aggregate('pedidos', {
+    // 1. Pedidos Hoy
+    const resHoy = await directus.request(aggregate('pedidos', {
         aggregate: { count: '*' },
-        query: { filter: { date_created: { _gte: yesterday } } }
+        query: { filter: { date_created: { _gte: startOfToday } } }
     }));
-    newOrdersCount = parseInt(ordersStats[0]?.count || '0');
+    stats.newOrders = parseInt(resHoy[0]?.count || '0');
 
-    const pendingStats = await directus.request(aggregate('pedidos', {
+    // 2. Procesando (Factory Flow)
+    const resProc = await directus.request(aggregate('pedidos', {
         aggregate: { count: '*' },
-        query: { filter: { status: { _in: ['pending', 'processing'] } } }
+        query: { filter: { status: { _in: ['en_produccion', 'en_corte', 'terminado'] } } }
     }));
-    pendingCutsCount = parseInt(pendingStats[0]?.count || '0');
+    stats.processing = parseInt(resProc[0]?.count || '0');
 
-    const clientsStats = await directus.request(aggregate('clientes', {
+    // 3. Clientes Activos
+    const resClients = await directus.request(aggregate('clientes', {
         aggregate: { count: '*' },
-        query: { filter: { status: { _in: ['published', 'active'] } } }
+        query: { filter: { status: { _in: ['active', 'clean'] } } }
     }));
-    activeClientsCount = parseInt(clientsStats[0]?.count || '0');
+    stats.activeClients = parseInt(resClients[0]?.count || '0');
 
+    // 4. Ventas del Mes (Sumatoria)
+    const resSales = await directus.request(aggregate('pedidos', {
+        aggregate: { sum: ['total'] },
+        query: { 
+            filter: { 
+                _and: [
+                    { date_created: { _gte: startOfMonth } },
+                    { status: { _neq: 'presupuesto' } }
+                ]
+            } 
+        }
+    }));
+    stats.monthlySales = parseFloat(resSales[0]?.sum?.total || '0');
+
+    // 5. Saldo Deudor Total
+    const resDebt = await directus.request(aggregate('clientes', {
+        aggregate: { sum: ['debt_amount'] }
+    }));
+    stats.totalDebt = parseFloat(resDebt[0]?.sum?.debt_amount || '0');
+
+    // 6. Mercado Externo
+    market = await getMarketData();
+
+    // 7. Rankings y Listados
     const orders = await directus.request(readItems('pedidos', {
         sort: ['-date_created'],
         limit: 5,
@@ -48,64 +84,115 @@ try {
         status: o.status,
         logistics: o.metodo_entrega || 'Retiro'
     }));
+
 } catch (e) {
-    const errorString = (e && typeof e === 'object' && 'errors' in e) ? JSON.stringify((e as any).errors) : (e instanceof Error ? e.message : 'Error desconocido');
-    console.error("[Dashboard Stats Error]:", errorString);
+    console.error("[Dashboard BI Error]:", e);
 }
+
+const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 ---
 
-<AdminLayout title="Dashboard General">
-    <div class="mb-8 overflow-hidden relative">
-        <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none"></div>
-        <h2 class="text-3xl font-black text-white mb-2 uppercase tracking-tight">Bienvenido, <span class="text-primary italic">Javier</span> 👋</h2>
-        <p class="text-gray-400 font-medium">Panel de control unificado - <span class="text-white">Alvarez Placas</span>.</p>
-    </div>
-
-    <!-- Quick Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard 
-            label="Pedidos Hoy" 
-            value={newOrdersCount} 
-            icon="fa-shopping-cart" 
-            color="primary"
-        />
-        <StatCard 
-            label="Procesando" 
-            value={pendingCutsCount} 
-            icon="fa-cog" 
-            color="blue"
-        />
-        <StatCard 
-            label="Clientes Activos" 
-            value={activeClientsCount} 
-            icon="fa-users" 
-            color="green"
-        />
-        <StatCard 
-            label="Ventas Mes" 
-            value="$ 0.00" 
-            icon="fa-chart-line" 
-            color="amber"
-        />
-    </div>
-
-    <!-- Main Content Section -->
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div class="xl:col-span-2 space-y-8">
-            <OrderList orders={recentOrders} title="Últimos Pedidos" />
+<AdminLayout title="Centro de Control BI">
+    <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-3xl font-black text-white mb-1 uppercase tracking-tight">Centro de <span class="text-primary italic">Operaciones</span> 🚀</h2>
+            <p class="text-gray-400 font-medium">Análisis financiero y control de mercado en tiempo real.</p>
         </div>
         
+        <!-- Market Widget -->
+        <div class="flex gap-4 bg-white/5 border border-gray-800 p-3 rounded-2xl backdrop-blur-md">
+            <div class="border-r border-gray-800 pr-4">
+                <p class="text-[9px] font-black text-gray-500 uppercase mb-1">USD Blue</p>
+                <p class="text-lg font-black text-green-500 leading-none">
+                    ${market.usd.blue_venta || '---'}
+                </p>
+            </div>
+            <div>
+                <p class="text-[9px] font-black text-gray-500 uppercase mb-1">USD Oficial</p>
+                <p class="text-lg font-black text-blue-400 leading-none">
+                     ${market.usd.oficial_venta || '---'}
+                </p>
+            </div>
+            <div class="pl-2 flex items-center">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <StatCard label="Pedidos Hoy" value={stats.newOrders} icon="fa-shopping-cart" color="primary" />
+        <StatCard label="Procesando" value={stats.processing} icon="fa-industry" color="blue" />
+        <StatCard label="Clientes Activos" value={stats.activeClients} icon="fa-users" color="green" />
+        <StatCard label="Ventas Mes" value={formatCurrency(stats.monthlySales)} icon="fa-chart-line" color="amber" />
+        <StatCard label="Deuda Global" value={formatCurrency(stats.totalDebt)} icon="fa-hand-holding-usd" color="red" />
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        <!-- Main Column -->
+        <div class="xl:col-span-3 space-y-8">
+            <OrderList orders={recentOrders} title="Últimos Movimientos Fábrica" />
+            
+            <!-- Bottom Grid: News & Loyalty -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6">
+                    <h3 class="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                         <i class="fas fa-award text-yellow-500"></i> Sistema de Lealtad
+                    </h3>
+                    <p class="text-xs text-gray-400 leading-relaxed mb-4">
+                        Los clientes suman <span class="text-white font-bold">1 punto por cada $10.000</span> en compras entregadas. 
+                        Los puntos se utilizan para canjes y sorteos especiales al terminar la jornada laboral.
+                    </p>
+                    <div class="p-3 bg-yellow-500/5 rounded-xl border border-yellow-500/10">
+                        <p class="text-[10px] text-yellow-500 italic">
+                            <i class="fas fa-info-circle mr-1"></i> IMPORTANTE: Si un cliente no realiza pedidos en 3 meses, sus puntos expiran.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6">
+                    <h3 class="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                         <i class="fas fa-building text-blue-400"></i> Cotización de Proveedores
+                    </h3>
+                    <div class="space-y-4">
+                        {market.stocks.map(s => (
+                            <div class="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5">
+                                <span class="text-[11px] font-bold text-gray-300">{s.name}</span>
+                                <span class={`text-sm font-black ${s.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                                    {s.value} <i class={`fas fa-caret-${s.trend === 'up' ? 'up' : 'down'} ml-1`}></i>
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar Column -->
         <div class="space-y-6">
-            <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6">
-                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Acciones Rápidas</h3>
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 overflow-hidden relative">
+                <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <i class="fas fa-bolt text-5xl"></i>
+                </div>
+                <h3 class="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Acciones Rápidas</h3>
                 <div class="grid grid-cols-1 gap-2">
-                    <a href="/admin/materiales" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors text-sm font-bold">
-                        <i class="fas fa-layer-group text-primary"></i> Gestionar Materiales
+                    <a href="/admin/clientes" class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-primary hover:text-white transition-all text-sm font-bold group">
+                        <span>Alta de Clientes</span>
+                        <i class="fas fa-plus opacity-0 group-hover:opacity-100 transition-all"></i>
                     </a>
-                    <a href="/admin/vendedores" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors text-sm font-bold">
-                        <i class="fas fa-user-tie text-blue-500"></i> Control de Vendedores
+                    <a href="/admin/materiales" class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-sm font-bold">
+                        <span>Gestión Stock</span>
+                    </a>
+                    <a href="/admin/vendedores" class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-sm font-bold">
+                        <span>Monitor Ventas</span>
                     </a>
                 </div>
+            </div>
+
+            <!-- Coming Soon Widget -->
+            <div class="p-6 rounded-2xl border border-dashed border-gray-800 text-center opacity-40">
+                <p class="text-[10px] font-black text-gray-600 uppercase">Próximos Reportes</p>
+                <p class="text-xs text-gray-700 italic mt-1">Comparativa Inter-Anual</p>
             </div>
         </div>
     </div>

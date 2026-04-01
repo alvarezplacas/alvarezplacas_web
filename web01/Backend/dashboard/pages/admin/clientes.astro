@@ -1,13 +1,16 @@
 ---
 /**
- * Gestión de Clientes.
- * Propiedad del Agente 2 (Backend/Dashboard).
+ * Gestión de Clientes - Centro de Cartera.
+ * Propiedad del Agente Antigravity (Google Deepmind).
  */
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { directus, readItems } from '../../../conexiones/directus.js';
 
 let clientes = [];
+let vendedores = [];
+
 try {
+    // 1. Cargar Clientes
     const res = await directus.request(readItems('clientes', {
         sort: ['-registration_date', '-id'],
         fields: ['*', { pedidos: ['id'] }]
@@ -18,9 +21,15 @@ try {
         puntos: row.scoring || row.puntaje || 0,
         email: row.email || 'Sin email'
     }));
+
+    // 2. Cargar Vendedores para el Modal
+    vendedores = await directus.request(readItems('vendedores', {
+        fields: ['id', 'name'],
+        limit: -1
+    }));
+
 } catch (e) {
-    const errorString = (e && typeof e === 'object' && 'errors' in e) ? JSON.stringify((e as any).errors) : (e instanceof Error ? e.message : 'Error desconocido');
-    console.error("[Backend Clients Error]:", errorString);
+    console.error("[Backend Clients Error]:", e);
 }
 ---
 
@@ -30,12 +39,13 @@ try {
             <h2 class="text-3xl font-black text-white mb-2 uppercase tracking-tight">Cartera de <span class="text-primary italic">Clientes</span></h2>
             <p class="text-gray-400 font-medium">Listado de profesionales y empresas registrados.</p>
         </div>
-        <button class="bg-primary hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition-all flex items-center gap-2">
-            <i class="fas fa-plus"></i> Nuevo Cliente
+        <button id="open-modal" class="bg-primary hover:bg-red-600 text-white font-bold py-3 px-8 rounded-xl transition-all flex items-center gap-3 shadow-[0_0_20px_rgba(255,40,0,0.3)] group">
+            <i class="fas fa-plus group-hover:rotate-90 transition-transform"></i> Nuevo Cliente
         </button>
     </div>
 
-    <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+    <!-- Tabla de Clientes -->
+    <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-white/2 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-800">
@@ -50,7 +60,7 @@ try {
             <tbody class="divide-y divide-gray-800">
                 {clientes.map(c => (
                     <tr class="hover:bg-white/2 transition-colors group">
-                        <td class="px-6 py-4 text-sm font-mono text-gray-500">{c.id}</td>
+                        <td class="px-6 py-4 text-sm font-mono text-gray-500">{c.client_number || c.id}</td>
                         <td class="px-6 py-4">
                             <p class="text-white font-bold text-sm">{c.nombre}</p>
                             <p class="text-[10px] text-gray-500">{c.email}</p>
@@ -65,12 +75,128 @@ try {
                             <span class="bg-green-500/10 text-green-500 px-2 py-0.5 rounded text-[10px] font-black uppercase">Activo</span>
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <button class="p-2 hover:text-primary transition-colors"><i class="fas fa-edit"></i></button>
-                            <button class="p-2 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
+                            <button class="p-2 hover:text-primary transition-colors text-gray-500"><i class="fas fa-edit"></i></button>
+                            <button class="p-2 hover:text-red-500 transition-colors text-gray-500"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>
                 ))}
             </tbody>
         </table>
     </div>
+
+    <!-- Modal Nuevo Cliente -->
+    <div id="modal-cliente" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] hidden items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] w-full max-w-lg rounded-3xl border border-gray-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div class="p-8 border-b border-gray-800 bg-white/2 flex justify-between items-center">
+                <h3 class="text-xl font-black text-white uppercase tracking-tight">Alta de <span class="text-primary italic">Cliente</span></h3>
+                <button id="close-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="new-client-form" class="p-8 space-y-4">
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Nombre / Empresa</label>
+                        <input type="text" name="name" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Ej: Carpintería Alvarez" />
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Correo Electrónico</label>
+                        <input type="email" name="email" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="correo@ejemplo.com" />
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">WhatsApp / Tel</label>
+                        <input type="text" name="phone" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="+54 9..." />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Dirección Fiscal / Obra</label>
+                    <input type="text" name="address" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Calle, Altura, Localidad" />
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Asignar Vendedor</label>
+                    <select name="vendedor_id" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        <option value="">-- Seleccionar Vendedor --</option>
+                        {vendedores.map(v => (
+                            <option value={v.id}>{v.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-primary hover:bg-white hover:text-black text-white font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs">
+                        Registrar Cliente <i class="fas fa-check-circle ml-2"></i>
+                    </button>
+                    <p class="text-[9px] text-gray-600 text-center mt-3 uppercase italic">La contraseña inicial será: <span class="text-white">Alvarez2026</span></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast de Notificación -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] hidden bg-white text-black px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl animate-in slide-in-from-bottom duration-300">
+    </div>
+
+    <script is:inline>
+        const modal = document.getElementById('modal-cliente');
+        const openBtn = document.getElementById('open-modal');
+        const closeBtn = document.getElementById('close-modal');
+        const form = document.getElementById('new-client-form');
+        const toast = document.getElementById('toast');
+
+        function showToast(msg, error = false) {
+            toast.innerText = msg;
+            toast.classList.remove('hidden');
+            if (error) toast.classList.add('bg-primary', 'text-white');
+            else toast.classList.remove('bg-primary', 'text-white');
+            
+            setTimeout(() => toast.classList.add('hidden'), 4000);
+        }
+
+        openBtn.onclick = () => modal.classList.remove('hidden');
+        openBtn.onclick = () => modal.classList.add('flex');
+        
+        // Fix for flex/hidden
+        openBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const res = await fetch('/api/admin/create-client', {
+                    method: 'POST',
+                    body: JSON.stringify(data),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    showToast(result.message);
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(result.message || 'Error al crear cliente', true);
+                }
+            } catch (err) {
+                showToast('Error de conexión con el servidor', true);
+            }
+        });
+
+        // Cerrar modal al clickear fuera
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
 </AdminLayout>

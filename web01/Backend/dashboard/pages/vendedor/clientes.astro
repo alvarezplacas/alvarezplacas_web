@@ -1,0 +1,119 @@
+---
+import VendedorLayout from '../../layouts/VendedorLayout.astro';
+import { directus, readItems } from '../../../conexiones/directus.js';
+
+let sellerId = Astro.cookies.get('seller_session')?.value || '1';
+let clientes = [];
+
+try {
+    clientes = await directus.request(readItems('clientes', {
+        filter: { vendedor_asignado: { _eq: sellerId } },
+        sort: ['nombre_empresa'],
+        fields: ['id', 'nombre', 'nombre_empresa', 'debt_amount', 'fin_status', 'email']
+    }));
+} catch (e) {
+    console.error("Error loading clients for seller:", e);
+}
+---
+
+<VendedorLayout title="Mis Clientes">
+    <div class="mb-8">
+        <h2 class="text-3xl font-black text-white mb-2">Gestión de <span class="text-green-500">Cartera</span></h2>
+        <p class="text-gray-400">Actualiza saldos y estados financieros de tus carpinteros asignados.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {clientes.map(c => (
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-[2rem] p-8 flex flex-col justify-between hover:border-gray-600 transition-all group">
+                <div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-xl text-gray-400 font-bold group-hover:bg-green-500/10 group-hover:text-green-500 transition-colors">
+                            {(c.nombre_empresa || c.nombre || '?').charAt(0)}
+                        </div>
+                        <span class={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${
+                            c.fin_status === 'clean' ? 'bg-green-500/10 text-green-500' : 
+                            (c.fin_status === 'blocked' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500')
+                        }`}>
+                            {c.fin_status === 'clean' ? 'Al Día' : (c.fin_status === 'blocked' ? 'Bloqueado' : 'Vencido')}
+                        </span>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-white mb-1">{c.nombre_empresa || 'Sin Empresa'}</h3>
+                    <p class="text-xs text-gray-500 mb-6 font-medium">{c.nombre} • {c.email}</p>
+                    
+                    <div class="space-y-4 pt-6 border-t border-white/5">
+                        <div class="flex justify-between items-end">
+                            <div>
+                                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Deuda Pendiente</p>
+                                <p class="text-2xl font-black text-white">$ {Number(c.debt_amount || 0).toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 mt-4">
+                            <input 
+                                type="number" 
+                                placeholder="Nuevo Saldo..." 
+                                class="flex-1 bg-black border border-gray-800 rounded-xl px-4 py-2 text-white text-xs outline-none focus:border-green-500 debt-input"
+                                data-id={c.id}
+                            />
+                            <button 
+                                class="bg-white/5 hover:bg-green-500 text-gray-400 hover:text-black w-10 h-10 rounded-xl transition-all flex items-center justify-center update-debt-btn"
+                                data-id={c.id}
+                            >
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="status-btn bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-black py-2 rounded-lg text-[9px] font-black uppercase transition-all" data-id={c.id} data-status="clean">Al Día</button>
+                            <button class="status-btn bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-black py-2 rounded-lg text-[9px] font-black uppercase transition-all" data-id={c.id} data-status="overdue">Vencido</button>
+                            <button class="status-btn bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-black py-2 rounded-lg text-[9px] font-black uppercase transition-all" data-id={c.id} data-status="blocked">Bloqueado</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        ))}
+    </div>
+
+    <script>
+        // Update Debt
+        document.querySelectorAll('.update-debt-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                const input = document.querySelector(`.debt-input[data-id="${id}"]`) as HTMLInputElement;
+                const amount = input.value;
+                if (!amount) return;
+
+                btn.classList.add('opacity-50', 'pointer-events-none');
+                try {
+                    const res = await fetch('/api/admin/update-financial-status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clientId: id, debtAmount: Number(amount) })
+                    });
+                    if (res.ok) location.reload();
+                } catch (e) { console.error(e); }
+                finally { btn.classList.remove('opacity-50', 'pointer-events-none'); }
+            });
+        });
+
+        // Update Financial Status
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                const status = btn.getAttribute('data-status');
+                
+                btn.classList.add('opacity-50', 'pointer-events-none');
+                try {
+                    const res = await fetch('/api/admin/update-financial-status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clientId: id, finStatus: status })
+                    });
+                    if (res.ok) location.reload();
+                } catch (e) { console.error(e); }
+                finally { btn.classList.remove('opacity-50', 'pointer-events-none'); }
+            });
+        });
+    </script>
+</VendedorLayout>

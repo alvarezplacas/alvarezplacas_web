@@ -23,29 +23,72 @@ try {
     </div>
 
     <div class="bg-[#1a1a1a] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
-        <table class="w-full text-left text-sm">
+        <table class="w-full text-left text-sm whitespace-nowrap">
             <thead class="bg-black/40 text-gray-500 uppercase text-[10px] font-bold">
                 <tr>
-                    <th class="px-6 py-4">ID</th>
-                    <th class="px-6 py-4">Cliente</th>
-                    <th class="px-6 py-4">Fecha</th>
-                    <th class="px-6 py-4">Total</th>
-                    <th class="px-6 py-4">Estado</th>
+                    <th class="px-6 py-6">ID Pedido</th>
+                    <th class="px-6 py-6">Empresa / Cliente</th>
+                    <th class="px-6 py-6">Fecha</th>
+                    <th class="px-6 py-6 text-right">Total</th>
+                    <th class="px-6 py-6">Estado de Producción</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-800">
                 {pedidos.map(p => (
-                    <tr class="hover:bg-white/5 transition-colors">
-                        <td class="px-6 py-4 font-mono text-primary">#{p.id}</td>
-                        <td class="px-6 py-4 text-white font-bold">{p.cliente_id?.nombre_empresa || p.cliente_id?.nombre || 'Consumidor Final'}</td>
-                        <td class="px-6 py-4 text-gray-400">{new Date(p.date_created).toLocaleDateString()}</td>
-                        <td class="px-6 py-4 text-white font-black">${Number(p.total).toLocaleString()}</td>
+                    <tr class="hover:bg-white/5 transition-colors group">
+                        <td class="px-6 py-4 font-mono text-primary text-xs">#{p.id.split('-')[0]}</td>
                         <td class="px-6 py-4">
-                            <span class="px-3 py-1 bg-white/5 rounded-full text-[9px] font-bold uppercase text-gray-400">{p.status}</span>
+                            <p class="text-white font-bold">{p.cliente_id?.nombre_empresa || p.cliente_id?.nombre || 'Consumidor Final'}</p>
+                            <p class="text-[9px] text-gray-500 uppercase">Interno #{p.id.split('-')[0]}</p>
+                        </td>
+                        <td class="px-6 py-4 text-gray-400 text-xs">{new Date(p.date_created).toLocaleDateString()}</td>
+                        <td class="px-6 py-4 text-white font-black text-right">${Number(p.total || 0).toLocaleString()}</td>
+                        <td class="px-6 py-4">
+                            <select 
+                                class="bg-black border border-gray-700 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase text-gray-400 outline-none focus:border-primary transition-all status-select"
+                                data-id={p.id}
+                            >
+                                <option value="presupuesto" selected={p.status === 'presupuesto'}>Presupuesto</option>
+                                <option value="en_produccion" selected={p.status === 'en_produccion'}>En Producción</option>
+                                <option value="en_corte" selected={p.status === 'en_corte'}>En Corte</option>
+                                <option value="terminado" selected={p.status === 'terminado'}>Listo / Terminado</option>
+                                <option value="en_reparto" selected={p.status === 'en_reparto'}>En Reparto</option>
+                                <option value="entregado" selected={p.status === 'entregado'}>Entregado</option>
+                            </select>
                         </td>
                     </tr>
                 ))}
             </tbody>
         </table>
     </div>
+
+    <script>
+        document.querySelectorAll('.status-select').forEach(select => {
+            select.addEventListener('change', async (e) => {
+                const target = e.target as HTMLSelectElement;
+                const pedidoId = target.getAttribute('data-id');
+                const status = target.value;
+
+                target.classList.add('opacity-50', 'pointer-events-none');
+                
+                try {
+                    const res = await fetch('/api/admin/update-order-status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pedidoId, status })
+                    });
+                    
+                    if (res.ok) {
+                        // Visual feedback
+                        target.style.borderColor = '#3b82f6';
+                        setTimeout(() => target.style.borderColor = '', 1000);
+                    }
+                } catch (err) {
+                    console.error("Error al actualizar:", err);
+                } finally {
+                    target.classList.remove('opacity-50', 'pointer-events-none');
+                }
+            });
+        });
+    </script>
 </VendedorLayout>

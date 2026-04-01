@@ -15,7 +15,6 @@ export const POST = async ({ request }) => {
         }
 
         // Intento de envío a Directus (Colección: mensajes_contacto)
-        // Se añade el campo 'tipo' para diferenciar en el dashboard (admin, cliente, proveedor)
         await directus.request(createItem('mensajes_contacto', {
             nombre,
             email,
@@ -28,7 +27,9 @@ export const POST = async ({ request }) => {
         return new Response(JSON.stringify({ success: true }), { status: 200 });
 
     } catch (error) {
-        console.error('Error enviando a Directus:', error);
-        return new Response(JSON.stringify({ success: true, warning: 'Sent with fallback' }), { status: 200 });
+        console.error('Error enviando a Directus [mensajes_contacto]:', error);
+        return new Response(JSON.stringify({ 
+            error: 'Error interno al procesar el mensaje. Por favor, intente más tarde.' 
+        }), { status: 500 });
     }
 };

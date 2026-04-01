@@ -1,0 +1,98 @@
+---
+/**
+ * Admin Consultas - Visualización de mensajes de contacto de la web.
+ * Propiedad del Agente 2 (Backend/Dashboard).
+ */
+import AdminLayout from '@dashboard/layouts/AdminLayout.astro';
+import { directus, readItems } from '@conexiones/directus.js';
+
+let messages = [];
+let error = null;
+
+try {
+    messages = await directus.request(readItems('mensajes_contacto', {
+        sort: ['-fecha'],
+        limit: 50
+    }));
+} catch (e) {
+    error = "No se pudieron cargar los mensajes de contacto.";
+    console.error("[Admin Consultas Error]:", e);
+}
+
+// Mapeo de tipos para UI
+const tipoLabels = {
+    'general': { label: 'General', class: 'bg-gray-500/20 text-gray-400' },
+    'cliente': { label: 'Cliente', class: 'bg-blue-500/20 text-blue-400' },
+    'proveedor': { label: 'Proveedor', class: 'bg-amber-500/20 text-amber-400' }
+};
+---
+
+<AdminLayout title="Consultas Web">
+    <div class="mb-8 relative">
+        <h2 class="text-3xl font-black text-white mb-2 uppercase tracking-tight">Consultas <span class="text-primary italic">Web</span></h2>
+        <p class="text-gray-400 font-medium">Mensajes recibidos desde el formulario de contacto público.</p>
+    </div>
+
+    {error && (
+        <div class="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 mb-6">
+            <i class="fas fa-exclamation-circle mr-2"></i> {error}
+        </div>
+    )}
+
+    <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-black/40 border-b border-gray-800">
+                        <th class="p-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Fecha</th>
+                        <th class="p-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Tipo</th>
+                        <th class="p-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Remitente</th>
+                        <th class="p-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Contacto</th>
+                        <th class="p-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Mensaje</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    {messages.length === 0 ? (
+                        <tr>
+                            <td colspan="5" class="p-12 text-center text-gray-500 italic">
+                                No hay consultas registradas por el momento.
+                            </td>
+                        </tr>
+                    ) : (
+                        messages.map((m) => (
+                            <tr class="hover:bg-white/5 transition-colors group">
+                                <td class="p-6">
+                                    <div class="text-xs font-bold text-gray-300">
+                                        {new Date(m.fecha).toLocaleDateString('es-AR')}
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 uppercase mt-0.5">
+                                        {new Date(m.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                </td>
+                                <td class="p-6">
+                                    <span class={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${tipoLabels[m.tipo]?.class || 'bg-gray-500/20 text-gray-400'}`}>
+                                        {tipoLabels[m.tipo]?.label || m.tipo}
+                                    </span>
+                                </td>
+                                <td class="p-6">
+                                    <div class="text-sm font-bold text-white group-hover:text-primary transition-colors">
+                                        {m.nombre}
+                                    </div>
+                                </td>
+                                <td class="p-6">
+                                    <div class="text-xs text-gray-300 font-medium">{m.email}</div>
+                                    <div class="text-xs text-gray-500 mt-1">{m.telefono}</div>
+                                </td>
+                                <td class="p-6">
+                                    <div class="text-sm text-gray-400 max-w-md leading-relaxed">
+                                        {m.mensaje}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</AdminLayout>

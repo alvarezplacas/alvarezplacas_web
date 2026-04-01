@@ -1,30 +1,36 @@
 import type { APIRoute } from 'astro';
-import { createDirectus, rest, updateItem } from '@directus/sdk';
+import { directus } from '@conexiones/directus.js'; // Use our standard client with token
+import { updateItem } from '@directus/sdk';
 
-const DIRECTUS_URL = process.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const directus = createDirectus(DIRECTUS_URL).with(rest());
+export const POST: APIRoute = async ({ request, cookies }) => {
+    // Basic seller session check
+    const sellerSession = cookies.get('seller_session')?.value;
+    if (!sellerSession) {
+        return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
+    }
 
-export const POST: APIRoute = async ({ request }) => {
     try {
         const body = await request.json();
-        const { clientId, fin_status, debt_amount, due_date, financial_notes } = body;
+        const { clientId, finStatus, debtAmount, fin_status, debt_amount } = body;
 
         if (!clientId) {
             return new Response(JSON.stringify({ error: 'Client ID is required' }), { status: 400 });
         }
 
-        // Actualizar en Directus (colección 'clientes')
-        await directus.request(updateItem('clientes', clientId, {
-            fin_status: fin_status || 'clean',
-            debt_amount: debt_amount || 0,
-            due_date: due_date || null,
-            financial_notes: financial_notes || '',
-            points_updated_at: new Date().toISOString()
-        }));
+        // Support both naming conventions
+        const finalStatus = finStatus || fin_status;
+        const finalAmount = debtAmount !== undefined ? debtAmount : debt_amount;
 
-        return new Response(JSON.stringify({ message: 'Estado financiero actualizado con éxito' }), { status: 200 });
+        const updateData: any = {};
+        if (finalStatus !== undefined) updateData.fin_status = finalStatus;
+        if (finalAmount !== undefined) updateData.debt_amount = finalAmount;
+        updateData.points_updated_at = new Date().toISOString();
+
+        await directus.request(updateItem('clientes', clientId, updateData));
+
+        return new Response(JSON.stringify({ message: 'Estado financiero actualizado' }), { status: 200 });
     } catch (error: any) {
         console.error('Error updating financial status:', error);
-        return new Response(JSON.stringify({ error: 'Error interno del servidor: ' + error.message }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'Error interno: ' + error.message }), { status: 500 });
     }
 };

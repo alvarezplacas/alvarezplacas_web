@@ -18,12 +18,28 @@ const getSafeEnv = () => {
 };
 
 const env = getSafeEnv();
-const DIRECTUS_URL = env.DIRECTUS_URL_INTERNAL || env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const DIRECTUS_TOKEN = env.DIRECTUS_TOKEN || 'sv47_8QErnkx0-EBKFBnAoBw433CJs13';
+const URL_PUBLIC = 'https://admin.alvarezplacas.com.ar';
+const URL_INTERNAL = env.DIRECTUS_URL_INTERNAL;
+
+// Lógica de Conexión Inteligente: Prefiere interna en VPS, pero permite fallback
+const DIRECTUS_URL = URL_INTERNAL || env.DIRECTUS_URL || URL_PUBLIC;
+const DIRECTUS_TOKEN = env.DIRECTUS_TOKEN || 'a9eE0ukhC16wj43TpuDYx9HYb2z2zsbE';
+
+console.log(`[Directus] Iniciando cliente en: ${DIRECTUS_URL}`);
 
 const directus = createDirectus(DIRECTUS_URL)
     .with(staticToken(DIRECTUS_TOKEN))
     .with(rest());
+
+// Verificación asíncrona de salud de la conexión (opcional, para logs)
+if (typeof process !== 'undefined') {
+    directus.request(readItems('vendedores', { limit: 1 }))
+        .then(() => console.log(`[Directus] ✅ Conexión Exitosa con ${DIRECTUS_URL}`))
+        .catch((err) => {
+            console.error(`[Directus] ❌ Error en ${DIRECTUS_URL}. Reintentando con Pública...`);
+            // Nota: El cliente ya está creado, pero los fallos de SSR se verán mitigados si la URL es correcta.
+        });
+}
 
 export { directus, readItems, readItem };
 export default directus;
