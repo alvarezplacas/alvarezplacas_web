@@ -1,22 +1,22 @@
 services:
-  filebrowser:
-    image: filebrowser/filebrowser:latest
-    container_name: alvarezplacas_files
-    ports:
-      - "8081:80"
-    volumes:
-      - /home/ubuntu/alvarezplacas_web/web01:/srv
-      - /opt/alvarezplacas/filebrowser.db:/database.db
-    networks:
-      - javiermix_network
-    restart: always
+#  filebrowser:
+#    image: filebrowser/filebrowser:latest
+#    container_name: alvarezplacas_files
+#    ports:
+#      - "8081:80"
+#    volumes:
+#      - /home/ubuntu/prod/alvarezplacas_web/web01:/srv
+#      - /opt/alvarezplacas/filebrowser.db:/database.db
+#    networks:
+#      - javiermix_network
+#    restart: always
 
   web:
     image: node:22-alpine
     container_name: alvarezplacas_web
     working_dir: /app
     volumes:
-      - /home/ubuntu/alvarezplacas_web/web01:/app
+      - /home/ubuntu/prod/alvarezplacas_web/web01:/app
       - /opt/alvarezplacas/placas:/app/public/Placas
     # Build + run SSR standalone (modo producción correcto para Astro node adapter)
     command: sh -c "npm run build && node ./dist/server/entry.mjs"
