@@ -1,16 +1,4 @@
 services:
-#  filebrowser:
-#    image: filebrowser/filebrowser:latest
-#    container_name: alvarezplacas_files
-#    ports:
-#      - "8081:80"
-#    volumes:
-#      - /home/ubuntu/prod/alvarezplacas_web/web01:/srv
-#      - /opt/alvarezplacas/filebrowser.db:/database.db
-#    networks:
-#      - javiermix_network
-#    restart: always
-
   alvarezplacas_db:
     image: postgres:16-alpine
     container_name: alvarezplacas_db
@@ -29,7 +17,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - alvarez_internal
+      - alvarez_prod_private_net
 
   alvarezplacas_directus:
     image: directus/directus:11.1.0
@@ -46,15 +34,17 @@ services:
       DB_DATABASE: "alvarezplacas"
       DB_USER: "alvarez_admin"
       DB_PASSWORD: "AlvarezAdmin2026"
+      # Configuración de admin
       ADMIN_EMAIL: "admin@alvarezplacas.com.ar"
       ADMIN_PASSWORD: "JavierMix2026!"
+      # Performance y Almacenamiento
       CACHE_ENABLED: "true"
       CACHE_STORE: "memory"
       STORAGE_LOCATIONS: "local"
       STORAGE_LOCAL_ROOT: "/home/ubuntu/prod/alvarezplacas_web/web01/uploads"
     networks:
-      - javiermix_network
-      - alvarez_internal
+      - javiermix_network          # El "cable" al proxy
+      - alvarez_prod_private_net   # El "cable" a la DB
     depends_on:
       alvarezplacas_db:
         condition: service_healthy
@@ -75,8 +65,8 @@ services:
       - PORT=4321
       - NODE_ENV=production
     networks:
-      - javiermix_network
-      - alvarez_internal
+      - javiermix_network          # El "cable" al proxy
+      - alvarez_prod_private_net   # El "cable" interno
     restart: always
     depends_on:
       alvarezplacas_db:
@@ -87,8 +77,9 @@ services:
 networks:
   javiermix_network:
     external: true
-  alvarez_internal:
+  alvarez_prod_private_net:        # Red aislada sugerida por el usuario
     driver: bridge
 
 volumes:
   alvarez_data_v2:
+    external: true                 # Mantenemos el volumen global para no perder datos
