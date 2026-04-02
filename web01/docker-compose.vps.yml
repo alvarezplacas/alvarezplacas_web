@@ -58,7 +58,7 @@ services:
       - /opt/alvarezplacas/placas:/app/public/Placas
     ports:
       - "4321:4321"
-    command: sh -c "if [ ! -d './dist' ]; then npm run build; fi && node ./dist/server/entry.mjs"
+    command: sh -c "npm install && npm run build && node ./dist/server/entry.mjs"
     environment:
       - PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
       - DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055
