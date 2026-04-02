@@ -1,3 +1,4 @@
+---
 import VendedorLayout from '../../layouts/VendedorLayout.astro';
 import StatCard from '@dashboard/components/StatCard.astro';
 import { directus, readItems } from '@conexiones/directus.js';
@@ -22,6 +23,7 @@ try {
 } catch (e) {
     console.error("Error loading seller stats:", e.message);
 }
+---
 
 <VendedorLayout title="Operaciones Diarias">
     <div class="mb-8">
