@@ -49,7 +49,7 @@ services:
       alvarezplacas_db:
         condition: service_healthy
 
-  web:
+  alvarezplacas_web:
     image: node:22-alpine
     container_name: alvarezplacas_web
     working_dir: /app
