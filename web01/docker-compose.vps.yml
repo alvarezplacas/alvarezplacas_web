@@ -1,3 +1,4 @@
+# Consolidated Production Config for Alvarez Placas
 services:
   alvarezplacas_db:
     image: postgres:15-alpine
