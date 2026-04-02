@@ -56,7 +56,9 @@ services:
     volumes:
       - /home/ubuntu/prod/alvarezplacas_web/web01:/app
       - /opt/alvarezplacas/placas:/app/public/Placas
-    command: sh -c "npm run build && node ./dist/server/entry.mjs"
+    ports:
+      - "4321:4321"
+    command: sh -c "if [ ! -d './dist' ]; then npm run build; fi && node ./dist/server/entry.mjs"
     environment:
       - PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
       - DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055
