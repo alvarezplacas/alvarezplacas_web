@@ -6,24 +6,34 @@ import { createDirectus, rest, readItems, readItem, staticToken } from '@directu
  */
 
 const getSafeEnv = () => {
+    // Mergear process.env (runtime Docker) con import.meta.env (build time).
+    // process.env tiene prioridad para variables inyectadas por Docker en producción.
+    const merged = {};
     try {
-        // En Astro components/Vite files
-        if (typeof import.meta !== 'undefined' && import.meta.env) return import.meta.env;
+        if (typeof process !== 'undefined' && process.env) {
+            Object.assign(merged, process.env);
+        }
     } catch (e) {}
     try {
-        // En Node.js puro (SSR Runtime fallback)
-        if (typeof process !== 'undefined' && process.env) return process.env;
+        if (typeof import.meta !== 'undefined' && import.meta.env) {
+            Object.assign(merged, import.meta.env);
+        }
     } catch (e) {}
-    return {};
+    return merged;
 };
 
 const env = getSafeEnv();
 const URL_PUBLIC = 'https://admin.alvarezplacas.com.ar';
-const URL_INTERNAL = env.DIRECTUS_URL_INTERNAL;
+// Prioridad: var de entorno del Docker → fallback a URL pública
+const URL_INTERNAL = (typeof process !== 'undefined' && process.env?.DIRECTUS_URL_INTERNAL)
+    || env.DIRECTUS_URL_INTERNAL;
 
 // Lógica de Conexión Inteligente: Prefiere interna en VPS, pero permite fallback
 const DIRECTUS_URL = URL_INTERNAL || env.DIRECTUS_URL || URL_PUBLIC;
-const DIRECTUS_TOKEN = env.DIRECTUS_TOKEN || 'a9eE0ukhC16wj43TpuDYx9HYb2z2zsbE';
+// Token: prioridad a process.env (Docker runtime) → env (build time) → token v16 por defecto
+const DIRECTUS_TOKEN = (typeof process !== 'undefined' && process.env?.DIRECTUS_TOKEN)
+    || env.DIRECTUS_TOKEN
+    || 'alvarez-api-token-v16-2026';
 
 console.log(`[Directus] Iniciando cliente en: ${DIRECTUS_URL}`);
 
