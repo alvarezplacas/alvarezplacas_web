@@ -9,10 +9,16 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
+  // 🛡️ Seguridad Moderna (Astro 6)
   security: {
-    checkOrigin: false
+    checkOrigin: true
   },
-  prefetch: true,
+  // 🚀 Rendimiento y Armonía
+  compressHTML: true,
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: 'viewport'
+  },
   server: {
     host: '0.0.0.0',
     port: 4321,
@@ -32,6 +38,9 @@ export default defineConfig({
         '@layouts': path.resolve('./Frontend/home/layouts'),
         '@dashboard': path.resolve('./Backend/dashboard')
       }
+    },
+    build: {
+      cssMinify: 'lightningcss'
     },
     ssr: {
       external: ['pg']

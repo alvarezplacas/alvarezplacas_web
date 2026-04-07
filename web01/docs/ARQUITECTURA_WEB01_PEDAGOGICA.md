@@ -35,12 +35,12 @@ Para evitar errores de resolución de módulos ("Failed to load module SSR") y r
 
 ---
 
-## 📡 3. Comunicación y Datos (Directus API-First)
-El sitio es **totalmente dinámico** y depende de una instancia de **Directus CMS**.
+## 📡 3. Comunicación y Datos (Directus v16 API-First)
+El sitio es **totalmente dinámico** y depende de una instancia de **Directus CMS** montada sobre **PostgreSQL 16**.
 
 - **Cliente Central**: `web01/Backend/conexiones/directus.js`. Utiliza el SDK oficial de Directus.
 - **Variables de Entorno**:
-  - `PUBLIC_DIRECTUS_URL`: URL pública para el navegador.
+  - `PUBLIC_DIRECTUS_URL`: `https://admin.alvarezplacas.com.ar` (Puerto proxy 443 -> 8055).
   - `DIRECTUS_URL_INTERNAL`: URL interna (Docker network) para que Astro pida datos en el servidor (más rápido y seguro).
   - `DIRECTUS_TOKEN`: Token estático para acciones administrativas (como guardar mensajes de contacto).
 
@@ -64,13 +64,14 @@ El sitio es **totalmente dinámico** y depende de una instancia de **Directus CM
 
 ---
 
-## 🚢 5. Despliegue y VPS
-- **Docker**: El archivo maestro es `docker-compose.vps.yml`.
+## 🚢 5. Despliegue y VPS (Aislamiento v16)
+- **Localización**: `/opt/alvarez_v16/web01`
+- **Docker**: El archivo maestro es `docker-compose.vps.yml` con Postgres 16.
 - **Flujo de Cambio**:
   1. `git push origin main` (Local)
   2. `git pull origin main` (En el VPS)
-  3. `docker compose restart web` (Para aplicar cambios de código Astro).
-  4. Si cambias dependencias: `docker compose up -d --build web`.
+  3. `docker compose -f docker-compose.vps.yml up -d` (Para aplicar cambios).
+  4. **Proxy**: Caddy v2.9 redirige el puerto 443 al **8055** del contenedor.
 
 ---
 

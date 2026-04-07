@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "directus": "11.1.0",
+  "vendor": "postgres",
+  "collections": [
+    { "collection": "branches", "meta": { "collection": "branches", "icon": "store" }, "schema": { "name": "branches" } },
+    { "collection": "niveles_fidelidad", "meta": { "collection": "niveles_fidelidad", "icon": "verified_user" }, "schema": { "name": "niveles_fidelidad" } },
+    { "collection": "loyalty_points_ledger", "meta": { "collection": "loyalty_points_ledger", "icon": "history" }, "schema": { "name": "loyalty_points_ledger" } },
+    { "collection": "orders", "meta": { "collection": "orders", "icon": "shopping_cart" }, "schema": { "name": "orders" } },
+    { "collection": "budget_items", "meta": { "collection": "budget_items", "icon": "list" }, "schema": { "name": "budget_items" } },
+    { "collection": "financial_transactions", "meta": { "collection": "financial_transactions", "icon": "payments" }, "schema": { "name": "financial_transactions" } },
+    { "collection": "site_settings", "meta": { "collection": "site_settings", "icon": "settings" }, "schema": { "name": "site_settings" } }
+  ],
+  "fields": [
+    { "collection": "branches", "field": "id", "type": "integer", "schema": { "name": "id", "data_type": "integer" } },
+    { "collection": "branches", "field": "name", "type": "string", "schema": { "name": "name", "data_type": "character varying", "max_length": 100 } },
+    { "collection": "branches", "field": "address", "type": "text", "schema": { "name": "address", "data_type": "text" } },
+    { "collection": "branches", "field": "phone", "type": "string", "schema": { "name": "phone", "data_type": "character varying", "max_length": 50 } },
+    { "collection": "branches", "field": "geocoordinate", "type": "string", "schema": { "name": "geocoordinate", "data_type": "character varying", "max_length": 100 } },
+    { "collection": "branches", "field": "is_main_branch", "type": "boolean", "schema": { "name": "is_main_branch", "data_type": "boolean", "default_value": false } },
+    { "collection": "branches", "field": "active", "type": "boolean", "schema": { "name": "active", "data_type": "boolean", "default_value": true } },
+    { "collection": "branches", "field": "created_at", "type": "timestamp", "schema": { "name": "created_at", "data_type": "timestamp with time zone" } },
+    
+    { "collection": "niveles_fidelidad", "field": "id", "type": "integer", "schema": { "name": "id", "data_type": "integer" } },
+    { "collection": "niveles_fidelidad", "field": "nombre", "type": "string", "schema": { "name": "nombre", "data_type": "character varying", "max_length": 50 } },
+    { "collection": "niveles_fidelidad", "field": "multiplicador", "type": "decimal", "schema": { "name": "multiplicador", "data_type": "numeric" } },
+    { "collection": "niveles_fidelidad", "field": "puntos_minimos", "type": "integer", "schema": { "name": "puntos_minimos", "data_type": "integer", "default_value": 0 } },
+
+    { "collection": "loyalty_points_ledger", "field": "id", "type": "integer", "schema": { "name": "id", "data_type": "integer" } },
+    { "collection": "loyalty_points_ledger", "field": "user_id", "type": "uuid", "schema": { "name": "user_id", "data_type": "uuid" } },
+    { "collection": "loyalty_points_ledger", "field": "points_change", "type": "integer", "schema": { "name": "points_change", "data_type": "integer" } },
+    { "collection": "loyalty_points_ledger", "field": "reason", "type": "string", "schema": { "name": "reason", "data_type": "character varying" } },
+
+    { "collection": "orders", "field": "id", "type": "integer", "schema": { "name": "id", "data_type": "integer" } },
+    { "collection": "orders", "field": "client_id", "type": "uuid", "schema": { "name": "client_id", "data_type": "uuid" } },
+    { "collection": "orders", "field": "seller_id", "type": "uuid", "schema": { "name": "seller_id", "data_type": "uuid" } },
+    { "collection": "orders", "field": "branch_id", "type": "integer", "schema": { "name": "branch_id", "data_type": "integer" } },
+    { "collection": "orders", "field": "status", "type": "string", "schema": { "name": "status", "data_type": "character varying", "max_length": 50 } },
+    { "collection": "orders", "field": "total_amount", "type": "decimal", "schema": { "name": "total_amount", "data_type": "numeric" } },
+    { "collection": "orders", "field": "expected_delivery_date", "type": "date", "schema": { "name": "expected_delivery_date", "data_type": "date" } },
+
+    { "collection": "budget_items", "field": "id", "type": "integer", "schema": { "name": "id", "data_type": "integer" } },
+    { "collection": "budget_items", "field": "order_id", "type": "integer", "schema": { "name": "order_id", "data_type": "integer" } },
+    { "collection": "budget_items", "field": "quantity", "type": "integer", "schema": { "name": "quantity", "data_type": "integer" } },
+
+    { "collection": "financial_transactions", "field": "id", "type": "integer", "schema": { "name": "id", "data_type": "integer" } },
+    { "collection": "financial_transactions", "field": "amount", "type": "decimal", "schema": { "name": "amount", "data_type": "numeric" } },
+
+    { "collection": "directus_users", "field": "points", "type": "integer", "schema": { "name": "points", "data_type": "integer", "default_value": 0 } },
+    { "collection": "directus_users", "field": "seller_level", "type": "string", "schema": { "name": "seller_level", "data_type": "character varying", "max_length": 50 } },
+    { "collection": "directus_users", "field": "branch_id", "type": "integer", "schema": { "name": "branch_id", "data_type": "integer" } }
+  ],
+  "relations": [
+    { "collection": "orders", "field": "branch_id", "related_collection": "branches", "schema": { "constraint_name": "orders_branch_id_fkey" } },
+    { "collection": "directus_users", "field": "branch_id", "related_collection": "branches", "schema": { "constraint_name": "directus_users_branch_id_fkey" } },
+    { "collection": "budget_items", "field": "order_id", "related_collection": "orders", "schema": { "constraint_name": "budget_items_order_id_fkey" } },
+    { "collection": "loyalty_points_ledger", "field": "user_id", "related_collection": "directus_users", "schema": { "constraint_name": "loyalty_points_ledger_user_id_fkey" } }
+  ]
+}

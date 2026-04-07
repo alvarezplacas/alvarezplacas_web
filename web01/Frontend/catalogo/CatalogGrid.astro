@@ -19,76 +19,69 @@ let showPrices = true;
 
 try {
   // 1 & 2. Obtener Ajustes y Productos en paralelo
-  const [siteSettingsResult, productosResult] = await Promise.all([
+  const [siteSettingsResult, materialsResult] = await Promise.all([
     directus.request(readItems('site_settings', {
         filter: { key: { _eq: 'show_prices' } },
         limit: 1
     })).catch(() => []),
-    directus.request(readItems('productos', {
-        limit: 100,
-        fields: ['id','status','nombre','sku','precio','marca_id.nombre','categoria_id.nombre','linea_id.nombre','atributos','tags'],
-        filter: { status: { _eq: 'published' } }
+    directus.request(readItems('materiales', {
+        limit: 200,
+        fields: ['id','activo','nombre','precio_m2','stock','imagen','id_marca.nombre','id_categoria.nombre','id_espesor.valor'],
+        filter: { activo: { _eq: true } }
     })).catch(() => [])
   ]);
 
   const siteSettings = siteSettingsResult;
-  const productos = productosResult;
+  const materials = materialsResult;
 
   if (siteSettings && siteSettings.length > 0) {
     showPrices = siteSettings[0].value !== 'false';
   }
 
-  if (productos && productos.length > 0) {
+  if (materials && materials.length > 0) {
       const PUBLIC_DIRECTUS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://alvarezplacas.com.ar';
       
-      initialItems = productos.map(prod => {
+      initialItems = materials.map(mat => {
         // 3. Cruzar con datos de placas.json (Excel)
         const normalize = (s) => s?.toString().toLowerCase().trim().replace(/\s+/g, ' ') || "";
-        const prodNameNorm = normalize(prod.nombre);
-        const prodSkuNorm = normalize(prod.sku);
+        const matNameNorm = normalize(mat.nombre);
 
         const extraInfo = placasData.find(p => {
           const pNameNorm = normalize(p.nombre);
-          const pSkuNorm = normalize(p.codigo);
-          
-          // Coincidencia por SKU (prioridad)
-          if (pSkuNorm && prodSkuNorm && (pSkuNorm === prodSkuNorm || prodSkuNorm.includes(pSkuNorm) || pSkuNorm.includes(prodSkuNorm))) return true;
-          
-          // Coincidencia por nombre exacto
-          if (pNameNorm === prodNameNorm) return true;
-
+          if (pNameNorm === matNameNorm) return true;
           return false;
         });
 
-        const marca = extraInfo?.marca || prod.marca_id?.nombre || "Varios";
-        const linea = extraInfo?.linea || "Estándar";
-        const categoria = extraInfo?.categoria || (prodNameNorm.includes('placa') || prodNameNorm.includes('tablero') ? 'PLACAS' : 'VARIOS');
+        const marca = mat.id_marca?.nombre || "Varios";
+        const categoria = mat.id_categoria?.nombre || "PLACAS";
 
-        // 4. Resolver Imagen (Prioridad: Metadata de Excel > Directus > Fallback)
+        // 4. Resolver Imagen (Prioridad: Directus > placa_data.json > Fallback Carpetas)
         let imagePath = "";
-        if (extraInfo?.imagen) {
+        
+        if (mat.imagen) {
+          // Si hay una imagen cargada en la biblioteca de Directus
+          imagePath = `${PUBLIC_DIRECTUS_URL}/assets/${mat.imagen}?format=avif&width=600&quality=80`;
+        } else if (extraInfo?.imagen) {
+          // Fallback al JSON histórico (Excel)
           imagePath = extraInfo.imagen.replace('/images/catalog/Placas/', '/Placas/');
-        } else if (prod.imagen_principal) {
-          imagePath = `${PUBLIC_DIRECTUS_URL}/assets/${prod.imagen_principal}?width=600&format=avif&quality=80`;
         } else {
-          // Fallback robusto
-          imagePath = `/Placas/${marca}/${linea}/${prod.nombre}.avif`;
+          // Fallback robusto al sistema de carpetas
+          imagePath = `/Placas/${marca}/${categoria}/${mat.nombre}.avif`;
         }
 
         return {
-          id: prod.id,
-          name: prod.nombre,
-          code: prod.sku || extraInfo?.codigo || "-",
+          id: mat.id,
+          name: mat.nombre,
+          code: "-",
           brand: marca,
           category: categoria,
           image: imagePath,
-          price: prod.precio ? `$${prod.precio.toLocaleString()}` : "Consultar",
-          specs: extraInfo ? [
-            extraInfo.medida ? `Medida: ${extraInfo.medida}` : null,
-            extraInfo.acabado ? `Acabado: ${extraInfo.acabado}` : null,
-            extraInfo.tono ? `Tono: ${extraInfo.tono}` : null
-          ].filter(Boolean) : (prod.atributos && typeof prod.atributos === 'object' ? Object.values(prod.atributos).filter(Boolean) : []),
-          isPlaca: categoria.toUpperCase().includes('PLACA') || categoria.toUpperCase().includes('TABLERO') || categoria.toUpperCase().includes('MADERA') || categoria.toUpperCase().includes('LISO') || categoria.toUpperCase().includes('PIEDRA')
+          price: mat.precio_m2 ? `$${mat.precio_m2.toLocaleString()}` : "Consultar",
+          specs: [
+            mat.id_espesor?.valor ? `${mat.id_espesor.valor}mm` : null,
+            mat.stock ? `Stock: ${mat.stock}` : null
+          ].filter(Boolean),
+          isPlaca: true
         };
       });
   }

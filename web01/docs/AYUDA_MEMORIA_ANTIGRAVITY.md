@@ -15,7 +15,13 @@ Este documento resume los conocimientos clave y cambios realizados para facilita
 - **Recepción Proveedores**: Av. Vergara 1605, Villa Tesei.
 - **Google Maps**: Sincronizado con "Alvarez Placas SRL".
 
-### 2. Presupuestador (Budget Engine)
+### 2. Unificación v16 (Abril 2026)
+- **Status**: 🟢 Completado.
+- **Fix 502**: Se corrigió el puerto del Proxy (Caddy) de 8057 a **8055**.
+- **Fix Uploads**: Se asignaron permisos `1000:1000` a la carpeta `uploads` en `/opt/alvarez_v16/web01/`.
+- **Limpieza**: Se eliminó la instancia PostgreSQL 15 obsoleta.
+
+### 3. Presupuestador (Budget Engine)
 - **Marcas**:
   - EGGER: 2600 x 1830 mm
   - FAPLAC: 2750 x 1830 mm

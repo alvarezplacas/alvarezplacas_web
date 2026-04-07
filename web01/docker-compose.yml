@@ -74,6 +74,8 @@ services:
       CACHE_STORE: "memory"
       STORAGE_LOCATIONS: "local"
       STORAGE_LOCAL_ROOT: "./uploads"
+    volumes:
+      - ./uploads:/directus/uploads
     networks:
       - javiermix_network
       - alvarez_internal

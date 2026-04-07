@@ -1,7 +1,7 @@
 # Consolidated Production Config for Alvarez Placas
 services:
   alvarezplacas_db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: alvarezplacas_db
     restart: unless-stopped
     environment:
@@ -43,6 +43,23 @@ services:
       CACHE_STORE: "memory"
       STORAGE_LOCATIONS: "local"
       STORAGE_LOCAL_ROOT: "/home/ubuntu/prod/alvarezplacas_web/web01/uploads"
+      # Email SMTP Config
+      EMAIL_FROM: "info@alvarezplacas.com.ar"
+      EMAIL_TRANSPORT: "smtp"
+      EMAIL_SMTP_HOST: "mailserver"
+      EMAIL_SMTP_PORT: "587"
+      EMAIL_SMTP_USER: "info@alvarezplacas.com.ar"
+      EMAIL_SMTP_PASSWORD: "Tecno/315"
+      EMAIL_SMTP_SECURE: "false"
+      EMAIL_SMTP_IGNORE_TLS: "false"
+      # Seguridad y CORS para el Frontend
+      CORS_ENABLED: "true"
+      CORS_ORIGIN: "https://alvarezplacas.com.ar,https://www.alvarezplacas.com.ar"
+      CORS_METHODS: "GET,POST,OPTIONS"
+      CORS_ALLOWED_HEADERS: "Content-Type,Authorization"
+      CORS_EXPOSED_HEADERS: "Content-Range"
+      CORS_CREDENTIALS: "true"
+
     networks:
       - javiermix_network          # El "cable" al proxy
       - alvarez_prod_private_net   # El "cable" a la DB
