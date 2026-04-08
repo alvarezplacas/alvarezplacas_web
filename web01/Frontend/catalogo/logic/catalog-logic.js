@@ -24,12 +24,15 @@ export function initCatalog() {
     let currentSearchTerm = '';
 
     function updateBrandButtons(bucket) {
+        // Obtenemos las marcas válidas para este bucket desde el objeto global inyectado
+        const validBrands = window.BRANDS_BY_BUCKET[bucket] || [];
+        
         brandFilterBtns.forEach(btn => {
             const brandName = btn.dataset.filter;
             if (brandName === 'Todos') return;
 
-            const parentBucket = btn.dataset.parentBucket;
-            if (bucket === 'Todo' || parentBucket === bucket) {
+            // Mostrar el botón solo si la marca existe en el bucket actual
+            if (bucket === 'Todo' || validBrands.includes(brandName)) {
                 btn.classList.remove('hidden');
             } else {
                 btn.classList.add('hidden');
@@ -143,8 +146,10 @@ export function initCatalog() {
             const isHerramienta = data.bucket === "Herramientas";
 
             if (mImage) {
-                mImage.src = data.image || '';
-                mImage.style.display = data.image ? 'block' : 'none';
+                const LOGO_FALLBACK = "https://directus.alvarezplacas.com.ar/assets/3f58bb2f-4447-472b-9ece-2cc573f98873";
+                mImage.src = data.imagen || LOGO_FALLBACK;
+                mImage.style.display = 'block';
+                mImage.onerror = () => { mImage.src = LOGO_FALLBACK; };
             }
 
             if (mMarcaBadge) mMarcaBadge.textContent = data.brand;
