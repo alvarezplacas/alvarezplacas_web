@@ -42,7 +42,7 @@ services:
       CACHE_ENABLED: "true"
       CACHE_STORE: "memory"
       STORAGE_LOCATIONS: "local"
-      STORAGE_LOCAL_ROOT: "/home/ubuntu/prod/alvarezplacas_web/web01/uploads"
+      STORAGE_LOCAL_ROOT: "/opt/alvarez_v16/web01/uploads"
       # Email SMTP Config
       EMAIL_FROM: "info@alvarezplacas.com.ar"
       EMAIL_TRANSPORT: "smtp"
@@ -72,7 +72,7 @@ services:
     container_name: alvarezplacas_web
     working_dir: /app
     volumes:
-      - /home/ubuntu/prod/alvarezplacas_web/web01:/app
+      - /opt/alvarez_v16/web01/site/web01:/app
       - /opt/alvarezplacas/placas:/app/public/Placas
     ports:
       - "4321:4321"
