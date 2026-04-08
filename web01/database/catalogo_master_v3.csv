@@ -1,0 +1,5 @@
+sku;nombre;marca;categoria;espesor;precio;stock;foto
+TAB-BLA-EGG-18;BLANCO;Egger;Tableros;18;25000;100;egger/01/blanco.avif
+TAB-NEG-FAP-18;NEGRO;Faplac;Tableros;18;28000;50;faplac/02/negro.avif
+HER-TIR-GEN;TIRADOR GOLA;Genérica;Herrajes;;5000;200;generica/gola.avif
+QUI-ADH-KEK;ADHESIVO KEKOL;Kekol;Química;;12000;80;kekol/adhesivo.avif

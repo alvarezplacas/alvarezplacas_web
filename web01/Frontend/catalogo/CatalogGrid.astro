@@ -25,8 +25,8 @@ try {
         limit: 1
     })).catch(() => []),
     directus.request(readItems('materiales', {
-        limit: 200,
-        fields: ['id','activo','nombre','precio_m2','stock','imagen','id_marca.nombre','id_categoria.nombre','id_espesor.valor'],
+        limit: 500,
+        fields: ['id','activo','nombre','sku','precio_m2','stock','imagen','id_marca.nombre','id_categoria.nombre','id_espesor.valor'],
         filter: { activo: { _eq: true } }
     })).catch(() => [])
   ]);
@@ -64,13 +64,10 @@ try {
         if (mat.imagen) {
           // Si hay una imagen cargada en la biblioteca de Directus
           imagePath = `${ASSETS_URL}/assets/${mat.imagen}?format=avif&width=600&quality=80`;
-        } else if (extraInfo?.imagen) {
-          // Fallback al JSON histórico (Excel)
-          imagePath = extraInfo.imagen.replace('/images/catalog/Placas/', '/Placas/');
         } else {
-          // Fallback robusto al sistema de carpetas (incluyendo categorías genéricas)
-          // Se asume que en public/Placas/ existen estas carpetas
-          imagePath = `/Placas/${marca}/${categoria}/${mat.nombre}.avif`;
+          // Único fallback oficial: Logo de Directus
+          const LOGO_ID = '3f58bb2f-4447-472b-9ece-2cc573f98873';
+          imagePath = `${ASSETS_URL}/assets/${LOGO_ID}?format=avif&width=600&quality=80`;
         }
 
         // 5. Clasificación en "Buckets" (Grupos Lógicos)
@@ -93,21 +90,17 @@ try {
           bucket = "Química";
         }
 
-        // 6. Logo Fallback Final (solicitado por usuario)
-        // Si es Tablero intentamos buscar en carpetas, si es Herramienta/Química y no tiene foto en Directus, vamos directo al logo.
+        // 6. Imagen Final
         let finalImagePath = imagePath;
-        if (bucket !== "Tableros" && !mat.imagen) {
-          finalImagePath = "/images/catalog/Logos_iconos/alvarezplacas_logo.avif";
-        }
 
         return {
           id: mat.id,
           name: mat.nombre,
-          code: "-",
+          code: mat.sku || "-",
           brand: marca,
           category: categoria,
           bucket: bucket,
-          imagen: finalImagePath || "/images/catalog/Logos_iconos/alvarezplacas_logo.avif",
+          imagen: finalImagePath,
           price: mat.precio_m2 ? `$${mat.precio_m2.toLocaleString()}` : "Consultar",
           specs: [
             (bucket === "Tableros" && mat.id_espesor?.valor) ? `${mat.id_espesor.valor}mm` : null,
@@ -124,11 +117,26 @@ try {
 // Grupos Fijos requeridos por el usuario
 const buckets = ["Tableros", "Herrajes", "Herramientas", "Química", "Todo"];
 
-// Preparar marcas por bucket para filtros secundarios si se desea
-const brandsByBucket = {};
-buckets.forEach(b => {
-  brandsByBucket[b] = [...new Set(initialItems.filter(i => i.bucket === b || b === "Todo").map(i => i.brand))].filter(br => br && br !== "Varios").sort();
-});
+  // Agrupar Marcas por Grandes Grupos (Buckets) para filtros dinámicos
+  const brandsByBucket = {};
+  buckets.forEach(b => {
+    // Obtenemos marcas únicas normalizadas
+    const rawBrands = initialItems
+        .filter(i => (b === "Todo" || i.bucket === b))
+        .map(i => i.brand);
+    
+    // Normalizar capitalización (ej: FAPLAC y Faplac -> FAPLAC)
+    const normalized = [...new Set(rawBrands.map(br => br.toUpperCase()))].sort();
+    
+    // Mapear de vuelta a una capitalización limpia
+    brandsByBucket[b] = normalized.map(nb => {
+        const original = rawBrands.find(ob => ob.toUpperCase() === nb);
+        return original;
+    });
+  });
+
+  // Lista única global de marcas
+  const allUniqueBrands = [...new Set(Object.values(brandsByBucket).flat())].sort();
 ---
 
 <section class="max-w-7xl mx-auto px-4 py-12 relative">
@@ -142,6 +150,7 @@ buckets.forEach(b => {
   <CatalogFilters 
     buckets={buckets}
     brandsByBucket={brandsByBucket}
+    allUniqueBrands={allUniqueBrands}
     totalProducts={initialItems.length}
   />
 
