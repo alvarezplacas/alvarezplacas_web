@@ -117,26 +117,34 @@ try {
 // Grupos Fijos requeridos por el usuario
 const buckets = ["Tableros", "Herrajes", "Herramientas", "Química", "Todo"];
 
-  // Agrupar Marcas por Grandes Grupos (Buckets) para filtros dinámicos
-  const brandsByBucket = {};
-  buckets.forEach(b => {
-    // Obtenemos marcas únicas normalizadas
-    const rawBrands = initialItems
-        .filter(i => (b === "Todo" || i.bucket === b))
-        .map(i => i.brand);
-    
-    // Normalizar capitalización (ej: FAPLAC y Faplac -> FAPLAC)
-    const normalized = [...new Set(rawBrands.map(br => br.toUpperCase()))].sort();
-    
-    // Mapear de vuelta a una capitalización limpia
-    brandsByBucket[b] = normalized.map(nb => {
-        const original = rawBrands.find(ob => ob.toUpperCase() === nb);
-        return original;
-    });
+  // LÓGICA DE MARCAS ULTRA-LIMPIA (Anti-Duplicados)
+  const getCanonicalBrand = (brand) => {
+    if (!brand) return "GENÉRICA";
+    return brand.trim().toUpperCase();
+  };
+
+  // 1. Crear un mapa de Marca Normalizada -> Nombre Real para mostrar
+  const brandMap = {}; 
+  initialItems.forEach(item => {
+    const key = getCanonicalBrand(item.brand);
+    if (!brandMap[key]) {
+      brandMap[key] = item.brand.trim();
+    }
   });
 
-  // Lista única global de marcas
-  const allUniqueBrands = [...new Set(Object.values(brandsByBucket).flat())].sort();
+  // 2. Generar marcas únicas para el filtro global (Ordenadas)
+  const allUniqueBrands = Object.values(brandMap).sort((a, b) => a.localeCompare(b));
+
+  // 3. Generar el mapa de marcas por bucket para los filtros dinámicos
+  const brandsByBucket = {};
+  buckets.forEach(b => {
+    const rawInBucket = initialItems
+      .filter(i => (b === "Todo" || i.bucket === b))
+      .map(i => getCanonicalBrand(i.brand));
+    
+    const uniqueInBucket = [...new Set(rawInBucket)];
+    brandsByBucket[b] = uniqueInBucket.map(key => brandMap[key]);
+  });
 ---
 
 <section class="max-w-7xl mx-auto px-4 py-12 relative">
