@@ -73,7 +73,10 @@ try {
           imagePath = `/Placas/${marca}/${categoria}/${mat.nombre}.avif`;
         }
 
-        // 5. Clasificación en "Buckets" (Grupos Lógicos)
+        // 5. Logo Fallback Final (solicitado por usuario si no existe imagen)
+        const finalImagePath = imagePath || "/images/catalog/Logos_iconos/alvarezplacas_logo.avif";
+
+        // 6. Clasificación en "Buckets" (Grupos Lógicos)
         let bucket = "Herrajes"; // Default
         const lowerName = matNameNorm;
         const brandNorm = marca.toLowerCase();
