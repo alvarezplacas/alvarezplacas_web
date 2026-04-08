@@ -1,11 +1,7 @@
-/**
- * catalog-logic.js - Lógica de filtrado y modal del catálogo.
- * Propiedad del Agente 4 (Frontend/Catalogo).
- */
 export function initCatalog() {
     const searchInput = document.getElementById('catalogSearch');
     const brandFilterBtns = document.querySelectorAll('.brand-btn');
-    const categoryFilterBtns = document.querySelectorAll('.category-btn');
+    const bucketFilterBtns = document.querySelectorAll('.bucket-btn');
     const cards = document.querySelectorAll('.catalog-item');
     const noResults = document.getElementById('noResults');
 
@@ -17,38 +13,33 @@ export function initCatalog() {
     const mMarcaBadge = document.getElementById('modalMarcaBadge');
     const mNombre = document.getElementById('modalNombre');
     const mCategory = document.getElementById('modalCategory');
-    const mCodigo = document.getElementById('modalCodigo');
     const mSpecsContainer = document.getElementById('modalSpecsContainer');
     const mWhatsAppBtn = document.getElementById('modalWhatsAppBtn');
     const mSmartMatchBtn = document.getElementById('modalSmartMatchBtn');
 
-    if (!searchInput || !cards.length) {
-        return;
-    }
+    if (!searchInput || !cards.length) return;
 
     let currentBrand = 'Todos';
-    let currentCategory = 'Todas';
+    let currentBucket = 'Todo';
     let currentSearchTerm = '';
 
-    function updateBrandButtons(category) {
+    function updateBrandButtons(bucket) {
         brandFilterBtns.forEach(btn => {
-            const filter = btn.dataset.filter;
-            if (filter === 'Todos') {
-                btn.style.display = 'block';
-                return;
-            }
+            const brandName = btn.dataset.filter;
+            if (brandName === 'Todos') return;
 
-            const categories = btn.dataset.brandCategories ? btn.dataset.brandCategories.split(',') : [];
-            if (category === 'Todas' || categories.includes(category)) {
-                btn.style.display = 'block';
+            const parentBucket = btn.dataset.parentBucket;
+            if (bucket === 'Todo' || parentBucket === bucket) {
+                btn.classList.remove('hidden');
             } else {
-                btn.style.display = 'none';
+                btn.classList.add('hidden');
             }
         });
 
+        // Reset brand filter if current brand is not visible in new bucket
         if (currentBrand !== 'Todos') {
             const currentBtn = Array.from(brandFilterBtns).find(b => b.dataset.filter === currentBrand);
-            if (currentBtn && currentBtn.style.display === 'none') {
+            if (currentBtn && currentBtn.classList.contains('hidden')) {
                 resetBrandFilter();
             }
         }
@@ -58,27 +49,27 @@ export function initCatalog() {
         currentBrand = 'Todos';
         brandFilterBtns.forEach(b => {
             b.classList.remove('bg-gray-800', 'text-white', 'border-gray-600', 'active');
-            b.classList.add('bg-transparent', 'text-gray-400', 'border-gray-800');
+            b.classList.add('bg-transparent', 'text-gray-500', 'border-gray-800');
             if (b.dataset.filter === 'Todos') {
-                b.classList.remove('bg-transparent', 'text-gray-400', 'border-gray-800');
+                b.classList.remove('bg-transparent', 'text-gray-500', 'border-gray-800');
                 b.classList.add('bg-gray-800', 'text-white', 'border-gray-600', 'active');
             }
         });
     }
 
-    categoryFilterBtns.forEach(btn => {
+    bucketFilterBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            categoryFilterBtns.forEach(b => {
+            bucketFilterBtns.forEach(b => {
                 b.classList.remove('bg-primary', 'text-black', 'border-primary', 'active');
-                b.classList.add('bg-transparent', 'text-gray-400', 'border-gray-800');
+                b.classList.add('bg-[#151515]', 'text-gray-400', 'border-gray-800');
             });
 
             const target = e.currentTarget;
-            target.classList.remove('bg-transparent', 'text-gray-400', 'border-gray-800');
+            target.classList.remove('bg-[#151515]', 'text-gray-400', 'border-gray-800');
             target.classList.add('bg-primary', 'text-black', 'border-primary', 'active');
 
-            currentCategory = target.dataset.category;
-            updateBrandButtons(currentCategory);
+            currentBucket = target.dataset.bucket;
+            updateBrandButtons(currentBucket);
             filterCards();
         });
     });
@@ -87,11 +78,11 @@ export function initCatalog() {
         btn.addEventListener('click', (e) => {
             brandFilterBtns.forEach(b => {
                 b.classList.remove('bg-gray-800', 'text-white', 'border-gray-600', 'active');
-                b.classList.add('bg-transparent', 'text-gray-400', 'border-gray-800');
+                b.classList.add('bg-transparent', 'text-gray-500', 'border-gray-800');
             });
 
             const target = e.currentTarget;
-            target.classList.remove('bg-transparent', 'text-gray-400', 'border-gray-800');
+            target.classList.remove('bg-transparent', 'text-gray-500', 'border-gray-800');
             target.classList.add('bg-gray-800', 'text-white', 'border-gray-600', 'active');
 
             currentBrand = target.dataset.filter;
@@ -109,19 +100,23 @@ export function initCatalog() {
         const searchTerms = currentSearchTerm.split(' ').filter(term => term.length > 0);
 
         cards.forEach(card => {
-            const cardCategory = card.dataset.category;
+            const cardBucket = card.dataset.bucket;
             const cardBrand = card.dataset.brand;
 
-            const matchesCategory = currentCategory === 'Todas' || cardCategory === currentCategory;
+            // 1. Filtrado por Grandes Grupos (Buckets)
+            const matchesBucket = currentBucket === 'Todo' || cardBucket === currentBucket;
+            
+            // 2. Filtrado por Marca
             const matchesBrand = currentBrand === 'Todos' || cardBrand === currentBrand;
+            
+            // 3. Búsqueda SEGMENTADA (solo busca dentro del bucket activo)
             let matchesSearch = true;
-
             if (searchTerms.length > 0) {
                 const cardDataString = card.dataset.search || "";
                 matchesSearch = searchTerms.every(term => cardDataString.includes(term));
             }
 
-            if (matchesCategory && matchesBrand && matchesSearch) {
+            if (matchesBucket && matchesBrand && matchesSearch) {
                 card.style.display = 'flex';
                 visibleCount++;
             } else {
@@ -144,30 +139,44 @@ export function initCatalog() {
             if (!dataStr) return;
 
             const data = JSON.parse(dataStr);
+            const isTablero = data.bucket === "Tableros";
+            const isHerramienta = data.bucket === "Herramientas";
 
             if (mImage) {
-                mImage.src = data.imagen || '';
-                mImage.style.display = data.imagen ? 'block' : 'none';
+                mImage.src = data.image || '';
+                mImage.style.display = data.image ? 'block' : 'none';
             }
 
             if (mMarcaBadge) mMarcaBadge.textContent = data.brand;
             if (mNombre) mNombre.textContent = data.name;
-            if (mCategory) mCategory.textContent = data.category;
-            if (mCodigo) mCodigo.textContent = data.code || "-";
+            if (mCategory) {
+                mCategory.textContent = data.category;
+                mCategory.className = `text-xs font-bold uppercase tracking-widest ${isTablero ? 'text-primary' : (isHerramienta ? 'text-red-500' : 'text-blue-400')}`;
+            }
 
             // Fill Specs
             if (mSpecsContainer) {
                 mSpecsContainer.innerHTML = '';
+                
+                // Mostrar info contextual según tipo
+                if (isTablero) {
+                    const infoPill = document.createElement('div');
+                    infoPill.className = 'bg-primary/10 border border-primary/20 p-4 rounded-xl mb-4';
+                    infoPill.innerHTML = '<span class="text-primary text-xs font-bold">PROPIEDADES DE PLACA</span><p class="text-gray-400 text-xs mt-1">Ideal para mobiliario y revestimientos de alta calidad.</p>';
+                    mSpecsContainer.appendChild(infoPill);
+                }
+
                 if (data.specs && data.specs.length > 0) {
                     data.specs.forEach(spec => {
                         const div = document.createElement('div');
                         div.className = 'flex flex-col border-b border-gray-800 pb-3 last:border-0';
-                        const [label, ...valParts] = spec.split(':');
-                        const value = valParts.join(':').trim();
+                        const parts = spec.split(':');
+                        const label = parts.length > 1 ? parts[0] : (spec.includes('mm') ? 'Espesor' : 'Info');
+                        const value = parts.length > 1 ? parts[1].trim() : spec;
                         
                         div.innerHTML = `
                             <span class="text-gray-500 text-[10px] font-semibold uppercase tracking-wider mb-1">${label}</span>
-                            <span class="text-white font-medium text-base">${value || spec}</span>
+                            <span class="text-white font-medium text-base">${value}</span>
                         `;
                         mSpecsContainer.appendChild(div);
                     });
@@ -175,18 +184,14 @@ export function initCatalog() {
             }
 
             if (mWhatsAppBtn) {
-                const showPrices = localStorage.getItem('admin_show_prices') !== 'false';
-                const priceText = showPrices ? data.price : "Consultar";
-                const msg = `Hola, quiero pedir presupuesto por el producto:\n*${data.name}*\nCódigo: ${data.code}\nPrecio: ${priceText}`;
+                const priceText = data.price || "Consultar";
+                const msg = `Hola Alvarez Placas, consulto disponibilidad de:\n*${data.name}*\nMarca: ${data.brand}\nPrecio: ${priceText}`;
                 mWhatsAppBtn.href = `https://wa.me/5491100000000?text=${encodeURIComponent(msg)}`;
             }
 
-            // Smart Match Button
+            // Smart Match Button (Solo para Tableros)
             if (mSmartMatchBtn) {
-                const cat = (data.category || "").toUpperCase();
-                const isPlaca = data.isPlaca || cat.includes('PLACA') || cat.includes('TABLERO') || cat.includes('MADERA');
-                
-                if (isPlaca) {
+                if (isTablero) {
                     mSmartMatchBtn.classList.remove('hidden');
                     mSmartMatchBtn.classList.add('flex');
                     mSmartMatchBtn.onclick = () => {
@@ -237,5 +242,5 @@ export function initCatalog() {
         }
     });
 
-    updateBrandButtons(currentCategory);
+    updateBrandButtons(currentBucket);
 }

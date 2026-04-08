@@ -58,15 +58,39 @@ try {
         // 4. Resolver Imagen (Prioridad: Directus > placa_data.json > Fallback Carpetas)
         let imagePath = "";
         
+        // Usar URL de administración para los assets si no se define otra cosa
+        const ASSETS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+
         if (mat.imagen) {
           // Si hay una imagen cargada en la biblioteca de Directus
-          imagePath = `${PUBLIC_DIRECTUS_URL}/assets/${mat.imagen}?format=avif&width=600&quality=80`;
+          imagePath = `${ASSETS_URL}/assets/${mat.imagen}?format=avif&width=600&quality=80`;
         } else if (extraInfo?.imagen) {
           // Fallback al JSON histórico (Excel)
           imagePath = extraInfo.imagen.replace('/images/catalog/Placas/', '/Placas/');
         } else {
-          // Fallback robusto al sistema de carpetas
+          // Fallback robusto al sistema de carpetas (incluyendo categorías genéricas)
+          // Se asume que en public/Placas/ existen estas carpetas
           imagePath = `/Placas/${marca}/${categoria}/${mat.nombre}.avif`;
+        }
+
+        // 5. Clasificación en "Buckets" (Grupos Lógicos)
+        let bucket = "Herrajes"; // Default
+        const lowerName = matNameNorm;
+        const brandNorm = marca.toLowerCase();
+
+        if (brandNorm === 'einhell' || categoria.toLowerCase().includes('herramienta')) {
+          bucket = "Herramientas";
+        } else if (
+          brandNorm === 'egger' || 
+          brandNorm === 'faplac' || 
+          brandNorm === 'sadepan' ||
+          ['tableros', 'enchapados', 'multilaminados', 'terciados', 'finger', 'placas'].some(key => lowerName.includes(key) || categoria.toLowerCase().includes(key))
+        ) {
+          bucket = "Tableros";
+        } else if (
+          ['adhesivo', 'laca', 'pegamento', 'diluyente', 'quimica', 'sellador', 'pintura'].some(key => lowerName.includes(key) || categoria.toLowerCase().includes(key))
+        ) {
+          bucket = "Química";
         }
 
         return {
@@ -75,13 +99,14 @@ try {
           code: "-",
           brand: marca,
           category: categoria,
+          bucket: bucket, // Nueva propiedad para filtrado
           image: imagePath,
           price: mat.precio_m2 ? `$${mat.precio_m2.toLocaleString()}` : "Consultar",
           specs: [
             mat.id_espesor?.valor ? `${mat.id_espesor.valor}mm` : null,
             mat.stock ? `Stock: ${mat.stock}` : null
           ].filter(Boolean),
-          isPlaca: true
+          isPlaca: bucket === "Tableros"
         };
       });
   }
@@ -89,18 +114,14 @@ try {
   console.error("Critical Catalog Grid Error:", e);
 }
 
-// Preparar marcas y categorías para filtros
-const marcasRaw = [...new Set(initialItems.map((item) => item.brand))].filter(m => m && m !== "Varios");
-const categoriasRaw = [...new Set(initialItems.map((item) => item.category))].filter(c => c);
+// Grupos Fijos requeridos por el usuario
+const buckets = ["Tableros", "Herrajes", "Herramientas", "Química", "Todo"];
 
-const marcas = ["Todos", ...marcasRaw.sort()];
-const categorias = ["Todas", ...categoriasRaw.sort()];
-
-const brandsByCategory = {};
-categoriasRaw.forEach(cat => {
-  brandsByCategory[cat] = [...new Set(initialItems.filter(i => i.category === cat).map(i => i.brand))].filter(b => b && b !== "Varios").sort();
+// Preparar marcas por bucket para filtros secundarios si se desea
+const brandsByBucket = {};
+buckets.forEach(b => {
+  brandsByBucket[b] = [...new Set(initialItems.filter(i => i.bucket === b || b === "Todo").map(i => i.brand))].filter(br => br && br !== "Varios").sort();
 });
-brandsByCategory["Todas"] = marcasRaw.sort();
 ---
 
 <section class="max-w-7xl mx-auto px-4 py-12 relative">
@@ -112,9 +133,8 @@ brandsByCategory["Todas"] = marcasRaw.sort();
   </div>
 
   <CatalogFilters 
-    marcas={marcas} 
-    categorias={categorias} 
-    brandsByCategory={brandsByCategory} 
+    buckets={buckets}
+    brandsByBucket={brandsByBucket}
     totalProducts={initialItems.length}
   />
 

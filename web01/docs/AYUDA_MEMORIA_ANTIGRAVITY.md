@@ -1,12 +1,43 @@
-# 🧠 Ayuda Memoria: Antigravity Context (Marzo 2026)
+# 🧠 Ayuda Memoria: Contexto Clave para Antigravity
 
-Este documento resume los conocimientos clave y cambios realizados para facilitar la continuidad del desarrollo.
+**Actualizado:** 07 de Abril de 2026.
+
+---
 
 ## 🏗️ Arquitectura "Web01"
-- **Astro 6 (SSR)**: Rendimiento extremo.
+- **Astro 6 (SSR)**: Rendimiento extremo, build obligatorio antes de desplegar.
 - **Proxies de Ruta**: `src/pages/` solo importa de `Frontend/` o `Backend/`.
-- **Aliasing**: Usa siempre `@home`, `@frontend`, `@backend`, `@components`, etc.
-- **Directus CMS**: Motor de datos. Conexión central en `@conexiones`.
+- **Aliasing** (ver `jsconfig.json`):
+  - `@home` → `Frontend/home/`
+  - `@frontend` → `Frontend/`
+  - `@backend` → `Backend/`
+  - `@conexiones` → `Backend/conexiones/`
+  - `@catalogo` → `Frontend/catalogo/`
+  - `@dashboard` → `Backend/dashboard/`
+- **Directus CMS**: Motor de datos. Conexión central en `@conexiones/directus.js`.
+
+---
+
+## 🚀 Configuración VPS v16 (Estado Actual)
+
+### Rutas definitivas
+| Recurso | Ruta |
+|---|---|
+| **Compose** | `/opt/alvarez_v16/web01/docker-compose.vps.yml` |
+| **Código Astro** | `/opt/alvarez_v16/web01/site/web01/` |
+| **Build** | `/opt/alvarez_v16/web01/site/web01/dist/` |
+| **BD Volumen** | `web01_alvarez_data_v16` (externo, ¡no tocar!) |
+
+### Contenedores activos
+- `alvarezplacas_web` → Puerto 4321
+- `alvarezplacas_directus_v16` → Puerto 8055
+- `alvarezplacas_db_v16` → Interno
+
+### ⚠️ Regla de Oro de Rutas
+- `/opt/javiermix/` → **NO TOCAR** (es javiermix.ar, otro proyecto distinto)
+- Todos los proyectos van en `/opt/<proyecto>/`
+
+---
 
 ## ✅ Cambios Realizados
 
@@ -15,22 +46,30 @@ Este documento resume los conocimientos clave y cambios realizados para facilita
 - **Recepción Proveedores**: Av. Vergara 1605, Villa Tesei.
 - **Google Maps**: Sincronizado con "Alvarez Placas SRL".
 
-### 2. Unificación v16 (Abril 2026)
-- **Status**: 🟢 Completado.
-- **Fix 502**: Se corrigió el puerto del Proxy (Caddy) de 8057 a **8055**.
-- **Fix Uploads**: Se asignaron permisos `1000:1000` a la carpeta `uploads` en `/opt/alvarez_v16/web01/`.
-- **Limpieza**: Se eliminó la instancia PostgreSQL 15 obsoleta.
+### 2. Restauración v16 (Abril 2026)
+- **Git Clone**: El código Astro se clona desde `https://github.com/alvarezplacas/alvarezplacas_web.git` en `/opt/alvarez_v16/web01/site/`.
+- **Build**: Se compila con `docker run --rm -v $(pwd):/app -w /app node:22-alpine sh -c "npm install && npm run build"`.
+- **DB Recuperada**: Volumen `web01_alvarez_data_v16` con 69 materiales intactos.
+- **Nombre contenedor web**: Se cambió a `alvarezplacas_web` (sin `_v16`) para compatibilidad con el proxy Caddy.
 
 ### 3. Presupuestador (Budget Engine)
 - **Marcas**:
   - EGGER: 2600 x 1830 mm
   - FAPLAC: 2750 x 1830 mm
   - SADEPAN: 2820 x 1830 mm
-- **Cálculo de Sierra**: Se añaden 3mm porimetrales a cada pieza para el cálculo de m².
-- **Refilado**: Descuento de 5mm perimetrales (10mm total por eje) en la placa base.
-- **Estimaciones**: El sistema calcula placas necesarias y desperdicio, pero advierte que **Leptom** es la fuente oficial.
+- **Cálculo de Sierra**: Se añaden 3mm perimetrales por pieza.
+- **Refilado**: Descuento de 5mm perimetrales (10mm total por eje).
+- **Estimaciones**: El sistema calcula placas necesarias y desperdicio. **Leptom** es la fuente oficial.
 
-## 🚨 Reglas de Oro
+---
+
+## 🚨 Reglas de Oro del Proyecto
 - **No tocar Dashboards**: Se mantienen aislados en `Backend/dashboard`.
 - **SEO & Performance**: Prioridad absoluta en el Frontend Público.
 - **Modularidad**: Cada sector tiene sus propias instrucciones en su carpeta.
+- **Subidas al VPS**: Siempre via `git pull` en la carpeta `/opt/alvarez_v16/web01/site/`, nunca manualmente.
+- **DB**: Nunca borrar el volumen `web01_alvarez_data_v16`.
+
+---
+
+*Ver [`VPS_INFRAESTRUCTURA_V16.md`](./VPS_INFRAESTRUCTURA_V16.md) para el mapa completo del servidor.*

@@ -1,42 +1,58 @@
-# Plan Pendiente: Sistema de Banners Dinámicos y Resumen de Infraestructura
+# Plan Pendiente — Post-Restauración v16 (Abril 2026)
 
-Este documento resume los hallazgos técnicos del día y el plan para la próxima sesión, diseñado para que cualquier instancia de IA (o "inteligencia") pueda retomar el trabajo exactamente donde quedó.
-
-## 🧠 Conocimientos Adquiridos (Contexto Crítico)
-
-### 1. Infraestructura VPS (Ubuntu 24.10 / Docker)
-- **Directorio de Trabajo**: `/home/ubuntu/prod/alvarezplacas_web/web01`
-- **Contenedores**:
-  - `alvarezplacas_db`: Postgres 15 (**Versión Crítica**: Incompatible con v16 sin migración de datos).
-  - `alvarezplacas_directus`: CMS accesible internamente en el puerto 8055.
-  - `alvarezplacas_web`: Aplicación Astro que se auto-repara al iniciar con `npm install && npm run build`.
-- **Redes**: Se utiliza `alvarez_prod_private_net` para aislar la comunicación DB <-> Directus. Solo el Proxy (Nginx/Traefik) tiene exposición externa.
-
-### 2. Estructura de Aplicación (Astro Modular)
-- **Conexión Directus**: `Backend/conexiones/directus.js` usa el SDK oficial y maneja URLs inteligentes (Internal/Public fallback).
-- **Componente Hero**: `Frontend/shared/components/Hero.astro` gestiona el banner de estado (Abierto/Cerrado) mediante un script de cliente.
-
-### 3. Problemas Resueltos Hoy
-- **Sincronización VPS**: Se estableció el comando de auto-reparación en el `docker-compose.vps.yml`.
-- **Compatibilidad Astro**: Se identificó que errores en los delimitadores `---` bloquean el build de producción.
+> [!NOTE]
+> La infraestructura fue restaurada el 07/04/2026. La web está en línea pero el catálogo no muestra productos aún.
 
 ---
 
-## 🚀 Plan: Banner de Horarios Especiales (Feriados/Asuetos)
+## 🔴 Pendiente Urgente
 
-### Fase 1: Directus
-Crear la colección `fechas_especiales`:
+### 1. Conectar el Catálogo al Directus
+**Problema**: La web carga pero muestra "No se encontraron productos".
+**Causa probable**: La variable `DIRECTUS_URL_INTERNAL` en el contenedor web no resuelve correctamente al contenedor de Directus.
+
+**Pasos para resolver:**
+1. Verificar que ambos contenedores estén en la misma red:
+   ```bash
+   docker inspect alvarezplacas_web | grep Networks -A 20
+   docker inspect alvarezplacas_directus_v16 | grep Networks -A 20
+   ```
+2. Probar conexión interna desde el contenedor web:
+   ```bash
+   docker exec alvarezplacas_web wget -qO- http://alvarezplacas_directus_v16:8055/server/health
+   ```
+3. Si falla, cambiar en `docker-compose.vps.yml`:
+   ```yaml
+   - DIRECTUS_URL_INTERNAL=https://admin.alvarezplacas.com.ar
+   ```
+
+### 2. Permisos Públicos Directus
+**Problema**: El rol "Público" de Directus puede no tener permisos de lectura sobre `materiales`, `marcas`, `categorias`, `espesores`.
+**Acción**: Ejecutar script `scripts/fix_public_permissions_es.mjs` apuntando a `https://admin.alvarezplacas.com.ar`.
+
+---
+
+## 🟡 Pendiente Normal
+
+### 3. Workflow de Deploy Automatizado
+Actualizar el script `scripts/upload_to_vps.bat` para que en lugar de hacer `git push` + alertar, también haga `git pull` en el VPS y el rebuild automáticamente.
+
+### 4. Banner de Horarios Especiales (Feriados)
+Crear colección `fechas_especiales` en Directus:
 - Fields: `fecha` (ISO Date), `mensaje` (String), `activo` (Boolean).
-
-### Fase 2: Frontend (`Hero.astro`)
-1. **Fetch en Frontmatter** para detectar si hoy es una fecha especial.
-2. **Prioridad**: El mensaje especial debe anular el estado "Abierto/Cerrado" estándar.
+- Actualizar `Hero.astro` para leer estas fechas.
 
 ---
 
-## ✅ Tareas Completadas Hoy
-- [x] **Unificación v16**: El dominio `admin.alvarezplacas.com.ar` ya apunta al puerto 8055 de PostgreSQL 16.
-- [x] **Reparación de Imágenes**: Subida de archivos operativa tras corregir permisos de volumen (`1000:1000`).
-- [x] **Limpieza del VPS**: Instancia v15 detenida y removida para evitar conflictos.
+## ✅ Completado
 
-*Documento actualizado el 07 de Abril de 2026.*
+- [x] **Restauración DB**: Volumen `web01_alvarez_data_v16` recuperado con 69 materiales.
+- [x] **Código desplegado**: Git clone en `/opt/alvarez_v16/web01/site/`.
+- [x] **Build exitoso**: `dist/server/entry.mjs` generado.
+- [x] **Web en línea**: `alvarezplacas.com.ar` responde (sin 502).
+- [x] **Directus online**: `admin.alvarezplacas.com.ar` accesible.
+- [x] **Documentación**: `VPS_INFRAESTRUCTURA_V16.md` creado con toda la configuración.
+
+---
+
+*Actualizado el 07 de Abril de 2026.*
