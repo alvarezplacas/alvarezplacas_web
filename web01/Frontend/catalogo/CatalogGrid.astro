@@ -73,10 +73,7 @@ try {
           imagePath = `/Placas/${marca}/${categoria}/${mat.nombre}.avif`;
         }
 
-        // 5. Logo Fallback Final (solicitado por usuario si no existe imagen)
-        const finalImagePath = imagePath || "/images/catalog/Logos_iconos/alvarezplacas_logo.avif";
-
-        // 6. Clasificación en "Buckets" (Grupos Lógicos)
+        // 5. Clasificación en "Buckets" (Grupos Lógicos)
         let bucket = "Herrajes"; // Default
         const lowerName = matNameNorm;
         const brandNorm = marca.toLowerCase();
@@ -96,17 +93,24 @@ try {
           bucket = "Química";
         }
 
+        // 6. Logo Fallback Final (solicitado por usuario)
+        // Si es Tablero intentamos buscar en carpetas, si es Herramienta/Química y no tiene foto en Directus, vamos directo al logo.
+        let finalImagePath = imagePath;
+        if (bucket !== "Tableros" && !mat.imagen) {
+          finalImagePath = "/images/catalog/Logos_iconos/alvarezplacas_logo.avif";
+        }
+
         return {
           id: mat.id,
           name: mat.nombre,
           code: "-",
           brand: marca,
           category: categoria,
-          bucket: bucket, // Nueva propiedad para filtrado
-          image: imagePath,
+          bucket: bucket,
+          imagen: finalImagePath || "/images/catalog/Logos_iconos/alvarezplacas_logo.avif",
           price: mat.precio_m2 ? `$${mat.precio_m2.toLocaleString()}` : "Consultar",
           specs: [
-            mat.id_espesor?.valor ? `${mat.id_espesor.valor}mm` : null,
+            (bucket === "Tableros" && mat.id_espesor?.valor) ? `${mat.id_espesor.valor}mm` : null,
             mat.stock ? `Stock: ${mat.stock}` : null
           ].filter(Boolean),
           isPlaca: bucket === "Tableros"
