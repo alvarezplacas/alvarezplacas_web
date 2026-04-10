@@ -27,7 +27,7 @@ try {
     })).catch(() => []),
     directus.request(readItems('materiales', {
         limit: 500,
-        fields: ['id','activo','nombre','sku','precio_m2','stock','imagen','id_marca.nombre','id_categoria.nombre','id_espesor.valor'],
+        fields: ['id','activo','nombre','sku','precio_l1','stock','imagen','id_marca.nombre','id_categoria.nombre','id_espesor.valor'],
         filter: { activo: { _eq: true } }
     })).catch(() => []),
     directus.request(readItems('marcas', {
