@@ -5,7 +5,7 @@ import { parse } from 'csv-parse/sync';
 const DIRECTUS_URL = 'http://alvarezplacas_directus:8055';
 const ADMIN_EMAIL = 'admin@alvarezplacas.com.ar';
 const ADMIN_PASS = 'JavierMix2026!';
-const CSV_FILE = 'database/catalogo_master_v16.csv'; // Ajustar al nombre de tu archivo
+const CSV_FILE = 'database/catalogo_01.csv'; 
 
 // Lógica de Normalización y Automatización
 const slugify = (text) => text?.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-') || '';
@@ -13,7 +13,8 @@ const slugify = (text) => text?.toString().toLowerCase().trim().replace(/\s+/g, 
 function generateSKU(row) {
     if (row.sku && row.sku.trim() !== '') return row.sku.trim().toUpperCase();
     
-    const prefix = row.categoria?.toLowerCase().includes('tablero') ? 'TAB' : 'GEN';
+    const cat = row.categoria || 'Placas';
+    const prefix = cat.toLowerCase().includes('tablero') || cat.toLowerCase().includes('placa') ? 'TAB' : 'GEN';
     const nom = slugify(row.nombre).substring(0, 3).toUpperCase();
     const mar = slugify(row.marca).substring(0, 3).toUpperCase();
     const esp = row.attr_espesor || '00';
@@ -23,7 +24,7 @@ function generateSKU(row) {
 }
 
 async function syncCatalog() {
-    console.log("--- 🧠 Iniciando Sincronización Automática Master V16 ---");
+    console.log("--- 🧠 Iniciando Sincronización Automática Master V16 (CSV Personalizado) ---");
     
     if (!fs.existsSync(CSV_FILE)) {
         console.error(`❌ Archivo no encontrado: ${CSV_FILE}`);
@@ -38,13 +39,16 @@ async function syncCatalog() {
         console.log("✅ Login exitoso.");
 
         const content = fs.readFileSync(CSV_FILE, 'utf-8');
-        const records = parse(content, { columns: true, skip_empty_lines: true });
-        console.log(`📊 Procesando ${records.length} productos...`);
+        const records = parse(content, { 
+            columns: true, 
+            skip_empty_lines: true,
+            delimiter: ';' // Tu CSV usa punto y coma
+        });
+        console.log(`📊 Procesando ${records.length} productos del catálogo local...`);
 
         // Función auxiliar para IDs relacionales con Cache
         async function getOrCreate(collection, nameField, value) {
-            if (!value) return null;
-            const val = value.toString().trim();
+            const val = value?.toString().trim() || (collection === 'categorias' ? 'Placas' : 'S/D');
             if (cache[collection][val]) return cache[collection][val];
 
             const existing = await client.request(readItems(collection, {
@@ -85,12 +89,12 @@ async function syncCatalog() {
                     tags: row.tags,
                     tipo: row.attr_tipo,
                     color: row.attr_color,
-                    textura: row.ttr_textur,
+                    textura: row.attr_textura,
                     medidas: row.attr_medidas,
-                    precio_l1: parseFloat(row['Precio L1']?.replace(/[^0-9.]/g, '') || 0),
-                    precio_l2: parseFloat(row['Precio L2']?.replace(/[^0-9.]/g, '') || 0),
+                    precio_l1: parseFloat(row.precio?.replace(/[^0-9.]/g, '') || 0),
+                    precio_l2: 0, // Por ahora el CSV solo trae un precio
                     stock: parseInt(row.stock || 0),
-                    mostrar_precio: row.mostrar_precio !== undefined ? (row.mostrar_precio.toLowerCase() === 'true' || row.mostrar_precio === '1') : true,
+                    mostrar_precio: true,
                     id_marca,
                     id_categoria,
                     id_espesor,
@@ -104,11 +108,9 @@ async function syncCatalog() {
                 }));
 
                 if (existingProduct.length > 0) {
-                    // Solo actualizamos campos dinámicos para proteger la imagen y personalizaciones en Directus
                     await client.request(updateItem('materiales', existingProduct[0].id, {
                         nombre: materialData.nombre,
                         precio_l1: materialData.precio_l1,
-                        precio_l2: materialData.precio_l2,
                         stock: materialData.stock,
                         descripcion: materialData.descripcion,
                         linea: materialData.linea,
@@ -116,12 +118,16 @@ async function syncCatalog() {
                         activo: true
                     }));
                     updated++;
-                    if (index % 50 === 0) console.log(`🔄 [${index}] Actualizado: ${sku}`);
                 } else {
                     await client.request(createItem('materiales', materialData));
                     created++;
-                    if (index % 50 === 0) console.log(`✨ [${index}] Creado: ${sku}`);
                 }
+                if (index % 20 === 0 && index > 0) console.log(`⏳ Procesados ${index}...`);
+
+            } catch (err) {
+                console.error(`❌ Error en fila ${index + 1} (${row.nombre}):`, err.message);
+            }
+        }
 
             } catch (err) {
                 console.error(`❌ Error en fila ${index + 1} (${row.nombre}):`, err.message);
