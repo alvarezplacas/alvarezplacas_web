@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { createDirectus, rest, staticToken, readItems, createItem, readFiles } from '@directus/sdk';
+import { createDirectus, rest, authentication, staticToken, readItems, createItem, readFiles } from '@directus/sdk';
 import { parse } from 'csv-parse/sync';
 
 /**
@@ -7,16 +7,20 @@ import { parse } from 'csv-parse/sync';
  * Automatiza: SKU, Slug y Atributos (Color, Textura, Medidas).
  */
 
-const DIRECTUS_URL = 'https://admin.alvarezplacas.com.ar';
-const TOKEN = 'alvarez-api-token-v16-2026';
+const DIRECTUS_URL = 'http://alvarezplacas_directus:8055';
+const ADMIN_EMAIL = 'admin@alvarezplacas.com.ar';
+const ADMIN_PASS = 'JavierMix2026!';
 const LOGO_ID = '3ef347b2-d9ca-4bd5-9e83-66452de22d2a';
 
 const client = createDirectus(DIRECTUS_URL)
-    .with(staticToken(TOKEN))
+    .with(authentication())
     .with(rest());
 
 async function ingestFull() {
     console.log("--- 🚀 Iniciando Ingesta Masiva V16 ---");
+    
+    // Login inicial
+    await client.login(ADMIN_EMAIL, ADMIN_PASS);
     
     const csvPath = './database/catalogo_01.csv';
     if (!fs.existsSync(csvPath)) {

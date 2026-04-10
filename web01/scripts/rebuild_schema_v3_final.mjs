@@ -1,16 +1,18 @@
-import { createDirectus, rest, staticToken, deleteCollection, createCollection, createField, createItem, readCollections } from '@directus/sdk';
+import { createDirectus, rest, authentication, deleteCollection, createCollection, createField, createItem, readCollections } from '@directus/sdk';
 
-const DIRECTUS_URL = 'https://admin.alvarezplacas.com.ar';
-const ADMIN_TOKEN = 'alvarez-api-token-v16-2026';
+const DIRECTUS_URL = 'http://alvarezplacas_directus:8055';
+const ADMIN_EMAIL = 'admin@alvarezplacas.com.ar';
+const ADMIN_PASS = 'JavierMix2026!';
 
 async function rebuild() {
     console.log("--- 🔱 Iniciando Reconstrucción Final (Alineación con Frontend) ---");
     
     const client = createDirectus(DIRECTUS_URL)
-        .with(staticToken(ADMIN_TOKEN))
+        .with(authentication())
         .with(rest());
 
     try {
+        await client.login(ADMIN_EMAIL, ADMIN_PASS);
         const collections = await client.request(readCollections());
         const names = collections.map(c => c.collection);
         
