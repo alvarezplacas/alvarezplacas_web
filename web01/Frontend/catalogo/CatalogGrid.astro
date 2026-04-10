@@ -123,6 +123,8 @@ try {
         // 6. Imagen Final
         let finalImagePath = imagePath;
 
+        const isPriceVisible = showPrices && mat.mostrar_precio !== false;
+
         return {
           id: mat.id,
           name: mat.nombre,
@@ -131,7 +133,7 @@ try {
           category: categoria,
           bucket: bucket,
           imagen: finalImagePath,
-          price: mat.precio_m2 ? `$${mat.precio_m2.toLocaleString()}` : "Consultar",
+          price: (isPriceVisible && mat.precio_l1) ? `$${mat.precio_l1.toLocaleString()}` : "Consultar",
           specs: [
             (bucket === "Tableros" && mat.id_espesor?.valor) ? `${mat.id_espesor.valor}mm` : null,
             mat.stock ? `Stock: ${mat.stock}` : null

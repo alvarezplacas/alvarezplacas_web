@@ -90,6 +90,7 @@ async function syncCatalog() {
                     precio_l1: parseFloat(row['Precio L1']?.replace(/[^0-9.]/g, '') || 0),
                     precio_l2: parseFloat(row['Precio L2']?.replace(/[^0-9.]/g, '') || 0),
                     stock: parseInt(row.stock || 0),
+                    mostrar_precio: row.mostrar_precio !== undefined ? (row.mostrar_precio.toLowerCase() === 'true' || row.mostrar_precio === '1') : true,
                     id_marca,
                     id_categoria,
                     id_espesor,

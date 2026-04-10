@@ -138,8 +138,16 @@ async function rebuild() {
             meta: { interface: 'select-dropdown-m2o', display: 'related-values', display_options: { template: '{{valor}}' } }
         }));
 
+        // 7. AJUSTES DEL SITIO (Control Global)
+        console.log("📦 Creando 'site_settings'...");
+        await client.request(createCollection({ collection: 'site_settings', meta: { icon: 'settings' }, schema: {} }));
+        await client.request(createField('site_settings', { field: 'key', type: 'string', meta: { interface: 'input' } }));
+        await client.request(createField('site_settings', { field: 'value', type: 'string', meta: { interface: 'input' } }));
+        await client.request(createField('site_settings', { field: 'description', type: 'string', meta: { interface: 'input' } }));
+        
         // SEED BÁSICO
         console.log("🌱 Insertando Datos de Semilla...");
+        await client.request(createItem('site_settings', { key: 'show_prices', value: 'true', description: 'Control global para mostrar/ocultar precios en la web' }));
         await client.request(createItem('vendedores', { name: 'Vendedor Central', email: 'vendedor1@alvarezplacas.com.ar', whatsapp: '5491161411842' }));
         await client.request(createItem('sucursales', { nombre: 'Casa Central', direccion: 'Av. Vergara y Bradley', es_central: true }));
         await client.request(createItem('sucursales', { nombre: 'Depósito Tesei', direccion: 'Av. Vergara 1605', es_central: false }));
