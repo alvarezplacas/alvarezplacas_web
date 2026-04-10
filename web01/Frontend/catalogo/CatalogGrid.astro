@@ -15,11 +15,12 @@ import { directus, readItems } from '@conexiones/directus.js';
 import placasData from '@conexiones/data/placas.json';
 
 let initialItems = [];
+let officialBrands = [];
 let showPrices = true;
 
 try {
   // 1 & 2. Obtener Ajustes y Productos en paralelo
-  const [siteSettingsResult, materialsResult] = await Promise.all([
+  const [siteSettingsResult, materialsResult, marcasResult] = await Promise.all([
     directus.request(readItems('site_settings', {
         filter: { key: { _eq: 'show_prices' } },
         limit: 1
@@ -28,18 +29,24 @@ try {
         limit: 500,
         fields: ['id','activo','nombre','sku','precio_m2','stock','imagen','id_marca.nombre','id_categoria.nombre','id_espesor.valor'],
         filter: { activo: { _eq: true } }
+    })).catch(() => []),
+    directus.request(readItems('marcas', {
+        limit: 100,
+        fields: ['id', 'nombre'],
+        sort: ['nombre']
     })).catch(() => [])
   ]);
 
   const siteSettings = siteSettingsResult;
   const materials = materialsResult;
+  officialBrands = marcasResult;
 
   if (siteSettings && siteSettings.length > 0) {
     showPrices = siteSettings[0].value !== 'false';
   }
 
   if (materials && materials.length > 0) {
-      const PUBLIC_DIRECTUS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://alvarezplacas.com.ar';
+      const PUBLIC_DIRECTUS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
       
       initialItems = materials.map(mat => {
         // 3. Cruzar con datos de placas.json (Excel)
@@ -52,8 +59,30 @@ try {
           return false;
         });
 
-        const marca = mat.id_marca?.nombre || "Varios";
-        const categoria = mat.id_categoria?.nombre || "PLACAS";
+        const getFailsafeBrand = (mat) => {
+          if (mat.id_marca?.nombre) return mat.id_marca.nombre;
+          // Failsafe: Extraer de SKU (Pattern: CAT-NOMBRE-MARCA-ESPESOR)
+          if (mat.sku && mat.sku.includes('-')) {
+            const parts = mat.sku.split('-');
+            if (parts.length >= 3) return parts[2].charAt(0).toUpperCase() + parts[2].slice(1).toLowerCase();
+          }
+          return "Varios";
+        };
+
+        const getFailsafeCategory = (mat) => {
+          if (mat.id_categoria?.nombre) return mat.id_categoria.nombre;
+          if (mat.sku && mat.sku.includes('-')) {
+            const prefix = mat.sku.split('-')[0];
+            if (prefix === 'TAB') return 'Tableros';
+            if (prefix === 'HER') return 'Herrajes';
+            if (prefix === 'QUI') return 'Química';
+            if (prefix === 'HERR') return 'Herramientas';
+          }
+          return "PLACAS";
+        };
+
+        const marca = getFailsafeBrand(mat);
+        const categoria = getFailsafeCategory(mat);
 
         // 4. Resolver Imagen (Prioridad: Directus > placa_data.json > Fallback Carpetas)
         let imagePath = "";
@@ -66,7 +95,7 @@ try {
           imagePath = `${ASSETS_URL}/assets/${mat.imagen}?format=avif&width=600&quality=80`;
         } else {
           // Único fallback oficial: Logo de Directus
-          const LOGO_ID = '3f58bb2f-4447-472b-9ece-2cc573f98873';
+          const LOGO_ID = '3ef347b2-d9ca-4bd5-9e83-66452de22d2a';
           imagePath = `${ASSETS_URL}/assets/${LOGO_ID}?format=avif&width=600&quality=80`;
         }
 
@@ -81,6 +110,7 @@ try {
           brandNorm === 'egger' || 
           brandNorm === 'faplac' || 
           brandNorm === 'sadepan' ||
+          brandNorm === 'nova' ||
           ['tableros', 'enchapados', 'multilaminados', 'terciados', 'finger', 'placas'].some(key => lowerName.includes(key) || categoria.toLowerCase().includes(key))
         ) {
           bucket = "Tableros";
@@ -117,38 +147,35 @@ try {
 // Grupos Fijos requeridos por el usuario
 const buckets = ["Tableros", "Herrajes", "Herramientas", "Química", "Todo"];
 
-  // LÓGICA DE MARCAS "PURIFICADA" (Nuclear Edition)
+  // LÓGICA DE MARCAS "OFICIAL" (Directus Sync Edition)
   const getCanonicalBrand = (brand) => {
     if (!brand) return "GENÉRICA";
-    // Reemplaza múltiples espacios/tabs por uno solo y limpia bordes
     return brand.toString().replace(/\s+/g, ' ').trim().toUpperCase();
   };
 
-  // 1. Crear un mapa de Marca Normalizada -> Nombre Real para mostrar
-  const brandMap = {}; 
-  initialItems.forEach(item => {
-    const rawBrand = (item.brand || "Genérica").trim();
-    const key = getCanonicalBrand(rawBrand);
-    if (!brandMap[key]) {
-      brandMap[key] = rawBrand;
+  // 1. Cargamos las marcas oficiales desde Directus
+  const allUniqueBrands = officialBrands.map(m => m.nombre).sort((a,b) => a.localeCompare(b));
+
+  // 2. Generar el mapa de marcas por bucket para los filtros dinámicos
+  const brandsByBucket = {};
+  buckets.forEach(b => {
+    if (b === "Todo") {
+        brandsByBucket[b] = allUniqueBrands;
+    } else {
+        const brandsInBucketNormalized = initialItems
+            .filter(i => i.bucket === b)
+            .map(i => getCanonicalBrand(i.brand));
+        
+        const uniqueBrandKeysInBucket = [...new Set(brandsInBucketNormalized)];
+        
+        // Solo incluimos marcas que sean oficiales y tengan productos en este bucket
+        brandsByBucket[b] = allUniqueBrands.filter(ob => 
+            uniqueBrandKeysInBucket.includes(getCanonicalBrand(ob))
+        );
     }
   });
 
-  // 2. Generar marcas únicas para el filtro global (Ordenadas y Doble Deduplicación)
-  const allUniqueBrands = [...new Set(Object.values(brandMap))].sort((a, b) => a.localeCompare(b));
-
-  // 3. Generar el mapa de marcas por bucket para los filtros dinámicos
-  const brandsByBucket = {};
-  buckets.forEach(b => {
-    const rawInBucket = initialItems
-      .filter(i => (b === "Todo" || i.bucket === b))
-      .map(i => getCanonicalBrand(i.brand));
-    
-    const uniqueKeysInBucket = [...new Set(rawInBucket)];
-    brandsByBucket[b] = uniqueKeysInBucket.map(key => brandMap[key] || "Genérica");
-  });
-
-  console.log(`[CATALOGO] Marcas detectadas: ${allUniqueBrands.length}`, allUniqueBrands);
+  console.log(`[CATALOGO] Marcas oficiales sincronizadas: ${allUniqueBrands.length}`, allUniqueBrands);
 ---
 
 <section class="max-w-7xl mx-auto px-4 py-12 relative">

@@ -24,22 +24,24 @@ async function fixPermissions() {
         'Content-Type': 'application/json' 
     };
 
-    // 2. Define collections that need Public READ access
+    // 2. Define collections that need Public READ access (Spanish Schema v16)
     const publicCollections = [
-        'materials', 
-        'material_brands', 
-        'material_categories', 
-        'material_thicknesses',
+        'materiales', 
+        'marcas', 
+        'categorias', 
+        'espesores',
         'directus_files'
     ];
 
-    console.log("Checking and setting Read permissions for Public (role: null)...");
+    const PUBLIC_POLICY_ID = 'abf8a154-5b1c-4a46-ac9c-7300570f4f17';
+
+    console.log(`Checking and setting Read permissions for Public Policy (${PUBLIC_POLICY_ID})...`);
 
     for (const collection of publicCollections) {
         console.log(`- Updating: ${collection}`);
         try {
-            // Find if permission already exists to avoid duplicates (though Directus usually ignores or updates)
-            const checkResp = await fetch(`${DIRECTUS_URL}/permissions?filter[role][_null]=true&filter[collection][_eq]=${collection}&filter[action][_eq]=read`, { headers });
+            // Find if permission already exists for this policy
+            const checkResp = await fetch(`${DIRECTUS_URL}/permissions?filter[policy][_eq]=${PUBLIC_POLICY_ID}&filter[collection][_eq]=${collection}&filter[action][_eq]=read`, { headers });
             const checkData = await checkResp.json();
 
             if (checkData.data && checkData.data.length > 0) {
@@ -55,7 +57,7 @@ async function fixPermissions() {
                     method: 'POST',
                     headers,
                     body: JSON.stringify({
-                        role: null, // role: null is the "Public" role in Directus
+                        policy: PUBLIC_POLICY_ID,
                         collection: collection,
                         action: 'read',
                         permissions: {},

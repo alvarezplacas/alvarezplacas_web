@@ -61,6 +61,18 @@
 - **Refilado**: Descuento de 5mm perimetrales (10mm total por eje).
 - **Estimaciones**: El sistema calcula placas necesarias y desperdicio. **Leptom** es la fuente oficial.
 
+### 4. Modernización de Catálogo (8 de Abril 2026)
+- **Buckets de Navegación**: Se dividió el catálogo en 5 grupos: Tableros, Herrajes, Herramientas, Química y Todo.
+- **Ingestión Externa**: Integración de marcas **Einhell** (Herramientas) y **Kekol** (Química) con ingesta automatizada desde sitios oficiales.
+- **Deep Sync (V2)**: Script `deep_sync_materials.mjs` que escanea la biblioteca de archivos de Directus y crea materiales faltantes (60 nuevos creados, total ~137).
+- **Control de Imágenes**: 
+  - Entrega vía **AVIF** (parámetro `?format=avif`) usando el motor **Sharp** de Directus.
+  - Fallback automático al logo de Alvarez Placas si falla la carga o falta el activo.
+- **UI/UX Refactoring**:
+  - Filtros de marca dinámicos: Se renderizan botones únicos y se filtran por categoría para evitar duplicados.
+  - Fix de Modal: Propiedad `imagen` sincronizada en la lógica del frontend para evitar desaparición de fotos.
+- **Lógica de Placas**: El botón "Sugerir Combinación" (Smart Match) es exclusivo para la categoría Tableros.
+
 ---
 
 ## 🚨 Reglas de Oro del Proyecto

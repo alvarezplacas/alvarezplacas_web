@@ -3,7 +3,7 @@
  * CatalogFilters - Barra de búsqueda y selectores de filtros.
  * Propiedad del Agente 4 (Frontend/Catalogo).
  */
-const { buckets, brandsByBucket, totalProducts = 0 } = Astro.props;
+const { buckets, brandsByBucket, allUniqueBrands = [], totalProducts = 0 } = Astro.props;
 ---
 
 <div class="mb-10 flex flex-col items-center gap-6">
@@ -37,24 +37,21 @@ const { buckets, brandsByBucket, totalProducts = 0 } = Astro.props;
     />
   </div>
 
-  <!-- Filtros de Marca Secundarios (Dinámicos por Bucket) -->
-  <div class="flex flex-wrap justify-center gap-2 overflow-x-auto max-w-full py-2 opacity-60 hover:opacity-100 transition-opacity" id="brandFilters">
+  <!-- Filtros de Marca Secundarios (Dinámicos) -->
+  <div class="flex flex-wrap justify-center gap-2 max-w-4xl py-2" id="brandFilters">
     <button
-      class="px-4 py-1.5 rounded-lg border text-xs font-medium whitespace-nowrap transition-all duration-300 bg-gray-800 text-white border-gray-600 brand-btn active"
+      class="px-5 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all duration-300 bg-gray-800 text-white border-gray-600 shadow-lg brand-btn active"
       data-filter="Todos"
     >
       Todas las Marcas
     </button>
-    {Object.keys(brandsByBucket).map(bucket => (
-      brandsByBucket[bucket].map(marca => (
-        <button
-          class="px-4 py-1.5 rounded-lg border text-xs font-medium whitespace-nowrap transition-all duration-300 bg-transparent text-gray-500 border-gray-800 hover:border-gray-600 hover:text-white brand-btn hidden"
-          data-filter={marca}
-          data-parent-bucket={bucket}
-        >
-          {marca}
-        </button>
-      ))
+    {allUniqueBrands.map(marca => (
+      <button
+        class="px-5 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all duration-300 bg-[#151515]/50 text-gray-500 border-gray-800 hover:border-primary/50 hover:text-white brand-btn hidden"
+        data-filter={marca}
+      >
+        {marca}
+      </button>
     ))}
   </div>
 </div>

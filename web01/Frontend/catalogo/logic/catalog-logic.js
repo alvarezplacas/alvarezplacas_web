@@ -24,14 +24,12 @@ export function initCatalog() {
     let currentSearchTerm = '';
 
     function updateBrandButtons(bucket) {
-        // Obtenemos las marcas válidas para este bucket desde el objeto global inyectado
         const validBrands = window.BRANDS_BY_BUCKET[bucket] || [];
         
         brandFilterBtns.forEach(btn => {
             const brandName = btn.dataset.filter;
             if (brandName === 'Todos') return;
 
-            // Mostrar el botón solo si la marca existe en el bucket actual
             if (bucket === 'Todo' || validBrands.includes(brandName)) {
                 btn.classList.remove('hidden');
             } else {
@@ -39,7 +37,6 @@ export function initCatalog() {
             }
         });
 
-        // Reset brand filter if current brand is not visible in new bucket
         if (currentBrand !== 'Todos') {
             const currentBtn = Array.from(brandFilterBtns).find(b => b.dataset.filter === currentBrand);
             if (currentBtn && currentBtn.classList.contains('hidden')) {
@@ -51,11 +48,14 @@ export function initCatalog() {
     function resetBrandFilter() {
         currentBrand = 'Todos';
         brandFilterBtns.forEach(b => {
-            b.classList.remove('bg-gray-800', 'text-white', 'border-gray-600', 'active');
-            b.classList.add('bg-transparent', 'text-gray-500', 'border-gray-800');
+            // Estilo Inactivo
+            b.classList.remove('bg-gray-800', 'text-white', 'border-gray-600', 'shadow-lg', 'active');
+            b.classList.add('bg-[#151515]/50', 'text-gray-500', 'border-gray-800');
+            
             if (b.dataset.filter === 'Todos') {
-                b.classList.remove('bg-transparent', 'text-gray-500', 'border-gray-800');
-                b.classList.add('bg-gray-800', 'text-white', 'border-gray-600', 'active');
+                // Estilo Activo para "Todas"
+                b.classList.remove('bg-[#151515]/50', 'text-gray-500', 'border-gray-800');
+                b.classList.add('bg-gray-800', 'text-white', 'border-gray-600', 'shadow-lg', 'active');
             }
         });
     }
@@ -80,13 +80,13 @@ export function initCatalog() {
     brandFilterBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             brandFilterBtns.forEach(b => {
-                b.classList.remove('bg-gray-800', 'text-white', 'border-gray-600', 'active');
-                b.classList.add('bg-transparent', 'text-gray-500', 'border-gray-800');
+                b.classList.remove('bg-gray-800', 'text-white', 'border-gray-600', 'shadow-lg', 'active');
+                b.classList.add('bg-[#151515]/50', 'text-gray-500', 'border-gray-800');
             });
 
             const target = e.currentTarget;
-            target.classList.remove('bg-transparent', 'text-gray-500', 'border-gray-800');
-            target.classList.add('bg-gray-800', 'text-white', 'border-gray-600', 'active');
+            target.classList.remove('bg-[#151515]/50', 'text-gray-500', 'border-gray-800');
+            target.classList.add('bg-gray-800', 'text-white', 'border-gray-600', 'shadow-lg', 'active');
 
             currentBrand = target.dataset.filter;
             filterCards();
@@ -109,8 +109,9 @@ export function initCatalog() {
             // 1. Filtrado por Grandes Grupos (Buckets)
             const matchesBucket = currentBucket === 'Todo' || cardBucket === currentBucket;
             
-            // 2. Filtrado por Marca
-            const matchesBrand = currentBrand === 'Todos' || cardBrand === currentBrand;
+            // 2. Filtrado por Marca (Case-Insensitive)
+            const matchesBrand = currentBrand === 'Todos' || 
+                               cardBrand.toUpperCase().trim() === currentBrand.toUpperCase().trim();
             
             // 3. Búsqueda SEGMENTADA (solo busca dentro del bucket activo)
             let matchesSearch = true;
@@ -146,7 +147,7 @@ export function initCatalog() {
             const isHerramienta = data.bucket === "Herramientas";
 
             if (mImage) {
-                const LOGO_FALLBACK = "https://directus.alvarezplacas.com.ar/assets/3f58bb2f-4447-472b-9ece-2cc573f98873";
+                const LOGO_FALLBACK = "https://admin.alvarezplacas.com.ar/assets/3ef347b2-d9ca-4bd5-9e83-66452de22d2a";
                 mImage.src = data.imagen || LOGO_FALLBACK;
                 mImage.style.display = 'block';
                 mImage.onerror = () => { mImage.src = LOGO_FALLBACK; };

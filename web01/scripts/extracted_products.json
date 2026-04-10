@@ -1,0 +1,66 @@
+[
+  {
+    "name": "Grapadora inalámbrica FIXETTO 18/40 S",
+    "brand": "Einhell",
+    "category": "Herramientas",
+    "image_url": "https://d2c5rvsfjg2eub.cloudfront.net/image/208244749100/image_bvj9ubtiot4jr9ulc7jvh7ta3h/-FJPG-FWEBP-B900",
+    "description": "Grapadora inalámbrica potente del sistema Power X-Change.",
+    "specs": "Voltaje: 18 V; Disparos por minuto: 60; Capacidad: 100 pcs"
+  },
+  {
+    "name": "Clavadora inalámbrica FIXETTO 18/50 N",
+    "brand": "Einhell",
+    "category": "Herramientas",
+    "image_url": "https://d2c5rvsfjg2eub.cloudfront.net/image/208244749100/image_3969hl5kod11vc08jb52h5lo1g/-FJPG-FWEBP-B900",
+    "description": "Clavadora robusta para trabajos de taller y carpintería.",
+    "specs": "Voltaje: 18 V; Clavos: 1.2 mm; Longitud: 15-50 mm"
+  },
+  {
+    "name": "Pulidor de paneles de yeso inalámbrico TP-DW 18/225 Li",
+    "brand": "Einhell",
+    "category": "Herramientas",
+    "image_url": "https://d2c5rvsfjg2eub.cloudfront.net/image/208244749100/image_1kqccghnpd2alb2fqhl167u64h/-FJPG-FWEBP-B800",
+    "description": "Ideal para lijado de techos y paredes con sistema de aspiración.",
+    "specs": "Diámetro base: 225 mm; Velocidad: 600-1200 min^-1"
+  },
+  {
+    "name": "Sierra de calar Inalámbrica TP-JS 18/135 Li BL",
+    "brand": "Einhell",
+    "category": "Herramientas",
+    "image_url": "https://d2c5rvsfjg2eub.cloudfront.net/image/208244749100/image_g7ja119mod5oj7rv3t5blbl004/-FJPG-FWEBP-B900",
+    "description": "Sierra de calar de alto rendimiento con motor sin escobillas.",
+    "specs": "Profundidad corte madera: 135 mm; Carrera: 26 mm"
+  },
+  {
+    "name": "KL-850 ADHESIVO AGLUTINANTE",
+    "brand": "Kekol",
+    "category": "Química",
+    "image_url": "https://kekol.com.ar/wp-content/uploads/2025/07/KL-850.png",
+    "description": "Poliuretano mono componente para aglutinar SBR y EPDM.",
+    "specs": "Viscosidad: 3.100 Cps; Rendimiento: 18kg/100kg"
+  },
+  {
+    "name": "KL-545 ADHESIVO POLIURETANICO BICOMPONENTE",
+    "brand": "Kekol",
+    "category": "Química",
+    "image_url": "https://kekol.com.ar/wp-content/uploads/2025/07/KL-545.jpg",
+    "description": "Adhesivo bicomponente elástico y duro sin modificación de volumen.",
+    "specs": "Mezcla: 100A + 20B; Rendimiento: 350 g/m2"
+  },
+  {
+    "name": "K-920 PUENTE DE ADHERENCIA BASE ACUOSA",
+    "brand": "Kekol",
+    "category": "Química",
+    "image_url": "https://kekol.com.ar/wp-content/uploads/2025/07/K-920.png",
+    "description": "Puente de adherencia entre chapa y celulosa proyectada.",
+    "specs": "Consumo: 1kg/10m2; PH: 6-7"
+  },
+  {
+    "name": "K-1436 ADHESIVO VINILICO SECADO TRANSPARENTE",
+    "brand": "Kekol",
+    "category": "Química",
+    "image_url": "https://kekol.com.ar/wp-content/uploads/2025/07/KL-1436-1.jpg",
+    "description": "Adhesivo vinílico para sistemas aislantes de celulosa.",
+    "specs": "Color: Blanco; Secado: Transparente"
+  }
+]

@@ -5,6 +5,16 @@
  */
 import Layout from '@layouts/Layout.astro';
 import Header from '@components/Header.astro';
+import { directus, readItems } from '@conexiones/directus.js';
+
+let sucursales = [];
+try {
+    sucursales = await directus.request(readItems('sucursales', {
+        sort: ['es_central']
+    }));
+} catch (e) {
+    console.error("Error fetching sucursales:", e);
+}
 
 // Datos de reseñas REALES extraídos de Google Maps
 const reviews = [
@@ -32,22 +42,25 @@ const googleMapsReviewLink = "https://www.google.com/maps/place/Alvarez+Placas+y
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
-                        <div class="text-primary mb-2 text-2xl">📍 Ubicación</div>
-                        <p class="text-gray-300 italic">Av. Vergara y Bradley</p>
-                        <p class="text-gray-400 text-sm mt-1">Villa Tesei, Buenos Aires</p>
-                        <p class="text-xs text-gray-500 mt-4 pt-4 border-t border-white/5">
-                            <span class="text-primary/80 font-bold block mb-1">🚚 Recepción de Proveedores</span>
-                            Av. Vergara 1605, Villa Tesei, Hurlingham
-                        </p>
-                    </div>
-                    <div class="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
-                        <div class="text-primary mb-2 text-2xl">⏰ Horarios</div>
-                        <p class="text-gray-300 text-sm">
-                            <span class="text-white font-bold">Lun a Vie:</span> 8:00 - 13:00 y 14:00 - 17:00<br/>
-                            <span class="text-white font-bold">Sábados:</span> 8:00 - 13:00
-                        </p>
-                    </div>
+                    {sucursales.map(suc => (
+                        <div class="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
+                            <div class="text-primary mb-2 text-2xl">
+                                {suc.es_central ? '📍 Casa Central' : '🚚 Depósito'}
+                            </div>
+                            <p class="text-gray-300 italic">{suc.nombre}</p>
+                            <p class="text-gray-400 text-sm mt-1">{suc.direccion}</p>
+                            <p class="text-xs text-gray-500 mt-4 pt-4 border-t border-white/5">
+                                <span class="text-primary/80 font-bold block mb-1">Horarios</span>
+                                {suc.es_central ? 'Lun a Vie: 8:00 - 13:00 y 14:00 - 17:00' : 'Lun a Vie: 8:00 - 17:00'} <br/>
+                                Sábados: 8:00 - 13:00
+                            </p>
+                        </div>
+                    ))}
+                    {sucursales.length === 0 && (
+                        <div class="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md col-span-2 text-center text-gray-500 italic">
+                            Cargando ubicaciones...
+                        </div>
+                    )}
                 </div>
 
                 <!-- Google Maps Embed -->

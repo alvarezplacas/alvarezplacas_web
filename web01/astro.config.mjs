@@ -13,6 +13,17 @@ export default defineConfig({
   security: {
     checkOrigin: true
   },
+  // 🖼️ Optimización de Imágenes
+  image: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'admin.alvarezplacas.com.ar',
+        port: '',
+        pathname: '/assets/**',
+      },
+    ],
+  },
   // 🚀 Rendimiento y Armonía
   compressHTML: true,
   prefetch: {

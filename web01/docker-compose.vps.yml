@@ -27,7 +27,7 @@ services:
     ports:
       - "8055:8055"
     environment:
-      KEY: "alvarez-placas-secret-key-2026"
+      KEY: "alvarez-api-token-v16-2026"
       SECRET: "alvarez-placas-secret-token-2026"
       DB_CLIENT: "pg"
       DB_HOST: "alvarezplacas_db"
@@ -38,11 +38,24 @@ services:
       # Configuración de admin
       ADMIN_EMAIL: "admin@alvarezplacas.com.ar"
       ADMIN_PASSWORD: "JavierMix2026!"
-      # Performance y Almacenamiento
+      
+      # 🚀 Mejores Amigos: Búsqueda y Almacenamiento Profesional
+      SEARCH_ENABLED: "true"
+      SEARCH_STORE: "meilisearch"
+      SEARCH_MEILISEARCH_HOST: "http://alvarezplacas_meili:7700"
+      SEARCH_MEILISEARCH_KEY: "AlvarezMeili2026!"
+      
+      STORAGE_LOCATIONS: "s3"
+      STORAGE_S3_DRIVER: "s3"
+      STORAGE_S3_KEY: "AlvarezMinioUser2026"
+      STORAGE_S3_SECRET: "AlvarezMinioSecret2026!"
+      STORAGE_S3_BUCKET: "alvarez-assets"
+      STORAGE_S3_ENDPOINT: "http://alvarezplacas_minio:9000"
+      STORAGE_S3_S3_FORCE_PATH_STYLE: "true"
+      
       CACHE_ENABLED: "true"
       CACHE_STORE: "memory"
-      STORAGE_LOCATIONS: "local"
-      STORAGE_LOCAL_ROOT: "/opt/alvarez_v16/web01/uploads"
+      
       # Email SMTP Config
       EMAIL_FROM: "info@alvarezplacas.com.ar"
       EMAIL_TRANSPORT: "smtp"
@@ -60,12 +73,51 @@ services:
       CORS_EXPOSED_HEADERS: "Content-Range"
       CORS_CREDENTIALS: "true"
 
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8055/server/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     networks:
-      - javiermix_network          # El "cable" al proxy
-      - alvarez_prod_private_net   # El "cable" a la DB
+      - javiermix_network          # El "cable" al proxy (Para admin.alvarezplacas.com.ar)
+      - alvarez_prod_private_net   # El "cable" interno (DB, Search, Storage)
+
     depends_on:
       alvarezplacas_db:
         condition: service_healthy
+
+  alvarezplacas_meili:
+    image: getmeili/meilisearch:v1.12
+    container_name: alvarezplacas_meili
+    restart: unless-stopped
+    environment:
+      - MEILI_MASTER_KEY=AlvarezMeili2026!
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - web01_alvarez_meili_data:/meili_data
+    networks:
+      - alvarez_prod_private_net
+
+  alvarezplacas_minio:
+    image: minio/minio:latest
+    container_name: alvarezplacas_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=AlvarezMinioUser2026
+      - MINIO_ROOT_PASSWORD=AlvarezMinioSecret2026!
+      - MINIO_BROWSER_REDIRECT_URL=https://minio.alvarezplacas.com.ar
+    volumes:
+      - web01_alvarez_minio_data:/data
+    networks:
+      - javiermix_network          # Para la consola minio.alvarezplacas.com.ar
+      - alvarez_prod_private_net   # Para Directus as S3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
 
   alvarezplacas_web:
     image: node:22-alpine
@@ -89,10 +141,8 @@ services:
       - alvarez_prod_private_net   # El "cable" interno
     restart: always
     depends_on:
-      alvarezplacas_db:
-        condition: service_healthy
       alvarezplacas_directus:
-        condition: service_started
+        condition: service_healthy
 
 networks:
   javiermix_network:
@@ -104,4 +154,5 @@ volumes:
   web01_alvarez_data_v2:
     external: true
     name: web01_alvarez_data_v2
-                 # Mantenemos el volumen global para no perder datos
+  web01_alvarez_meili_data:
+  web01_alvarez_minio_data:

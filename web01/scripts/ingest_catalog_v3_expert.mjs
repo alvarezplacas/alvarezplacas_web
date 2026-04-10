@@ -11,7 +11,7 @@ import { parse } from 'csv-parse/sync';
 const DIRECTUS_URL = 'https://admin.alvarezplacas.com.ar';
 const TOKEN = 'alvarez-api-token-v16-2026';
 const STAGING_DIR = '/opt/alvarezplacas/import_staging'; // Directorio en el VPS
-const LOGO_ID = '3f58bb2f-4447-472b-9ece-2cc573f98873';
+const LOGO_ID = '3ef347b2-d9ca-4bd5-9e83-66452de22d2a'; // Alvarezplacas Logo
 
 const client = createDirectus(DIRECTUS_URL)
     .with(staticToken(TOKEN))
