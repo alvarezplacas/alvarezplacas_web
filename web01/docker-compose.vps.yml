@@ -1,7 +1,7 @@
 # Consolidated Production Config for Alvarez Placas
 services:
   alvarezplacas_db:
-    image: postgres:16-alpine
+    image: postgres:15-alpine
     container_name: alvarezplacas_db
     restart: unless-stopped
     environment:
@@ -11,7 +11,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - web01_alvarez_data_v16:/var/lib/postgresql/data
+      - /opt/alvarezplacas/database_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U alvarez_admin -d alvarezplacas"]
       interval: 10s
@@ -73,12 +73,6 @@ services:
       CORS_EXPOSED_HEADERS: "Content-Range"
       CORS_CREDENTIALS: "true"
 
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8055/server/health"]
-      interval: 20s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
     networks:
       - javiermix_network          # El "cable" al proxy (Para admin.alvarezplacas.com.ar)
       - alvarez_prod_private_net   # El "cable" interno (DB, Search, Storage)
@@ -142,7 +136,7 @@ services:
     restart: always
     depends_on:
       alvarezplacas_directus:
-        condition: service_healthy
+        condition: service_started
 
 networks:
   javiermix_network:
@@ -151,7 +145,5 @@ networks:
     driver: bridge
 
 volumes:
-  web01_alvarez_data_v16:
-    name: web01_alvarez_data_v16
   web01_alvarez_meili_data:
   web01_alvarez_minio_data:
