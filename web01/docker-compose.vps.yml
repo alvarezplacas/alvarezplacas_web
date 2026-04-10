@@ -11,7 +11,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - web01_alvarez_data_v2:/var/lib/postgresql/data
+      - web01_alvarez_data_v16:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U alvarez_admin -d alvarezplacas"]
       interval: 10s
@@ -151,8 +151,8 @@ networks:
     driver: bridge
 
 volumes:
-  web01_alvarez_data_v2:
+  web01_alvarez_data_v16:
     external: true
-    name: web01_alvarez_data_v2
+    name: web01_alvarez_data_v16
   web01_alvarez_meili_data:
   web01_alvarez_minio_data:
