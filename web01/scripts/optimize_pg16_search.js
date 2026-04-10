@@ -3,7 +3,7 @@ const { Client } = pkg;
 
 const dbConfig = {
     user: 'alvarez_admin',
-    host: 'localhost', // Se debe ejecutar desde el HOST o vía port-forward si es remoto
+    host: 'alvarezplacas_db', // Cambiado para red interna de Docker
     database: 'alvarezplacas',
     password: 'AlvarezAdmin2026!',
     port: 5432,
