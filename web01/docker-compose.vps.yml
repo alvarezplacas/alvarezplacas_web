@@ -74,7 +74,7 @@ services:
       CORS_CREDENTIALS: "true"
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8055/server/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8055/server/health"]
       interval: 20s
       timeout: 10s
       retries: 5
