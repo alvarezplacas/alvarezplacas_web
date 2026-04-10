@@ -92,23 +92,48 @@ async function rebuild() {
         await client.request(createCollection({ collection: 'espesores', schema: {} }));
         await client.request(createField('espesores', { field: 'valor', type: 'string' }));
         
-        await client.request(createCollection({ collection: 'materiales', schema: {} }));
-        await client.request(createField('materiales', { field: 'nombre', type: 'string' }));
-        await client.request(createField('materiales', { field: 'sku', type: 'string' }));
-        await client.request(createField('materiales', { field: 'slug', type: 'string' }));
-        await client.request(createField('materiales', { field: 'descripcion', type: 'text' }));
-        await client.request(createField('materiales', { field: 'linea', type: 'string' }));
-        await client.request(createField('materiales', { field: 'tags', type: 'string' }));
-        await client.request(createField('materiales', { field: 'color', type: 'string' }));
-        await client.request(createField('materiales', { field: 'textura', type: 'string' }));
-        await client.request(createField('materiales', { field: 'medidas', type: 'string' }));
-        await client.request(createField('materiales', { field: 'activo', type: 'boolean', schema: { default_value: true } }));
-        await client.request(createField('materiales', { field: 'precio_m2', type: 'decimal' }));
-        await client.request(createField('materiales', { field: 'stock', type: 'integer' }));
-        await client.request(createField('materiales', { field: 'imagen', type: 'uuid' }));
-        await client.request(createField('materiales', { field: 'id_marca', type: 'integer', schema: { foreign_key_table: 'marcas', foreign_key_column: 'id' } }));
-        await client.request(createField('materiales', { field: 'id_categoria', type: 'integer', schema: { foreign_key_table: 'categorias', foreign_key_column: 'id' } }));
-        await client.request(createField('materiales', { field: 'id_espesor', type: 'integer', schema: { foreign_key_table: 'espesores', foreign_key_column: 'id' } }));
+        await client.request(createCollection({ collection: 'materiales', meta: { icon: 'layers' }, schema: {} }));
+        await client.request(createField('materiales', { field: 'nombre', type: 'string', meta: { interface: 'input' } }));
+        await client.request(createField('materiales', { field: 'sku', type: 'string', schema: { is_unique: true }, meta: { interface: 'input' } }));
+        await client.request(createField('materiales', { field: 'slug', type: 'string', meta: { interface: 'input' } }));
+        await client.request(createField('materiales', { field: 'descripcion', type: 'text', meta: { interface: 'textarea' } }));
+        await client.request(createField('materiales', { field: 'linea', type: 'string', meta: { interface: 'input' } }));
+        await client.request(createField('materiales', { field: 'tags', type: 'string', meta: { interface: 'tags' } }));
+        
+        // Atributos Técnicos (Alineados con Excel)
+        await client.request(createField('materiales', { field: 'tipo', type: 'string', meta: { interface: 'input' } }));
+        await client.request(createField('materiales', { field: 'color', type: 'string', meta: { interface: 'input' } }));
+        await client.request(createField('materiales', { field: 'textura', type: 'string', meta: { interface: 'input' } }));
+        await client.request(createField('materiales', { field: 'medidas', type: 'string', meta: { interface: 'input' } }));
+        
+        await client.request(createField('materiales', { field: 'activo', type: 'boolean', schema: { default_value: true }, meta: { interface: 'boolean' } }));
+        
+        // Precios L1/L2 (Alineados con Excel)
+        await client.request(createField('materiales', { field: 'precio_l1', type: 'decimal', meta: { interface: 'input' } }));
+        await client.request(createField('materiales', { field: 'precio_l2', type: 'decimal', meta: { interface: 'input' } }));
+        
+        await client.request(createField('materiales', { field: 'stock', type: 'integer', meta: { interface: 'input' } }));
+        await client.request(createField('materiales', { field: 'imagen', type: 'uuid', meta: { interface: 'file' } }));
+        
+        // Relaciones con Metadata Visual (Interfaces y Displays)
+        await client.request(createField('materiales', { 
+            field: 'id_marca', 
+            type: 'integer', 
+            schema: { foreign_key_table: 'marcas', foreign_key_column: 'id' },
+            meta: { interface: 'select-dropdown-m2o', display: 'related-values', display_options: { template: '{{nombre}}' } }
+        }));
+        await client.request(createField('materiales', { 
+            field: 'id_categoria', 
+            type: 'integer', 
+            schema: { foreign_key_table: 'categorias', foreign_key_column: 'id' },
+            meta: { interface: 'select-dropdown-m2o', display: 'related-values', display_options: { template: '{{nombre}}' } }
+        }));
+        await client.request(createField('materiales', { 
+            field: 'id_espesor', 
+            type: 'integer', 
+            schema: { foreign_key_table: 'espesores', foreign_key_column: 'id' },
+            meta: { interface: 'select-dropdown-m2o', display: 'related-values', display_options: { template: '{{valor}}' } }
+        }));
 
         // SEED BÁSICO
         console.log("🌱 Insertando Datos de Semilla...");
