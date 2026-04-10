@@ -81,19 +81,19 @@ async function syncCatalog() {
 
                 // Preparar Objeto de Material
                 const materialData = {
-                    nombre: row.nombre,
+                    nombre: row.nombre || 'Sin Nombre',
                     sku: sku,
                     slug: slug,
-                    descripcion: row.descripcion,
-                    linea: row.linea,
-                    tags: row.tags,
-                    tipo: row.attr_tipo,
-                    color: row.attr_color,
-                    textura: row.attr_textura,
-                    medidas: row.attr_medidas,
-                    precio_l1: parseFloat(row.precio?.replace(/[^0-9.]/g, '') || 0),
-                    precio_l2: 0, // Por ahora el CSV solo trae un precio
-                    stock: parseInt(row.stock || 0),
+                    descripcion: row.descripcion || '',
+                    linea: row.linea || '',
+                    tags: row.tags || '',
+                    tipo: row.attr_tipo || '',
+                    color: row.attr_color || '',
+                    textura: row.attr_textura || '',
+                    medidas: row.attr_medidas || '',
+                    precio_l1: parseFloat(row.precio?.replace(/[^0-9.]/g, '') || 0) || 0,
+                    precio_l2: 0,
+                    stock: parseInt(row.stock || 0) || 0,
                     mostrar_precio: true,
                     id_marca,
                     id_categoria,
@@ -122,17 +122,18 @@ async function syncCatalog() {
                     await client.request(createItem('materiales', materialData));
                     created++;
                 }
-                if (index % 20 === 0 && index > 0) console.log(`⏳ Procesados ${index}...`);
 
             } catch (err) {
-                console.error(`❌ Error en fila ${index + 1} (${row.nombre}):`, err.message);
+                const errorMsg = err.errors?.[0]?.message || err.message || 'Error Desconocido';
+                console.error(`❌ Error en fila ${index + 1} (${row.nombre}):`, errorMsg);
             }
         }
+
         console.log(`--- ✨ Sincronización Finalizada ---`);
         console.log(`✅ Creados: ${created} | 🔄 Actualizados: ${updated}`);
 
     } catch (e) {
-        console.error("❌ Error grave en la sincronización:", e.message);
+        console.error("❌ Error grave en la sincronización:", e.errors?.[0]?.message || e.message);
     }
 }
 
