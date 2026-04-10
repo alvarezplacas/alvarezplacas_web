@@ -128,12 +128,6 @@ async function syncCatalog() {
                 console.error(`❌ Error en fila ${index + 1} (${row.nombre}):`, err.message);
             }
         }
-
-            } catch (err) {
-                console.error(`❌ Error en fila ${index + 1} (${row.nombre}):`, err.message);
-            }
-        }
-
         console.log(`--- ✨ Sincronización Finalizada ---`);
         console.log(`✅ Creados: ${created} | 🔄 Actualizados: ${updated}`);
 
