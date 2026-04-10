@@ -112,8 +112,11 @@ async function rebuild() {
         await client.request(createField('materiales', { field: 'precio_l1', type: 'decimal', meta: { interface: 'input' } }));
         await client.request(createField('materiales', { field: 'precio_l2', type: 'decimal', meta: { interface: 'input' } }));
         
+        await client.request(createField('materiales', { field: 'mostrar_precio', type: 'boolean', schema: { default_value: true }, meta: { interface: 'boolean' } }));
         await client.request(createField('materiales', { field: 'stock', type: 'integer', meta: { interface: 'input' } }));
         await client.request(createField('materiales', { field: 'imagen', type: 'uuid', meta: { interface: 'file' } }));
+        
+        // ... rest of relations
         
         // Relaciones con Metadata Visual (Interfaces y Displays)
         await client.request(createField('materiales', { 
