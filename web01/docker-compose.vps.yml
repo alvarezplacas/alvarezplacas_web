@@ -152,7 +152,6 @@ networks:
 
 volumes:
   web01_alvarez_data_v16:
-    external: true
     name: web01_alvarez_data_v16
   web01_alvarez_meili_data:
   web01_alvarez_minio_data:
