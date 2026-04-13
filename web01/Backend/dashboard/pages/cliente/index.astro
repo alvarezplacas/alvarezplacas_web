@@ -1,0 +1,177 @@
+---
+/**
+ * Cliente Dashboard - Portal de Fidelización.
+ */
+import ClienteLayout from '../../layouts/ClienteLayout.astro';
+import StatCard from '@dashboard/components/StatCard.astro';
+import { directus, readItems, readItem } from '@conexiones/directus.js';
+
+// 1. Obtención de Identidad
+const clientId = Astro.cookies.get('client_session')?.value;
+if (!clientId) return Astro.redirect('/login');
+
+let clientData = { name: '...', scoring: 0, client_number: '...', vendedor_id: null };
+let assignedSeller = { name: 'Asignando...', whatsapp: '' };
+let recentOrders = [];
+
+try {
+    // 2. Cargar Datos del Cliente
+    clientData = await directus.request(readItem('clientes', clientId, {
+        fields: ['*', { vendedor_id: ['name', 'whatsapp'] }]
+    })) as any;
+
+    if (clientData.vendedor_id) {
+        assignedSeller = clientData.vendedor_id;
+    }
+
+    // 3. Cargar Pedidos Recientes
+    recentOrders = await directus.request(readItems('pedidos', {
+        filter: { cliente_id: { _eq: clientId } },
+        sort: ['-date_created'],
+        limit: 3
+    })) as any;
+
+} catch (e) {
+    console.error("[Client Dashboard Error]:", e);
+}
+
+const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+---
+
+<ClienteLayout title="Mi Club Alvarez">
+    <!-- Hero Section -->
+    <div class="relative mb-12 rounded-[2.5rem] overflow-hidden bg-gradient-to-r from-primary/20 to-orange-600/10 border border-white/5 p-10 md:p-16">
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div class="text-center md:text-left">
+                <p class="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-4">Bienvenido al Club</p>
+                <h2 class="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter mb-4">
+                    Hola, <span class="text-primary italic">{clientData.name}</span> 👋
+                </h2>
+                <div class="flex flex-wrap justify-center md:justify-start gap-3">
+                    <span class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        Cliente: {clientData.client_number}
+                    </span>
+                    <span class="px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
+                        Nivel Silver Premium
+                    </span>
+                </div>
+            </div>
+            
+            <div class="bg-black/40 backdrop-blur-2xl border border-white/10 p-8 rounded-[2.5rem] text-center min-w-[240px]">
+                <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Puntos Acumulados</p>
+                <p class="text-5xl font-black text-white leading-none mb-4">{clientData.scoring || 0}</p>
+                <div class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mb-2">
+                    <div class="bg-primary h-full" style="width: 45%"></div>
+                </div>
+                <p class="text-[10px] text-gray-600 font-bold uppercase italic">Ya estás al 45% de tu próximo canje</p>
+            </div>
+        </div>
+        
+        <!-- Decoration -->
+        <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px]"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        
+        <!-- Left Column: Orders -->
+        <div class="xl:col-span-2 space-y-8">
+            <div class="bg-[#111111] border border-white/5 rounded-[2.5rem] p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-xs font-black text-white uppercase tracking-[0.3em]">Últimos Movimientos</h3>
+                    <a href="/cliente/pedidos" class="text-[10px] font-black text-primary uppercase border-b border-primary/30 hover:border-primary transition-all pb-1">Ver todos</a>
+                </div>
+
+                <div class="space-y-4">
+                    {recentOrders.length === 0 ? (
+                        <div class="py-12 text-center">
+                            <i class="fas fa-box-open text-gray-800 text-4xl mb-4"></i>
+                            <p class="text-gray-600 font-bold uppercase text-[10px]">Aún no has realizado pedidos</p>
+                        </div>
+                    ) : (
+                        recentOrders.map(order => (
+                            <div class="flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/[0.08] transition-all group">
+                                <div class="flex items-center gap-5">
+                                    <div class="w-12 h-12 bg-black rounded-xl flex items-center justify-center text-primary border border-white/10 group-hover:scale-110 transition-transform">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-black text-white uppercase">Pedido #{order.id}</p>
+                                        <p class="text-[10px] text-gray-500 font-medium">{new Date(order.date_created).toLocaleDateString('es-AR')}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-black text-white mb-1">{formatCurrency(order.total)}</p>
+                                    <span class={`text-[9px] font-black uppercase px-3 py-1 rounded-full ${
+                                        order.status === 'entregado' ? 'bg-green-500/20 text-green-500' : 'bg-orange-500/20 text-orange-500'
+                                    }`}>
+                                        {order.status}
+                                    </span>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            <!-- Promotion / Action Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gradient-to-br from-blue-600/20 to-blue-900/10 border border-blue-500/20 p-8 rounded-[2rem] group hover:scale-[1.02] transition-transform cursor-pointer">
+                    <i class="fas fa-calculator text-2xl text-blue-400 mb-4 h-12 w-12 bg-blue-500/10 rounded-xl flex items-center justify-center"></i>
+                    <h4 class="text-sm font-black text-white uppercase tracking-widest mb-2">Presupuestador Pro</h4>
+                    <p class="text-[11px] text-blue-300/60 leading-relaxed">Calcula tus placas y herrajes con el optimizador inteligente de Alvarez Placas.</p>
+                </div>
+                <div class="bg-gradient-to-br from-purple-600/20 to-purple-900/10 border border-purple-500/20 p-8 rounded-[2rem] group hover:scale-[1.02] transition-transform cursor-pointer">
+                    <i class="fas fa-tags text-2xl text-purple-400 mb-4 h-12 w-12 bg-purple-500/10 rounded-xl flex items-center justify-center"></i>
+                    <h4 class="text-sm font-black text-white uppercase tracking-widest mb-2">Ofertas Exclusivas</h4>
+                    <p class="text-[11px] text-purple-300/60 leading-relaxed">Como miembro Silver, tienes acceso a precios mayoristas en rubros seleccionados.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Sidebar -->
+        <div class="space-y-8">
+            <!-- Assigned Seller Card -->
+            <div class="bg-[#111111] border border-white/5 rounded-[2.5rem] p-8 overflow-hidden relative">
+                <div class="absolute top-0 right-0 p-8 opacity-5">
+                    <i class="fas fa-headset text-7xl text-white"></i>
+                </div>
+                <h3 class="text-xs font-black text-gray-500 uppercase tracking-[0.3em] mb-8">Atención Personalizada</h3>
+                
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
+                        <i class="fas fa-user-tie text-primary text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-gray-600 uppercase">Tu Vendedor Asignado</p>
+                        <p class="text-lg font-black text-white uppercase leading-tight italic">{assignedSeller.name}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <a href={`https://wa.me/${assignedSeller.whatsapp}`} target="_blank" class="w-full bg-[#25D366] hover:bg-white text-white hover:text-[#25D366] font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all uppercase tracking-widest text-[11px]">
+                        <i class="fab fa-whatsapp text-lg"></i> Consultar por WhatsApp
+                    </a>
+                    <button class="w-full bg-white/5 hover:bg-white/10 text-white font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all uppercase tracking-widest text-[11px] border border-white/5">
+                        <i class="fas fa-envelope"></i> Enviar Mensaje Interno
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tools Card -->
+            <div class="bg-gradient-to-br from-[#1a1a1a] to-[#111] border border-white/5 rounded-[2.5rem] p-8">
+                <h3 class="text-xs font-black text-white uppercase tracking-[0.3em] mb-6">Herramientas</h3>
+                <div class="grid grid-cols-1 gap-3">
+                    <a href="/catalogo" class="p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-primary/20 hover:border-primary/40 transition-all flex items-center justify-between group">
+                        <span class="text-[11px] font-black uppercase tracking-widest">Catálogo Mayorista</span>
+                        <i class="fas fa-arrow-right text-[10px] text-gray-700 group-hover:text-primary group-hover:translate-x-1 transition-all"></i>
+                    </a>
+                    <a href="/presupuestador" class="p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-blue-500/20 hover:border-blue-500/40 transition-all flex items-center justify-between group">
+                        <span class="text-[11px] font-black uppercase tracking-widest">Optimizar Cortado</span>
+                        <i class="fas fa-arrow-right text-[10px] text-gray-700 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</ClienteLayout>

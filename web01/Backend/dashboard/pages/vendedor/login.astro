@@ -1,29 +1,120 @@
 ---
 import Layout from '../../../../Frontend/home/layouts/Layout.astro';
+/**
+ * Seller Login - Portal de Operaciones.
+ */
 ---
 
 <Layout title="Acceso Vendedores - Alvarez Placas">
-    <div class="min-h-screen flex items-center justify-center bg-[#0a0a0a] px-4">
-        <div class="max-w-md w-full bg-[#1a1a1a] border border-gray-800 p-8 rounded-3xl shadow-2xl">
-            <div class="text-center mb-8">
-                <i class="fas fa-headset text-primary text-4xl mb-4"></i>
-                <h1 class="text-2xl font-bold text-white uppercase tracking-tighter">Portal de Ventas</h1>
-                <p class="text-gray-400 text-sm">Ingrese sus credenciales de vendedor</p>
+    <div class="min-h-screen flex items-center justify-center bg-[#0a0a0a] relative overflow-hidden px-4">
+        
+        <!-- Animated Background -->
+        <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#1a1a1a_0%,#000_100%)]"></div>
+        <div class="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
+
+        <div class="max-w-md w-full bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 p-10 rounded-[2.5rem] shadow-2xl relative z-10 transition-all hover:border-blue-500/30">
+            <div class="text-center mb-10">
+                <div class="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-blue-500/30">
+                    <i class="fas fa-headset text-blue-500 text-3xl"></i>
+                </div>
+                <h1 class="text-3xl font-black text-white uppercase tracking-tighter mb-2">Portal de <span class="text-blue-500 italic">Ventas</span></h1>
+                <p class="text-gray-400 text-xs font-bold uppercase tracking-widest opacity-60">Operaciones Diarias | v16</p>
             </div>
 
-            <form method="POST" class="space-y-6" action="/vendedor">
+            <form id="seller-login-form" class="space-y-6">
                 <div>
-                    <label class="block text-gray-400 text-xs font-bold uppercase mb-2 ml-1">Email Profesional</label>
-                    <input type="email" name="email" required class="w-full bg-black/50 border border-gray-800 rounded-xl py-4 px-4 text-white focus:outline-none focus:border-primary transition-colors text-sm" />
+                    <label class="block text-gray-500 text-[10px] font-black uppercase tracking-widest mb-3 ml-1">Email Profesional</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                        <input type="email" name="email" required placeholder="nombre@alvarezplacas.com.ar" 
+                            class="w-full bg-black/40 border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm placeholder:text-gray-700 font-medium" />
+                    </div>
                 </div>
+                
                 <div>
-                    <label class="block text-gray-400 text-xs font-bold uppercase mb-2 ml-1">Contraseña</label>
-                    <input type="password" name="password" required class="w-full bg-black/50 border border-gray-800 rounded-xl py-4 px-4 text-white focus:outline-none focus:border-primary transition-colors text-sm" />
+                    <label class="block text-gray-500 text-[10px] font-black uppercase tracking-widest mb-3 ml-1">Contraseña de Acceso</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                        <input type="password" name="password" required placeholder="••••••••" 
+                            class="w-full bg-black/40 border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm placeholder:text-gray-700 font-medium" />
+                    </div>
                 </div>
-                <button type="submit" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all uppercase tracking-widest text-sm">
-                    Autenticar Vendedor
-                </button>
+
+                <div class="pt-2">
+                    <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-white text-white hover:text-black font-black py-5 rounded-2xl shadow-xl shadow-blue-900/10 transition-all uppercase tracking-widest text-xs flex items-center justify-center gap-3 active:scale-[0.98]">
+                        Identificar Vendedor <i class="fas fa-sign-in-alt mt-[-1px]"></i>
+                    </button>
+                </div>
             </form>
+
+            <div class="mt-8 pt-8 border-t border-white/5 text-center">
+                <a href="/" class="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-chevron-left"></i> Volver al Inicio Público
+                </a>
+            </div>
         </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-4"></div>
     </div>
+
+    <script is:inline>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.querySelector('#seller-login-form');
+            const submitBtn = document.querySelector('#submit-btn');
+            const toastContainer = document.getElementById('toast-container');
+
+            function showToast(message, type = 'error') {
+                const toast = document.createElement('div');
+                toast.className = `flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md transform transition-all duration-500 translate-y-10 opacity-0 ${
+                    type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                }`;
+                
+                toast.innerHTML = `
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center ${type === 'error' ? 'bg-red-500/20' : 'bg-blue-500/20'}">
+                        <i class="fas ${type === 'error' ? 'fa-bolt' : 'fa-check'}"></i>
+                    </div>
+                    <span class="font-black text-xs uppercase tracking-tight text-white">${message}</span>
+                `;
+
+                toastContainer.appendChild(toast);
+                setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+                setTimeout(() => {
+                    toast.classList.add('translate-y-[-10px]', 'opacity-0');
+                    setTimeout(() => toast.remove(), 500);
+                }, 4000);
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const originalContent = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> AUTENTICANDO';
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch('/api/auth/login-seller', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        showToast(result.message, 'success');
+                        setTimeout(() => window.location.href = result.redirectUrl || '/vendedor', 1000);
+                    } else {
+                        showToast(result.message || 'Credenciales inválidas', 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalContent;
+                    }
+                } catch (error) {
+                    showToast('Falla de conexión con la terminal', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalContent;
+                }
+            });
+        });
+    </script>
 </Layout>
+

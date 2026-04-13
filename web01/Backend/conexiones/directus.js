@@ -33,7 +33,7 @@ const DIRECTUS_URL = URL_INTERNAL || env.DIRECTUS_URL || URL_PUBLIC;
 // Token: prioridad a process.env (Docker runtime) → env (build time) → token v16 por defecto
 const DIRECTUS_TOKEN = (typeof process !== 'undefined' && process.env?.DIRECTUS_TOKEN)
     || env.DIRECTUS_TOKEN
-    || 'alvarez-api-token-v16-2026';
+    || 'U_49a1I4EcNofowltd95z0MwlUdJ8VgW';
 
 console.log(`[Directus] Iniciando cliente en: ${DIRECTUS_URL}`);
 

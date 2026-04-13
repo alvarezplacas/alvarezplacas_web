@@ -51,7 +51,8 @@ services:
       STORAGE_S3_SECRET: "AlvarezMinioSecret2026!"
       STORAGE_S3_BUCKET: "alvarez-assets"
       STORAGE_S3_ENDPOINT: "http://alvarezplacas_minio:9000"
-      STORAGE_S3_S3_FORCE_PATH_STYLE: "true"
+      STORAGE_S3_REGION: "us-east-1"
+      STORAGE_S3_FORCE_PATH_STYLE: "true"
       
       CACHE_ENABLED: "true"
       CACHE_STORE: "memory"

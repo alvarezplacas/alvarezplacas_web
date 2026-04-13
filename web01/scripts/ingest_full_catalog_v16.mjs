@@ -7,7 +7,7 @@ import { parse } from 'csv-parse/sync';
  * Automatiza: SKU, Slug y Atributos (Color, Textura, Medidas).
  */
 
-const DIRECTUS_URL = 'http://alvarezplacas_directus:8055';
+const DIRECTUS_URL = 'http://localhost:8055';
 const ADMIN_EMAIL = 'admin@alvarezplacas.com.ar';
 const ADMIN_PASS = 'JavierMix2026!';
 const LOGO_ID = '3ef347b2-d9ca-4bd5-9e83-66452de22d2a';
@@ -84,7 +84,19 @@ async function ingestFull() {
             const sku = (row.sku && row.sku.trim().length > 3) ? row.sku.trim().toUpperCase() : 
                 `${rawCat.substring(0,3)}-${cleanName.substring(0,3)}-${cleanMarca.substring(0,3)}-${thickVal}`.toUpperCase();
 
-            // 3. Preparación de Data
+            // 3. Verificación de existencia para evitar duplicados en 'materiales'
+            const existingMaterial = await client.request(readItems('materiales', { 
+                filter: { sku: { _eq: sku } },
+                limit: 1 
+            }));
+
+            if (existingMaterial.length > 0) {
+                console.log(`⏩ [${count+1}] ${cleanName} ya existe (SKU: ${sku}) - Saltando...`);
+                count++;
+                continue;
+            }
+
+            // 4. Preparación de Data
             const materialData = {
                 nombre: cleanName,
                 sku: sku,
