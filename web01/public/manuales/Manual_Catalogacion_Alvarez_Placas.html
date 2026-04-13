@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+            background-color: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 5px solid #d35400;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24pt;
+            letter-spacing: 2px;
+        }
+        .header p {
+            margin: 5px 0 0;
+            font-size: 12pt;
+            opacity: 0.9;
+        }
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        h2 {
+            color: #d35400;
+            border-left: 5px solid #2c3e50;
+            padding-left: 10px;
+            font-size: 16pt;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #2c3e50;
+            font-size: 13pt;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .sku-box {
+            background-color: #f8f9fa;
+            border: 2px dashed #2c3e50;
+            padding: 20px;
+            text-align: center;
+            font-size: 20pt;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #d35400;
+        }
+        .sku-desc {
+            display: flex;
+            justify-content: space-around;
+            font-size: 10pt;
+            color: #666;
+            margin-top: -15px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 10pt;
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #2c3e50;
+        }
+        .highlight {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid #ff9800;
+            font-style: italic;
+        }
+        .footer {
+            text-align: center;
+            font-size: 9pt;
+            color: #777;
+            margin-top: 50px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .example-card {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ALVAREZ PLACAS</h1>
+        <p>Manual Maestro de Catalogación de Productos v1.0</p>
+    </div>
+
+    <div class="section">
+        <h2>1. El Código Único (SKU)</h2>
+        <p>Para que nuestro sistema web y contable funcione perfecto, cada producto debe tener un código de <b>9 caracteres</b>. Es la "huella digital" del producto.</p>
+        
+        <div class="sku-box">X - YY - ZZZZ</div>
+        <div class="sku-desc">
+            <span>(Letra de Rubro)</span>
+            <span>(Código de Marca)</span>
+            <span>(Número Correlativo)</span>
+        </div>
+
+        <p class="highlight">
+            <b>Regla de Oro:</b> Los 4 números finales (ZZZZ) siempre deben completarse con ceros. <br>
+            Correcto: <b>0001</b> | Incorrecto: 1
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>2. Diccionario de Rubros (La Letra X)</h2>
+        <table>
+            <tr>
+                <th>Letra</th>
+                <th>Rubro Principal</th>
+                <th>Qué incluye</th>
+            </tr>
+            <tr>
+                <td><b>M</b></td>
+                <td>Maderas y Tableros</td>
+                <td>Melaminas, OSB, Terciados, MDF, Finger Joint, Multilaminados, Enchapados, Chapadur.</td>
+            </tr>
+            <tr>
+                <td><b>H</b></td>
+                <td>Herrajes</td>
+                <td>Bisagras, correderas, tiradores, perfiles de aluminio.</td>
+            </tr>
+            <tr>
+                <td><b>T</b></td>
+                <td>Tapacantos</td>
+                <td>ABS, PVC, Melamínicos (todos los anchos y espesores).</td>
+            </tr>
+            <tr>
+                <td><b>I</b></td>
+                <td>Insumos y Química</td>
+                <td>Adhesivos (Kekol/Macavi), tornillos, lijas, solventes.</td>
+            </tr>
+            <tr>
+                <td><b>R</b></td>
+                <td>Herramientas</td>
+                <td>Maquinaria y accesorios de taller.</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>3. Códigos de Marcas (El número YY)</h2>
+        <p>Cada rubro tiene sus marcas. Aquí las principales para comenzar:</p>
+        
+        <h3>Rubro M (Maderas)</h3>
+        <ul>
+            <li><b>10:</b> EGGER</li>
+            <li><b>20:</b> FAPLAC (Arauco)</li>
+            <li><b>30:</b> SADEPAM</li>
+            <li><b>40:</b> FIPLASTO</li>
+        </ul>
+
+        <h3>Rubro H (Herrajes)</h3>
+        <ul>
+            <li><b>10:</b> GRUPO EURO</li>
+            <li><b>20:</b> BRONZEN</li>
+            <li><b>30:</b> GREENWAY</li>
+        </ul>
+
+        <h3>Rubro I (Química / Insumos)</h3>
+        <ul>
+            <li><b>10:</b> KEKOL</li>
+            <li><b>20:</b> MACAVI</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>4. Atributos Obligatorios</h2>
+        <p>Al cargar un producto en el Excel, estas columnas son vitales para los filtros de la web:</p>
+        <ul>
+            <li><b>Espesor:</b> Usar siempre "mm" (Ej: 18mm, 5.5mm).</li>
+            <li><b>Soporte:</b> MDF, Aglomerado, RH, Terciado, OSB, Acero, Aluminio.</li>
+            <li><b>Color Real:</b> Blanco, Negro, Gris, Marrón, Rojo, Azul, Verde, Beige.</li>
+            <li><b>U.M. (Unidad de Medida):</b> Placa, Unidad, Tira, Litro, Kilo, Par.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>5. Ejemplos Prácticos</h2>
+        <div class="example-card">
+            <b>M-10-0001:</b> Melamina EGGER Blanco Premium 18mm MDF (Unidad: Placa)
+        </div>
+        <div class="example-card">
+            <b>M-40-0005:</b> Chapadur FIPLASTO Blanco 3.2mm (Unidad: Placa)
+        </div>
+        <div class="example-card">
+            <b>H-10-0120:</b> Perfil Manija J GRUPO EURO Aluminio (Unidad: Tira)
+        </div>
+        <div class="example-card">
+            <b>I-10-0014:</b> Adhesivo KEKOL K-320 (Unidad: Litro)
+        </div>
+    </div>
+
+    <div class="footer">
+        Álvarez Placas - Sistema de Gestión de Inventario 2024 - Prohibida su reproducción externa.
+    </div>
+</body>
+</html>
