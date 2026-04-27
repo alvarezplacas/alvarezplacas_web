@@ -52,6 +52,7 @@ const normalizeBrand = (brand) => {
     return brand.toString().trim().toUpperCase();
 };
 
+try {
     // CARGA DE DATOS MAESTROS + MEDIA BRIDGE
     const [settings, materials, brands, directusFiles] = await Promise.all([
         directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
