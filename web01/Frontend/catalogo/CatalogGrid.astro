@@ -1,6 +1,7 @@
 ---
 /**
- * CatalogGrid.astro - Grilla principal del catálogo con agrupación por diseño.
+ * CatalogGrid.astro - Estructura de Alto Nivel para Catálogo Modular.
+ * Diseño: Agente 4 (Frontend/Arquitectura).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,160 +9,200 @@ import CatalogItem from './components/CatalogItem.astro';
 import CatalogFilters from './components/CatalogFilters.astro';
 import { directus, readItems } from '@conexiones/directus.js';
 
-let initialItems = [];
-let officialBrands = [];
-let showPrices = true;
-
+// --- CONFIGURACIÓN DE IDENTIDAD ---
 const LOGO_ID = "76aefcd2-775b-48c7-a64c-4ebd5627557c";
 const FALLBACK_URL = `https://admin.alvarezplacas.com.ar/assets/${LOGO_ID}?access_token=alvarez-api-token-v16-2026`;
 
-// Función SSR para verificar si la imagen existe localmente en el VPS
-const getProductImage = (sku) => {
+// --- GESTIÓN DE ESTADO ---
+let catalogItems = [];
+let officialBrands = [];
+let showPrices = true;
+
+/**
+ * SERVICIO DE MEDIA (SSR):
+ * Determina la mejor fuente para la imagen de un producto.
+ * Prioridad: 1. Disco Local (si es válido) -> 2. Directus por SKU -> 3. Logo Fallback
+ */
+const resolveProductImage = (sku) => {
     if (!sku || sku === "-") return FALLBACK_URL;
-    const localPath = path.join(process.cwd(), 'public', 'images', 'catalog', 'Processed', `${sku}.avif`);
+
+    const fileName = `${sku}.avif`;
+    const localRelativePath = `/images/catalog/Processed/${fileName}`;
+    const localAbsolutePath = path.join(process.cwd(), 'public', 'images', 'catalog', 'Processed', fileName);
+
     try {
-        if (fs.existsSync(localPath)) return `/images/catalog/Processed/${sku}.avif`;
-    } catch (e) {}
+        if (fs.existsSync(localAbsolutePath)) {
+            const stats = fs.statSync(localAbsolutePath);
+            // Si el archivo pesa menos de 1KB, es un error (corrupción detectada en auditoría)
+            if (stats.size > 1024) {
+                return localRelativePath;
+            }
+        }
+    } catch (e) {
+        console.error(`[MediaService] Error validando ${sku}:`, e.message);
+    }
+
+    // Fallback: Si no está en disco o está corrupto, usamos el logo por ahora.
+    // Nota: En el futuro aquí se podría buscar dinámicamente en el bucket de S3 de Directus.
     return FALLBACK_URL;
 };
 
-// Helper para normalizar nombres de marca
-const getCanonicalBrand = (brand) => {
+/**
+ * NORMALIZACIÓN DE MARCAS
+ */
+const normalizeBrand = (brand) => {
     if (!brand) return "GENÉRICA";
-    return brand.toString().replace(/\s+/g, ' ').trim().toUpperCase();
+    return brand.toString().trim().toUpperCase();
 };
 
 try {
-  const [siteSettingsResult, materialsResult, marcasResult] = await Promise.all([
-    directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
-    directus.request(readItems('Productos', { limit: 1000, fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre'] })).catch(() => []),
-    directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
-  ]);
+    // CARGA DE DATOS MAESTROS
+    const [settings, materials, brands] = await Promise.all([
+        directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
+        directus.request(readItems('Productos', { 
+            limit: 1000, 
+            fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre'] 
+        })).catch(() => []),
+        directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
+    ]);
 
-  const siteSettings = siteSettingsResult?.data || siteSettingsResult || [];
-  const materials = materialsResult?.data || materialsResult || [];
-  officialBrands = marcasResult?.data || marcasResult || [];
+    officialBrands = (brands?.data || brands || []).map(b => normalizeBrand(b.nombre));
+    if (settings?.length > 0) showPrices = settings[0].value !== 'false';
 
-  if (siteSettings?.length > 0) showPrices = siteSettings[0].value !== 'false';
+    const rawProducts = materials?.data || materials || [];
+    
+    if (rawProducts.length > 0) {
+        const grouped = new Map();
+        const standalone = [];
 
-  if (materials?.length > 0) {
-      const groupedItems = new Map();
-      const standaloneItems = [];
-
-      materials.forEach((mat) => {
-        try {
-            const marca = getCanonicalBrand(mat.marca?.nombre);
-            const categoria = mat.rubro?.nombre || "PLACAS";
-            const letra = mat.rubro?.letra || "M";
+        rawProducts.forEach((p) => {
+            const brand = normalizeBrand(p.marca?.nombre);
+            const category = p.rubro?.nombre || "Varios";
+            const letra = p.rubro?.letra || "X";
             
-            let bucket = "Herrajes"; 
+            // Clasificación por Bucket
+            let bucket = "Herrajes";
             if (letra === 'R') bucket = "Herramientas";
             else if (letra === 'M') bucket = "Tableros";
             else if (letra === 'I') bucket = "Química";
 
-            if (bucket === "Tableros" && mat.modelo) {
-                const key = `${marca}_${mat.modelo}`.toLowerCase().trim();
-                let cleanName = mat.nombre;
-                if (mat.espesor) {
-                    const espStr = parseFloat(mat.espesor).toString();
-                    cleanName = mat.nombre.replace(new RegExp(espStr + "\\s*mm.*", "i"), "").trim();
-                }
+            // Lógica de Agrupación para Placas (M)
+            if (bucket === "Tableros" && p.modelo) {
+                const key = `${brand}_${p.modelo}`.toLowerCase();
+                if (!grouped.has(key)) {
+                    // Limpieza de nombre (quitar espesor si está en el título)
+                    let cleanName = p.nombre;
+                    if (p.espesor) {
+                        const esp = parseFloat(p.espesor).toString();
+                        cleanName = p.nombre.replace(new RegExp(esp + "\\s*mm.*", "i"), "").trim();
+                    }
 
-                if (!groupedItems.has(key)) {
-                    groupedItems.set(key, {
-                        id: mat.id,
+                    grouped.set(key, {
+                        id: p.id,
                         name: cleanName,
-                        baseName: mat.modelo,
-                        code: mat.sku || "-",
-                        brand: marca,
-                        category: categoria,
+                        code: p.sku || "-",
+                        brand: brand,
+                        category: category,
                         bucket: bucket,
-                        imagen: getProductImage(mat.sku),
-                        price: "Consultar",
-                        isPlaca: true,
-                        variants: []
+                        imagen: resolveProductImage(p.sku),
+                        variants: [],
+                        price: "Consultar"
                     });
                 }
-                const group = groupedItems.get(key);
-                group.variants.push({ sku: mat.sku, espesor: mat.espesor ? `${parseFloat(mat.espesor)}mm` : "S/E", soporte: mat.soporte });
-                group.variants.sort((a, b) => {
-                    const diff = parseFloat(a.espesor) - parseFloat(b.espesor);
-                    if (diff !== 0) return diff;
-                    return a.soporte?.localeCompare(b.soporte || "");
+                const item = grouped.get(key);
+                item.variants.push({
+                    sku: p.sku,
+                    espesor: p.espesor ? `${parseFloat(p.espesor)}mm` : "S/E",
+                    soporte: p.soporte || "Estandar"
                 });
-                group.specs = [`${group.variants.length} variantes disponibles`];
             } else {
-                standaloneItems.push({
-                    id: mat.id,
-                    name: mat.nombre,
-                    code: mat.sku || "-",
-                    brand: marca,
-                    category: categoria,
+                standalone.push({
+                    id: p.id,
+                    name: p.nombre,
+                    code: p.sku || "-",
+                    brand: brand,
+                    category: category,
                     bucket: bucket,
-                    imagen: getProductImage(mat.sku),
-                    price: "Consultar",
-                    specs: [(mat.espesor) ? `${parseFloat(mat.espesor)}mm` : null, mat.soporte].filter(Boolean),
-                    isPlaca: false
+                    imagen: resolveProductImage(p.sku),
+                    specs: [p.espesor ? `${parseFloat(p.espesor)}mm` : null, p.soporte].filter(Boolean)
                 });
             }
-        } catch (err) { console.error(`[CatalogGrid] Mapping error:`, err); }
-      });
+        });
 
-      initialItems = [...groupedItems.values(), ...standaloneItems];
-  }
-} catch (e) { console.error("Critical Catalog Grid Error:", e); }
+        // Ordenar variantes por espesor
+        grouped.forEach(item => {
+            item.variants.sort((a,b) => parseFloat(a.espesor) - parseFloat(b.espesor));
+            item.specs = [`${item.variants.length} variantes disponibles`];
+        });
 
+        catalogItems = [...grouped.values(), ...standalone];
+    }
+} catch (error) {
+    console.error("[CatalogGrid] Error Crítico de Carga:", error);
+}
+
+// FILTROS
 const buckets = ["Tableros", "Herrajes", "Herramientas", "Química", "Todo"];
-const allUniqueBrands = [...new Set(officialBrands.map(m => getCanonicalBrand(m.nombre)))].sort();
+const uniqueBrands = [...new Set(officialBrands)].sort();
 const brandsByBucket = {};
 buckets.forEach(b => {
-    if (b === "Todo") brandsByBucket[b] = allUniqueBrands;
+    if (b === "Todo") brandsByBucket[b] = uniqueBrands;
     else {
-        const brandsInBucket = initialItems.filter(i => i.bucket === b).map(i => i.brand);
-        brandsByBucket[b] = allUniqueBrands.filter(ob => brandsInBucket.includes(ob));
+        const activeBrands = catalogItems.filter(i => i.bucket === b).map(i => i.brand);
+        brandsByBucket[b] = uniqueBrands.filter(ub => activeBrands.includes(ub));
     }
 });
 ---
 
-<section class="max-w-7xl mx-auto px-4 py-12 relative">
+<section class="max-w-7xl mx-auto px-4 py-12">
   <div class="text-center mb-12">
-    <h2 class="text-3xl md:text-5xl font-bold text-white mb-4">Catálogo <span class="text-primary">Unificado</span></h2>
-    <p class="text-gray-400 text-sm">Buscá entre <span class="text-white font-bold text-lg">{initialItems.length}</span> productos específicos</p>
+    <h1 class="text-3xl md:text-5xl font-bold text-white mb-4">Catálogo <span class="text-primary">Alvarez Placas</span></h1>
+    <p class="text-gray-400">Encontrá entre <span class="text-white font-bold">{catalogItems.length}</span> diseños y productos exclusivos.</p>
   </div>
 
-  <CatalogFilters buckets={buckets} brandsByBucket={brandsByBucket} allUniqueBrands={allUniqueBrands} totalProducts={initialItems.length} />
+  <CatalogFilters 
+    buckets={buckets} 
+    brandsByBucket={brandsByBucket} 
+    allUniqueBrands={uniqueBrands} 
+    totalProducts={catalogItems.length} 
+  />
 
   <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-10" id="catalogGrid">
-    {initialItems.map((item) => (
-      <CatalogItem placa={item} showPrices={showPrices} fallbackUrl={FALLBACK_URL} />
+    {catalogItems.map(item => (
+      <CatalogItem placa={item} showPrices={showPrices} />
     ))}
   </div>
 
-  {initialItems.length === 0 && (
-    <div class="text-center py-24 bg-[#151515] rounded-3xl border border-dashed border-gray-800" id="noResults">
-      <i class="fas fa-search text-5xl text-gray-700 mb-6"></i>
-      <h3 class="text-xl font-bold text-white mb-2">No se encontraron productos</h3>
+  {catalogItems.length === 0 && (
+    <div class="text-center py-20 bg-[#151515] rounded-3xl border border-dashed border-gray-800">
+      <i class="fas fa-box-open text-5xl text-gray-700 mb-4"></i>
+      <h3 class="text-xl text-white">Sincronizando productos... por favor reintentá en un momento.</h3>
     </div>
   )}
 
-  <!-- Modal Detalle -->
-  <div id="productModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm modal-backdrop close-modal"></div>
-    <div class="bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl w-full max-w-5xl relative z-10 flex flex-col md:flex-row max-h-[90vh] transform scale-95 transition-transform duration-300" id="modalCard">
+  <!-- Modal Estructural -->
+  <div id="productModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 opacity-0 transition-all duration-300">
+    <div class="absolute inset-0 bg-black/90 backdrop-blur-md modal-backdrop close-modal"></div>
+    <div class="bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl w-full max-w-5xl relative z-10 flex flex-col md:row max-h-[90vh] transform scale-95 transition-all duration-300" id="modalCard">
       <button class="absolute top-4 right-4 z-30 p-2 bg-black/50 hover:bg-primary text-white rounded-full close-modal">
-        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <div class="w-full md:w-3/5 bg-[#101010] relative min-h-[300px]">
-        <img id="modalImage" src="" alt="Producto" class="absolute inset-0 w-full h-full object-cover" />
-        <div class="absolute top-4 left-4 z-20"><span id="modalMarcaBadge" class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded uppercase shadow-lg"></span></div>
+      
+      <div class="w-full md:w-3/5 bg-[#0a0a0a] relative min-h-[300px]">
+        <img id="modalImage" src="" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute top-4 left-4"><span id="modalMarcaBadge" class="bg-primary text-black text-[10px] font-bold px-3 py-1 rounded uppercase tracking-tighter"></span></div>
       </div>
-      <div class="w-full md:w-2/5 p-8 flex flex-col bg-[#1a1a1a] border-gray-800 overflow-y-auto">
-        <div class="mb-8"><h2 id="modalNombre" class="text-3xl font-bold text-white mb-2"></h2><p id="modalCategory" class="text-primary text-xs font-bold uppercase tracking-widest"></p></div>
-        <div class="space-y-4 mb-8 flex-grow" id="modalSpecsContainer"></div>
-        <div class="flex flex-col gap-4 mt-auto">
-          <a id="modalWhatsAppBtn" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg">
-            <i class="fab fa-whatsapp text-xl"></i> Consultar Presupuesto
-          </a>
+
+      <div class="w-full md:w-2/5 p-8 flex flex-col bg-[#1a1a1a] border-l border-gray-800 overflow-y-auto">
+        <div class="mb-8">
+            <h2 id="modalNombre" class="text-2xl font-bold text-white mb-1"></h2>
+            <p id="modalCategory" class="text-primary text-[10px] font-bold uppercase tracking-widest"></p>
+        </div>
+        <div id="modalSpecsContainer" class="space-y-4 mb-8"></div>
+        <div class="mt-auto">
+            <a id="modalWhatsAppBtn" href="#" target="_blank" class="w-full bg-[#25D366] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-[#1ebd5a] transition-colors">
+                <i class="fab fa-whatsapp"></i> Consultar Disponibilidad
+            </a>
         </div>
       </div>
     </div>
