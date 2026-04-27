@@ -1,203 +1,139 @@
 ---
 /**
- * Walkthrough:
- * - [x] Restore Product Detail Modal in `CatalogGrid.astro`
- * - [x] Improve product matching logic for "Blanco" and others
- * - [x] Resolve 404 error at `/herramientas` by creating index page
- * - [x] Port "Club de Clientes" section to Home page
- * - [x] Migrate Professional Tools (Creador de Presupuestos, Registro, Términos)
- * - [x] Update Header navigation to modular routes
- * - [x] Final verification and walkthrough
+ * CatalogGrid.astro - Grilla principal del catálogo con agrupación por diseño.
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import CatalogItem from './components/CatalogItem.astro';
 import CatalogFilters from './components/CatalogFilters.astro';
 import { directus, readItems } from '@conexiones/directus.js';
-import placasData from '@conexiones/data/placas.json';
 
 let initialItems = [];
 let officialBrands = [];
 let showPrices = true;
 
-try {
-  // 1 & 2. Obtener Ajustes y Productos en paralelo
-  const [siteSettingsResult, materialsResult, marcasResult] = await Promise.all([
-    directus.request(readItems('site_settings', {
-        filter: { key: { _eq: 'show_prices' } },
-        limit: 1
-    })).catch(() => []),
-    directus.request(readItems('materiales', {
-        limit: 500,
-        fields: ['id','activo','nombre','sku','precio_l1','stock','imagen','id_marca.nombre','id_categoria.nombre','id_espesor.valor'],
-        filter: { activo: { _eq: true } }
-    })).catch(() => []),
-    directus.request(readItems('marcas', {
-        limit: 100,
-        fields: ['id', 'nombre'],
-        sort: ['nombre']
-    })).catch(() => [])
-  ]);
+const LOGO_ID = "76aefcd2-775b-48c7-a64c-4ebd5627557c";
+const FALLBACK_URL = `https://admin.alvarezplacas.com.ar/assets/${LOGO_ID}?access_token=alvarez-api-token-v16-2026`;
 
-  const siteSettings = siteSettingsResult;
-  const materials = materialsResult;
-  officialBrands = marcasResult;
+// Función SSR para verificar si la imagen existe localmente en el VPS
+const getProductImage = (sku) => {
+    if (!sku || sku === "-") return FALLBACK_URL;
+    const localPath = path.join(process.cwd(), 'public', 'images', 'catalog', 'Processed', `${sku}.avif`);
+    try {
+        if (fs.existsSync(localPath)) return `/images/catalog/Processed/${sku}.avif`;
+    } catch (e) {}
+    return FALLBACK_URL;
+};
 
-  if (siteSettings && siteSettings.length > 0) {
-    showPrices = siteSettings[0].value !== 'false';
-  }
-
-  if (materials && materials.length > 0) {
-      const PUBLIC_DIRECTUS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-      
-      initialItems = materials.map(mat => {
-        // 3. Cruzar con datos de placas.json (Excel)
-        const normalize = (s) => s?.toString().toLowerCase().trim().replace(/\s+/g, ' ') || "";
-        const matNameNorm = normalize(mat.nombre);
-
-        const extraInfo = placasData.find(p => {
-          const pNameNorm = normalize(p.nombre);
-          if (pNameNorm === matNameNorm) return true;
-          return false;
-        });
-
-        const getFailsafeBrand = (mat) => {
-          if (mat.id_marca?.nombre) return mat.id_marca.nombre;
-          // Failsafe: Extraer de SKU (Pattern: CAT-NOMBRE-MARCA-ESPESOR)
-          if (mat.sku && mat.sku.includes('-')) {
-            const parts = mat.sku.split('-');
-            if (parts.length >= 3) return parts[2].charAt(0).toUpperCase() + parts[2].slice(1).toLowerCase();
-          }
-          return "Varios";
-        };
-
-        const getFailsafeCategory = (mat) => {
-          if (mat.id_categoria?.nombre) return mat.id_categoria.nombre;
-          if (mat.sku && mat.sku.includes('-')) {
-            const prefix = mat.sku.split('-')[0];
-            if (prefix === 'TAB') return 'Tableros';
-            if (prefix === 'HER') return 'Herrajes';
-            if (prefix === 'QUI') return 'Química';
-            if (prefix === 'HERR') return 'Herramientas';
-          }
-          return "PLACAS";
-        };
-
-        const marca = getFailsafeBrand(mat);
-        const categoria = getFailsafeCategory(mat);
-
-        // 4. Resolver Imagen (Prioridad: Directus > placa_data.json > Fallback Carpetas)
-        let imagePath = "";
-        
-        // Usar URL de administración para los assets si no se define otra cosa
-        const ASSETS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-
-        if (mat.imagen) {
-          // Si hay una imagen cargada en la biblioteca de Directus
-          imagePath = `${ASSETS_URL}/assets/${mat.imagen}?format=avif&width=600&quality=80`;
-        } else {
-          // Único fallback oficial: Logo de Directus
-          const LOGO_ID = '3ef347b2-d9ca-4bd5-9e83-66452de22d2a';
-          imagePath = `${ASSETS_URL}/assets/${LOGO_ID}?format=avif&width=600&quality=80`;
-        }
-
-        // 5. Clasificación en "Buckets" (Grupos Lógicos)
-        let bucket = "Herrajes"; // Default
-        const lowerName = matNameNorm;
-        const brandNorm = marca.toLowerCase();
-
-        if (brandNorm === 'einhell' || categoria.toLowerCase().includes('herramienta')) {
-          bucket = "Herramientas";
-        } else if (
-          brandNorm === 'egger' || 
-          brandNorm === 'faplac' || 
-          brandNorm === 'sadepan' ||
-          brandNorm === 'nova' ||
-          ['tableros', 'enchapados', 'multilaminados', 'terciados', 'finger', 'placas'].some(key => lowerName.includes(key) || categoria.toLowerCase().includes(key))
-        ) {
-          bucket = "Tableros";
-        } else if (
-          ['adhesivo', 'laca', 'pegamento', 'diluyente', 'quimica', 'sellador', 'pintura'].some(key => lowerName.includes(key) || categoria.toLowerCase().includes(key))
-        ) {
-          bucket = "Química";
-        }
-
-        // 6. Imagen Final
-        let finalImagePath = imagePath;
-
-        const isPriceVisible = showPrices && mat.mostrar_precio !== false;
-
-        return {
-          id: mat.id,
-          name: mat.nombre,
-          code: mat.sku || "-",
-          brand: marca,
-          category: categoria,
-          bucket: bucket,
-          imagen: finalImagePath,
-          price: (isPriceVisible && mat.precio_l1) ? `$${mat.precio_l1.toLocaleString()}` : "Consultar",
-          specs: [
-            (bucket === "Tableros" && mat.id_espesor?.valor) ? `${mat.id_espesor.valor}mm` : null,
-            mat.stock ? `Stock: ${mat.stock}` : null
-          ].filter(Boolean),
-          isPlaca: bucket === "Tableros"
-        };
-      });
-  }
-} catch (e) {
-  console.error("Critical Catalog Grid Error:", e);
-}
-
-// Grupos Fijos requeridos por el usuario
-const buckets = ["Tableros", "Herrajes", "Herramientas", "Química", "Todo"];
-
-  // LÓGICA DE MARCAS "OFICIAL" (Directus Sync Edition)
-  const getCanonicalBrand = (brand) => {
+// Helper para normalizar nombres de marca
+const getCanonicalBrand = (brand) => {
     if (!brand) return "GENÉRICA";
     return brand.toString().replace(/\s+/g, ' ').trim().toUpperCase();
-  };
+};
 
-  // 1. Cargamos las marcas oficiales desde Directus
-  const allUniqueBrands = officialBrands.map(m => m.nombre).sort((a,b) => a.localeCompare(b));
+try {
+  const [siteSettingsResult, materialsResult, marcasResult] = await Promise.all([
+    directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
+    directus.request(readItems('Productos', { limit: 1000, fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre'] })).catch(() => []),
+    directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
+  ]);
 
-  // 2. Generar el mapa de marcas por bucket para los filtros dinámicos
-  const brandsByBucket = {};
-  buckets.forEach(b => {
-    if (b === "Todo") {
-        brandsByBucket[b] = allUniqueBrands;
-    } else {
-        const brandsInBucketNormalized = initialItems
-            .filter(i => i.bucket === b)
-            .map(i => getCanonicalBrand(i.brand));
-        
-        const uniqueBrandKeysInBucket = [...new Set(brandsInBucketNormalized)];
-        
-        // Solo incluimos marcas que sean oficiales y tengan productos en este bucket
-        brandsByBucket[b] = allUniqueBrands.filter(ob => 
-            uniqueBrandKeysInBucket.includes(getCanonicalBrand(ob))
-        );
+  const siteSettings = siteSettingsResult?.data || siteSettingsResult || [];
+  const materials = materialsResult?.data || materialsResult || [];
+  officialBrands = marcasResult?.data || marcasResult || [];
+
+  if (siteSettings?.length > 0) showPrices = siteSettings[0].value !== 'false';
+
+  if (materials?.length > 0) {
+      const groupedItems = new Map();
+      const standaloneItems = [];
+
+      materials.forEach((mat) => {
+        try {
+            const marca = getCanonicalBrand(mat.marca?.nombre);
+            const categoria = mat.rubro?.nombre || "PLACAS";
+            const letra = mat.rubro?.letra || "M";
+            
+            let bucket = "Herrajes"; 
+            if (letra === 'R') bucket = "Herramientas";
+            else if (letra === 'M') bucket = "Tableros";
+            else if (letra === 'I') bucket = "Química";
+
+            if (bucket === "Tableros" && mat.modelo) {
+                const key = `${marca}_${mat.modelo}`.toLowerCase().trim();
+                let cleanName = mat.nombre;
+                if (mat.espesor) {
+                    const espStr = parseFloat(mat.espesor).toString();
+                    cleanName = mat.nombre.replace(new RegExp(espStr + "\\s*mm.*", "i"), "").trim();
+                }
+
+                if (!groupedItems.has(key)) {
+                    groupedItems.set(key, {
+                        id: mat.id,
+                        name: cleanName,
+                        baseName: mat.modelo,
+                        code: mat.sku || "-",
+                        brand: marca,
+                        category: categoria,
+                        bucket: bucket,
+                        imagen: getProductImage(mat.sku),
+                        price: "Consultar",
+                        isPlaca: true,
+                        variants: []
+                    });
+                }
+                const group = groupedItems.get(key);
+                group.variants.push({ sku: mat.sku, espesor: mat.espesor ? `${parseFloat(mat.espesor)}mm` : "S/E", soporte: mat.soporte });
+                group.variants.sort((a, b) => {
+                    const diff = parseFloat(a.espesor) - parseFloat(b.espesor);
+                    if (diff !== 0) return diff;
+                    return a.soporte?.localeCompare(b.soporte || "");
+                });
+                group.specs = [`${group.variants.length} variantes disponibles`];
+            } else {
+                standaloneItems.push({
+                    id: mat.id,
+                    name: mat.nombre,
+                    code: mat.sku || "-",
+                    brand: marca,
+                    category: categoria,
+                    bucket: bucket,
+                    imagen: getProductImage(mat.sku),
+                    price: "Consultar",
+                    specs: [(mat.espesor) ? `${parseFloat(mat.espesor)}mm` : null, mat.soporte].filter(Boolean),
+                    isPlaca: false
+                });
+            }
+        } catch (err) { console.error(`[CatalogGrid] Mapping error:`, err); }
+      });
+
+      initialItems = [...groupedItems.values(), ...standaloneItems];
+  }
+} catch (e) { console.error("Critical Catalog Grid Error:", e); }
+
+const buckets = ["Tableros", "Herrajes", "Herramientas", "Química", "Todo"];
+const allUniqueBrands = [...new Set(officialBrands.map(m => getCanonicalBrand(m.nombre)))].sort();
+const brandsByBucket = {};
+buckets.forEach(b => {
+    if (b === "Todo") brandsByBucket[b] = allUniqueBrands;
+    else {
+        const brandsInBucket = initialItems.filter(i => i.bucket === b).map(i => i.brand);
+        brandsByBucket[b] = allUniqueBrands.filter(ob => brandsInBucket.includes(ob));
     }
-  });
-
-  console.log(`[CATALOGO] Marcas oficiales sincronizadas: ${allUniqueBrands.length}`, allUniqueBrands);
+});
 ---
 
 <section class="max-w-7xl mx-auto px-4 py-12 relative">
   <div class="text-center mb-12">
-    <h2 class="text-3xl md:text-5xl font-bold text-white mb-4">
-      Catálogo <span class="text-primary">Unificado</span>
-    </h2>
-    <p class="text-gray-400">Todo lo que necesitás en un solo lugar. Placas, Herrajes, Químicos y Herramientas.</p>
+    <h2 class="text-3xl md:text-5xl font-bold text-white mb-4">Catálogo <span class="text-primary">Unificado</span></h2>
+    <p class="text-gray-400 text-sm">Buscá entre <span class="text-white font-bold text-lg">{initialItems.length}</span> productos específicos</p>
   </div>
 
-  <CatalogFilters 
-    buckets={buckets}
-    brandsByBucket={brandsByBucket}
-    allUniqueBrands={allUniqueBrands}
-    totalProducts={initialItems.length}
-  />
+  <CatalogFilters buckets={buckets} brandsByBucket={brandsByBucket} allUniqueBrands={allUniqueBrands} totalProducts={initialItems.length} />
 
-  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" id="catalogGrid">
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-10" id="catalogGrid">
     {initialItems.map((item) => (
-      <CatalogItem placa={item} showPrices={showPrices} />
+      <CatalogItem placa={item} showPrices={showPrices} fallbackUrl={FALLBACK_URL} />
     ))}
   </div>
 
@@ -205,48 +141,27 @@ const buckets = ["Tableros", "Herrajes", "Herramientas", "Química", "Todo"];
     <div class="text-center py-24 bg-[#151515] rounded-3xl border border-dashed border-gray-800" id="noResults">
       <i class="fas fa-search text-5xl text-gray-700 mb-6"></i>
       <h3 class="text-xl font-bold text-white mb-2">No se encontraron productos</h3>
-      <p class="text-gray-500">Estamos actualizando el catálogo. Por favor, intenta de nuevo en unos minutos.</p>
     </div>
   )}
 
-  <!-- Modal Detalle de Producto -->
-  <div id="productModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+  <!-- Modal Detalle -->
+  <div id="productModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300">
     <div class="absolute inset-0 bg-black/80 backdrop-blur-sm modal-backdrop close-modal"></div>
-    
-    <div class="bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl shadow-primary/20 w-full max-w-5xl relative z-10 flex flex-col md:flex-row max-h-[90vh] transform scale-95 transition-transform duration-300" id="modalCard">
-      
-      <button class="absolute top-4 right-4 z-30 p-2 bg-black/50 hover:bg-primary text-white rounded-full backdrop-blur-md transition-colors close-modal outline-none">
+    <div class="bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl w-full max-w-5xl relative z-10 flex flex-col md:flex-row max-h-[90vh] transform scale-95 transition-transform duration-300" id="modalCard">
+      <button class="absolute top-4 right-4 z-30 p-2 bg-black/50 hover:bg-primary text-white rounded-full close-modal">
         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
-
-      <!-- Imagen -->
-      <div class="w-full md:w-3/5 bg-[#101010] relative min-h-[300px] md:min-h-0">
-        <img id="modalImage" src="" alt="Producto" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-        <div class="absolute top-4 left-4 z-20">
-          <span id="modalMarcaBadge" class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded uppercase tracking-wider shadow-lg"></span>
-        </div>
+      <div class="w-full md:w-3/5 bg-[#101010] relative min-h-[300px]">
+        <img id="modalImage" src="" alt="Producto" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute top-4 left-4 z-20"><span id="modalMarcaBadge" class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded uppercase shadow-lg"></span></div>
       </div>
-
-      <!-- Detalles -->
-      <div class="w-full md:w-2/5 p-8 flex flex-col bg-[#1a1a1a] md:border-l border-gray-800 overflow-y-auto">
-        <div class="mb-8">
-          <h2 id="modalNombre" class="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight"></h2>
-          <p id="modalCategory" class="text-primary text-xs font-bold uppercase tracking-widest"></p>
-        </div>
-
-        <div class="space-y-4 mb-8 flex-grow" id="modalSpecsContainer">
-          <!-- Se llena dinámicamente -->
-        </div>
-
+      <div class="w-full md:w-2/5 p-8 flex flex-col bg-[#1a1a1a] border-gray-800 overflow-y-auto">
+        <div class="mb-8"><h2 id="modalNombre" class="text-3xl font-bold text-white mb-2"></h2><p id="modalCategory" class="text-primary text-xs font-bold uppercase tracking-widest"></p></div>
+        <div class="space-y-4 mb-8 flex-grow" id="modalSpecsContainer"></div>
         <div class="flex flex-col gap-4 mt-auto">
           <a id="modalWhatsAppBtn" href="#" target="_blank" class="w-full bg-[#25D366] hover:bg-[#1ebd5a] text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg">
-            <i class="fab fa-whatsapp text-xl"></i>
-            Consultar Presupuesto
+            <i class="fab fa-whatsapp text-xl"></i> Consultar Presupuesto
           </a>
-          <button id="modalSmartMatchBtn" class="w-full bg-primary hover:bg-primary-light text-white font-bold py-4 px-6 rounded-xl hidden items-center justify-center gap-3 transition-colors shadow-lg shadow-primary/20">
-            <i class="fas fa-magic"></i>
-            Sugerir Combinación
-          </button>
         </div>
       </div>
     </div>
@@ -255,14 +170,7 @@ const buckets = ["Tableros", "Herrajes", "Herramientas", "Química", "Todo"];
 
 <script>
   import { initCatalog } from './logic/catalog-logic.js';
-  
-  document.addEventListener('astro:page-load', () => {
-    initCatalog();
-  });
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCatalog);
-  } else {
-    initCatalog();
-  }
+  document.addEventListener('astro:page-load', initCatalog);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initCatalog);
+  else initCatalog();
 </script>

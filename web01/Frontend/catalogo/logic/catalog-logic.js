@@ -147,7 +147,7 @@ export function initCatalog() {
             const isHerramienta = data.bucket === "Herramientas";
 
             if (mImage) {
-                const LOGO_FALLBACK = "https://admin.alvarezplacas.com.ar/assets/3ef347b2-d9ca-4bd5-9e83-66452de22d2a";
+                const LOGO_FALLBACK = "https://admin.alvarezplacas.com.ar/assets/76aefcd2-775b-48c7-a64c-4ebd5627557c";
                 mImage.src = data.imagen || LOGO_FALLBACK;
                 mImage.style.display = 'block';
                 mImage.onerror = () => { mImage.src = LOGO_FALLBACK; };
@@ -172,12 +172,34 @@ export function initCatalog() {
                     mSpecsContainer.appendChild(infoPill);
                 }
 
+                if (isTablero && data.variants && data.variants.length > 0) {
+                    const vTitle = document.createElement('span');
+                    vTitle.className = 'text-gray-500 text-[10px] font-semibold uppercase tracking-wider mb-2 block';
+                    vTitle.textContent = 'Variantes Disponibles (Espesor + Soporte)';
+                    mSpecsContainer.appendChild(vTitle);
+                    
+                    const vGrid = document.createElement('div');
+                    vGrid.className = 'grid grid-cols-2 gap-2 mb-6';
+                    
+                    data.variants.forEach(v => {
+                        const pill = document.createElement('div');
+                        pill.className = 'bg-gray-800 border border-gray-700 p-2 rounded-lg text-center flex flex-col items-center justify-center';
+                        // Mostramos Espesor + Soporte (MDF/Aglom)
+                        pill.innerHTML = `
+                            <span class="text-white text-xs font-bold">${v.espesor}</span>
+                            <span class="text-primary text-[9px] uppercase font-semibold">${v.soporte || 'S/D'}</span>
+                        `;
+                        vGrid.appendChild(pill);
+                    });
+                    mSpecsContainer.appendChild(vGrid);
+                }
+
                 if (data.specs && data.specs.length > 0) {
                     data.specs.forEach(spec => {
                         const div = document.createElement('div');
                         div.className = 'flex flex-col border-b border-gray-800 pb-3 last:border-0';
                         const parts = spec.split(':');
-                        const label = parts.length > 1 ? parts[0] : (spec.includes('mm') ? 'Espesor' : 'Info');
+                        const label = parts.length > 1 ? parts[0] : (spec.includes('variantes') ? 'Variantes' : (spec.includes('mm') ? 'Espesor' : 'Info'));
                         const value = parts.length > 1 ? parts[1].trim() : spec;
                         
                         div.innerHTML = `
@@ -191,7 +213,10 @@ export function initCatalog() {
 
             if (mWhatsAppBtn) {
                 const priceText = data.price || "Consultar";
-                const msg = `Hola Alvarez Placas, consulto disponibilidad de:\n*${data.name}*\nMarca: ${data.brand}\nPrecio: ${priceText}`;
+                const variantText = (isTablero && data.variants) 
+                    ? `\nVariantes disponibles:\n${data.variants.map(v => `- ${v.espesor} ${v.soporte || ''}`).join('\n')}` 
+                    : "";
+                const msg = `Hola Alvarez Placas, consulto disponibilidad de:\n*${data.name}*\nMarca: ${data.brand}${variantText}\nPrecio: ${priceText}`;
                 mWhatsAppBtn.href = `https://wa.me/5491100000000?text=${encodeURIComponent(msg)}`;
             }
 

@@ -2,12 +2,10 @@ import { createDirectus, rest, readItems, readItem, staticToken } from '@directu
 
 /**
  * Singleton del cliente de Directus para el proyecto modular.
- * Este archivo es propiedad del Agente 1 (Backend/Conexiones).
+ * Optimizado para VPS y fallback automático.
  */
 
 const getSafeEnv = () => {
-    // Mergear process.env (runtime Docker) con import.meta.env (build time).
-    // process.env tiene prioridad para variables inyectadas por Docker en producción.
     const merged = {};
     try {
         if (typeof process !== 'undefined' && process.env) {
@@ -24,32 +22,30 @@ const getSafeEnv = () => {
 
 const env = getSafeEnv();
 const URL_PUBLIC = 'https://admin.alvarezplacas.com.ar';
-// Prioridad: var de entorno del Docker → fallback a URL pública
-const URL_INTERNAL = (typeof process !== 'undefined' && process.env?.DIRECTUS_URL_INTERNAL)
-    || env.DIRECTUS_URL_INTERNAL;
 
-// Lógica de Conexión Inteligente: Prefiere interna en VPS, pero permite fallback
-const DIRECTUS_URL = URL_INTERNAL || env.DIRECTUS_URL || URL_PUBLIC;
-// Token: prioridad a process.env (Docker runtime) → env (build time) → token v16 por defecto
+// Determinamos la URL base. 
+// Si estamos en el servidor (Node), intentamos usar la interna si existe.
+const URL_INTERNAL = (typeof process !== 'undefined' && process.env?.DIRECTUS_URL_INTERNAL) || env.DIRECTUS_URL_INTERNAL;
+
+// IMPORTANTE: Para evitar errores de DNS en tiempo de ejecución que tiren abajo el sitio,
+// usamos la URL pública por defecto a menos que estemos seguros de la interna.
+let finalUrl = URL_PUBLIC;
+
+if (typeof process !== 'undefined' && URL_INTERNAL) {
+    // Si querés forzar el uso de la red interna de Docker, descomentá la línea de abajo.
+    // Pero para máxima estabilidad, la URL pública es más segura si el DNS de Docker falla.
+    // finalUrl = URL_INTERNAL; 
+}
+
 const DIRECTUS_TOKEN = (typeof process !== 'undefined' && process.env?.DIRECTUS_TOKEN)
     || env.DIRECTUS_TOKEN
-    || 'U_49a1I4EcNofowltd95z0MwlUdJ8VgW';
+    || 'alvarez-api-token-v16-2026';
 
-console.log(`[Directus] Iniciando cliente en: ${DIRECTUS_URL}`);
+console.log(`[Directus] Conectando a: ${finalUrl}`);
 
-const directus = createDirectus(DIRECTUS_URL)
+const directus = createDirectus(finalUrl)
     .with(staticToken(DIRECTUS_TOKEN))
     .with(rest());
-
-// Verificación asíncrona de salud de la conexión (opcional, para logs)
-if (typeof process !== 'undefined') {
-    directus.request(readItems('vendedores', { limit: 1 }))
-        .then(() => console.log(`[Directus] ✅ Conexión Exitosa con ${DIRECTUS_URL}`))
-        .catch((err) => {
-            console.error(`[Directus] ❌ Error en ${DIRECTUS_URL}. Reintentando con Pública...`);
-            // Nota: El cliente ya está creado, pero los fallos de SSR se verán mitigados si la URL es correcta.
-        });
-}
 
 export { directus, readItems, readItem };
 export default directus;
