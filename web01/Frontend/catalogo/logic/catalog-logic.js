@@ -278,7 +278,7 @@ export function initCatalog() {
                         mWhatsAppBtn.href = `https://wa.me/5491100000000?text=${encodeURIComponent(msg)}`;
                     }
                 }
-            }  }
+            }
 
             // Smart Match Button (Solo para Tableros)
             if (mSmartMatchBtn) {
