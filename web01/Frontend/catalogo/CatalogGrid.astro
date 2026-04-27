@@ -106,6 +106,19 @@ try {
                         cleanName = p.nombre.replace(new RegExp(esp + "\\s*mm.*", "i"), "").trim();
                     }
 
+                    const itemSku = (p.sku || "").toUpperCase();
+                    let directusId = mediaMap.get(itemSku);
+
+                    // Si no hay match exacto, buscamos si el SKU está contenido en algún nombre de archivo
+                    if (!directusId && itemSku.length > 2) {
+                        for (const [fileName, id] of mediaMap.entries()) {
+                            if (fileName.includes(itemSku) || itemSku.includes(fileName)) {
+                                directusId = id;
+                                break;
+                            }
+                        }
+                    }
+
                     grouped.set(key, {
                         id: p.id,
                         name: cleanName,
@@ -113,7 +126,7 @@ try {
                         brand: brand,
                         category: category,
                         bucket: bucket,
-                        imagen: resolveProductImage(p.sku, mediaMap.get(p.sku?.toUpperCase())),
+                        imagen: resolveProductImage(p.sku, directusId),
                         variants: [],
                         price: "Consultar"
                     });
@@ -125,6 +138,18 @@ try {
                     soporte: p.soporte || "Estandar"
                 });
             } else {
+                const itemSku = (p.sku || "").toUpperCase();
+                let directusId = mediaMap.get(itemSku);
+
+                if (!directusId && itemSku.length > 2) {
+                    for (const [fileName, id] of mediaMap.entries()) {
+                        if (fileName.includes(itemSku) || itemSku.includes(fileName)) {
+                            directusId = id;
+                            break;
+                        }
+                    }
+                }
+
                 standalone.push({
                     id: p.id,
                     name: p.nombre,
@@ -132,7 +157,7 @@ try {
                     brand: brand,
                     category: category,
                     bucket: bucket,
-                    imagen: resolveProductImage(p.sku, mediaMap.get(p.sku?.toUpperCase())),
+                    imagen: resolveProductImage(p.sku, directusId),
                     specs: [p.espesor ? `${parseFloat(p.espesor)}mm` : null, p.soporte].filter(Boolean)
                 });
             }
