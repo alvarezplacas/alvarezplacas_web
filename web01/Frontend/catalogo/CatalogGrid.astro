@@ -58,7 +58,7 @@ try {
         directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
         directus.request(readItems('Productos', { 
             limit: 1000, 
-            fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre'] 
+            fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre','foto_principal'] 
         })).catch(() => []),
         directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => []),
         directus.request(readItems('directus_files', { limit: -1, fields: ['id', 'title', 'filename_download'] })).catch(() => [])
@@ -107,9 +107,9 @@ try {
                     }
 
                     const itemSku = (p.sku || "").toUpperCase();
-                    let directusId = mediaMap.get(itemSku);
+                    let directusId = p.foto_principal || mediaMap.get(itemSku);
 
-                    // Si no hay match exacto, buscamos si el SKU está contenido en algún nombre de archivo
+                    // Si no hay match exacto y no hay foto directa, buscamos si el SKU está contenido en algún nombre de archivo
                     if (!directusId && itemSku.length > 2) {
                         for (const [fileName, id] of mediaMap.entries()) {
                             if (fileName.includes(itemSku) || itemSku.includes(fileName)) {
@@ -139,7 +139,7 @@ try {
                 });
             } else {
                 const itemSku = (p.sku || "").toUpperCase();
-                let directusId = mediaMap.get(itemSku);
+                let directusId = p.foto_principal || mediaMap.get(itemSku);
 
                 if (!directusId && itemSku.length > 2) {
                     for (const [fileName, id] of mediaMap.entries()) {
