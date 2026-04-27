@@ -159,19 +159,20 @@ export function initCatalog() {
                 mCategory.textContent = data.category;
                 mCategory.className = `text-xs font-bold uppercase tracking-widest ${isTablero ? 'text-primary' : (isHerramienta ? 'text-red-500' : 'text-blue-400')}`;
             }
-
             // Fill Specs & Interactive Selectors
             if (mSpecsContainer) {
                 mSpecsContainer.innerHTML = '';
                 
                 if (isTablero && data.variants && data.variants.length > 0) {
-                    // 1. Obtener Soportes únicos
-                    const supports = [...new Set(data.variants.map(v => v.soporte.toUpperCase()))].sort();
-                    let activeSupport = supports[0];
+                    // 1. Definir Soportes Maestros
+                    const MASTER_SUPPORTS = ["MDF", "AGLOMERADO", "RH"];
+                    const availableSupports = [...new Set(data.variants.map(v => v.soporte.toUpperCase()))];
+                    
+                    // Elegir el primero disponible como activo
+                    let activeSupport = availableSupports.includes("MDF") ? "MDF" : (availableSupports.includes("AGLOMERADO") ? "AGLOMERADO" : availableSupports[0]);
 
                     // 2. Función de Renderizado de Variantes
                     const renderVariants = (support) => {
-                        // Limpiamos solo los espesores anteriores si existen
                         const existingGrid = mSpecsContainer.querySelector('.variants-grid-container');
                         if (existingGrid) existingGrid.remove();
 
@@ -180,41 +181,51 @@ export function initCatalog() {
 
                         const vTitle = document.createElement('span');
                         vTitle.className = 'text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4 block';
-                        vTitle.textContent = `Espesores Disponibles en ${support}`;
+                        vTitle.textContent = `Espesores Disponibles`;
                         container.appendChild(vTitle);
 
                         const vGrid = document.createElement('div');
                         vGrid.className = 'grid grid-cols-3 gap-2';
 
-                        // Filtrado: Aglo no tiene 3 ni 5.5
-                        const filteredVariants = data.variants.filter(v => {
-                            const isMatch = v.soporte.toUpperCase() === support;
+                        // Filtrado y DEDUPLICACIÓN de espesores
+                        const variantsForSupport = data.variants.filter(v => v.soporte.toUpperCase() === support);
+                        const uniqueThicknesses = [...new Set(variantsForSupport.map(v => v.espesor))].sort((a,b) => parseFloat(a) - parseFloat(b));
+
+                        const finalThicknesses = uniqueThicknesses.filter(esp => {
                             if (support.includes('AGLO') || support.includes('AGLOMERADO')) {
-                                const esp = parseFloat(v.espesor);
-                                if (esp === 3 || esp === 5.5) return false;
+                                const val = parseFloat(esp);
+                                if (val === 3 || val === 5.5) return false;
                             }
-                            return isMatch;
+                            return true;
                         });
 
-                        filteredVariants.forEach(v => {
+                        if (finalThicknesses.length === 0) {
+                            const empty = document.createElement('p');
+                            empty.className = 'text-gray-600 text-xs italic col-span-3 py-4';
+                            empty.textContent = 'No hay espesores disponibles para este soporte.';
+                            vGrid.appendChild(empty);
+                        }
+
+                        finalThicknesses.forEach(esp => {
                             const btn = document.createElement('button');
                             btn.className = 'variant-opt-btn bg-white/5 border border-white/10 p-3 rounded-xl text-center transition-all hover:border-primary/50 group/opt';
-                            btn.innerHTML = `
-                                <span class="text-white text-xs font-bold block group-hover/opt:text-primary transition-colors">${v.espesor}</span>
-                            `;
+                            btn.innerHTML = `<span class="text-white text-xs font-bold block group-hover/opt:text-primary transition-colors">${esp}</span>`;
                             btn.onclick = () => {
                                 document.querySelectorAll('.variant-opt-btn').forEach(b => b.classList.remove('border-primary', 'bg-primary/10'));
                                 btn.classList.add('border-primary', 'bg-primary/10');
-                                updateWhatsApp(v.espesor, support);
+                                updateWhatsApp(esp, support);
                             };
                             vGrid.appendChild(btn);
                         });
 
                         container.appendChild(vGrid);
                         mSpecsContainer.appendChild(container);
+                        
+                        // Default WhatsApp update with first thickness
+                        if (finalThicknesses.length > 0) updateWhatsApp(finalThicknesses[0], support);
                     };
 
-                    // 3. Renderizar Selector de Soporte
+                    // 3. Renderizar Selector de Soporte Maestro
                     const sContainer = document.createElement('div');
                     sContainer.className = 'mb-6';
                     const sTitle = document.createElement('span');
@@ -225,30 +236,38 @@ export function initCatalog() {
                     const sGrid = document.createElement('div');
                     sGrid.className = 'flex gap-2';
 
-                    supports.forEach(sup => {
+                    MASTER_SUPPORTS.forEach(sup => {
+                        const isAvailable = availableSupports.some(as => as.includes(sup) || sup.includes(as));
                         const sBtn = document.createElement('button');
-                        const isInitial = sup === activeSupport;
-                        sBtn.className = `flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                            isInitial ? 'bg-primary text-black border-primary shadow-[0_5px_15px_rgba(255,77,0,0.3)]' : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/30'
+                        const isActive = sup === activeSupport;
+
+                        sBtn.className = `flex-1 py-3 px-2 rounded-xl text-[9px] font-black uppercase tracking-tighter border transition-all ${
+                            isActive 
+                            ? 'bg-primary text-black border-primary shadow-[0_5px_15px_rgba(255,77,0,0.3)]' 
+                            : (isAvailable ? 'bg-white/5 text-gray-400 border-white/10 hover:border-white/30' : 'bg-transparent text-gray-800 border-gray-900 cursor-not-allowed opacity-50')
                         }`;
-                        sBtn.textContent = sup;
-                        sBtn.onclick = () => {
-                            activeSupport = sup;
-                            sGrid.querySelectorAll('button').forEach(b => {
-                                b.classList.remove('bg-primary', 'text-black', 'border-primary', 'shadow-[0_5px_15px_rgba(255,77,0,0.3)]');
-                                b.classList.add('bg-white/5', 'text-gray-400', 'border-white/10');
-                            });
-                            sBtn.classList.remove('bg-white/5', 'text-gray-400', 'border-white/10');
-                            sBtn.classList.add('bg-primary', 'text-black', 'border-primary', 'shadow-[0_5px_15px_rgba(255,77,0,0.3)]');
-                            renderVariants(sup);
-                        };
+                        
+                        sBtn.textContent = sup === "RH" ? "RH (Antihumedad)" : sup;
+                        
+                        if (isAvailable) {
+                            sBtn.onclick = () => {
+                                activeSupport = sup;
+                                sGrid.querySelectorAll('button').forEach(b => {
+                                    if (!b.classList.contains('cursor-not-allowed')) {
+                                        b.classList.remove('bg-primary', 'text-black', 'border-primary', 'shadow-[0_5px_15px_rgba(255,77,0,0.3)]');
+                                        b.classList.add('bg-white/5', 'text-gray-400', 'border-white/10');
+                                    }
+                                });
+                                sBtn.classList.remove('bg-white/5', 'text-gray-400', 'border-white/10');
+                                sBtn.classList.add('bg-primary', 'text-black', 'border-primary', 'shadow-[0_5px_15px_rgba(255,77,0,0.3)]');
+                                renderVariants(sup);
+                            };
+                        }
                         sGrid.appendChild(sBtn);
                     });
                     
                     sContainer.appendChild(sGrid);
                     mSpecsContainer.appendChild(sContainer);
-
-                    // Inicializar con el primero
                     renderVariants(activeSupport);
                 }
 
@@ -259,7 +278,7 @@ export function initCatalog() {
                         mWhatsAppBtn.href = `https://wa.me/5491100000000?text=${encodeURIComponent(msg)}`;
                     }
                 }
-            }
+            }  }
 
             // Smart Match Button (Solo para Tableros)
             if (mSmartMatchBtn) {
