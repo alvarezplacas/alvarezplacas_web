@@ -27,6 +27,7 @@ const isFallback = placa.imagen === fallbackUrl;
     <img 
       src={placa.imagen} 
       alt={placa.name}
+      onerror={`this.src='${fallbackUrl}'; this.classList.add('p-12', 'object-contain', 'bg-[#1a1a1a]'); this.classList.remove('object-cover'); this.onerror=null;`}
       class={`w-full h-full transition-transform duration-700 group-hover:scale-110 ${isFallback ? 'object-contain p-12 bg-[#1a1a1a]' : 'object-cover'}`}
       loading="lazy"
     />
