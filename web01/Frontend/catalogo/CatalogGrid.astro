@@ -67,9 +67,12 @@ try {
     // Mapeo de imágenes por SKU (Media Bridge)
     const mediaMap = new Map();
     (directusFiles?.data || directusFiles || []).forEach(f => {
-        // Extraemos el SKU del nombre del archivo o título (ej: "H1313 S T10")
-        const nameToMatch = (f.title || f.filename_download || "").toUpperCase();
-        mediaMap.set(nameToMatch, f.id);
+        // Limpiamos el nombre: pasamos a MAYÚSCULAS y quitamos la extensión (.jpg, .png, etc)
+        const fullName = (f.title || f.filename_download || "").toUpperCase();
+        const nameWithoutExt = fullName.replace(/\.[^/.]+$/, ""); // Quita .jpg, .avif, etc.
+        const skuClean = nameWithoutExt.trim();
+        
+        mediaMap.set(skuClean, f.id);
     });
 
     officialBrands = (brands?.data || brands || []).map(b => normalizeBrand(b.nombre));
