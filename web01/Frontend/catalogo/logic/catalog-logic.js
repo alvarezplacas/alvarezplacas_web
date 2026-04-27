@@ -160,64 +160,105 @@ export function initCatalog() {
                 mCategory.className = `text-xs font-bold uppercase tracking-widest ${isTablero ? 'text-primary' : (isHerramienta ? 'text-red-500' : 'text-blue-400')}`;
             }
 
-            // Fill Specs
+            // Fill Specs & Interactive Selectors
             if (mSpecsContainer) {
                 mSpecsContainer.innerHTML = '';
                 
-                // Mostrar info contextual según tipo
-                if (isTablero) {
-                    const infoPill = document.createElement('div');
-                    infoPill.className = 'bg-primary/10 border border-primary/20 p-4 rounded-xl mb-4';
-                    infoPill.innerHTML = '<span class="text-primary text-xs font-bold">PROPIEDADES DE PLACA</span><p class="text-gray-400 text-xs mt-1">Ideal para mobiliario y revestimientos de alta calidad.</p>';
-                    mSpecsContainer.appendChild(infoPill);
-                }
-
                 if (isTablero && data.variants && data.variants.length > 0) {
-                    const vTitle = document.createElement('span');
-                    vTitle.className = 'text-gray-500 text-[10px] font-semibold uppercase tracking-wider mb-2 block';
-                    vTitle.textContent = 'Variantes Disponibles (Espesor + Soporte)';
-                    mSpecsContainer.appendChild(vTitle);
-                    
-                    const vGrid = document.createElement('div');
-                    vGrid.className = 'grid grid-cols-2 gap-2 mb-6';
-                    
-                    data.variants.forEach(v => {
-                        const pill = document.createElement('div');
-                        pill.className = 'bg-gray-800 border border-gray-700 p-2 rounded-lg text-center flex flex-col items-center justify-center';
-                        // Mostramos Espesor + Soporte (MDF/Aglom)
-                        pill.innerHTML = `
-                            <span class="text-white text-xs font-bold">${v.espesor}</span>
-                            <span class="text-primary text-[9px] uppercase font-semibold">${v.soporte || 'S/D'}</span>
-                        `;
-                        vGrid.appendChild(pill);
+                    // 1. Obtener Soportes únicos
+                    const supports = [...new Set(data.variants.map(v => v.soporte.toUpperCase()))].sort();
+                    let activeSupport = supports[0];
+
+                    // 2. Función de Renderizado de Variantes
+                    const renderVariants = (support) => {
+                        // Limpiamos solo los espesores anteriores si existen
+                        const existingGrid = mSpecsContainer.querySelector('.variants-grid-container');
+                        if (existingGrid) existingGrid.remove();
+
+                        const container = document.createElement('div');
+                        container.className = 'variants-grid-container animate-fade-in';
+
+                        const vTitle = document.createElement('span');
+                        vTitle.className = 'text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4 block';
+                        vTitle.textContent = `Espesores Disponibles en ${support}`;
+                        container.appendChild(vTitle);
+
+                        const vGrid = document.createElement('div');
+                        vGrid.className = 'grid grid-cols-3 gap-2';
+
+                        // Filtrado: Aglo no tiene 3 ni 5.5
+                        const filteredVariants = data.variants.filter(v => {
+                            const isMatch = v.soporte.toUpperCase() === support;
+                            if (support.includes('AGLO') || support.includes('AGLOMERADO')) {
+                                const esp = parseFloat(v.espesor);
+                                if (esp === 3 || esp === 5.5) return false;
+                            }
+                            return isMatch;
+                        });
+
+                        filteredVariants.forEach(v => {
+                            const btn = document.createElement('button');
+                            btn.className = 'variant-opt-btn bg-white/5 border border-white/10 p-3 rounded-xl text-center transition-all hover:border-primary/50 group/opt';
+                            btn.innerHTML = `
+                                <span class="text-white text-xs font-bold block group-hover/opt:text-primary transition-colors">${v.espesor}</span>
+                            `;
+                            btn.onclick = () => {
+                                document.querySelectorAll('.variant-opt-btn').forEach(b => b.classList.remove('border-primary', 'bg-primary/10'));
+                                btn.classList.add('border-primary', 'bg-primary/10');
+                                updateWhatsApp(v.espesor, support);
+                            };
+                            vGrid.appendChild(btn);
+                        });
+
+                        container.appendChild(vGrid);
+                        mSpecsContainer.appendChild(container);
+                    };
+
+                    // 3. Renderizar Selector de Soporte
+                    const sContainer = document.createElement('div');
+                    sContainer.className = 'mb-6';
+                    const sTitle = document.createElement('span');
+                    sTitle.className = 'text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4 block';
+                    sTitle.textContent = 'Seleccionar Soporte';
+                    sContainer.appendChild(sTitle);
+
+                    const sGrid = document.createElement('div');
+                    sGrid.className = 'flex gap-2';
+
+                    supports.forEach(sup => {
+                        const sBtn = document.createElement('button');
+                        const isInitial = sup === activeSupport;
+                        sBtn.className = `flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                            isInitial ? 'bg-primary text-black border-primary shadow-[0_5px_15px_rgba(255,77,0,0.3)]' : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/30'
+                        }`;
+                        sBtn.textContent = sup;
+                        sBtn.onclick = () => {
+                            activeSupport = sup;
+                            sGrid.querySelectorAll('button').forEach(b => {
+                                b.classList.remove('bg-primary', 'text-black', 'border-primary', 'shadow-[0_5px_15px_rgba(255,77,0,0.3)]');
+                                b.classList.add('bg-white/5', 'text-gray-400', 'border-white/10');
+                            });
+                            sBtn.classList.remove('bg-white/5', 'text-gray-400', 'border-white/10');
+                            sBtn.classList.add('bg-primary', 'text-black', 'border-primary', 'shadow-[0_5px_15px_rgba(255,77,0,0.3)]');
+                            renderVariants(sup);
+                        };
+                        sGrid.appendChild(sBtn);
                     });
-                    mSpecsContainer.appendChild(vGrid);
+                    
+                    sContainer.appendChild(sGrid);
+                    mSpecsContainer.appendChild(sContainer);
+
+                    // Inicializar con el primero
+                    renderVariants(activeSupport);
                 }
 
-                if (data.specs && data.specs.length > 0) {
-                    data.specs.forEach(spec => {
-                        const div = document.createElement('div');
-                        div.className = 'flex flex-col border-b border-gray-800 pb-3 last:border-0';
-                        const parts = spec.split(':');
-                        const label = parts.length > 1 ? parts[0] : (spec.includes('variantes') ? 'Variantes' : (spec.includes('mm') ? 'Espesor' : 'Info'));
-                        const value = parts.length > 1 ? parts[1].trim() : spec;
-                        
-                        div.innerHTML = `
-                            <span class="text-gray-500 text-[10px] font-semibold uppercase tracking-wider mb-1">${label}</span>
-                            <span class="text-white font-medium text-base">${value}</span>
-                        `;
-                        mSpecsContainer.appendChild(div);
-                    });
+                function updateWhatsApp(esp, sup) {
+                    if (mWhatsAppBtn) {
+                        const priceText = data.price || "Consultar";
+                        const msg = `Hola Alvarez Placas, consulto disponibilidad de:\n*${data.name}*\nMarca: ${data.brand}\nSoporte: *${sup}*\nEspesor: *${esp}*\nPrecio: ${priceText}`;
+                        mWhatsAppBtn.href = `https://wa.me/5491100000000?text=${encodeURIComponent(msg)}`;
+                    }
                 }
-            }
-
-            if (mWhatsAppBtn) {
-                const priceText = data.price || "Consultar";
-                const variantText = (isTablero && data.variants) 
-                    ? `\nVariantes disponibles:\n${data.variants.map(v => `- ${v.espesor} ${v.soporte || ''}`).join('\n')}` 
-                    : "";
-                const msg = `Hola Alvarez Placas, consulto disponibilidad de:\n*${data.name}*\nMarca: ${data.brand}${variantText}\nPrecio: ${priceText}`;
-                mWhatsAppBtn.href = `https://wa.me/5491100000000?text=${encodeURIComponent(msg)}`;
             }
 
             // Smart Match Button (Solo para Tableros)
