@@ -10,8 +10,8 @@ import CatalogFilters from './components/CatalogFilters.astro';
 import { directus, readItems } from '@conexiones/directus.js';
 
 // --- CONFIGURACIÓN DE IDENTIDAD ---
-const LOGO_ID = "76aefcd2-775b-48c7-a64c-4ebd5627557c";
-const FALLBACK_URL = `https://admin.alvarezplacas.com.ar/assets/${LOGO_ID}?access_token=alvarez-api-token-v16-2026`;
+const LOGO_ID = "209a486b-8623-4c3e-8f8e-2a3288f1f0fd";
+const FALLBACK_URL = `https://admin.alvarezplacas.com.ar/assets/${LOGO_ID}`;
 
 // --- GESTIÓN DE ESTADO ---
 let catalogItems = [];
@@ -21,9 +21,13 @@ let showPrices = true;
 /**
  * SERVICIO DE MEDIA (SSR):
  * Determina la mejor fuente para la imagen de un producto.
- * Prioridad: 1. Disco Local (si es válido) -> 2. Directus por SKU -> 3. Logo Fallback
+ * Prioridad: 1. Disco Local -> 2. Directus Assets -> 3. Logo Fallback
  */
-const resolveProductImage = (sku) => {
+const resolveProductImage = (sku, directusFileId) => {
+    if (directusFileId) {
+        return `https://admin.alvarezplacas.com.ar/assets/${directusFileId}?width=400&height=400&fit=cover&format=avif`;
+    }
+
     if (!sku || sku === "-") return FALLBACK_URL;
 
     const fileName = `${sku}.avif`;
@@ -33,17 +37,10 @@ const resolveProductImage = (sku) => {
     try {
         if (fs.existsSync(localAbsolutePath)) {
             const stats = fs.statSync(localAbsolutePath);
-            // Si el archivo pesa menos de 1KB, es un error (corrupción detectada en auditoría)
-            if (stats.size > 1024) {
-                return localRelativePath;
-            }
+            if (stats.size > 1024) return localRelativePath;
         }
-    } catch (e) {
-        console.error(`[MediaService] Error validando ${sku}:`, e.message);
-    }
+    } catch (e) {}
 
-    // Fallback: Si no está en disco o está corrupto, usamos el logo por ahora.
-    // Nota: En el futuro aquí se podría buscar dinámicamente en el bucket de S3 de Directus.
     return FALLBACK_URL;
 };
 
@@ -55,16 +52,24 @@ const normalizeBrand = (brand) => {
     return brand.toString().trim().toUpperCase();
 };
 
-try {
-    // CARGA DE DATOS MAESTROS
-    const [settings, materials, brands] = await Promise.all([
+    // CARGA DE DATOS MAESTROS + MEDIA BRIDGE
+    const [settings, materials, brands, directusFiles] = await Promise.all([
         directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
         directus.request(readItems('Productos', { 
             limit: 1000, 
             fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre'] 
         })).catch(() => []),
-        directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
+        directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => []),
+        directus.request(readItems('directus_files', { limit: -1, fields: ['id', 'title', 'filename_download'] })).catch(() => [])
     ]);
+
+    // Mapeo de imágenes por SKU (Media Bridge)
+    const mediaMap = new Map();
+    (directusFiles?.data || directusFiles || []).forEach(f => {
+        // Extraemos el SKU del nombre del archivo o título (ej: "H1313 S T10")
+        const nameToMatch = (f.title || f.filename_download || "").toUpperCase();
+        mediaMap.set(nameToMatch, f.id);
+    });
 
     officialBrands = (brands?.data || brands || []).map(b => normalizeBrand(b.nombre));
     if (settings?.length > 0) showPrices = settings[0].value !== 'false';
@@ -104,7 +109,7 @@ try {
                         brand: brand,
                         category: category,
                         bucket: bucket,
-                        imagen: resolveProductImage(p.sku),
+                        imagen: resolveProductImage(p.sku, mediaMap.get(p.sku?.toUpperCase())),
                         variants: [],
                         price: "Consultar"
                     });
@@ -123,7 +128,7 @@ try {
                     brand: brand,
                     category: category,
                     bucket: bucket,
-                    imagen: resolveProductImage(p.sku),
+                    imagen: resolveProductImage(p.sku, mediaMap.get(p.sku?.toUpperCase())),
                     specs: [p.espesor ? `${parseFloat(p.espesor)}mm` : null, p.soporte].filter(Boolean)
                 });
             }
