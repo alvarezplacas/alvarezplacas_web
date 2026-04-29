@@ -49,7 +49,7 @@
 ### 2. Restauración v16 (Abril 2026)
 - **Git Clone**: El código Astro se clona desde `https://github.com/alvarezplacas/alvarezplacas_web.git` en `/opt/alvarez_v16/web01/site/`.
 - **Build**: Se compila con `docker run --rm -v $(pwd):/app -w /app node:22-alpine sh -c "npm install && npm run build"`.
-- **DB Recuperada**: Volumen `web01_alvarez_data_v16` con 69 materiales intactos.
+- **DB Recuperada**: Volumen `web01_alvarez_data_v16` con productos intactos.
 - **Nombre contenedor web**: Se cambió a `alvarezplacas_web` (sin `_v16`) para compatibilidad con el proxy Caddy.
 
 ### 3. Presupuestador (Budget Engine)
@@ -64,7 +64,7 @@
 ### 4. Modernización de Catálogo (8 de Abril 2026)
 - **Buckets de Navegación**: Se dividió el catálogo en 5 grupos: Tableros, Herrajes, Herramientas, Química y Todo.
 - **Ingestión Externa**: Integración de marcas **Einhell** (Herramientas) y **Kekol** (Química) con ingesta automatizada desde sitios oficiales.
-- **Deep Sync (V2)**: Script `deep_sync_materials.mjs` que escanea la biblioteca de archivos de Directus y crea materiales faltantes (60 nuevos creados, total ~137).
+- **Deep Sync (V2)**: Script `deep_sync_materials.mjs` que escanea la biblioteca de archivos de Directus y crea productos faltantes (total ~137).
 - **Control de Imágenes**: 
   - Entrega vía **AVIF** (parámetro `?format=avif`) usando el motor **Sharp** de Directus.
   - Fallback automático al logo de Alvarez Placas si falla la carga o falta el activo.

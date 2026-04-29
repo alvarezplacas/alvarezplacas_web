@@ -1,0 +1,48 @@
+/* 
+   ALVAREZ PLACAS - DESIGN SYSTEM 2026
+   Vanguardia OKLCH + Glassmorphism
+*/
+
+:root {
+  /* Color Tokens en OKLCH */
+  --primary: oklch(65% 0.23 35);
+  --primary-glow: oklch(65% 0.23 35 / 0.15);
+  --bg-dark: oklch(12% 0 0);
+  --bg-card: oklch(18% 0.01 250 / 0.7);
+  --text-main: oklch(98% 0 0);
+  --text-dim: oklch(75% 0.01 250);
+  --border-glass: oklch(100% 0 0 / 0.1);
+  --border-hover: oklch(65% 0.23 35 / 0.4);
+}
+
+/* Glassmorphism Effect */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  border-color: var(--border-hover);
+  background: oklch(22% 0.02 250 / 0.8);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Workshop Grid Background */
+.workshop-grid {
+  background-image: 
+    linear-gradient(to right, oklch(40% 0.02 250 / 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(40% 0.02 250 / 0.22) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.workshop-grid-fine {
+  background-image: 
+    linear-gradient(to right, oklch(40% 0.02 250 / 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(40% 0.02 250 / 0.12) 1px, transparent 1px);
+  background-size: 10px 10px;
+}

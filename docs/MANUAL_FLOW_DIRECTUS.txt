@@ -1,0 +1,315 @@
+================================================================================
+MANUAL DE CONFIGURACION - DIRECTUS FLOWS
+AUTOMATIZACION SKU Y DESCRIPCION - ALVAREZ PLACAS
+Fecha: Abril 2026 | Directus v11 | PostgreSQL v16
+================================================================================
+
+ESTADO ACTUAL (al 23/04/2026):
+-------------------------------
+- URL Directus:  https://admin.alvarezplacas.com.ar
+- Usuario Admin: admin@alvarezplacas.com.ar
+- Colecciones ya creadas: Productos, Rubros, marcas
+- Campos ya agregados a Productos: rubro, modelo, espesor, soporte, descripcion
+- Flow "Auto Generate SKU" ya existe (URL actual en browser)
+
+EL PROBLEMA A RESOLVER:
+------------------------
+Cuando se crea un producto en Directus, el campo "sku" y "descripcion"
+deben generarse AUTOMATICAMENTE usando la informacion de:
+  - rubro.letra        (ej: "M")
+  - marca.codigo       (ej: "10")
+  - correlativo        (numero secuencial por rubro+marca)
+  - modelo             (ej: "Roble Vicenza")
+  - espesor            (ej: 18)
+  - soporte            (ej: "MDF")
+
+RESULTADO ESPERADO:
+  SKU:         M-10-0042
+  DESCRIPCION: Placa EGGER Roble Vicenza 18mm MDF
+
+================================================================================
+PASO 1 - VERIFICAR DATOS EN COLECCION "Rubros"
+================================================================================
+
+Ir a: Content > Rubros
+
+Verificar que existan estos registros (crearlos si faltan):
+
+  ID | nombre   | letra
+  ---+----------+------
+   1 | Maderas  | M
+   2 | Herrajes | H
+   3 | Insumos  | I
+
+CAMPO CLAVE: "letra" (debe ser 1 caracter: M, H, I, Q, T)
+
+Si el campo "letra" no existe en la coleccion:
+  1. Ir a Settings > Data Model > Rubros
+  2. Crear campo: nombre="letra", tipo=String, longitud=1
+  3. Volver a Content > Rubros y completar el valor para cada rubro
+
+================================================================================
+PASO 2 - VERIFICAR DATOS EN COLECCION "marcas"
+================================================================================
+
+Ir a: Content > marcas
+
+Verificar que existan estos registros:
+
+  ID | nombre  | codigo
+  ---+---------+-------
+   1 | EGGER   | 10
+   2 | FAPLAC  | 20
+   3 | SADEPAN | 30
+   4 | NOVA    | 40
+
+CAMPO CLAVE: "codigo" (debe ser 2 digitos: 10, 20, 30, 40)
+
+Si el campo "codigo" no existe:
+  1. Ir a Settings > Data Model > marcas
+  2. Crear campo: nombre="codigo", tipo=String, longitud=2
+  3. Volver a Content > marcas y completar el valor para cada marca
+
+================================================================================
+PASO 3 - CONFIGURAR EL FLOW "Auto Generate SKU"
+================================================================================
+
+Ir a: Settings > Flows > Auto Generate SKU
+(Ya estas en esta pagina segun el browser)
+
+El Flow debe tener esta estructura:
+  [TRIGGER] ---> [CONSULTAR RUBROS/MARCAS] ---> [RUN SCRIPT] ---> [UPDATE ITEM]
+
+---- CONFIGURACION DEL TRIGGER ----
+  Tipo:        Event Hook
+  Type:        Filter (ANTES de guardar, para que pueda modificar el payload)
+  Scope:       items.create  Y  items.update
+  Collections: Productos
+
+  IMPORTANTE: Usar "Filter" en lugar de "Action" para poder modificar
+              el payload ANTES de que se guarde en la base de datos.
+
+---- OPERACION 1: "Leer Rubro" ----
+  Tipo:        Read Data
+  Collection:  Rubros
+  Query:
+    Filter: id = {{ $trigger.payload.rubro }}
+  Guardar como: rubro_data
+
+---- OPERACION 2: "Leer Marca" ----
+  Tipo:        Read Data
+  Collection:  marcas
+  Query:
+    Filter: id = {{ $trigger.payload.marca }}
+  Guardar como: marca_data
+
+---- OPERACION 3: "Calcular Correlativo" ----
+  Tipo:        Read Data
+  Collection:  Productos
+  Query:
+    Filter:
+      - rubro = {{ $trigger.payload.rubro }}
+      - marca = {{ $trigger.payload.marca }}
+    Aggregate:  count de *
+  Guardar como: conteo_data
+
+---- OPERACION 4: "Run Script - Generador Maestro" ----
+  Tipo: Run Script
+
+  CODIGO A PEGAR (copiar exactamente):
+  ------------------------------------
+  module.exports = async function(data) {
+
+      // Leer datos de las operaciones anteriores
+      var rubro = data.rubro_data[0];   // campo: letra
+      var marca = data.marca_data[0];   // campos: nombre, codigo
+      var conteo = parseInt(data.conteo_data[0].count) + 1;
+
+      // Verificacion de seguridad
+      if (!rubro || !marca) {
+          return { sku: 'SIN-RUBRO-MARCA', descripcion: 'Error: rubro o marca no encontrados' };
+      }
+
+      // 1. Generar correlativo de 4 digitos (regla de oro del manual)
+      var correlativo = conteo.toString().padStart(4, '0');
+
+      // 2. Armar SKU: X-YY-ZZZZ
+      var sku = rubro.letra + '-' + marca.codigo + '-' + correlativo;
+
+      // 3. Armar Descripcion comercial segun rubro
+      var modelo  = data.$trigger.payload.modelo  || '';
+      var espesor = data.$trigger.payload.espesor;
+      var soporte = data.$trigger.payload.soporte || '';
+      // espesor es un numero (ej: 18), agregar 'mm' para la descripcion
+      var espStr  = espesor ? (espesor + 'mm') : '';
+
+      var descripcion = '';
+      if (rubro.letra === 'M') {
+          descripcion = ('Placa ' + marca.nombre + ' ' + modelo + ' ' + espStr + ' ' + soporte).replace(/\s+/g,' ').trim();
+      } else if (rubro.letra === 'H') {
+          descripcion = ('Herraje ' + marca.nombre + ' ' + modelo).replace(/\s+/g,' ').trim();
+      } else if (rubro.letra === 'T') {
+          descripcion = ('Tapacanto ' + marca.nombre + ' ' + modelo).replace(/\s+/g,' ').trim();
+      } else {
+          descripcion = (rubro.nombre + ' ' + marca.nombre + ' ' + modelo).replace(/\s+/g,' ').trim();
+      }
+
+      // IMPORTANTE: En trigger Filter de Directus v11,
+      // retornar los campos a inyectar en el payload ANTES de guardarse
+      return {
+          sku: sku,
+          descripcion: descripcion
+      };
+  };
+  ------------------------------------
+
+  Guardar como: resultado
+
+---- OPERACION 5: "Actualizar Producto" ----
+  Tipo:        Update Data
+  Collection:  Productos
+  IDs:         {{ $trigger.key }}
+  Payload:
+    sku:        {{ resultado.sku }}
+    descripcion: {{ resultado.descripcion }}
+
+================================================================================
+PASO 4 - ALTERNATIVA SIMPLIFICADA (si el Flow de arriba es complejo)
+================================================================================
+
+Si el Flow de multiples operaciones da problemas, usar UN SOLO "Run Script"
+conectado directamente a los servicios de Directus:
+
+Tipo del Flow: Action (despues de guardar)
+Trigger:       items.create en Productos
+
+CODIGO ALTERNATIVO (usa los servicios internos de Directus):
+------------------------------------------------------------
+module.exports = async function(data, { services, getSchema }) {
+    const { ItemsService } = services;
+    const schema = await getSchema();
+
+    const rubrosService  = new ItemsService('Rubros',   { schema });
+    const marcasService  = new ItemsService('marcas',   { schema });
+    const prodService    = new ItemsService('Productos', { schema });
+
+    const rubroId = data.payload.rubro;
+    const marcaId = data.payload.marca;
+    if (!rubroId || !marcaId) return;
+
+    const [rubro, marca] = await Promise.all([
+        rubrosService.readOne(rubroId),
+        marcasService.readOne(marcaId)
+    ]);
+
+    // Contar productos ya existentes del mismo rubro+marca
+    const todos = await prodService.readByQuery({
+        filter: {
+            rubro: { _eq: rubroId },
+            marca: { _eq: marcaId }
+        },
+        fields: ['id'],
+        limit: -1
+    });
+
+    const correlativo = (todos.length).toString().padStart(4, '0');
+    const sku = rubro.letra + '-' + marca.codigo + '-' + correlativo;
+
+    var modelo  = data.payload.modelo  || '';
+    var espesor = data.payload.espesor ? (data.payload.espesor + 'mm') : '';
+    var soporte = data.payload.soporte || '';
+    var descripcion = ('Placa ' + marca.nombre + ' ' + modelo + ' ' + espesor + ' ' + soporte).trim();
+
+    // Actualizar el item recien creado
+    await prodService.updateOne(data.key, { sku, descripcion });
+};
+------------------------------------------------------------
+
+================================================================================
+PASO 5 - PROBAR EL FLOW
+================================================================================
+
+1. Ir a: Content > Productos
+2. Crear un nuevo producto con:
+     rubro:   Maderas (ID 1)
+     marca:   EGGER (ID 1)
+     modelo:  Roble Vicenza
+     espesor: 18
+     soporte: MDF
+3. Guardar
+4. Reabrir el producto
+5. Verificar que "sku" = M-10-0001
+            y  "descripcion" = Placa EGGER Roble Vicenza 18mm MDF
+
+Si no funciona, ir a: Settings > Flows > Auto Generate SKU > (icono reloj) Logs
+y revisar el error exacto.
+
+================================================================================
+PASO 6 - IMPORTACION MASIVA DESDE EXCEL (despues de probar el Flow)
+================================================================================
+
+Una vez que el Flow funciona correctamente, ejecutar en la PC local:
+
+  cd D:\Alvarezplacas_2026\WEB-alvarezplacas_astro\Alvarezplacas
+  python scripts/import_catalog.py
+
+El script importa las hojas: EGGER, FAPLAC, SADEPAN, ENCHAPADOS, NOVA
+
+AVISO: Si el Flow "Action" (post-guardar) es lento con 2000 productos,
+desactivarlo temporalmente, importar con SKUs pre-calculados en el CSV,
+y luego reactivarlo para nuevas cargas.
+
+================================================================================
+PASO 7 - VERIFICACION FINAL EN POSTGRESQL v16
+================================================================================
+
+Conectar al contenedor de PostgreSQL:
+
+  docker exec -it alvarezplacas_db_v16 psql -U alvarez_admin -d alvarez_db
+
+Consultas de verificacion:
+
+  -- Ver productos con SKU generado
+  SELECT id, sku, descripcion, modelo FROM "Productos" LIMIT 10;
+
+  -- Verificar no haya SKUs duplicados
+  SELECT sku, COUNT(*) FROM "Productos"
+  GROUP BY sku HAVING COUNT(*) > 1;
+
+  -- Ver distribucion por rubro/marca
+  SELECT r.nombre as rubro, m.nombre as marca, COUNT(*) as total
+  FROM "Productos" p
+  JOIN "Rubros" r ON p.rubro = r.id
+  JOIN marcas m ON p.marca = m.id
+  GROUP BY r.nombre, m.nombre
+  ORDER BY r.nombre, m.nombre;
+
+================================================================================
+RESUMEN DE ARCHIVOS DEL PROYECTO
+================================================================================
+
+  docs/AUTOMATIZACION_DIRECTUS.md   -> Logica detallada y codigo del Flow
+  docs/CATALOGO_MASTER.md           -> Estado general del proyecto
+  docs/VPS_CONDITIONS.md            -> Credenciales y puertos del VPS
+
+  web01/database/db-schema-modern.sql  -> Esquema SQL con tablas rubros/marcas/productos
+  web01/database/Catalogo_de_productos.xlsx -> Excel fuente (hojas: EGGER, FAPLAC...)
+
+  scripts/import_catalog.py            -> Importador masivo Excel -> Directus
+  scripts/setup_catalog_automation.py  -> Crea campos en Directus via API
+
+================================================================================
+PROXIMOS PASOS PENDIENTES
+================================================================================
+
+  [ ] Configurar el Flow segun PASO 3 o PASO 4 de este manual
+  [ ] Probar con 1 producto (PASO 5)
+  [ ] Ejecutar importacion masiva (PASO 6)
+  [ ] Vincular imagenes AVIF desde MinIO a los productos por SKU
+  [ ] Reintegrar MinIO y MeiliSearch al docker-compose.vps.yml
+  [ ] Crear endpoint en Astro que lea productos de Directus via API
+
+================================================================================
+FIN DEL MANUAL
+Alvarez Placas v16 | Generado por Antigravity | Abril 2026
+================================================================================

@@ -134,20 +134,20 @@ export function initCatalog() {
         }
     }
 
-    // Modal Handling
-    cards.forEach(card => {
-        card.addEventListener('click', (e) => {
-            if (e.target.closest('a') || e.target.closest('button')) return;
-
-            const dataStr = card.dataset.full;
-            if (!dataStr) return;
-
-            const data = JSON.parse(dataStr);
-            const isTablero = data.bucket === "Tableros";
-            const isHerramienta = data.bucket === "Herramientas";
+            // Modal Handling
+            cards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('a') || e.target.closest('button')) return;
+        
+                    const dataStr = card.dataset.full;
+                    if (!dataStr) return;
+        
+                    const data = JSON.parse(dataStr);
+                    const isTablero = data.bucket === "Tableros";
+                    const isHerramienta = data.bucket === "Herramientas";
 
             if (mImage) {
-                const LOGO_FALLBACK = "https://admin.alvarezplacas.com.ar/assets/76aefcd2-775b-48c7-a64c-4ebd5627557c";
+                const LOGO_FALLBACK = "https://admin.alvarezplacas.com.ar/assets/209a486b-8623-4c3e-8f8e-2a3288f1f0fd";
                 mImage.src = data.imagen || LOGO_FALLBACK;
                 mImage.style.display = 'block';
                 mImage.onerror = () => { mImage.src = LOGO_FALLBACK; };
@@ -159,19 +159,16 @@ export function initCatalog() {
                 mCategory.textContent = data.category;
                 mCategory.className = `text-xs font-bold uppercase tracking-widest ${isTablero ? 'text-primary' : (isHerramienta ? 'text-red-500' : 'text-blue-400')}`;
             }
+
             // Fill Specs & Interactive Selectors
             if (mSpecsContainer) {
                 mSpecsContainer.innerHTML = '';
                 
                 if (isTablero && data.variants && data.variants.length > 0) {
-                    // 1. Definir Soportes Maestros
                     const MASTER_SUPPORTS = ["MDF", "AGLOMERADO", "RH"];
                     const availableSupports = [...new Set(data.variants.map(v => v.soporte.toUpperCase()))];
-                    
-                    // Elegir el primero disponible como activo
                     let activeSupport = availableSupports.includes("MDF") ? "MDF" : (availableSupports.includes("AGLOMERADO") ? "AGLOMERADO" : availableSupports[0]);
 
-                    // 2. Función de Renderizado de Variantes
                     const renderVariants = (support) => {
                         const existingGrid = mSpecsContainer.querySelector('.variants-grid-container');
                         if (existingGrid) existingGrid.remove();
@@ -187,32 +184,20 @@ export function initCatalog() {
                         const vGrid = document.createElement('div');
                         vGrid.className = 'grid grid-cols-3 gap-2';
 
-                        // Filtrado y DEDUPLICACIÓN de espesores
                         const variantsForSupport = data.variants.filter(v => v.soporte.toUpperCase() === support);
                         const uniqueThicknesses = [...new Set(variantsForSupport.map(v => v.espesor))].sort((a,b) => parseFloat(a) - parseFloat(b));
 
-                        const finalThicknesses = uniqueThicknesses.filter(esp => {
-                            if (support.includes('AGLO') || support.includes('AGLOMERADO')) {
-                                const val = parseFloat(esp);
-                                if (val === 3 || val === 5.5) return false;
-                            }
-                            return true;
-                        });
-
-                        if (finalThicknesses.length === 0) {
-                            const empty = document.createElement('p');
-                            empty.className = 'text-gray-600 text-xs italic col-span-3 py-4';
-                            empty.textContent = 'No hay espesores disponibles para este soporte.';
-                            vGrid.appendChild(empty);
-                        }
-
-                        finalThicknesses.forEach(esp => {
+                        uniqueThicknesses.forEach(esp => {
                             const btn = document.createElement('button');
-                            btn.className = 'variant-opt-btn bg-white/5 border border-white/10 p-3 rounded-xl text-center transition-all hover:border-primary/50 group/opt';
-                            btn.innerHTML = `<span class="text-white text-xs font-bold block group-hover/opt:text-primary transition-colors">${esp}</span>`;
+                            btn.className = 'variant-opt-btn bg-white/5 border border-white/10 p-3 rounded-xl text-center transition-all hover:bg-white/10 group/opt';
+                            btn.innerHTML = `<span class="text-gray-400 text-xs font-bold block group-hover/opt:text-white transition-colors">${esp}</span>`;
                             btn.onclick = () => {
-                                document.querySelectorAll('.variant-opt-btn').forEach(b => b.classList.remove('border-primary', 'bg-primary/10'));
-                                btn.classList.add('border-primary', 'bg-primary/10');
+                                document.querySelectorAll('.variant-opt-btn').forEach(b => {
+                                    b.classList.remove('bg-white/20', 'border-white/30');
+                                    b.querySelector('span').classList.replace('text-white', 'text-gray-400');
+                                });
+                                btn.classList.add('bg-white/20', 'border-white/30');
+                                btn.querySelector('span').classList.replace('text-gray-400', 'text-white');
                                 updateWhatsApp(esp, support);
                             };
                             vGrid.appendChild(btn);
@@ -220,14 +205,11 @@ export function initCatalog() {
 
                         container.appendChild(vGrid);
                         mSpecsContainer.appendChild(container);
-                        
-                        // Default WhatsApp update with first thickness
-                        if (finalThicknesses.length > 0) updateWhatsApp(finalThicknesses[0], support);
+                        if (uniqueThicknesses.length > 0) updateWhatsApp(uniqueThicknesses[0], support);
                     };
 
-                    // 3. Renderizar Selector de Soporte Maestro
                     const sContainer = document.createElement('div');
-                    sContainer.className = 'mb-6';
+                    sContainer.className = 'mb-8';
                     const sTitle = document.createElement('span');
                     sTitle.className = 'text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4 block';
                     sTitle.textContent = 'Seleccionar Soporte';
@@ -241,25 +223,24 @@ export function initCatalog() {
                         const sBtn = document.createElement('button');
                         const isActive = sup === activeSupport;
 
-                        sBtn.className = `flex-1 py-3 px-2 rounded-xl text-[9px] font-black uppercase tracking-tighter border transition-all ${
+                        sBtn.className = `flex-1 py-3 px-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
                             isActive 
-                            ? 'bg-primary text-black border-primary shadow-[0_5px_15px_rgba(255,77,0,0.3)]' 
-                            : (isAvailable ? 'bg-white/5 text-gray-400 border-white/10 hover:border-white/30' : 'bg-transparent text-gray-800 border-gray-900 cursor-not-allowed opacity-50')
+                            ? 'bg-white/20 text-white border-white/30 shadow-lg' 
+                            : (isAvailable ? 'bg-white/5 text-gray-500 border-white/10 hover:border-white/20' : 'bg-transparent text-gray-800 border-gray-900 cursor-not-allowed opacity-30')
                         }`;
                         
                         sBtn.textContent = sup === "RH" ? "RH (Antihumedad)" : sup;
                         
                         if (isAvailable) {
                             sBtn.onclick = () => {
-                                activeSupport = sup;
                                 sGrid.querySelectorAll('button').forEach(b => {
                                     if (!b.classList.contains('cursor-not-allowed')) {
-                                        b.classList.remove('bg-primary', 'text-black', 'border-primary', 'shadow-[0_5px_15px_rgba(255,77,0,0.3)]');
-                                        b.classList.add('bg-white/5', 'text-gray-400', 'border-white/10');
+                                        b.classList.remove('bg-white/20', 'text-white', 'border-white/30', 'shadow-lg');
+                                        b.classList.add('bg-white/5', 'text-gray-500', 'border-white/10');
                                     }
                                 });
-                                sBtn.classList.remove('bg-white/5', 'text-gray-400', 'border-white/10');
-                                sBtn.classList.add('bg-primary', 'text-black', 'border-primary', 'shadow-[0_5px_15px_rgba(255,77,0,0.3)]');
+                                sBtn.classList.remove('bg-white/5', 'text-gray-500', 'border-white/10');
+                                sBtn.classList.add('bg-white/20', 'text-white', 'border-white/30', 'shadow-lg');
                                 renderVariants(sup);
                             };
                         }
@@ -273,11 +254,15 @@ export function initCatalog() {
 
                 function updateWhatsApp(esp, sup) {
                     if (mWhatsAppBtn) {
-                        const priceText = data.price || "Consultar";
-                        const msg = `Hola Alvarez Placas, consulto disponibilidad de:\n*${data.name}*\nMarca: ${data.brand}\nSoporte: *${sup}*\nEspesor: *${esp}*\nPrecio: ${priceText}`;
-                        mWhatsAppBtn.href = `https://wa.me/5491100000000?text=${encodeURIComponent(msg)}`;
+                        const msg = `Hola Alvarez Placas, consulto disponibilidad de:\n*${data.name}*\nMarca: ${data.brand}\nSoporte: *${sup}*\nEspesor: *${esp}*`;
+                        mWhatsAppBtn.href = `https://wa.me/5491161411842?text=${encodeURIComponent(msg)}`;
                     }
                 }
+            }
+
+            // WhatsApp Style Update
+            if (mWhatsAppBtn) {
+                mWhatsAppBtn.className = "w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black text-sm uppercase py-5 rounded-2xl flex items-center justify-center gap-3 transition-all hover:border-primary/40";
             }
 
             // Smart Match Button (Solo para Tableros)

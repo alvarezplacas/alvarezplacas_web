@@ -1,16 +1,21 @@
-# DIRECTIVA SUPREMA: MIGRACIÓN Y REFACTORIZACIÓN
-**Objetivo:** Migrar el sitio monolítico actual de Alvarez Placas a una arquitectura modular, escalable y sectorizada (Astro + Directus).
+# DIRECTIVA SUPREMA: MIGRACIÓN Y REFACTORIZACIÓN (v16)
 
-## CÓMO DEBES EXTRAER Y PROCESAR LA INFORMACIÓN:
+**Objetivo:** Migrar y evolucionar el sitio de Alvarez Placas en una arquitectura modular v16 (PostgreSQL 16 + Directus 11).
 
-1. **PROHIBIDO EL SCRAPING EN VIVO:** No intentes adivinar la lógica analizando el DOM de la URL en producción. Te proporcionaré fragmentos del código fuente antiguo (archivos .astro, .js, o esquemas JSON de Directus). Tu trabajo es refactorizar *ese* código.
-2. **EXTRACCIÓN DE LÓGICA, NO DE BASURA:** Cuando analices el código viejo, extrae únicamente la "Lógica de Negocio" (qué hace el componente) y el "Contenido" (textos, imágenes). Descarta la estructura HTML/CSS vieja si no cumple con los estándares modernos.
-3. **MODULARIZACIÓN EXTREMA:** El código viejo probablemente esté todo mezclado. Tu obligación es destriparlo. Si en un archivo viejo hay un botón, una grilla y una llamada a la API, debes separarlos en tres micro-componentes independientes antes de reescribirlos.
-4. **ACTUALIZACIÓN TECNOLÓGICA:** El código viejo es el piso, no el techo. Al reconstruir el componente para tu sector asignado, debes aplicar las mejores prácticas vigentes de Astro (Astro Islands, View Transitions) y CSS moderno. 
-5. **EL PRINCIPIO DE "NO ROMPER":** Si extraes una funcionalidad que interactúa con un sector que no te corresponde (ej. el Frontend del Catálogo interactuando con el Backend del Dashboard), debes documentar la necesidad de una API y detenerte. No programes fuera de tu jurisdicción.
+## LÓGICA DE TRABAJO v16 (Abril 2026):
 
-Esta es la nueva ruta donde cada agente manejara su porción de codigo para realizar un trabajo modular. 
-/alvarezplacas_proyecto
+1. **PROHIBIDO EL SCRAPING EN VIVO:** Usa únicamente los fragmentos de código fuente proporcionados. Para lógica de negocio, consulta el esquema de Directus v11 (puerto 8055).
+2. **MODULARIZACIÓN EXTREMA:** Divide cada componente en micro-unidades funcionales antes de reescribirlos para Astro v6.
+3. **MANTENIMIENTO DEL ESQUEMA:** Si detectas discrepancias en los campos, re-aplica el `directus_snapshot.json` ubicado en `web01/database/`. No intentes adivinar el esquema físico de PostgreSQL 16.
+4. **ACTUALIZACIÓN TECNOLÓGICA:** Los componentes nuevos deben aprovechar **Astro Islands** y el motor **LightningCSS** para máxima performance.
+
+---
+
+## 🏗️ Nueva Ruta Maestra (Jurisdicción v16)
+
+Desde Abril 2026, la zona de trabajo aislada en el VPS es:
+
+**/opt/alvarez_v16/web01**
   /Backend
           /conexiones
           /dashboard
@@ -18,3 +23,10 @@ Esta es la nueva ruta donde cada agente manejara su porción de codigo para real
           /catalogo
           /herramientas
           /home
+  /database
+          /migrations
+          /directus_snapshot.json ( डीएनए del sistema )
+
+---
+
+*Documento validado para la posteridad por Antigravity tras la migración exitosa.*

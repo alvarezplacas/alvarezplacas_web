@@ -1,24 +1,43 @@
-# 🛠️ Condiciones Técnicas del VPS (Ubuntu)
+# 🛠️ Condiciones Técnicas del VPS (Ubuntu — v16)
 
-Este documento resume las dependencias e infraestructura críticas del servidor para evitar errores 502 Bad Gateway u otros fallos de despliegue.
+**Actualizado:** 23 de Abril de 2026 — Estado post-reparación de Directus.
 
-## 1. Configuración de Astro
-El servidor ejecuta la aplicación en modo desarrollo (`npm run dev`) dentro de Docker para permitir actualizaciones en caliente (Hot Reload) vía File Browser.
+---
 
-- **Fase de Red**: Vite bloquea cualquier host que no esté explícitamente autorizado.
-- **Solución**: `astro.config.mjs` -> `server.allowedHosts: ['alvarezplacas.com.ar']`.
+## 1. Configuración de Astro v6
+La aplicación corre en modo **SSR Standalone** (Puerto 4321).
+- **Contenedor**: `alvarezplacas_web`
+- **Puerto**: `4321` expuesto.
 
-## 2. Orquestación Docker
-El VPS utiliza `docker-compose.vps.yml` para gestionar los servicios:
-- **web**: Contenedor con Node 22 Alpine.
-- **filebrowser**: Puerto 8081, mapeado a `/home/ubuntu/alvarezplacas_web`.
-- **directus**: Gestión de contenidos.
-- **alvarezplacas_db**: Base de datos PostgreSQL (Puerto 5433 externo, 5432 interno).
+## 2. Orquestación Docker (v16)
+El archivo compose activo en el servidor es: `/opt/alvarez_v16/web01/docker-compose.vps.yml`
+
+| Servicio | Contenedor | Puerto |
+|---|---|---|
+| `web` | `alvarezplacas_web` | `4321` |
+| `directus` | `alvarezplacas_directus_v16` | `8055` |
+| `db` | `alvarezplacas_db_v16` | Interno (5432) |
 
 ## 3. Seguridad y Accesos
-- Se requiere `alvarez_vps.key` para acceso SSH root en casos de emergencia.
-- Las contraseñas por defecto en `Backend/conexiones/lib/db.js` y `docker-compose.yml` deben coincidir si no hay un archivo `.env` cargado.
+- **Directus Admin**: `admin@alvarezplacas.com.ar` / `JavierMix2026!`
+- **Postgres DB**: `alvarez_admin` / `AlvarezAdmin2026`
+- **Redes**: `javiermix_network` (externa para proxy) + `alvarez_v16_net` (interna)
 
-## 4. Rutas en el Servidor
-- **Código Vivo**: `/home/ubuntu/alvarezplacas_web/`
-- **Volúmenes de Datos**: `/opt/alvarezplacas/`
+## 4. Rutas Críticas en el Servidor
+
+| Recurso | Ruta |
+|---|---|
+| Compose | `/opt/alvarez_v16/web01/docker-compose.vps.yml` |
+| Código Astro | `/opt/alvarez_v16/web01/site/web01/` |
+| Build (`dist`) | `/opt/alvarez_v16/web01/site/web01/dist/` |
+| Placas (fotos) | `/opt/alvarezplacas/placas/` |
+| BD (volumen Docker) | `web01_alvarez_data_v16` (Externo) |
+
+> [!CAUTION]
+> La carpeta `/opt/javiermix/` pertenece a **javiermix.ar**. **PROHIBIDO MODIFICAR**.
+> Los contenedores de `VPN` y `Nextcloud` son críticos para la infraestructura y deben ser respetados.
+
+---
+
+*Documento actualizado tras el rescate de Directus del 23/04/2026.*
+

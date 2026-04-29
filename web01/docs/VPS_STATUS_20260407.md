@@ -11,7 +11,7 @@ Análisis completo ejecutado al final de la sesión de recuperación de emergenc
 | Componente | Contenedor | Estado | Observaciones |
 |---|---|---|---|
 | **Web (Astro 6)** | `alvarezplacas_web` | ✅ Activo | Puerto 4321, sin 502 |
-| **CMS (Directus v11)** | `alvarezplacas_directus_v16` | ✅ Activo | Puerto 8055, 69 materiales |
+| **CMS (Directus v11)** | `alvarezplacas_directus_v16` | ✅ Activo | Puerto 8055, Productos normalizados |
 | **Base de Datos** | `alvarezplacas_db_v16` | ✅ Activo | PostgreSQL 16, datos recuperados |
 
 **URLs:**
@@ -66,7 +66,7 @@ Análisis completo ejecutado al final de la sesión de recuperación de emergenc
 
 ### 1. Recuperación de Base de Datos
 - ✅ Reconectamos el volumen `web01_alvarez_data_v16` al contenedor de Directus
-- ✅ Los 69 materiales del catálogo están intactos
+- ✅ Los productos del catálogo están intactos
 - ✅ Directus v16 arranca correctamente con la base de datos recuperada
 
 ### 2. Despliegue del Frontend
@@ -97,7 +97,7 @@ Análisis completo ejecutado al final de la sesión de recuperación de emergenc
   ```
 
 ### Media Prioridad
-- [ ] **Permisos públicos Directus**: Verificar que el rol "Público" tiene acceso de lectura a `materiales`, `marcas`, `categorias`, `espesores`
+- [ ] **Permisos públicos Directus**: Verificar que el rol "Público" tiene acceso de lectura a `Productos`, `marcas`, `categorias`, `espesores`
   - Script disponible: `scripts/fix_public_permissions_es.mjs`
 - [ ] **Limpiar volúmenes huérfanos**: Hay ~60 volúmenes sin nombre (hashes) que pueden ser basura
   ```bash

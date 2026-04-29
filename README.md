@@ -1,42 +1,63 @@
 # 🚀 Alvarez Placas - Proyecto Modular Astro
 
-Este repositorio contiene el sitio web de Alvarez Placas, migrado a una estructura modular sectorizada para facilitar el trabajo en paralelo de múltiples agentes.
+Este repositorio contiene el ecosistema digital de Alvarez Placas, diseñado bajo una arquitectura modular y sectorizada para máxima eficiencia operativa.
+
+## 🧠 Reporte de Infraestructura Inteligente (Actualización Abril 2026 - v16)
+
+Tras la migración exitosa a PostgreSQL 16 y Directus 11, este es el estado del sistema:
+
+### 🌍 Hosting y Red Aislada (v16)
+
+- **Host**: **OVH Cloud** (IP: `144.217.163.13`).
+- **Directorio Maestro**: `/opt/alvarez_v16/web01` (Entorno de producción aislado).
+- **Aislamiento**: El proyecto corre en una red interna dedicada `alvarez_v16_internal` para evitar conflictos con el proyecto hermano (*Javiermix*).
+- **Orquestador**: **Caddy v2** gestionando SSL y redirecciones.
+
+### 🛠️ El Stack (Core)
+
+- **Framework**: **Astro v6.0.8** (SSR modo `node` standalone).
+- **Base de Datos**: **PostgreSQL 16** (Contenedor `alvarezplacas_db_v16`).
+- **CMS**: **Directus 11.1.0** (Contenedor `alvarezplacas_directus_v16`).
+- **Volumen Persistente**: `alvarez_data_v16`.
+
+---
+
+## 🏗️ Protocolo de Rescate de Esquema (Snapshot)
+
+> [!IMPORTANT]
+> Si tras una migración o reinicio ves un error **[FORBIDDEN]** en el panel de Directus, es porque el "Metadato de Campos" se ha desincronizado del motor de base de datos.
+
+### Pasos para restaurar en 30 segundos:
+1. Asegurarse de que el archivo `database/directus_snapshot.json` esté actualizado.
+2. Acceder al panel de Admin -> Settings -> Schema Snapshot.
+3. Importar el archivo JSON o usar la API `POST /schema/apply` con el contenido del snapshot.
+4. Reiniciar el contenedor de Directus si es necesario: `docker restart alvarezplacas_directus_v16`.
+
+---
+
+## 🚢 Guía de Operaciones y Acceso
+
+### 1. Despliegue de Código
+Todo cambio en `main` se sincroniza con el servidor. En el VPS, los archivos se alojan en:
+`/opt/alvarez_v16/web01`
+
+### 2. Acceso a Base de Datos
+- **Usuario**: `alvarez_admin`
+- **Pass**: **`AlvarezAdmin2026`**
+- **Puerto**: Red interna 5432 (Sin exposición externa por seguridad).
+
+### 3. Panel Directus v11
+- **Email**: `admin@alvarezplacas.com.ar`
+- **Pass**: **`JavierMix2026!`**
+- **URL**: `http://144.217.163.13:8055` (Gestionado por Caddy).
+
+---
 
 ## 🏗️ Estructura del Proyecto
+- **/src/pages**: Wrappers de entrada.
+- **/Backend**: Inteligencia (DB, Directus, Dashboards).
+- **/Frontend**: Experiencia de usuario (Catálogo, Presupuestador).
+- **/database/migrations**: Scripts SQL para reconstrucción de tablas físicas.
+- **/database/directus_snapshot.json**: **ADN del sistema** (Metadatos de campos y relaciones).
 
-- **/src/pages**: Contenedores (wrappers) de Astro que importan las páginas reales de los sectores.
-- **/Backend**: Lógica de administración, conexiones a base de datos y dashboards.
-- **/Frontend**: Landing pages, catálogo, herramientas y componentes de usuario.
-- **/docs**: Guías técnicas y manuales de consulta.
-- **/_basura**: Depósito temporal de archivos legacy, scripts de migración y logs (CUIDADO: no borrar hasta estabilidad total).
-
-### Arquitectura Modular (V2)
-El sitio ahora utiliza una estructura modular para escalar mejor:
-- `/Backend`: Lógica de servidor, conexiones a DB y Directus.
-- `/Frontend`: Vistas y componentes de usuario.
-- `/Frontend/shared/components`: Componentes comunes (Header, Footer, Nav) con alias `@components`.
-- `/docs`: Documentación técnica y condiciones del VPS.
-
-#### Aliases de Ruta
-Para mantener el código limpio, se deben usar estos aliases:
-- `@backend`: `path.resolve('./Backend')`
-- `@frontend`: `path.resolve('./Frontend')`
-- `@conexiones`: `path.resolve('./Backend/conexiones')`
-- `@components`: `path.resolve('./Frontend/shared/components')`
-
-### Despliegue en VPS
-El despliegue se realiza mediante `git pull` en la carpeta `/home/ubuntu/alvarezplacas_web` del servidor, seguido de un reinicio de contenedores usando `docker-compose.vps.yml`.
-
-## 🌍 Condiciones del VPS (CRÍTICO)
-
-Para que el sitio funcione correctamente en el servidor de producción:
-1. **Allowed Hosts**: `astro.config.mjs` DEBE tener `server.allowedHosts: ['alvarezplacas.com.ar']`.
-2. **Docker Sync**: El VPS utiliza volúmenes locales. Todo cambio en el código se refleja automáticamente en el contenedor si se hace via Git o File Browser.
-3. **Casing**: Linux es sensible a mayúsculas. Respetar siempre la estructura `Backend/` y `Frontend/`.
-
-Para más detalles, consultar [VPS_CONDITIONS.md](file:///d:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/docs/VPS_CONDITIONS.md).
-
-## 🚢 Despliegue
-
-Cada `git push origin main` activa una actualización automática en el servidor.
-Consulte [INSTRUCCIONES_DESPLIEGUE.md](file:///d:/Alvarezplacas_2026/WEB-alvarezplacas_astro/Alvarezplacas/docs/INSTRUCCIONES_DESPLIEGUE.md) para más detalles.
+*Documento actualizado y validado el 07/04/2026 tras la migración exitosa a PostgreSQL 16.*

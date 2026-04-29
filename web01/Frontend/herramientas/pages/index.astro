@@ -1,10 +1,11 @@
 ---
 /**
  * Herramientas Index - Centro de utilidades para el usuario.
- * Propiedad del Agente 5 (Frontend/Herramientas).
+ * Estética Taller Digital (OKLCH + Glass + 3 Col).
  */
 import Layout from '../../home/layouts/Layout.astro';
 import Header from '@components/Header.astro';
+import '../../home/styles/workshop.css';
 
 const tools = [
   {
@@ -12,57 +13,68 @@ const tools = [
     description: "IA que sugiere combinaciones de colores usando la regla 60-30-10.",
     icon: "fa-magic",
     link: "/herramientas/smart-match",
-    color: "from-primary to-orange-600"
+    color: "var(--primary)"
   },
   {
     title: "Envío de Cortes",
     description: "Calcula tus cortes y envíalos directamente a nuestro equipo.",
     icon: "fa-calculator",
     link: "/herramientas/presupuestador",
-    color: "from-green-500 to-emerald-700"
+    color: "oklch(70% 0.15 150)"
   },
   {
     title: "Presupuestos Online",
-    description: "Herramienta exclusiva para miembros del Club para generar PDFs profesionales.",
+    description: "Generación de presupuestos profesionales en PDF para tus clientes.",
     icon: "fa-file-invoice-dollar",
     link: "/cliente/creador-presupuestos",
-    color: "from-blue-500 to-indigo-700"
+    color: "oklch(60% 0.18 260)"
   }
 ];
 ---
 
-<Layout title="Herramientas Útiles | Alvarez Placas">
+<Layout title="Herramientas Expertas | Alvarez Placas">
   <Header />
   
-  <main class="pt-24 pb-20 min-h-screen bg-[#0a0a0a]">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <main class="relative pt-32 pb-24 min-h-screen bg-[#050505] overflow-hidden">
+    
+    <!-- Workshop Grids -->
+    <div class="absolute inset-0 z-0 workshop-grid pointer-events-none"></div>
+    <div class="absolute inset-0 z-0 workshop-grid-fine pointer-events-none"></div>
+
+    <div class="relative z-10 max-w-[1800px] mx-auto px-6 lg:px-12">
       
       <!-- Titular -->
-      <div class="mb-16 text-center">
-        <h1 class="text-5xl md:text-7xl font-black mb-6 tracking-tighter text-white">
-          Herramientas <span class="text-primary italic">Expertas</span>
+      <div class="mb-20 text-center">
+        <h1 class="text-6xl md:text-8xl font-black mb-8 tracking-tighter text-white">
+          Herramientas <span class="italic text-[oklch(65%_0.23_35)]">Expertas</span>
         </h1>
-        <p class="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed">
-          Potencia tus proyectos con nuestras utilidades inteligentes diseñadas para carpinteros y entusiastas del diseño.
+        <p class="text-[oklch(85%_0.01_250)] text-xl max-w-3xl mx-auto leading-relaxed font-light">
+          Potencia tus proyectos con nuestras utilidades inteligentes diseñadas para <span class="text-white font-medium">carpinteros y entusiastas del diseño</span>.
         </p>
       </div>
 
-      <!-- Grid de Herramientas -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <!-- Grid de Herramientas (3 Columnas Full Width) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         {tools.map(tool => (
-          <a href={tool.link} class="group relative block">
-            <div class={`absolute -inset-1 bg-gradient-to-r ${tool.color} rounded-2xl blur opacity-25 group-hover:opacity-60 transition duration-500`}></div>
-            <div class="relative bg-[#151515] p-10 rounded-2xl border border-gray-800 hover:border-primary/50 transition-colors h-full flex flex-col items-center text-center">
-              <div class={`w-20 h-20 rounded-2xl bg-gradient-to-br ${tool.color} flex items-center justify-center mb-8 shadow-xl shadow-black/50 group-hover:scale-110 transition-transform duration-500`}>
+          <a href={tool.link} class="group relative block h-full">
+            <div class="glass-card p-10 rounded-[2rem] h-full flex flex-col items-center text-center overflow-hidden">
+              
+              <!-- Icon with Glow -->
+              <div class="relative w-20 h-20 rounded-2xl flex items-center justify-center mb-10 transition-transform duration-500 group-hover:scale-110"
+                   style={`background-color: ${tool.color}; box-shadow: 0 15px 30px -10px ${tool.color}60;`}>
                 <i class={`fas ${tool.icon} text-3xl text-white`}></i>
               </div>
-              <h2 class="text-3xl font-bold text-white mb-4">{tool.title}</h2>
-              <p class="text-gray-400 group-hover:text-gray-300 transition-colors">
+
+              <h2 class="text-3xl font-bold text-white mb-6 tracking-tight">{tool.title}</h2>
+              <p class="text-gray-400 text-lg group-hover:text-gray-200 transition-colors duration-500">
                 {tool.description}
               </p>
-              <div class="mt-8 flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                Explorar Herramienta <i class="fas fa-arrow-right"></i>
+
+              <!-- Glass Button Link -->
+              <div class="mt-12 py-3 px-8 rounded-full border border-white/10 bg-white/5 text-xs font-bold uppercase tracking-[0.2em] text-white/60 group-hover:text-white group-hover:border-primary/50 group-hover:bg-primary/10 transition-all duration-500">
+                Explorar <i class="fas fa-chevron-right ml-2 text-[8px]"></i>
               </div>
+
             </div>
           </a>
         ))}
@@ -71,3 +83,13 @@ const tools = [
     </div>
   </main>
 </Layout>
+
+<style>
+  main {
+    animation: fadeIn 1s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>

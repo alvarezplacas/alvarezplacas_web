@@ -1,7 +1,43 @@
+# 🚀 🚨 INFRAESTRUCTURA CRÍTICA: SERVIDOR DE CORREO (ALVAREZ PLACAS)
+
+> **MANDATO PRINCIPAL:** Los servicios de correo deben estar **SIEMPRE EN LÍNEA**. El servidor de correo es independiente del desarrollo del sitio web y Directus. **NO TOCAR NI MODIFICAR** esta carpeta sin protocolos de respaldo previos.
+
+## 🛡️ Protocolo de Supervivencia del Correo
+1. **Aislamiento:** El correo vive en `/opt/alvarez_v16/web01/site/mailserver/`. Sus contenedores no dependen de la actualización de la web.
+2. **Testeos Obligatorios:** Se debe verificar el funcionamiento de envío y recepción en `https://mail.alvarezplacas.com.ar` de forma periódica.
+3. **Persistencia Extrema:** Los volúmenes `docker-data` y `snappymail-data` contienen los años de trabajo de los empleados. Son intocables.
+
+---
+
 # 🚀 Alvarez Placas — Web Modular (web01)
 
 > Sitio web oficial de Alvarez Placas | Stack: Astro v6 + Directus v11 + PostgreSQL 16  
 > Última actualización: Abril 2026 — v16 Estable
+
+---
+
+## 🗺️ MAPA ESTRUCTURA VPS (Verificado v16)
+
+Para evitar errores de despliegue, esta es la ubicación exacta de los archivos en el servidor `144.217.163.13`:
+
+*   **Raíz del Proyecto**: `/opt/alvarez_v16/web01/`
+*   **Docker Compose**: `/opt/alvarez_v16/web01/docker-compose.vps.yml`
+*   **Repositorio Git (Astro)**: `/opt/alvarez_v16/web01/site/web01/` ⬅️ *Hacer git pull aquí*
+*   **Datos PostgreSQL**: `/opt/alvarez_v16/web01/pgdata/`
+*   **Archivos Multimedia (Fotos)**: `/opt/alvarezplacas/placas/`
+*   **Configuración Directus**: `/opt/alvarezplacas/config/`
+
+---
+
+## 🚀 Guía de Despliegue Rápido
+Si hay conflictos de Git en el VPS, ejecutar:
+```bash
+cd /opt/alvarez_v16/web01/site/web01
+git fetch origin
+git reset --hard origin/main
+cd /opt/alvarez_v16/web01
+docker compose -f docker-compose.vps.yml restart alvarezplacas_web
+```
 
 ---
 
@@ -62,7 +98,7 @@ const DIRECTUS_URL = process.env.DIRECTUS_URL_INTERNAL
 ### Token de Autenticación
 - **Token activo**: `U_49a1I4EcNofowltd95z0MwlUdJ8VgW`
 - **Usuario**: Frontend User (Rol "Rol Frontend" en Directus)
-- **Permisos**: Lectura en `materiales`, `marcas`, `categorias`, `espesores`, `vendedores`, `sucursales`, `site_settings`
+- **Permisos**: Lectura en `Productos`, `marcas`, `categorias`, `espesores`, `vendedores`, `sucursales`, `site_settings`
 
 > [!WARNING]
 > Si el token cambia en Directus, hay que actualizarlo en dos lugares:
@@ -239,9 +275,9 @@ docker compose -f docker-compose.vps.yml restart alvarezplacas_directus
 ## 📦 Ingesta de Datos
 
 ### Sistema actual (activo en producción)
-- **Fuente**: `database/catalogo_01.csv`
-- **Script**: `scripts/ingest_full_catalog_v16.mjs`
-- **Colección Directus**: `materiales`
+- **Fuente**: `web01/database/Catalogo_de_productos.xlsx`
+- **Script**: `scripts/import_catalog.py`
+- **Colección Directus**: `Productos`
 
 ### Sistema nuevo (en desarrollo, NO en producción)
 - Ver: `docs/CRITERIO_CODIGOS_EN_DESARROLLO.md`

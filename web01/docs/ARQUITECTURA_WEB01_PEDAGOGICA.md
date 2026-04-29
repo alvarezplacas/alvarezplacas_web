@@ -58,7 +58,7 @@ El sitio es **totalmente dinámico** y depende de una instancia de **Directus CM
 - **Endpoint**: `/api/contacto.ts` procesa el envío y lo guarda en la colección `mensajes_contacto` de Directus, añadiendo el campo `tipo`.
 
 ### 👤 Módulo Dashboards (`Backend/dashboard`)
-- **Admin**: Gestión de materiales (Excel), stock y visualización de mensajes.
+- **Admin**: Gestión de productos (Excel), stock y visualización de mensajes.
 - **Vendedor**: Seguimiento de pedidos asignados.
 - **Cliente**: Creador de presupuestos históricos.
 

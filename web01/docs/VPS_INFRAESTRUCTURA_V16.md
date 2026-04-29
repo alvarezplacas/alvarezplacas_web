@@ -156,8 +156,8 @@ El proxy Caddy está corriendo en la red `javiermix_network` y redirige el tráf
 
 - **Motor**: PostgreSQL 16
 - **Volumen**: `web01_alvarez_data_v16` (persistente, externo al compose)
-- **Colecciones activas en Directus**: 69 materiales cargados en las colecciones:
-  - `materiales` — Productos del catálogo
+- **Colecciones activas en Directus**: Productos del catálogo cargados en:
+  - `Productos` — Productos del catálogo normalizados v16
   - `marcas` — EGGER, FAPLAC, SADEPAN, etc.
   - `categorias` — Aglomerado, MDF, etc.
   - `espesores` — 9mm, 15mm, 18mm, etc.

@@ -84,8 +84,8 @@ async function ingestFull() {
             const sku = (row.sku && row.sku.trim().length > 3) ? row.sku.trim().toUpperCase() : 
                 `${rawCat.substring(0,3)}-${cleanName.substring(0,3)}-${cleanMarca.substring(0,3)}-${thickVal}`.toUpperCase();
 
-            // 3. Verificación de existencia para evitar duplicados en 'materiales'
-            const existingMaterial = await client.request(readItems('materiales', { 
+            // 3. Verificación de existencia para evitar duplicados en 'Productos'
+            const existingMaterial = await client.request(readItems('Productos', { 
                 filter: { sku: { _eq: sku } },
                 limit: 1 
             }));
@@ -116,7 +116,7 @@ async function ingestFull() {
                 imagen: LOGO_ID // Fallback por defecto en ingesta masiva inicial
             };
 
-            await client.request(createItem('materiales', materialData));
+            await client.request(createItem('Productos', materialData));
             console.log(`✅ [${count+1}] ${cleanName} cargado - SKU: ${sku}`);
             count++;
 

@@ -53,27 +53,15 @@ const normalizeBrand = (brand) => {
 };
 
 try {
-    // CARGA DE DATOS MAESTROS + MEDIA BRIDGE
-    const [settings, materials, brands, directusFiles] = await Promise.all([
+    // CARGA DE DATOS MAESTROS
+    const [settings, materials, brands] = await Promise.all([
         directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
         directus.request(readItems('Productos', { 
             limit: 1000, 
             fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre','foto_principal'] 
         })).catch(() => []),
-        directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => []),
-        directus.request(readItems('directus_files', { limit: -1, fields: ['id', 'title', 'filename_download'] })).catch(() => [])
+        directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
     ]);
-
-    // Mapeo de imágenes por SKU (Media Bridge)
-    const mediaMap = new Map();
-    (directusFiles?.data || directusFiles || []).forEach(f => {
-        // Limpiamos el nombre: pasamos a MAYÚSCULAS y quitamos la extensión (.jpg, .png, etc)
-        const fullName = (f.title || f.filename_download || "").toUpperCase();
-        const nameWithoutExt = fullName.replace(/\.[^/.]+$/, ""); // Quita .jpg, .avif, etc.
-        const skuClean = nameWithoutExt.trim();
-        
-        mediaMap.set(skuClean, f.id);
-    });
 
     officialBrands = (brands?.data || brands || []).map(b => normalizeBrand(b.nombre));
     if (settings?.length > 0) showPrices = settings[0].value !== 'false';
@@ -89,11 +77,15 @@ try {
             const category = p.rubro?.nombre || "Varios";
             const letra = p.rubro?.letra || "X";
             
-            // Clasificación por Bucket
-            let bucket = "Herrajes";
-            if (letra === 'R') bucket = "Herramientas";
-            else if (letra === 'M') bucket = "Tableros";
+            // Clasificación por Bucket (Categoría Principal)
+            let bucket = "Varios";
+            if (letra === 'M') bucket = "Tableros";
+            else if (letra === 'H') bucket = "Herrajes";
             else if (letra === 'I') bucket = "Química";
+            else if (letra === 'S') bucket = "Servicios";
+            else if (letra === 'T') bucket = "Tapacantos";
+            else if (letra === 'R') bucket = "Herramientas";
+            else if (letra === 'D') bucket = "Molduras";
 
             // Lógica de Agrupación para Placas (M)
             if (bucket === "Tableros" && p.modelo) {
@@ -107,17 +99,7 @@ try {
                     }
 
                     const itemSku = (p.sku || "").toUpperCase();
-                    let directusId = p.foto_principal || mediaMap.get(itemSku);
-
-                    // Si no hay match exacto y no hay foto directa, buscamos si el SKU está contenido en algún nombre de archivo
-                    if (!directusId && itemSku.length > 2) {
-                        for (const [fileName, id] of mediaMap.entries()) {
-                            if (fileName.includes(itemSku) || itemSku.includes(fileName)) {
-                                directusId = id;
-                                break;
-                            }
-                        }
-                    }
+                    let directusId = p.foto_principal;
 
                     grouped.set(key, {
                         id: p.id,
@@ -139,16 +121,7 @@ try {
                 });
             } else {
                 const itemSku = (p.sku || "").toUpperCase();
-                let directusId = p.foto_principal || mediaMap.get(itemSku);
-
-                if (!directusId && itemSku.length > 2) {
-                    for (const [fileName, id] of mediaMap.entries()) {
-                        if (fileName.includes(itemSku) || itemSku.includes(fileName)) {
-                            directusId = id;
-                            break;
-                        }
-                    }
-                }
+                let directusId = p.foto_principal;
 
                 standalone.push({
                     id: p.id,
@@ -198,7 +171,7 @@ buckets.forEach(b => {
     buckets={buckets} 
     brandsByBucket={brandsByBucket} 
     allUniqueBrands={uniqueBrands} 
-    totalProducts={catalogItems.length} 
+    totalProducts={catalogItems.length}
   />
 
   <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-10" id="catalogGrid">
@@ -246,7 +219,14 @@ buckets.forEach(b => {
             </div>
         </div>
 
-        <div class="mt-auto pt-8 border-t border-white/5">
+        <div class="mt-auto pt-8 border-t border-white/5 flex flex-col gap-3">
+            <!-- Smart Match Button -->
+            <button id="modalSmartMatchBtn" class="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black text-sm uppercase py-5 rounded-2xl hidden items-center justify-center gap-3 transition-all hover:border-primary/40 group">
+                <svg class="w-5 h-5 text-primary group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                Ver Combinación Smart Match
+            </button>
+
+            <!-- WhatsApp Button -->
             <a id="modalWhatsAppBtn" href="#" target="_blank" class="w-full bg-[#25D366] text-white font-black text-sm uppercase py-5 rounded-2xl flex items-center justify-center gap-3 hover:bg-[#1ebd5a] transition-all hover:shadow-[0_10px_20px_rgba(37,211,102,0.2)]">
                 <i class="fab fa-whatsapp text-lg"></i> Consultar Disponibilidad
             </a>

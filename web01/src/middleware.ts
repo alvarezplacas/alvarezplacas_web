@@ -1,5 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { query } from '@conexiones/lib/db.js';
+import { directus, readItems } from '@conexiones/directus.js';
 
 export const onRequest = defineMiddleware(async (context: any, next: any) => {
     const isPublicStatic = context.url.pathname.startsWith('/_astro') || context.url.pathname.startsWith('/favicon');
@@ -13,10 +13,15 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
 
     let isMaintenanceActive = false;
     try {
-        const result = await query("SELECT value FROM site_settings WHERE key = 'maintenance_mode'");
-        const rows = (result?.rows || []) as any[];
-        if (rows.length > 0) isMaintenanceActive = rows[0].value === 'true';
-    } catch (e) { /* Manejo de error si la DB no está lista */ }
+        // Usar Directus (resiliente) en lugar de query directo
+        const settings = await directus.request(readItems('site_settings', {
+            filter: { key: { _eq: 'maintenance_mode' } },
+            limit: 1
+        }));
+        if (settings && settings.length > 0) isMaintenanceActive = settings[0].value === 'true';
+    } catch (e) { 
+        console.error("[Middleware] Falló la verificación de mantenimiento:", e);
+    }
 
     const isAdminLogin = context.url.pathname === '/admin/login';
     const isClient = context.url.pathname.startsWith('/cliente');

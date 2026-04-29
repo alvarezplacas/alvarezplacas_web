@@ -1,10 +1,11 @@
 ---
 /**
  * Smart Match - Página de sugerencias de diseño.
- * Propiedad del Agente 5 (Frontend/Herramientas).
+ * Versión Directus v16 - Sincronizada con el catálogo real.
  */
 import Layout from '../../home/layouts/Layout.astro';
 import Header from '@components/Header.astro';
+import { directus, readItem, readItems } from '@conexiones/directus.js';
 import { getSmartMatch } from '@conexiones/lib/smartMatchLogic.js';
 import SmartMatchProposal from '../components/SmartMatchProposal.astro';
 
@@ -12,7 +13,30 @@ import SmartMatchProposal from '../components/SmartMatchProposal.astro';
 const url = new URL(Astro.request.url);
 const placaId = url.searchParams.get('id');
 
-const matchResult = placaId ? getSmartMatch(placaId) : null;
+let matchResult = null;
+
+if (placaId) {
+    try {
+        // 1. Obtener el producto base
+        const baseProduct = await directus.request(readItem('Productos', placaId, {
+            fields: ['id', 'nombre', 'modelo', 'linea', 'color_real', 'foto_principal', 'marca.nombre', 'rubro.nombre']
+        }));
+
+        if (baseProduct) {
+            // 2. Obtener una muestra de otros productos para sugerencias
+            // Limitamos a 200 para tener variedad pero no saturar
+            const otherProducts = await directus.request(readItems('Productos', {
+                limit: 200,
+                fields: ['id', 'nombre', 'modelo', 'linea', 'color_real', 'foto_principal', 'marca.nombre', 'rubro.nombre'],
+                filter: { id: { _neq: placaId } }
+            }));
+
+            matchResult = getSmartMatch(baseProduct, otherProducts?.data || otherProducts);
+        }
+    } catch (e) {
+        console.error("Error en Smart Match SSR:", e);
+    }
+}
 ---
 
 <Layout title="Smart Match | Alvarez Placas - Inspiración AI">
@@ -23,24 +47,24 @@ const matchResult = placaId ? getSmartMatch(placaId) : null;
             
             <!-- Hero Section -->
             <div class="mb-12">
-                <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tighter text-white">
-                    Smart <span class="text-primary italic">Match</span>
+                <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tighter text-white uppercase italic">
+                    Smart <span class="text-primary">Match</span>
                 </h1>
                 <p class="text-gray-400 text-lg max-w-2xl leading-relaxed">
-                    Nuestra IA analiza tu elección basándose en la regla <span class="text-white font-bold">60-30-10</span> de los grandes maestros del interiorismo para sugerirte la combinación perfecta.
+                    Nuestra IA analiza tu elección basándose en la regla <span class="text-white font-bold underline decoration-primary">60-30-10</span> de los grandes maestros del interiorismo para sugerirte la combinación perfecta.
                 </p>
             </div>
 
             {matchResult ? (
                 <SmartMatchProposal matchResult={matchResult} />
             ) : (
-                <div class="py-20 text-center">
-                    <div class="mb-8 inline-flex items-center justify-center w-24 h-24 rounded-full bg-[#1a1a1a] border border-gray-800">
+                <div class="py-20 text-center bg-[#111] rounded-3xl border border-dashed border-gray-800">
+                    <div class="mb-8 inline-flex items-center justify-center w-24 h-24 rounded-full bg-[#1a1a1a] border border-gray-700">
                          <svg class="w-10 h-10 text-primary animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     </div>
-                    <h2 class="text-3xl font-bold mb-4 text-white">No seleccionaste una placa</h2>
-                    <p class="text-gray-400 mb-8 max-w-md mx-auto">Para usar el Smart Match, primero debes elegir un color base de nuestro catálogo de materiales.</p>
-                    <a href="/catalogo" class="bg-primary hover:bg-primary/90 text-white font-bold py-4 px-8 rounded-xl transition-all shadow-lg shadow-primary/20">
+                    <h2 class="text-3xl font-black mb-4 text-white uppercase tracking-tighter">No seleccionaste una placa</h2>
+                    <p class="text-gray-400 mb-8 max-w-md mx-auto">Para usar el Smart Match, primero debes elegir un diseño base de nuestro catálogo de materiales.</p>
+                    <a href="/catalogo" class="bg-primary hover:bg-orange-500 text-black font-black py-4 px-10 rounded-xl transition-all shadow-xl shadow-primary/20 uppercase tracking-widest">
                         Ir al Catálogo
                     </a>
                 </div>
