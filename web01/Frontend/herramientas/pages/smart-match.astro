@@ -28,7 +28,10 @@ if (placaId) {
             const otherProducts = await directus.request(readItems('Productos', {
                 limit: 200,
                 fields: ['id', 'nombre', 'modelo', 'linea', 'color_real', 'foto_principal', 'marca.nombre', 'rubro.nombre'],
-                filter: { id: { _neq: placaId } }
+                filter: { 
+                    id: { _neq: placaId },
+                    foto_principal: { _nnull: true }
+                }
             }));
 
             matchResult = getSmartMatch(baseProduct, otherProducts?.data || otherProducts);

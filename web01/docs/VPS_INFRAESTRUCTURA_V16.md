@@ -28,6 +28,8 @@
 | `alvarezplacas_web` | `node:22-alpine` | `4321:4321` | `javiermix_network`, `alvarez_v16_net` |
 | `alvarezplacas_directus_v16` | `directus/directus:11.1.0` | `8055:8055` | `javiermix_network`, `alvarez_v16_net` |
 | `alvarezplacas_db_v16` | `postgres:16-alpine` | Interno | `alvarez_v16_net` |
+| `alvarezplacas-minio` | `minio/minio:latest` | Interno (9000/9001) | `javiermix_network`, `alvarez_v16_net` |
+| `alvarezplacas_meili` | `getmeili/meilisearch:v1.12` | Interno | `alvarez_v16_net` |
 
 ### Redes Docker
 

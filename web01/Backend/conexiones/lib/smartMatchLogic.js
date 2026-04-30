@@ -1,5 +1,5 @@
 /**
- * Lógica de Smart Match (Regla 60-30-10) - Versión Directus v16
+ * Lógica de Smart Match (Regla 60-30-10) - Versión Premium V16
  * 
  * 60% - Color Base (La placa elegida)
  * 30% - Color Secundario (Contraste o Armonía)
@@ -9,70 +9,86 @@
 export function getSmartMatch(baseProduct, allProducts = []) {
     if (!baseProduct) return null;
 
-    // Campos normalizados desde Directus
+    // Solo trabajamos con productos que tengan imagen para las sugerencias
+    const pool = allProducts.filter(p => p.foto_principal);
+
+    // Normalización de datos
     const categoria = baseProduct.rubro?.nombre || "Varios";
-    const color_real = baseProduct.color_real || "Neutro";
-    const marca = baseProduct.marca?.nombre || "Genérica";
+    const colorRealRaw = (baseProduct.color_real || "Neutro").toUpperCase();
+    
+    // Extraer categoría de color (Blanco, Gris, Negro, Marrón, etc.)
+    let colorBase = "Neutro";
+    if (colorRealRaw.includes("BLANCO")) colorBase = "Blanco";
+    else if (colorRealRaw.includes("GRIS")) colorBase = "Gris";
+    else if (colorRealRaw.includes("NEGRO")) colorBase = "Negro";
+    else if (colorRealRaw.includes("MARRÓN") || colorRealRaw.includes("NOGAL") || colorRealRaw.includes("ROBLE") || colorRealRaw.includes("CEREZO")) colorBase = "Madera";
+    else if (colorRealRaw.includes("BEIGE") || colorRealRaw.includes("ARENA")) colorBase = "Beige";
 
     let secundario = null;
     let acento = null;
-    let explicacion = "";
+    let argBase = "";
+    let argSecundario = "";
+    let argAcento = "";
 
-    // Lógica por categoría (Rubro)
-    if (categoria.includes("Maderas") || categoria.includes("Tableros")) {
-        if (color_real === "Marrón" || color_real === "Beige") {
-            // Maderas cálidas -> Secundario Gris/Negro -> Acento Blanco
-            secundario = findProduct(allProducts, { color_real: "Gris" }) || findProduct(allProducts, { color_real: "Negro" });
-            acento = findProduct(allProducts, { color_real: "Blanco" });
-            explicacion = "La calidez de la madera armoniza perfectamente con texturas neutras, mientras que un toque de blanco puro aporta luz y modernidad.";
-        } else {
-            // Maderas frías/oscuras -> Secundario Blanco -> Acento Marrón
-            secundario = findProduct(allProducts, { color_real: "Blanco" });
-            acento = findProduct(allProducts, { color_real: "Marrón" });
-            explicacion = "Las vetas nórdicas o grisáceas resaltan con superficies blancas. Un acento en madera clásica evita que el ambiente pierda su alma natural.";
-        }
-    } else if (color_real === "Blanco" || color_real === "Gris") {
-        // Base Neutra -> Secundario Madera -> Acento Negro/Color
-        secundario = findProduct(allProducts, { color_real: "Marrón" });
-        acento = findProduct(allProducts, { color_real: "Negro" }) || findProduct(allProducts, { color_real: "Azul" });
-        explicacion = "Sobre una base neutra, la madera aporta la calidez necesaria, y los detalles oscuros definen las líneas del diseño.";
+    // LÓGICA DE ARGUMENTACIÓN INTELIGENTE
+    if (colorBase === "Madera") {
+        // MADERAS -> Contraste Neutro -> Acento Luz
+        secundario = findProduct(pool, { color_real: ["Gris", "Negro"] });
+        acento = findProduct(pool, { color_real: ["Blanco"] });
+        
+        argBase = "Has elegido una base orgánica y cálida. La madera es el alma de cualquier ambiente, aportando textura y una sensación de confort atemporal.";
+        argSecundario = "Elegido para aportar equilibrio visual; un tono neutro profundo reduce la saturación de la madera y añade sofisticación.";
+        argAcento = "El toque final de luminosidad. El blanco puro resalta las vetas naturales y evita que el diseño se sienta pesado.";
+        
+    } else if (colorBase === "Blanco" || colorBase === "Beige") {
+        // BLANCOS/BEIGES -> Contraste Madera -> Acento Oscuro
+        secundario = findProduct(pool, { color_real: ["Marrón", "Nogal", "Roble"] });
+        acento = findProduct(pool, { color_real: ["Negro", "Gris"] });
+
+        argBase = "Una base clara amplifica el espacio y la luz. Es el lienzo perfecto para un diseño minimalista o escandinavo.";
+        argSecundario = "La madera aporta la calidez necesaria para romper la frialdad del blanco, creando un ambiente acogedor y habitable.";
+        argAcento = "Detalles oscuros que definen la estructura. Un acento fuerte crea puntos de enfoque y añade carácter al conjunto.";
+
+    } else if (colorBase === "Negro" || colorBase === "Gris") {
+        // OSCUROS -> Contraste Madera Clara -> Acento Blanco/Metal
+        secundario = findProduct(pool, { color_real: ["Beige", "Roble", "Haya"] });
+        acento = findProduct(pool, { color_real: ["Blanco"] });
+
+        argBase = "Una elección audaz y elegante. Los tonos oscuros transmiten lujo y modernidad, creando una atmósfera envolvente.";
+        argSecundario = "Maderas claras o tonos arena suavizan la intensidad del oscuro, manteniendo la elegancia pero con una nota de calidez natural.";
+        argAcento = "Contraste máximo para iluminar áreas específicas. El blanco actúa como un destello que realza la profundidad de los grises.";
+
     } else {
-        // Fallback
-        secundario = findProduct(allProducts, { color_real: "Gris" });
-        acento = findProduct(allProducts, { color_real: "Blanco" });
-        explicacion = "Una combinación equilibrada de tonos que garantiza sobriedad y buen gusto en cualquier ambiente.";
+        // FALLBACK
+        secundario = findProduct(pool, { color_real: ["Gris"] });
+        acento = findProduct(pool, { color_real: ["Blanco"] });
+        
+        argBase = "Un diseño equilibrado basado en la sobriedad. Ideal para quienes buscan una estética limpia y funcional.";
+        argSecundario = "El gris medio actúa como un puente tonal, suavizando las transiciones entre materiales.";
+        argAcento = "Luz puntual para destacar el diseño sin sobrecargarlo.";
     }
 
     return {
-        base: formatProduct(baseProduct),
-        secundario: formatProduct(secundario || baseProduct),
-        acento: formatProduct(acento || baseProduct),
-        explicacion
+        base: { ...formatProduct(baseProduct), argumento: argBase },
+        secundario: { ...formatProduct(secundario || baseProduct), argumento: argSecundario },
+        acento: { ...formatProduct(acento || baseProduct), argumento: argAcento },
+        explicacion_general: `${argBase} ${argSecundario}`
     };
 }
 
 function findProduct(products, criteria) {
     if (!products || products.length === 0) return null;
     
-    // Filtramos los que coinciden con el criterio
     const matches = products.filter(p => {
         if (criteria.color_real) {
-            const pColor = (p.color_real || "").toLowerCase();
-            const targetColor = criteria.color_real.toLowerCase();
-            if (!pColor.includes(targetColor) && !targetColor.includes(pColor)) return false;
+            const pColor = (p.color_real || "").toUpperCase();
+            return criteria.color_real.some(c => pColor.includes(c.toUpperCase()));
         }
         return true;
     });
 
-    if (matches.length === 0) return null;
+    if (matches.length === 0) return products[Math.floor(Math.random() * products.length)];
 
-    // Priorizamos los que tienen foto_principal
-    const withPhoto = matches.filter(p => p.foto_principal);
-    if (withPhoto.length > 0) {
-        return withPhoto[Math.floor(Math.random() * withPhoto.length)];
-    }
-
-    // Si ninguno tiene foto, devolvemos uno al azar de los que coinciden
     return matches[Math.floor(Math.random() * matches.length)];
 }
 
@@ -83,11 +99,11 @@ function formatProduct(p) {
     
     return {
         id: p.id,
-        nombre: p.nombre || p.modelo,
+        nombre: p.modelo || p.nombre,
         marca: p.marca?.nombre || "Genérica",
         linea: p.linea || "Colección V16",
         imagen: imgId 
-            ? `https://admin.alvarezplacas.com.ar/assets/${imgId}?width=600&height=600&fit=cover` 
-            : `https://admin.alvarezplacas.com.ar/assets/${LOGO_ID}`
+            ? `https://admin.alvarezplacas.com.ar/assets/${imgId}?width=800&height=800&fit=cover&format=avif` 
+            : `https://admin.alvarezplacas.com.ar/assets/${LOGO_ID}?width=800&height=800&fit=cover`
     };
 }

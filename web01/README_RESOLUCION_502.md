@@ -28,3 +28,18 @@ docker compose up -d
 *   **Aislamiento de red**: Postgres NUNCA se debe exponer a un `port` hacia el exterior en ambientes de producción a menos que sea a `127.0.0.1`. Aquí, la comunicación es estrictamente interna (`alvarez_internal`) entre Node y la BD.
 
 *Documentado tras la victoria conjunta del ecosistema de Agentes y Javiermix. ¡Sigue construyendo genialidades!*
+
+---
+
+## 🚨 Resolución de "503 Service Unavailable" (Almacenamiento S3/MinIO)
+**Síntoma:** Directus responde pero la "Biblioteca de Archivos" da error, o las imágenes del catálogo no cargan.
+
+**Causas y Soluciones:**
+1.  **Endpoint S3 Incorrecto**: Si se usa una IP interna en `STORAGE_S3_ENDPOINT` (ej: `172.19.0.6`), esta cambia al reiniciar contenedores.
+    *   *Solución*: Usar siempre el nombre del servicio Docker (ej: `http://alvarezplacas-minio:9000`).
+2.  **Guiones Bajos en Hostname**: MinIO y algunos clientes S3 rechazan hostnames con `_` (ej: `alvarezplacas_minio`), devolviendo `Invalid Request (invalid hostname)`.
+    *   *Solución*: Renombrar el servicio a `alvarezplacas-minio` (con guion medio) tanto en `services:` como en `container_name:` y en la variable `STORAGE_S3_ENDPOINT`.
+3.  **Path Style**: MinIO requiere que las peticiones no usen subdominios de bucket.
+    *   *Solución*: Asegurar `STORAGE_S3_FORCE_PATH_STYLE: "true"`.
+
+*Manual actualizado por Antigravity-IA - Abril 2026*

@@ -265,9 +265,12 @@ export function initCatalog() {
                 mWhatsAppBtn.className = "w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black text-sm uppercase py-5 rounded-2xl flex items-center justify-center gap-3 transition-all hover:border-primary/40";
             }
 
-            // Smart Match Button (Solo para Tableros)
+            // Smart Match Button (Solo para Tableros con IMAGEN)
             if (mSmartMatchBtn) {
-                if (isTablero) {
+                const LOGO_ID = "209a486b-8623-4c3e-8f8e-2a3288f1f0fd";
+                const hasImage = data.imagen && !data.imagen.includes(LOGO_ID);
+                
+                if (isTablero && hasImage) {
                     mSmartMatchBtn.classList.remove('hidden');
                     mSmartMatchBtn.classList.add('flex');
                     mSmartMatchBtn.onclick = () => {

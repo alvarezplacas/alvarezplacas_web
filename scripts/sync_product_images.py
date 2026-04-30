@@ -112,6 +112,7 @@ def sync_images():
     for p in all_products:
         sku = clean_code(p.get("sku"))
         code_art = clean_code(p.get("codigo_articulo"))
+        modelo = clean_code(p.get("modelo"))
         
         # Si ya tiene foto, saltar (o podríamos verificar si el link es válido)
         if p.get("foto_principal"):
@@ -124,6 +125,8 @@ def sync_images():
             target_id = directus_map[sku]
         elif code_art and code_art in directus_map: 
             target_id = directus_map[code_art]
+        elif modelo and modelo in directus_map:
+            target_id = directus_map[modelo]
         
         if target_id:
             # Vincular existente
@@ -132,10 +135,10 @@ def sync_images():
                 if res.status_code == 200:
                     linked_count += 1
                 else:
-                    print(f"Error vinculando {sku}: {res.text}")
+                    print(f"Error vinculando {sku or modelo}: {res.text}")
                     error_count += 1
             except Exception as e:
-                print(f"Error de red vinculando {sku}: {e}")
+                print(f"Error de red vinculando {sku or modelo}: {e}")
                 error_count += 1
             continue
 
@@ -143,6 +146,7 @@ def sync_images():
         local_path = None
         if sku and sku in local_map: local_path = local_map[sku]
         elif code_art and code_art in local_map: local_path = local_map[code_art]
+        elif modelo and modelo in local_map: local_path = local_map[modelo]
         
         if local_path:
             try:

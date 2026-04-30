@@ -73,6 +73,18 @@
   - Fix de Modal: Propiedad `imagen` sincronizada en la lógica del frontend para evitar desaparición de fotos.
 - **Lógica de Placas**: El botón "Sugerir Combinación" (Smart Match) es exclusivo para la categoría Tableros.
 
+### 5. Fix de Conectividad S3 y Almacenamiento (30 de Abril 2026)
+- **Error Solucionado**: Error `SERVICE_UNAVAILABLE` en la gestión de archivos y fotos rotas en el catálogo.
+- **Causa Técnica**: 
+    1.  El endpoint de S3 en `docker-compose.vps.yml` usaba una IP interna (`172.19.0.6`) que cambió tras un reinicio.
+    2.  MinIO rechaza peticiones si el hostname contiene guiones bajos (`_`), devolviendo `Invalid Request (invalid hostname)`.
+- **Solución Aplicada**:
+    - Se renombró el servicio y contenedor de MinIO de `alvarezplacas_minio` a `alvarezplacas-minio` (guion medio).
+    - Se configuró `STORAGE_S3_ENDPOINT` usando el nombre del servicio: `http://alvarezplacas-minio:9000`.
+    - Se activó `STORAGE_S3_FORCE_PATH_STYLE: "true"` para compatibilidad total con MinIO.
+- **Sincronización de Imágenes**:
+    - Se actualizó el script `scripts/sync_product_images.py` para realizar matching por el campo `Modelo` (insensible a mayúsculas y extensiones), vinculando exitosamente más de 100 imágenes nuevas al catálogo.
+
 ---
 
 ## 🚨 Reglas de Oro del Proyecto
