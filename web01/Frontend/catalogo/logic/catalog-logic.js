@@ -14,6 +14,9 @@ export function initCatalog() {
     const mNombre = document.getElementById('modalNombre');
     const mCategory = document.getElementById('modalCategory');
     const mSpecsContainer = document.getElementById('modalSpecsContainer');
+    const mPriceDisplay = document.getElementById('modalPriceDisplay');
+    const mPriceL1 = document.getElementById('modalPriceL1');
+    const mPriceMain = document.getElementById('modalPriceMain');
     const mWhatsAppBtn = document.getElementById('modalWhatsAppBtn');
     const mSmartMatchBtn = document.getElementById('modalSmartMatchBtn');
 
@@ -199,13 +202,17 @@ export function initCatalog() {
                                 btn.classList.add('bg-white/20', 'border-white/30');
                                 btn.querySelector('span').classList.replace('text-gray-400', 'text-white');
                                 updateWhatsApp(esp, support);
+                                updatePrice(esp, support);
                             };
                             vGrid.appendChild(btn);
                         });
 
                         container.appendChild(vGrid);
                         mSpecsContainer.appendChild(container);
-                        if (uniqueThicknesses.length > 0) updateWhatsApp(uniqueThicknesses[0], support);
+                        if (uniqueThicknesses.length > 0) {
+                            updateWhatsApp(uniqueThicknesses[0], support);
+                            updatePrice(uniqueThicknesses[0], support);
+                        }
                     };
 
                     const sContainer = document.createElement('div');
@@ -257,6 +264,54 @@ export function initCatalog() {
                         const msg = `Hola Alvarez Placas, consulto disponibilidad de:\n*${data.name}*\nMarca: ${data.brand}\nSoporte: *${sup}*\nEspesor: *${esp}*`;
                         mWhatsAppBtn.href = `https://wa.me/5491161411842?text=${encodeURIComponent(msg)}`;
                     }
+                }
+            }
+
+            function formatCurrency(value) {
+                return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(value);
+            }
+
+            function updatePrice(esp, sup) {
+                if (!mPriceDisplay) return;
+                
+                // Si showPrices es falso globalmente (opcional, pero asumimos true por requerimiento)
+                mPriceDisplay.classList.remove('hidden');
+                mPriceL1.classList.add('hidden');
+                mPriceMain.textContent = "Consultar por whatsapp!";
+                mPriceMain.classList.remove('text-primary');
+                mPriceMain.classList.add('text-white');
+
+                let targetVariant = null;
+                if (isTablero && data.variants) {
+                    targetVariant = data.variants.find(v => v.espesor === esp && v.soporte.toUpperCase() === sup);
+                } else {
+                    targetVariant = data;
+                }
+
+                if (targetVariant) {
+                    const l1 = parseFloat(targetVariant.precio_L1);
+                    const l2 = parseFloat(targetVariant.precio_L2);
+
+                    if (l2 && !isNaN(l2) && l2 > 0) {
+                        mPriceMain.textContent = formatCurrency(l2);
+                        mPriceMain.classList.add('text-primary');
+                        mPriceMain.classList.remove('text-white');
+                        if (l1 && !isNaN(l1) && l1 > l2) {
+                            mPriceL1.textContent = formatCurrency(l1);
+                            mPriceL1.classList.remove('hidden');
+                        }
+                    } else if (l1 && !isNaN(l1) && l1 > 0) {
+                        mPriceMain.textContent = formatCurrency(l1);
+                    }
+                }
+            }
+
+            // Para productos sueltos (sin variantes), mostramos el precio directamente
+            if (!isTablero || !data.variants || data.variants.length === 0) {
+                updatePrice(null, null);
+                if (mWhatsAppBtn) {
+                    const msg = `Hola Alvarez Placas, consulto disponibilidad de:\n*${data.name}*\nMarca: ${data.brand}`;
+                    mWhatsAppBtn.href = `https://wa.me/5491161411842?text=${encodeURIComponent(msg)}`;
                 }
             }
 

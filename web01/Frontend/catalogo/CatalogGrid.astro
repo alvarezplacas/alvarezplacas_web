@@ -58,7 +58,7 @@ try {
         directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
         directus.request(readItems('Productos', { 
             limit: 1000, 
-            fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre','foto_principal'] 
+            fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre','foto_principal','precio_L1','precio_L2'] 
         })).catch(() => []),
         directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
     ]);
@@ -117,7 +117,9 @@ try {
                 item.variants.push({
                     sku: p.sku,
                     espesor: p.espesor ? `${parseFloat(p.espesor)}mm` : "S/E",
-                    soporte: p.soporte || "Estandar"
+                    soporte: p.soporte || "Estandar",
+                    precio_L1: p.precio_L1,
+                    precio_L2: p.precio_L2
                 });
             } else {
                 const itemSku = (p.sku || "").toUpperCase();
@@ -131,7 +133,9 @@ try {
                     category: category,
                     bucket: bucket,
                     imagen: resolveProductImage(p.sku, directusId),
-                    specs: [p.espesor ? `${parseFloat(p.espesor)}mm` : null, p.soporte].filter(Boolean)
+                    specs: [p.espesor ? `${parseFloat(p.espesor)}mm` : null, p.soporte].filter(Boolean),
+                    precio_L1: p.precio_L1,
+                    precio_L2: p.precio_L2
                 });
             }
         });
@@ -220,6 +224,15 @@ buckets.forEach(b => {
         </div>
 
         <div class="mt-auto pt-8 border-t border-white/5 flex flex-col gap-3">
+            <!-- Price Display -->
+            <div id="modalPriceDisplay" class="mb-4 flex flex-col items-center justify-center bg-white/5 py-4 rounded-2xl border border-white/10 hidden">
+                <span class="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-1">Precio Final</span>
+                <div class="flex items-end gap-3">
+                    <span id="modalPriceL1" class="text-gray-500 line-through text-lg font-bold hidden"></span>
+                    <span id="modalPriceMain" class="text-white text-3xl font-black">Consultar por whatsapp!</span>
+                </div>
+            </div>
+
             <!-- Smart Match Button -->
             <button id="modalSmartMatchBtn" class="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black text-sm uppercase py-5 rounded-2xl hidden items-center justify-center gap-3 transition-all hover:border-primary/40 group">
                 <svg class="w-5 h-5 text-primary group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
