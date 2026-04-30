@@ -119,35 +119,3 @@ function formatProduct(p) {
     };
 }
 
-
-function findProduct(products, criteria) {
-    if (!products || products.length === 0) return null;
-    
-    const matches = products.filter(p => {
-        if (criteria.color_real) {
-            const pColor = (p.color_real || "").toUpperCase();
-            return criteria.color_real.some(c => pColor.includes(c.toUpperCase()));
-        }
-        return true;
-    });
-
-    if (matches.length === 0) return products[Math.floor(Math.random() * products.length)];
-
-    return matches[Math.floor(Math.random() * matches.length)];
-}
-
-function formatProduct(p) {
-    if (!p) return null;
-    const LOGO_ID = "209a486b-8623-4c3e-8f8e-2a3288f1f0fd";
-    const imgId = p.foto_principal;
-    
-    return {
-        id: p.id,
-        nombre: p.modelo || p.nombre,
-        marca: p.marca?.nombre || "Genérica",
-        linea: p.linea || "Colección V16",
-        imagen: imgId 
-            ? `https://admin.alvarezplacas.com.ar/assets/${imgId}?width=800&height=800&fit=cover&format=avif` 
-            : `https://admin.alvarezplacas.com.ar/assets/${LOGO_ID}?width=800&height=800&fit=cover`
-    };
-}
