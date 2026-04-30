@@ -283,7 +283,16 @@ export function initCatalog() {
 
                 let targetVariant = null;
                 if (isTablero && data.variants) {
-                    targetVariant = data.variants.find(v => v.espesor === esp && v.soporte.toUpperCase() === sup);
+                    const matchingVariants = data.variants.filter(v => v.espesor === esp && v.soporte.toUpperCase() === sup);
+                    // Prioritize variants that have a price configured
+                    targetVariant = matchingVariants.find(v => 
+                        (v.precio_L2 && !isNaN(parseFloat(v.precio_L2)) && parseFloat(v.precio_L2) > 0) || 
+                        (v.precio_L1 && !isNaN(parseFloat(v.precio_L1)) && parseFloat(v.precio_L1) > 0)
+                    );
+                    // Fallback to the first matching variant if none have prices
+                    if (!targetVariant && matchingVariants.length > 0) {
+                        targetVariant = matchingVariants[0];
+                    }
                 } else {
                     targetVariant = data;
                 }
