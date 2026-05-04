@@ -5,8 +5,8 @@ import json
 DIRECTUS_URL = "https://admin.alvarezplacas.com.ar"
 DIRECTUS_TOKEN = "alvarez-api-token-v16-2026"
 
-# MeiliSearch config (Asumiendo ejecución desde el VPS o acceso vía IP)
-MEILI_URL = "http://localhost:7700" # Cambiar por IP si es remoto
+# MeiliSearch config
+MEILI_URL = "http://localhost:7710" # ✅ Actualizado al puerto expuesto en el VPS
 MEILI_MASTER_KEY = "AlvarezMeili2026!"
 INDEX_NAME = "productos"
 

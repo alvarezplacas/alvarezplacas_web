@@ -49,6 +49,8 @@ services:
     image: getmeili/meilisearch:v1.12
     container_name: alvarezplacas_meili
     restart: unless-stopped
+    ports:
+      - "7710:7700" # ✅ Expuesto para sincronización externa
     environment:
       - MEILI_MASTER_KEY=AlvarezMeili2026!
       - MEILI_NO_ANALYTICS=true
