@@ -311,6 +311,13 @@ const marcas = ["Todos", ...marcasRaw.sort()];
       filterCards();
     });
 
+    // Mejora de UX Móvil: Cerrar teclado al presionar Enter
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        searchInput.blur();
+      }
+    });
+
     function filterCards() {
       let visibleCount = 0;
       const searchTerms = currentSearchTerm.split(' ').filter(term => term.length > 0);

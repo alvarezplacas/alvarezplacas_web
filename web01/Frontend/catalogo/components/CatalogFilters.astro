@@ -60,4 +60,16 @@ const { buckets, brandsByBucket, allUniqueBrands = [], totalProducts = 0, backgr
 
 <script define:vars={{ brandsByBucket }}>
   window.BRANDS_BY_BUCKET = brandsByBucket;
+
+  // Mejora de UX Móvil: Cerrar teclado al presionar Enter
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('catalogSearch');
+    if (searchInput) {
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          searchInput.blur(); // Esto oculta el teclado en móviles
+        }
+      });
+    }
+  });
 </script>
