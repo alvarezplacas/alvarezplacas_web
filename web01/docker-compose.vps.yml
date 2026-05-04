@@ -1,26 +1,4 @@
 services:
-  # 🛡️ Pasarela de Seguridad Tailscale (Gateway para administración privada)
-  tailscale:
-    image: tailscale/tailscale:latest
-    container_name: alvarezplacas_ts
-    hostname: alvarez-vps
-    environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
-    volumes:
-      - web01_tailscale_data:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    # 🤖 Automatizamos la pasarela para que siempre esté activa
-    command: sh -c "tailscaled --statedir=/var/lib/tailscale & sleep 5 && tailscale serve --bg 8055 http://alvarezplacas_directus_v16:8055 && tailscale serve --bg 9001 http://alvarezplacas-minio:9001 && wait"
-    restart: unless-stopped
-    networks:
-      - javiermix_network
-      - alvarez_v16_net
-
   alvarezplacas_db:
     image: postgres:16-alpine
     container_name: alvarezplacas_db_v16
@@ -38,10 +16,8 @@ services:
     image: directus/directus:11.1.0
     container_name: alvarezplacas_directus_v16
     restart: unless-stopped
-    # ✅ Restauramos la red modular para visibilidad de Caddy y Astro
-    networks:
-      - javiermix_network
-      - alvarez_v16_net
+    ports:
+      - "8055:8055" # ✅ Volvemos a la exposición normal
     environment:
       KEY: "alvarez-placas-secret-key-2026"
       SECRET: "alvarez-placas-secret-token-2026"
@@ -53,14 +29,10 @@ services:
       DB_PASSWORD: "AlvarezAdmin2026"
       CORS_ENABLED: "true"
       CORS_ORIGIN: "https://alvarezplacas.com.ar,https://www.alvarezplacas.com.ar"
-      
-      # 🔍 MeiliSearch Integration
       SEARCH_ENABLED: "true"
       SEARCH_STORE: "meilisearch"
       SEARCH_MEILISEARCH_HOST: "http://alvarezplacas_meili:7700"
       SEARCH_MEILISEARCH_KEY: "AlvarezMeili2026!"
-      
-      # 📦 MinIO (S3) Integration
       STORAGE_LOCATIONS: "s3"
       STORAGE_S3_DRIVER: "s3"
       STORAGE_S3_KEY: "AlvarezMinioUser2026"
@@ -69,6 +41,9 @@ services:
       STORAGE_S3_ENDPOINT: "http://alvarezplacas-minio:9000"
       STORAGE_S3_REGION: "us-east-1"
       STORAGE_S3_FORCE_PATH_STYLE: "true"
+    networks:
+      - javiermix_network
+      - alvarez_v16_net
     depends_on:
       - alvarezplacas_db
 
@@ -86,8 +61,11 @@ services:
 
   alvarezplacas_minio:
     image: minio/minio:latest
-    container_name: alvarezplacas-minio # Nombre original respetado
+    container_name: alvarezplacas-minio
     restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     command: server /data --console-address ":9001"
     environment:
       - MINIO_ROOT_USER=AlvarezMinioUser2026
@@ -106,7 +84,7 @@ services:
       - ./site/web01:/app
       - /opt/alvarezplacas/placas:/app/public/Placas
     ports:
-      - "4321:4321" # Frontend público (SSR)
+      - "4321:4321"
     command: sh -c "node ./dist/server/entry.mjs"
     environment:
       - PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
@@ -131,4 +109,3 @@ volumes:
     external: true
   web01_alvarez_meili_data:
   web01_alvarez_minio_data:
-  web01_tailscale_data:
