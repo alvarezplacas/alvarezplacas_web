@@ -63,9 +63,7 @@ services:
     image: minio/minio:latest
     container_name: alvarezplacas-minio
     restart: unless-stopped
-    ports:
-      - "9010:9000" # ✅ Cambiamos a 9010 para evitar choque con Javiermix
-      - "9011:9001"
+    # 🔒 Puertos eliminados para evitar choques con Javiermix. Acceso interno vía red Docker.
     command: server /data --console-address ":9001"
     environment:
       - MINIO_ROOT_USER=AlvarezMinioUser2026
