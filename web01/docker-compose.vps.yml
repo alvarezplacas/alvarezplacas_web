@@ -14,6 +14,9 @@ services:
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
+    ports:
+      - "8055:8055"
+      - "9001:9001"
     restart: unless-stopped
     networks:
       - javiermix_network
