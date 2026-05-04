@@ -36,8 +36,10 @@ services:
     image: directus/directus:11.1.0
     container_name: alvarezplacas_directus_v16
     restart: unless-stopped
-    # ❌ Puerto 8055 ELIMINADO de la exposición pública
-    # Acceso exclusivo vía Tailscale
+    # 🔗 Compartimos la red de Tailscale para visibilidad instantánea
+    network_mode: "service:tailscale"
+    depends_on:
+      - tailscale
     environment:
       KEY: "alvarez-placas-secret-key-2026"
       SECRET: "alvarez-placas-secret-token-2026"
@@ -62,20 +64,9 @@ services:
       STORAGE_S3_KEY: "AlvarezMinioUser2026"
       STORAGE_S3_SECRET: "AlvarezMinioSecret2026!"
       STORAGE_S3_BUCKET: "alvarez-assets"
-      STORAGE_S3_ENDPOINT: "http://alvarezplacas_minio:9000"
+      STORAGE_S3_ENDPOINT: "http://localhost:9000" # localhost porque comparte red con MinIO
       STORAGE_S3_REGION: "us-east-1"
       STORAGE_S3_FORCE_PATH_STYLE: "true"
-
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8055/server/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - javiermix_network
-      - alvarez_v16_net
-    depends_on:
-      - alvarezplacas_db
 
   alvarezplacas_meili:
     image: getmeili/meilisearch:v1.12
@@ -93,21 +84,15 @@ services:
     image: minio/minio:latest
     container_name: alvarezplacas_minio
     restart: unless-stopped
-    # ❌ Puertos 9000/9001 ELIMINADOS de la exposición pública
+    network_mode: "service:tailscale"
+    depends_on:
+      - tailscale
     command: server /data --console-address ":9001"
     environment:
       - MINIO_ROOT_USER=AlvarezMinioUser2026
       - MINIO_ROOT_PASSWORD=AlvarezMinioSecret2026!
     volumes:
       - web01_alvarez_minio_data:/data
-    networks:
-      - javiermix_network
-      - alvarez_v16_net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
 
   alvarezplacas_web:
     image: node:22-alpine
@@ -117,11 +102,11 @@ services:
       - ./site/web01:/app
       - /opt/alvarezplacas/placas:/app/public/Placas
     ports:
-      - "4321:4321" # ✅ Astro se mantiene público
+      - "4321:4321"
     command: sh -c "node ./dist/server/entry.mjs"
     environment:
       - PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
-      - DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055
+      - DIRECTUS_URL_INTERNAL=http://tailscale:8055 # Ahora habla con el escudo
       - DIRECTUS_TOKEN=alvarez-api-token-v16-2026
       - HOST=0.0.0.0
       - PORT=4321
