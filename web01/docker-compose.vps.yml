@@ -28,7 +28,7 @@ services:
       DB_USER: "alvarez_admin"
       DB_PASSWORD: "AlvarezAdmin2026"
       CORS_ENABLED: "true"
-      CORS_ORIGIN: "https://alvarezplacas.com.ar,https://www.alvarezplacas.com.ar"
+      CORS_ORIGIN: "https://alvarezplacas.com.ar,https://www.alvarezplacas.com.ar,https://admin.alvarezplacas.com.ar"
       SEARCH_ENABLED: "true"
       SEARCH_STORE: "meilisearch"
       SEARCH_MEILISEARCH_HOST: "http://alvarezplacas_meili:7700"
@@ -64,8 +64,8 @@ services:
     container_name: alvarezplacas-minio
     restart: unless-stopped
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9010:9000" # ✅ Cambiamos a 9010 para evitar choque con Javiermix
+      - "9011:9001"
     command: server /data --console-address ":9001"
     environment:
       - MINIO_ROOT_USER=AlvarezMinioUser2026
