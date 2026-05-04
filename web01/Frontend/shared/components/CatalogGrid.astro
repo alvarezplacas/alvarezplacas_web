@@ -153,12 +153,18 @@ const marcas = ["Todos", ...marcasRaw.sort()];
     <!-- Mensaje No Encontrado -->
     <div id="noResults" class="hidden col-span-full py-12 text-center">
       <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 mb-4">
-        <svg class="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <i class="fas fa-search-minus text-gray-500 text-2xl"></i>
       </div>
-      <h3 class="text-xl font-bold text-white mb-2">No se encontraron resultados</h3>
-      <p class="text-gray-400">Intentá buscar con otros términos o seleccioná otra marca.</p>
+      <h3 class="text-xl font-bold text-white mb-2">El producto aún no fue cargado al catálogo</h3>
+      <p class="text-gray-400 mb-6">Consulte disponibilidad y precios por WhatsApp</p>
+      <a 
+        href="https://wa.me/5491100000000?text=Hola, no encontré un producto en el catálogo y quería consultar..."
+        target="_blank"
+        class="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#1ebd5a] transition-colors"
+      >
+        <i class="fab fa-whatsapp text-xl"></i>
+        Consultar por WhatsApp
+      </a>
     </div>
   </div>
 </section>
@@ -311,10 +317,11 @@ const marcas = ["Todos", ...marcasRaw.sort()];
       filterCards();
     });
 
-    // Mejora de UX Móvil: Cerrar teclado al presionar Enter
+    // Mejora de UX Móvil: Cerrar teclado al presionar Enter (Reforzado para Android)
     searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' || e.keyCode === 13) {
         searchInput.blur();
+        window.scrollTo({ top: searchInput.offsetTop - 20, behavior: 'smooth' });
       }
     });
 

@@ -32,7 +32,7 @@ const { buckets, brandsByBucket, allUniqueBrands = [], totalProducts = 0, backgr
       <i class="fas fa-search text-primary"></i>
     </div>
     <input
-      type="text"
+      type="search"
       id="catalogSearch"
       placeholder="Buscar en esta categoría (Ej: Gola, Egger Blanco, Einhell...)"
       class="w-full bg-[#151515] border border-gray-800/50 text-white rounded-2xl py-5 pl-12 pr-6 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-300 placeholder-gray-600 shadow-2xl text-lg"
@@ -61,13 +61,14 @@ const { buckets, brandsByBucket, allUniqueBrands = [], totalProducts = 0, backgr
 <script define:vars={{ brandsByBucket }}>
   window.BRANDS_BY_BUCKET = brandsByBucket;
 
-  // Mejora de UX Móvil: Cerrar teclado al presionar Enter
+  // Mejora de UX Móvil: Cerrar teclado al presionar Enter (Reforzado para Android)
   document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('catalogSearch');
     if (searchInput) {
       searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' || e.keyCode === 13) {
           searchInput.blur(); // Esto oculta el teclado en móviles
+          window.scrollTo({ top: searchInput.offsetTop - 20, behavior: 'smooth' });
         }
       });
     }
