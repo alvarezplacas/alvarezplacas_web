@@ -14,7 +14,8 @@ services:
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
-    # ❌ Sin puertos públicos en el gateway para asegurar el perímetro
+    # 🤖 Automatizamos la pasarela para que siempre esté activa
+    command: sh -c "tailscaled --statedir=/var/lib/tailscale & sleep 5 && tailscale serve --bg 8055 http://alvarezplacas_directus_v16:8055 && tailscale serve --bg 9001 http://alvarezplacas-minio:9001 && wait"
     restart: unless-stopped
     networks:
       - javiermix_network
