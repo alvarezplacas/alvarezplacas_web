@@ -1,5 +1,5 @@
 services:
-  # 🛡️ Tailscale: El Escudo de Red Invisible
+  # 🛡️ Pasarela de Seguridad Tailscale (Gateway para administración privada)
   tailscale:
     image: tailscale/tailscale:latest
     container_name: alvarezplacas_ts
@@ -14,9 +14,7 @@ services:
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
-    ports:
-      - "8055:8055"
-      - "9001:9001"
+    # ❌ Sin puertos públicos en el gateway para asegurar el perímetro
     restart: unless-stopped
     networks:
       - javiermix_network
@@ -39,10 +37,10 @@ services:
     image: directus/directus:11.1.0
     container_name: alvarezplacas_directus_v16
     restart: unless-stopped
-    # 🔗 Compartimos la red de Tailscale para visibilidad instantánea
-    network_mode: "service:tailscale"
-    depends_on:
-      - tailscale
+    # ✅ Restauramos la red modular para visibilidad de Caddy y Astro
+    networks:
+      - javiermix_network
+      - alvarez_v16_net
     environment:
       KEY: "alvarez-placas-secret-key-2026"
       SECRET: "alvarez-placas-secret-token-2026"
@@ -67,9 +65,11 @@ services:
       STORAGE_S3_KEY: "AlvarezMinioUser2026"
       STORAGE_S3_SECRET: "AlvarezMinioSecret2026!"
       STORAGE_S3_BUCKET: "alvarez-assets"
-      STORAGE_S3_ENDPOINT: "http://localhost:9000" # localhost porque comparte red con MinIO
+      STORAGE_S3_ENDPOINT: "http://alvarezplacas-minio:9000"
       STORAGE_S3_REGION: "us-east-1"
       STORAGE_S3_FORCE_PATH_STYLE: "true"
+    depends_on:
+      - alvarezplacas_db
 
   alvarezplacas_meili:
     image: getmeili/meilisearch:v1.12
@@ -85,17 +85,17 @@ services:
 
   alvarezplacas_minio:
     image: minio/minio:latest
-    container_name: alvarezplacas_minio
+    container_name: alvarezplacas-minio # Nombre original respetado
     restart: unless-stopped
-    network_mode: "service:tailscale"
-    depends_on:
-      - tailscale
     command: server /data --console-address ":9001"
     environment:
       - MINIO_ROOT_USER=AlvarezMinioUser2026
       - MINIO_ROOT_PASSWORD=AlvarezMinioSecret2026!
     volumes:
       - web01_alvarez_minio_data:/data
+    networks:
+      - javiermix_network
+      - alvarez_v16_net
 
   alvarezplacas_web:
     image: node:22-alpine
@@ -105,11 +105,11 @@ services:
       - ./site/web01:/app
       - /opt/alvarezplacas/placas:/app/public/Placas
     ports:
-      - "4321:4321"
+      - "4321:4321" # Frontend público (SSR)
     command: sh -c "node ./dist/server/entry.mjs"
     environment:
       - PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
-      - DIRECTUS_URL_INTERNAL=http://tailscale:8055 # Ahora habla con el escudo
+      - DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055
       - DIRECTUS_TOKEN=alvarez-api-token-v16-2026
       - HOST=0.0.0.0
       - PORT=4321
