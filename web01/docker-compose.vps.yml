@@ -19,8 +19,6 @@ services:
     ports:
       - "8055:8055" # ✅ Volvemos a la exposición normal
     environment:
-      KEY: "alvarez-placas-secret-key-2026"
-      SECRET: "alvarez-placas-secret-token-2026"
       DB_CLIENT: "pg"
       DB_HOST: "alvarezplacas_db"
       DB_PORT: "5432"
