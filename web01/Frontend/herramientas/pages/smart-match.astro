@@ -19,18 +19,21 @@ if (placaId) {
     try {
         // 1. Obtener el producto base
         const baseProduct = await directus.request(readItem('Productos', placaId, {
-            fields: ['id', 'nombre', 'modelo', 'linea', 'color_real', 'foto_principal', 'marca.nombre', 'rubro.nombre']
+            fields: ['id', 'sku', 'nombre', 'modelo', 'linea', 'color_real', 'foto_principal', 'marca.nombre', 'rubro.nombre']
         }));
 
         if (baseProduct) {
             // 2. Obtener una muestra de otros productos para sugerencias
             // Limitamos a 200 para tener variedad pero no saturar
             const otherProducts = await directus.request(readItems('Productos', {
-                limit: 200,
-                fields: ['id', 'nombre', 'modelo', 'linea', 'color_real', 'foto_principal', 'marca.nombre', 'rubro.nombre'],
+                limit: 500, // Más variedad
+                fields: ['id', 'sku', 'nombre', 'modelo', 'linea', 'color_real', 'foto_principal', 'marca.nombre', 'rubro.nombre'],
                 filter: { 
                     id: { _neq: placaId },
-                    foto_principal: { _nnull: true }
+                    _or: [
+                        { foto_principal: { _nnull: true } },
+                        { sku: { _nnull: true } }
+                    ]
                 }
             }));
 

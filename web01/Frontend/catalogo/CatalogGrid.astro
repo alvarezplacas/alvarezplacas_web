@@ -3,46 +3,17 @@
  * CatalogGrid.astro - Estructura de Alto Nivel para Catálogo Modular.
  * Diseño: Agente 4 (Frontend/Arquitectura).
  */
-import fs from 'node:fs';
-import path from 'node:path';
 import CatalogItem from './components/CatalogItem.astro';
 import CatalogFilters from './components/CatalogFilters.astro';
 import { directus, readItems } from '@conexiones/directus.js';
+import { resolveProductImage, FALLBACK_URL } from '@conexiones/lib/media.js';
 
-// --- CONFIGURACIÓN DE IDENTIDAD ---
-const LOGO_ID = "209a486b-8623-4c3e-8f8e-2a3288f1f0fd";
-const FALLBACK_URL = `https://admin.alvarezplacas.com.ar/assets/${LOGO_ID}`;
+// La resolución de imagen ahora se maneja vía @conexiones/lib/media.js
 
 // --- GESTIÓN DE ESTADO ---
 let catalogItems = [];
 let officialBrands = [];
 let showPrices = true;
-
-/**
- * SERVICIO DE MEDIA (SSR):
- * Determina la mejor fuente para la imagen de un producto.
- * Prioridad: 1. Disco Local -> 2. Directus Assets -> 3. Logo Fallback
- */
-const resolveProductImage = (sku, directusFileId) => {
-    if (directusFileId) {
-        return `https://admin.alvarezplacas.com.ar/assets/${directusFileId}?width=400&height=400&fit=cover&format=avif`;
-    }
-
-    if (!sku || sku === "-") return FALLBACK_URL;
-
-    const fileName = `${sku}.avif`;
-    const localRelativePath = `/images/catalog/Processed/${fileName}`;
-    const localAbsolutePath = path.join(process.cwd(), 'public', 'images', 'catalog', 'Processed', fileName);
-
-    try {
-        if (fs.existsSync(localAbsolutePath)) {
-            const stats = fs.statSync(localAbsolutePath);
-            if (stats.size > 1024) return localRelativePath;
-        }
-    } catch (e) {}
-
-    return FALLBACK_URL;
-};
 
 /**
  * NORMALIZACIÓN DE MARCAS
@@ -57,7 +28,7 @@ try {
     const [settings, materials, brands] = await Promise.all([
         directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
         directus.request(readItems('Productos', { 
-            limit: 1000, 
+            limit: 5000, 
             fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre','foto_principal','precio_L1','precio_L2'] 
         })).catch(() => []),
         directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
@@ -171,6 +142,10 @@ buckets.forEach(b => {
     <p class="text-gray-400">Encontrá entre <span class="text-white font-bold">{catalogItems.length}</span> diseños y productos exclusivos.</p>
   </div>
 
+  <script is:inline define:vars={{ brandsByBucket }}>
+    window.BRANDS_BY_BUCKET = brandsByBucket;
+  </script>
+
   <CatalogFilters 
     buckets={buckets} 
     brandsByBucket={brandsByBucket} 
@@ -182,6 +157,11 @@ buckets.forEach(b => {
     {catalogItems.map(item => (
       <CatalogItem placa={item} showPrices={showPrices} />
     ))}
+  </div>
+
+  <!-- Contenedor de Paginación -->
+  <div id="paginationContainer" class="flex flex-wrap justify-center gap-2 mt-16 mb-10">
+    <!-- Los botones se generarán por JS -->
   </div>
 
   {catalogItems.length === 0 && (
