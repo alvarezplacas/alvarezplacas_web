@@ -5,8 +5,8 @@
  * GET /api/vendedor/views/mensajes?client=<id>  → carga chat con ese cliente
  */
 import type { APIRoute } from 'astro';
-import { directus, readItems } from '../../../../Backend/conexiones/directus.js';
-import { CommunicationService } from '../../../../Backend/dashboard/logic/communication.js';
+import { directus, readItems } from '@conexiones/directus.js';
+import { CommunicationService } from '@dashboard/logic/communication.js';
 
 export const GET: APIRoute = async ({ cookies, url }) => {
     const sellerId = cookies.get('seller_session')?.value || '1';

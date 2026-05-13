@@ -4,7 +4,7 @@
  * GET /api/vendedor/views/agenda
  */
 import type { APIRoute } from 'astro';
-import { directus, readItems } from '../../../../Backend/conexiones/directus.js';
+import { directus, readItems } from '@conexiones/directus.js';
 
 export const GET: APIRoute = async ({ cookies }) => {
     const sellerId = cookies.get('seller_session')?.value || '1';
