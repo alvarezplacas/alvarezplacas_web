@@ -20,15 +20,18 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
                 <a href="/" class="flex justify-center flex-shrink-0 items-center gap-1 text-4xl font-bold tracking-tight text-white hover:opacity-90 transition-opacity">
                     ALVAREZ<span class="text-primary">PLACAS</span>
                 </a>
-                <h2 class="mt-6 text-center text-3xl font-extrabold text-white">
-                    Bienvenido de nuevo
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-white uppercase tracking-tighter">
+                    Acceso al <span class="text-primary italic">Club</span>
                 </h2>
-                <p class="mt-2 text-center text-sm text-gray-400 font-bold italic">
-                    (Recuerda usar tu Email como usuario)
+                <p class="mt-4 text-center text-sm text-gray-400">
+                    Ingresa tus credenciales para acceder a tu panel profesional.
                 </p>
-                <p class="mt-2 text-center text-sm text-gray-400">
-                    O <a href="/cliente/registro" class="font-medium text-primary hover:text-primary-light">crea una cuenta si no tienes una</a>
-                </p>
+                <div class="mt-6 p-4 bg-primary/5 border border-primary/10 rounded-xl text-center">
+                    <p class="text-xs text-gray-400 mb-2 font-medium italic">¿Aún no tienes cuenta profesional?</p>
+                    <a href="/cliente/registro" class="text-sm font-black text-primary hover:text-white transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
+                        Registrarme ahora <i class="fas fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
             </div>
 
             <form class="mt-8 space-y-6" id="login-form" action={action} method="POST">

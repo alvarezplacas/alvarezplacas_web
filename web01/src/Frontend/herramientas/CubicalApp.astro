@@ -1,0 +1,437 @@
+---
+/**
+ * CubicalApp PRO - El Corazón de la Herramienta
+ * Versión 1.0 - Mayo 2026
+ */
+const { clientId } = Astro.props;
+---
+
+<div class="cubical-container mx-auto max-w-[1600px] px-4 py-8">
+    <!-- BARRA SUPERIOR -->
+    <header class="flex justify-between items-center mb-12 bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl">
+        <div>
+            <div class="text-[0.6rem] font-black text-primary tracking-[0.2em] uppercase mb-1">Herramienta Experta</div>
+            <h1 class="text-3xl font-black tracking-tighter uppercase italic">CubiCal <span class="text-primary">PRO</span></h1>
+        </div>
+        <div class="flex gap-4">
+            <button id="btn-save-project" class="hidden px-6 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-black uppercase hover:bg-white/10 transition-all">Guardar Progreso</button>
+            <button id="btn-goto-dashboard" class="px-6 py-2 bg-primary text-black rounded-lg text-xs font-black uppercase hover:scale-105 transition-all">Mis Proyectos</button>
+        </div>
+    </header>
+
+    <!-- PANTALLA 1: DASHBOARD -->
+    <section id="screen-dashboard" class="animate-fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="md:col-span-2">
+                <h2 class="text-4xl font-black mb-8 tracking-tighter">HOLA, CARPINTERO 👋</h2>
+                <p class="text-white/40 mb-12 max-w-xl text-lg">Bienvenido a tu estación de trabajo. Aquí puedes gestionar tus proyectos de mobiliario y obtener presupuestos instantáneos.</p>
+                
+                <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Dinámico -->
+                    <div class="animate-pulse bg-white/5 h-40 rounded-2xl"></div>
+                    <div class="animate-pulse bg-white/5 h-40 rounded-2xl"></div>
+                </div>
+            </div>
+            
+            <div class="bg-white/5 border border-white/10 p-8 rounded-3xl flex flex-col items-center justify-center text-center">
+                <div class="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mb-6">
+                    <i class="fas fa-plus text-primary text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-4">¿Nuevo Proyecto?</h3>
+                <p class="text-white/40 text-sm mb-8">Empieza a diseñar tu próximo mueble ahora mismo.</p>
+                <button onclick="window.cubical.showSetup()" class="w-full py-4 bg-primary text-black font-black rounded-xl hover:scale-105 transition-all uppercase tracking-widest">Crear Proyecto</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- PANTALLA 2: SETUP -->
+    <section id="screen-setup" class="hidden max-w-2xl mx-auto animate-fade-in">
+        <div class="bg-white/5 border border-white/10 p-12 rounded-[2rem] backdrop-blur-3xl shadow-2xl">
+            <h2 class="text-3xl font-black mb-8 tracking-tight text-center uppercase">Configuración Inicial</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-[0.6rem] font-black text-white/40 uppercase tracking-widest mb-2">Nombre del Proyecto</label>
+                    <input type="text" id="setup-name" class="w-full bg-black border border-white/10 p-4 rounded-xl text-white focus:border-primary outline-none" placeholder="Ej: Cocina Familia Garcia">
+                </div>
+                
+                <div>
+                    <label class="block text-[0.6rem] font-black text-white/40 uppercase tracking-widest mb-2">Ambiente</label>
+                    <select id="setup-env" class="w-full bg-black border border-white/10 p-4 rounded-xl text-white focus:border-primary outline-none">
+                        <option value="cocina">Cocina</option>
+                        <option value="dormitorio">Dormitorio / Vestidor</option>
+                        <option value="oficina">Oficina / Estudio</option>
+                        <option value="living">Living / TV</option>
+                    </select>
+                </div>
+
+                <div class="pt-8">
+                    <button onclick="window.cubical.startConstructor()" class="w-full py-5 bg-primary text-black font-black rounded-xl hover:scale-105 transition-all uppercase tracking-widest">Continuar al Diseñador</button>
+                    <button onclick="window.cubical.showDashboard()" class="w-full py-4 text-white/40 font-bold hover:text-white transition-all text-sm mt-2">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PANTALLA 3: CONSTRUCTOR -->
+    <section id="screen-constructor" class="hidden animate-fade-in">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- PANEL IZQUIERDO: FORMULARIO -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-white/5 border border-white/10 p-6 rounded-2xl">
+                    <h3 class="text-xs font-black text-primary uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <i class="fas fa-cube"></i> Añadir Módulo
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="text-[0.5rem] font-black text-white/30 uppercase block mb-1">Tipo de Módulo</label>
+                            <select id="mod-type" class="w-full bg-black border border-white/5 p-3 rounded-lg text-sm">
+                                <option value="CAJONERA">Cajonera</option>
+                                <option value="PLACARD">Placard / Ropero</option>
+                                <option value="ALACENA">Alacena</option>
+                                <option value="BAJO_MESADA">Bajo Mesada</option>
+                                <option value="BIBLIOTECA">Biblioteca</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[0.5rem] font-black text-white/30 uppercase block mb-1">Alto (mm)</label>
+                            <input type="number" id="mod-h" value="800" class="w-full bg-black border border-white/5 p-3 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[0.5rem] font-black text-white/30 uppercase block mb-1">Ancho (mm)</label>
+                            <input type="number" id="mod-w" value="600" class="w-full bg-black border border-white/5 p-3 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[0.5rem] font-black text-white/30 uppercase block mb-1">Prof. (mm)</label>
+                            <input type="number" id="mod-p" value="500" class="w-full bg-black border border-white/5 p-3 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[0.5rem] font-black text-white/30 uppercase block mb-1">Cajones/Puertas</label>
+                            <input type="number" id="mod-n" value="3" class="w-full bg-black border border-white/5 p-3 rounded-lg text-sm">
+                        </div>
+                    </div>
+                    
+                    <button onclick="window.cubical.addModule()" class="w-full mt-6 py-4 bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase hover:bg-primary hover:text-black transition-all">Añadir Módulo</button>
+                </div>
+
+                <div class="bg-white/5 border border-white/10 p-6 rounded-2xl">
+                    <h3 class="text-xs font-black text-white/40 uppercase tracking-widest mb-4">Módulos en el Proyecto</h3>
+                    <div id="module-list" class="space-y-2 max-height-[400px] overflow-y-auto">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL CENTRAL: VISUALIZADOR SVG -->
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                <div class="bg-black/50 border border-white/5 rounded-3xl min-h-[500px] flex items-center justify-center relative overflow-hidden">
+                    <div class="absolute top-6 left-6 text-[0.6rem] font-black text-white/20 uppercase tracking-[0.5em]">Vista Previa Técnica 2D</div>
+                    <svg id="svg-preview" class="w-full h-full max-h-[600px]" viewBox="0 0 1000 600"></svg>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <div class="flex gap-4">
+                        <div class="bg-white/5 p-4 rounded-xl border border-white/10">
+                            <div class="text-[0.5rem] font-black text-white/20 uppercase mb-1">Total Módulos</div>
+                            <div id="stat-total-mods" class="text-xl font-black">0</div>
+                        </div>
+                    </div>
+                    <button onclick="window.cubical.generateResults()" class="px-12 py-5 bg-alvarez-blue text-white font-black rounded-2xl shadow-2xl hover:scale-105 transition-all uppercase tracking-widest flex items-center gap-3">
+                        Calcular Todo <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PANTALLA 4: RESULTADOS -->
+    <section id="screen-results" class="hidden animate-fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- COLUMNA PLACAS -->
+            <div class="space-y-6">
+                <div class="bg-white/5 border border-white/10 p-8 rounded-3xl">
+                    <h3 class="text-xl font-black mb-6 uppercase italic text-primary">Cálculo de Placas</h3>
+                    <div id="res-boards-stats" class="grid grid-cols-3 gap-4 mb-8">
+                        <!-- Dinámico -->
+                    </div>
+                    <div id="res-boards-list" class="space-y-4">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- COLUMNA HERRAJES -->
+            <div class="space-y-6">
+                <div class="bg-white/5 border border-white/10 p-8 rounded-3xl">
+                    <h3 class="text-xl font-black mb-6 uppercase italic text-alvarez-blue">Lista de Herrajes</h3>
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-[0.6rem] font-black text-white/20 uppercase">
+                            <tr>
+                                <th class="pb-4">Descripción</th>
+                                <th class="pb-4 text-right">Cant.</th>
+                                <th class="pb-4 text-right">Unidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="res-hardware-list" class="divide-y divide-white/5">
+                            <!-- Dinámico -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button onclick="window.cubical.saveProject(true)" class="flex-1 py-5 bg-alvarez-green text-black font-black rounded-2xl hover:scale-105 transition-all uppercase tracking-widest">Solicitar Presupuesto</button>
+                    <button onclick="window.cubical.showConstructor()" class="px-8 py-5 bg-white/5 border border-white/10 rounded-2xl font-black hover:bg-white/10 transition-all uppercase text-xs">Volver al Plano</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    :root {
+        --primary: oklch(62.8% 0.25 29.23);
+        --alvarez-blue: oklch(65% 0.18 220);
+        --alvarez-green: oklch(70% 0.15 140);
+    }
+    
+    .text-primary { color: var(--primary); }
+    .bg-primary { background-color: var(--primary); }
+    .bg-alvarez-blue { background-color: var(--alvarez-blue); }
+    .bg-alvarez-green { background-color: var(--alvarez-green); }
+
+    .animate-fade-in {
+        animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden { display: none !important; }
+
+    input, select { transition: 0.3s; }
+</style>
+
+<script is:inline>
+    // Inyectar lógica de cliente
+    const CLIENT_ID = {clientId};
+
+    // Objeto global de la aplicación
+    window.cubical = {
+        state: {
+            currentScreen: 'dashboard',
+            projectName: '',
+            environment: '',
+            modules: [],
+            projects: [],
+            results: null
+        },
+
+        init: async function() {
+            console.log("CubiCal PRO Iniciando...");
+            await this.loadProjects();
+            this.showScreen('dashboard');
+        },
+
+        loadProjects: async function() {
+            try {
+                const response = await fetch(`/api/herramientas/get-cubical?clientId=${CLIENT_ID}`);
+                const data = await response.json();
+                if (data.success) {
+                    this.state.projects = data.projects;
+                    this.renderDashboard();
+                }
+            } catch (e) {
+                console.warn("No se pudieron cargar los proyectos");
+                this.renderDashboard(); // Fallback grid vacía
+            }
+        },
+
+        showScreen: function(name) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`screen-${name}`).classList.remove('hidden');
+            this.state.currentScreen = name;
+            
+            // Mostrar botón de guardar solo en constructor
+            document.getElementById('btn-save-project').classList.toggle('hidden', name !== 'constructor');
+        },
+
+        showSetup: function() { this.showScreen('setup'); },
+        showDashboard: function() { this.showScreen('dashboard'); },
+        showConstructor: function() { this.showScreen('constructor'); },
+
+        startConstructor: function() {
+            const name = document.getElementById('setup-name').value;
+            if (!name) { alert("Ponle un nombre al proyecto"); return; }
+            this.state.projectName = name;
+            this.state.environment = document.getElementById('setup-env').value;
+            this.showScreen('constructor');
+            this.renderConstructor();
+        },
+
+        addModule: function() {
+            const type = document.getElementById('mod-type').value;
+            const dims = {
+                alto: parseInt(document.getElementById('mod-h').value),
+                ancho: parseInt(document.getElementById('mod-w').value),
+                prof: parseInt(document.getElementById('mod-p').value),
+                n_cajones: parseInt(document.getElementById('mod-n').value),
+                n_puertas: parseInt(document.getElementById('mod-n').value),
+                n_estantes: 2
+            };
+            
+            this.state.modules.push({ id: Date.now(), type, dims });
+            this.renderConstructor();
+        },
+
+        removeModule: function(id) {
+            this.state.modules = this.state.modules.filter(m => m.id !== id);
+            this.renderConstructor();
+        },
+
+        renderConstructor: function() {
+            const list = document.getElementById('module-list');
+            list.innerHTML = this.state.modules.map(m => `
+                <div class="bg-white/5 border border-white/5 p-4 rounded-xl flex justify-between items-center group">
+                    <div>
+                        <div class="text-[0.6rem] font-black text-white/30 uppercase">${m.type}</div>
+                        <div class="text-sm font-bold">${m.dims.alto}x${m.dims.ancho}x${m.dims.prof}</div>
+                    </div>
+                    <button onclick="window.cubical.removeModule(${m.id})" class="text-white/20 hover:text-primary transition-all">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+            
+            document.getElementById('stat-total-mods').textContent = this.state.modules.length;
+            this.renderPreview();
+        },
+
+        renderPreview: function() {
+            const svg = document.getElementById('svg-preview');
+            let html = '';
+            let currentX = 50;
+            
+            this.state.modules.forEach((m, idx) => {
+                const scale = 0.4;
+                const h = m.dims.alto * scale;
+                const w = m.dims.ancho * scale;
+                const y = 450 - h;
+                
+                html += `
+                    <g transform="translate(${currentX}, ${y})">
+                        <rect width="${w}" height="${h}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" />
+                        <rect x="2" y="2" width="${w-4}" height="${h-4}" fill="rgba(255,77,0,0.05)" stroke="var(--primary)" stroke-width="1" />
+                        <text x="${w/2}" y="${h+15}" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="10" font-family="monospace">${m.dims.ancho}mm</text>
+                    </g>
+                `;
+                currentX += w + 20;
+            });
+            
+            svg.innerHTML = html;
+        },
+
+        generateResults: async function() {
+            if (this.state.modules.length === 0) { alert("Añade al menos un módulo"); return; }
+            
+            // Cargar motores dinámicamente si no están (para evitar bloqueos)
+            const engine = await import('/herramientas/logic/cubical/engine.js');
+            const hardware = await import('/herramientas/logic/cubical/hardware.js');
+            
+            let allPieces = [];
+            this.state.modules.forEach(m => {
+                const pieces = engine.calculateModulePieces(m.type, m.dims);
+                allPieces = allPieces.concat(pieces);
+            });
+            
+            const board = { h: 2750, w: 1820 };
+            const opt = engine.optimizeBoards(allPieces, board);
+            const hw = hardware.calculateTotalHardware(this.state.modules);
+            
+            this.state.results = { opt, hw };
+            this.renderResults();
+            this.showScreen('results');
+        },
+
+        renderResults: function() {
+            const { opt, hw } = this.state.results;
+            
+            // Stats Placas
+            document.getElementById('res-boards-stats').innerHTML = `
+                <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                    <div class="text-[0.5rem] font-black text-white/20 uppercase mb-1">Placas</div>
+                    <div class="text-2xl font-black text-primary">${opt.stats.count}</div>
+                </div>
+                <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                    <div class="text-[0.5rem] font-black text-white/20 uppercase mb-1">Eficacia</div>
+                    <div class="text-2xl font-black">${opt.stats.efficiency}%</div>
+                </div>
+                <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                    <div class="text-[0.5rem] font-black text-white/20 uppercase mb-1">M2 Total</div>
+                    <div class="text-2xl font-black text-alvarez-blue">${opt.stats.totalM2}</div>
+                </div>
+            `;
+            
+            // Lista Herrajes
+            document.getElementById('res-hardware-list').innerHTML = hw.map(h => `
+                <tr class="group hover:bg-white/5 transition-all">
+                    <td class="py-4 font-medium">${h.name}</td>
+                    <td class="py-4 text-right font-bold text-alvarez-blue">${h.qty}</td>
+                    <td class="py-4 text-right text-white/40 text-[0.7rem] uppercase">${h.unit}</td>
+                </tr>
+            `).join('');
+        },
+
+        renderDashboard: function() {
+            const grid = document.getElementById('projects-grid');
+            if (this.state.projects.length === 0) {
+                grid.innerHTML = '<div class="col-span-2 py-12 text-center border-2 border-dashed border-white/5 rounded-3xl text-white/20 font-bold uppercase tracking-widest">No hay proyectos guardados</div>';
+                return;
+            }
+            
+            grid.innerHTML = this.state.projects.map(p => `
+                <div class="bg-white/5 border border-white/10 p-6 rounded-2xl hover:border-primary transition-all cursor-pointer group">
+                    <div class="flex justify-between mb-4">
+                        <i class="fas fa-folder text-2xl text-primary/40 group-hover:text-primary transition-all"></i>
+                        <span class="text-[0.6rem] font-black bg-white/10 px-2 py-1 rounded text-white/40 uppercase">${p.status}</span>
+                    </div>
+                    <h4 class="text-lg font-bold">${p.nombre_proyecto}</h4>
+                    <div class="text-[0.6rem] font-black text-white/20 uppercase mt-1">${p.tipo_ambiente} • ${p.total_m2_placa}m2</div>
+                </div>
+            `).join('');
+        },
+
+        saveProject: async function(isQuote = false) {
+            const payload = {
+                clientId: CLIENT_ID,
+                name: this.state.projectName,
+                env: this.state.environment,
+                modules: this.state.modules,
+                results: this.state.results,
+                isQuote
+            };
+            
+            try {
+                const response = await fetch('/api/herramientas/save-cubical', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const res = await response.json();
+                if (res.success) {
+                    alert(isQuote ? "🚀 Presupuesto solicitado. Te contactaremos pronto." : "💾 Proyecto guardado.");
+                    this.loadProjects();
+                    this.showScreen('dashboard');
+                }
+            } catch (e) {
+                alert("Error al guardar");
+            }
+        }
+    };
+
+    // Iniciar
+    document.addEventListener('astro:page-load', () => window.cubical.init());
+    window.cubical.init();
+</script>

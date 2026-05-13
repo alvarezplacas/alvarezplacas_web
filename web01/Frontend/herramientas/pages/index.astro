@@ -28,6 +28,13 @@ const tools = [
     icon: "fa-file-invoice-dollar",
     link: "/cliente/creador-presupuestos",
     color: "oklch(60% 0.18 260)"
+  },
+  {
+    title: "CubiCal PRO",
+    description: "Calculadora avanzada de muebles y herrajes para profesionales.",
+    icon: "fa-cube",
+    link: "/herramientas/cubical",
+    color: "oklch(65% 0.18 220)"
   }
 ];
 ---
@@ -53,8 +60,8 @@ const tools = [
         </p>
       </div>
 
-      <!-- Grid de Herramientas (3 Columnas Full Width) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Grid de Herramientas (4 Columnas Full Width) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {tools.map(tool => (
           <a href={tool.link} class="group relative block h-full">
             <div class="glass-card p-10 rounded-[2rem] h-full flex flex-col items-center text-center overflow-hidden">

@@ -1,0 +1,157 @@
+---
+/**
+ * Historial de Pedidos del Cliente - Detalle y Seguimiento.
+ */
+import ClienteLayout from '../../layouts/ClienteLayout.astro';
+import { directus, readItems } from '@conexiones/directus.js';
+
+const clientId = Astro.cookies.get('client_session')?.value;
+if (!clientId) return Astro.redirect('/login');
+
+let pedidos = [];
+try {
+    pedidos = await directus.request(readItems('pedidos', {
+        filter: { cliente_id: { _eq: clientId } },
+        sort: ['-fecha_pedido'],
+        fields: ['id', 'status', 'total_m2', 'fecha_pedido', 'total', 'tracking_id', 'resumen_visible']
+    }));
+} catch (e) {
+    console.error("Error al cargar pedidos del cliente:", e);
+}
+
+const getStatusStep = (status) => {
+    const steps = ['presupuesto', 'en_produccion', 'en_corte', 'terminado', 'en_reparto', 'entregado'];
+    return steps.indexOf(status);
+};
+
+const statusLabels = {
+    'presupuesto': { label: 'Presupuesto Enviado', color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    'en_produccion': { label: 'En Producción', color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    'en_corte': { label: 'En Corte', color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    'terminado': { label: 'Listo / Terminado', color: 'text-green-500', bg: 'bg-green-500/10' },
+    'en_reparto': { label: 'En Reparto', color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    'entregado': { label: 'Entregado', color: 'text-gray-400', bg: 'bg-gray-400/10' }
+};
+---
+
+<ClienteLayout title="Mis Pedidos - Alvarez Placas">
+    <div class="mb-12">
+        <h2 class="text-4xl font-black text-white uppercase tracking-tighter mb-4">
+            Mis <span class="text-primary italic">Pedidos</span>
+        </h2>
+        <div class="h-1 w-20 bg-primary rounded-full mb-4"></div>
+        <p class="text-gray-400 font-medium">Sigue el estado de tus trabajos en tiempo real.</p>
+    </div>
+
+    <div class="space-y-8">
+        {pedidos.length === 0 ? (
+            <div class="bg-[#111] border border-white/5 rounded-[2.5rem] p-20 text-center">
+                <i class="fas fa-box-open text-6xl text-gray-800 mb-6"></i>
+                <p class="text-gray-500 font-black uppercase tracking-widest">No tienes pedidos registrados aún</p>
+            </div>
+        ) : (
+            pedidos.map(p => (
+                <div class="bg-[#111] border border-white/5 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden group">
+                    <!-- Header Pedido -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 relative z-10">
+                        <div>
+                            <div class="flex items-center gap-4 mb-2">
+                                <span class="text-xs font-black text-primary uppercase tracking-[0.3em]">Pedido #{p.tracking_id || p.id}</span>
+                                <span class={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${statusLabels[p.status]?.bg} ${statusLabels[p.status]?.color}`}>
+                                    {statusLabels[p.status]?.label}
+                                </span>
+                            </div>
+                            <p class="text-gray-500 text-xs font-medium uppercase tracking-widest">
+                                Iniciado el {new Date(p.fecha_pedido).toLocaleDateString('es-AR')}
+                            </p>
+                        </div>
+                        
+                        <div class="flex items-center gap-6">
+                            <div class="text-right">
+                                <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Monto Estimado</p>
+                                <p class="text-2xl font-black text-white italic">{p.total_m2} m²</p>
+                            </div>
+                            
+                            {p.status === 'presupuesto' && (
+                                <button 
+                                    class="bg-primary hover:bg-white text-white hover:text-black font-black py-4 px-8 rounded-2xl transition-all uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20 approve-btn active:scale-95"
+                                    data-id={p.id}
+                                >
+                                    Aprobar Presupuesto
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <!-- Tracking Timeline -->
+                    <div class="relative mb-10 pt-4">
+                        <div class="absolute top-1/2 left-0 w-full h-0.5 bg-white/5 -translate-y-1/2"></div>
+                        <div class="absolute top-1/2 left-0 h-0.5 bg-primary -translate-y-1/2 transition-all duration-1000" style={`width: ${(getStatusStep(p.status) / 5) * 100}%`}></div>
+                        
+                        <div class="relative flex justify-between">
+                            {['presupuesto', 'en_produccion', 'en_corte', 'terminado', 'en_reparto', 'entregado'].map((step, idx) => (
+                                <div class="flex flex-col items-center gap-3 relative z-10">
+                                    <div class={`w-4 h-4 rounded-full border-2 transition-all duration-500 ${
+                                        getStatusStep(p.status) >= idx ? 'bg-primary border-primary shadow-[0_0_15px_rgba(255,40,0,0.5)]' : 'bg-[#111] border-gray-800'
+                                    }`}></div>
+                                    <span class={`text-[9px] font-black uppercase tracking-tighter ${
+                                        getStatusStep(p.status) >= idx ? 'text-white' : 'text-gray-700'
+                                    }`}>
+                                        {step.replace('_', ' ')}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <!-- Detalles del Pedido -->
+                    <div class="bg-black/40 border border-white/5 rounded-2xl p-6">
+                        <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Detalle de Materiales</h4>
+                        <div class="text-gray-400 text-xs leading-relaxed">
+                            {p.resumen_visible ? p.resumen_visible : 'El detalle está siendo procesado por el departamento de producción.'}
+                        </div>
+                    </div>
+
+                    <!-- Glow effect -->
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-primary/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-primary/10 transition-all"></div>
+                </div>
+            ))
+        )}
+    </div>
+</ClienteLayout>
+
+<script>
+    const approveBtns = document.querySelectorAll('.approve-btn');
+    
+    approveBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            if (!confirm('¿Confirmas la aprobación de este presupuesto para iniciar la producción?')) return;
+            
+            const pedidoId = (e.target as HTMLElement).getAttribute('data-id');
+            const originalText = (e.target as HTMLElement).innerHTML;
+            
+            (e.target as HTMLElement).innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            (e.target as HTMLElement).classList.add('opacity-50', 'pointer-events-none');
+
+            try {
+                const res = await fetch('/api/cliente/approve-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pedidoId })
+                });
+
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    alert('Error al aprobar el pedido. Por favor contacta a tu vendedor.');
+                    (e.target as HTMLElement).innerHTML = originalText;
+                    (e.target as HTMLElement).classList.remove('opacity-50', 'pointer-events-none');
+                }
+            } catch (err) {
+                alert('Error de conexión');
+                (e.target as HTMLElement).innerHTML = originalText;
+                (e.target as HTMLElement).classList.remove('opacity-50', 'pointer-events-none');
+            }
+        });
+    });
+</script>

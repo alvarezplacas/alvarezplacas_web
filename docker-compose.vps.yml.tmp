@@ -1,0 +1,111 @@
+services:
+  alvarezplacas_db:
+    image: postgres:16-alpine
+    container_name: alvarezplacas_db_v16
+    restart: unless-stopped
+    ports:
+      - "100.127.6.20:5432:5432"
+    environment:
+      - POSTGRES_USER=alvarez_admin
+      - POSTGRES_PASSWORD=AlvarezAdmin2026
+      - POSTGRES_DB=alvarezplacas
+    volumes:
+      - web01_alvarez_data_v16:/var/lib/postgresql/data
+    networks:
+      - alvarez_v16_net
+
+  alvarezplacas_directus:
+    image: directus/directus:11.1.0
+    container_name: alvarezplacas_directus_v16
+    restart: unless-stopped
+    ports:
+      - "8055:8055"
+    environment:
+      DB_CLIENT: "pg"
+      DB_HOST: "alvarezplacas_db"
+      DB_PORT: "5432"
+      DB_DATABASE: "alvarezplacas"
+      DB_USER: "alvarez_admin"
+      DB_PASSWORD: "AlvarezAdmin2026"
+      FILES_SIZE_LIMIT: "100mb"
+      CORS_ENABLED: "true"
+      CORS_ORIGIN: "https://alvarezplacas.com.ar,https://www.alvarezplacas.com.ar,https://admin.alvarezplacas.com.ar"
+      SEARCH_ENABLED: "true"
+      SEARCH_STORE: "meilisearch"
+      SEARCH_MEILISEARCH_HOST: "http://alvarezplacas_meili:7700"
+      SEARCH_MEILISEARCH_KEY: "AlvarezMeili2026!"
+      STORAGE_LOCATIONS: "s3"
+      STORAGE_S3_DRIVER: "s3"
+      STORAGE_S3_KEY: "AlvarezMinioUser2026"
+      STORAGE_S3_SECRET: "AlvarezMinioSecret2026!"
+      STORAGE_S3_BUCKET: "alvarez-assets"
+      STORAGE_S3_ENDPOINT: "http://alvarezplacas-minio:9000"
+      STORAGE_S3_REGION: "us-east-1"
+      STORAGE_S3_FORCE_PATH_STYLE: "true"
+    networks:
+      - javiermix_network
+      - alvarez_v16_net
+    depends_on:
+      - alvarezplacas_db
+
+  alvarezplacas_meili:
+    image: getmeili/meilisearch:v1.12
+    container_name: alvarezplacas_meili
+    restart: unless-stopped
+    ports:
+      - "7710:7700"
+    environment:
+      - MEILI_MASTER_KEY=AlvarezMeili2026!
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - web01_alvarez_meili_data:/meili_data
+    networks:
+      - alvarez_v16_net
+
+  alvarezplacas_minio:
+    image: minio/minio:latest
+    container_name: alvarezplacas-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=AlvarezMinioUser2026
+      - MINIO_ROOT_PASSWORD=AlvarezMinioSecret2026!
+    volumes:
+      - web01_alvarez_minio_data:/data
+    networks:
+      - javiermix_network
+      - alvarez_v16_net
+
+  alvarezplacas_web:
+    image: node:22-alpine
+    container_name: alvarezplacas_web
+    working_dir: /app
+    volumes:
+      - ./site/web01:/app
+      - /opt/alvarezplacas/placas:/app/public/Placas
+    ports:
+      - "4321:4321"
+    command: sh -c "node ./dist/server/entry.mjs"
+    environment:
+      - PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar
+      - DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055
+      - DIRECTUS_TOKEN=alvarez-api-token-v16-2026
+      - HOST=0.0.0.0
+      - PORT=4321
+      - NODE_ENV=production
+    networks:
+      - javiermix_network
+      - alvarez_v16_net
+    restart: always
+
+networks:
+  javiermix_network:
+    external: true
+  alvarez_v16_net:
+    driver: bridge
+
+volumes:
+  web01_alvarez_data_v16:
+    external: true
+  web01_alvarez_meili_data:
+  web01_alvarez_minio_data:

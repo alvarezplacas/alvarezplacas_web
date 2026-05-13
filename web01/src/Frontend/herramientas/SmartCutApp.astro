@@ -1,0 +1,693 @@
+---
+const { isLoggedIn = false } = Astro.props;
+---
+<style is:inline>
+    :root {
+        --alvarez-red: oklch(62.8% 0.25 29.23);
+        --alvarez-dark: oklch(12% 0.01 280);
+        --alvarez-border: oklch(100% 0 0 / 8%);
+        --glass-bg: oklch(100% 0 0 / 4%);
+        --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    body { background: oklch(8% 0.01 280); color: oklch(98% 0.01 280); font-family: 'Inter', sans-serif; margin: 0; }
+
+    .smart-bar { background: #0a0a0c; padding: 12px 40px; border-bottom: 1px solid #1a1a1c; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    .smart-label { font-size: 0.65rem; font-weight: 900; color: var(--alvarez-red); letter-spacing: 2px; }
+
+    .container-sc { padding: 30px 40px; max-width: 1600px; margin: 0 auto; position: relative; min-height: 80vh; }
+
+    .btn-main { 
+        background: var(--glass-bg); 
+        backdrop-filter: blur(10px);
+        color: white; 
+        border: 1px solid var(--alvarez-border);
+        padding: 12px 25px; 
+        border-radius: 6px;
+        font-weight: 900; 
+        cursor: pointer; 
+        display: inline-flex; 
+        align-items: center; 
+        justify-content: center;
+        gap: 10px; 
+        text-transform: uppercase;
+        transition: 0.3s;
+        font-size: 0.7rem;
+    }
+    .btn-main:hover { background: var(--alvarez-red); border-color: var(--alvarez-red); transform: translateY(-1px); }
+
+    /* STRATEGY PANEL GLASS STYLES */
+    .strategy-panel-industrial { 
+        display: flex; 
+        gap: 15px; 
+        background: oklch(100% 0 0 / 2%); 
+        padding: 15px 25px; 
+        border-radius: 16px; 
+        margin-top: 25px; 
+        align-items: center;
+        border: 1px solid var(--alvarez-border);
+        box-shadow: 0 10px 30px oklch(0% 0 0 / 20%);
+    }
+    .btn-strategy, .btn-action-glass {
+        width: 55px;
+        height: 55px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--alvarez-border);
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+        color: oklch(60% 0 0);
+        font-size: 1.1rem;
+        gap: 4px;
+    }
+    .btn-strategy span, .btn-action-glass span { font-size: 0.5rem; font-weight: 800; text-transform: uppercase; }
+    
+    .btn-strategy:hover, .btn-action-glass:hover { background: oklch(100% 0 0 / 8%); color: #fff; transform: translateY(-2px); border-color: oklch(100% 0 0 / 20%); }
+    .btn-strategy.active { background: var(--alvarez-red); color: #fff; border-color: var(--alvarez-red); box-shadow: 0 0 25px oklch(62.8% 0.25 29.23 / 40%); }
+    
+    .btn-action-glass.save, .btn-action-glass.budget { border-color: oklch(70% 0.15 140 / 30%); color: oklch(70% 0.15 140); }
+    @media (min-width: 901px) {
+        .btn-action-glass.save, .btn-action-glass.budget { 
+            width: auto; 
+            padding: 0 25px; 
+            flex-direction: row; 
+            gap: 12px; 
+        }
+        .btn-action-glass.save span, .btn-action-glass.budget span { font-size: 0.75rem; letter-spacing: 1.5px; }
+    }
+    .btn-action-glass.save:hover, .btn-action-glass.budget:hover { background: oklch(70% 0.15 140 / 20%); color: oklch(90% 0.1 140); }
+
+    .strategy-info-text { font-size: 0.65rem; color: oklch(60% 0 0); line-height: 1.4; flex: 1; border-left: 1px solid var(--alvarez-border); padding-left: 20px; }
+    .strategy-info-text strong { color: oklch(80% 0 0); display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .config-panel {
+        background: #0a0a0c;
+        border-left: 1px solid #1a1a1c;
+        width: 400px;
+        position: fixed;
+        right: -400px;
+        top: 0;
+        bottom: 0;
+        z-index: 2000;
+        padding: 40px;
+        transition: 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        box-shadow: -30px 0 60px rgba(0,0,0,0.8);
+    }
+    .config-panel.open { right: 0; }
+    .config-section { margin-bottom: 35px; }
+    .config-title { font-size: 0.7rem; font-weight: 900; color: #444; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 1.5px; border-bottom: 1px solid #111; padding-bottom: 10px; }
+
+    input, select { width: 100%; background: #000; border: 1px solid #222; color: #fff; padding: 12px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; transition: 0.3s; }
+    input:focus { border-color: var(--alvarez-red); outline: none; }
+    label { display: block; font-size: 0.6rem; color: #666; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
+
+    .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .stat-item { background: #0a0a0c; border: 1px solid #151517; padding: 20px; border-radius: 8px; text-align: left; }
+    .stat-item span { display: block; font-size: 0.6rem; font-weight: 900; color: #444; margin-bottom: 5px; text-transform: uppercase; }
+    .stat-item strong { font-size: 1.2rem; font-family: var(--font-mono); color: #fff; }
+
+    /* INDUSTRIAL VISUALIZER STYLES */
+    .plate-view-wrap { background: #08080a; border: 1px solid #151517; border-radius: 12px; overflow: hidden; margin-top: 20px; }
+    .plate-header-industrial { background: #0d0d0f; padding: 15px 25px; border-bottom: 1px solid #1a1a1c; display: flex; justify-content: space-between; align-items: center; }
+    .plate-title { font-size: 0.9rem; font-weight: 900; color: var(--alvarez-red); text-transform: uppercase; }
+    .plate-subtitle { font-size: 0.6rem; color: #444; font-weight: 800; text-transform: uppercase; }
+    
+    .industrial-canvas { display: block; margin: 20px auto; border: 1px solid #1a1a1c; background: #000; }
+
+    .industrial-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #1a1a1c; border-top: 1px solid #1a1a1c; }
+    .stats-group { background: #0d0d0f; padding: 20px 25px; }
+    .stat-main { margin-bottom: 15px; }
+    .stat-main span { display: block; font-size: 0.55rem; font-weight: 900; color: #444; margin-bottom: 2px; }
+    .stat-main strong { font-size: 1.1rem; font-family: var(--font-mono); }
+    
+    .edge-stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #151517; }
+    .edge-stat span { font-size: 0.65rem; color: #666; font-weight: 600; }
+    .edge-stat strong { font-size: 0.8rem; font-family: var(--font-mono); color: #25d366; }
+
+    .hidden { display: none !important; }
+    .animate-in { animation: industrialFade 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes industrialFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .lepton-form { background: oklch(100% 0 0 / 2%); border: 1px solid var(--alvarez-border); padding: 25px; border-radius: 16px; margin-bottom: 30px; }
+    .lepton-row { display: grid; grid-template-columns: 100px 1fr 1fr 2fr 80px; gap: 15px; align-items: end; }
+    
+    @media (max-width: 900px) {
+        .lepton-row { grid-template-columns: 1fr 1fr; gap: 15px; }
+        .lepton-row > div:nth-child(4) { grid-column: span 2; }
+        .container-sc { padding: 15px; }
+        .smart-bar { padding: 10px 20px; }
+        .strategy-panel-industrial { flex-direction: column; align-items: stretch; }
+        .strategy-info-text { border-left: none; border-top: 1px solid var(--alvarez-border); padding: 15px 0 0 0; margin-top: 10px; }
+    }
+
+    /* MOBILE OPTIMIZATIONS (< 600px) */
+    @media (max-width: 600px) {
+        h2 { font-size: 3.5rem !important; }
+        input, select { font-size: 1.1rem !important; padding: 15px !important; }
+        label { font-size: 0.8rem !important; }
+        
+        .lepton-row { grid-template-columns: 80px 1fr 1fr !important; }
+        .lepton-row > div:nth-child(1) { width: 70px; } /* CANT */
+        .lepton-row > div:nth-child(4) { grid-column: span 3 !important; order: 5; } /* PIEZA */
+        .lepton-row > div:nth-child(5) { order: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; } /* GIRAR */
+        
+        .tapacantos-row { justify-content: center !important; text-align: center; }
+        .tapacantos-row > div { justify-content: center !important; width: 100%; }
+
+        .strategy-panel-industrial { padding: 20px !important; }
+        .btn-strategy, .btn-action-glass { width: 75px !important; height: 75px !important; }
+        .btn-strategy i, .btn-action-glass i { font-size: 1.5rem; }
+        .btn-strategy span, .btn-action-glass span { font-size: 0.65rem !important; }
+        
+        #strategy-selector-root > div { justify-content: center !important; width: 100%; }
+        #strategy-selector-root > div:nth-child(2) { border-left: none !important; margin-left: 0 !important; padding-left: 0 !important; margin-top: 15px; }
+
+        .btn-shatter { width: 100%; font-size: 1rem !important; padding: 20px !important; }
+
+        .mobile-stack-grid { grid-template-columns: 1fr !important; }
+        
+        .mobile-only { display: flex !important; }
+        .desktop-only { display: none !important; }
+        
+        #plates-container.mobile-hidden { display: none !important; }
+    }
+
+    .mobile-only { display: none; }
+    .desktop-only { display: inline-block; }
+
+    /* GLASS SHATTER EFFECT */
+    .btn-shatter {
+        background: var(--alvarez-red);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 12px;
+        font-weight: 900;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: 0.1s;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        box-shadow: 0 10px 20px oklch(62.8% 0.25 29.23 / 30%);
+    }
+    .btn-shatter:active {
+        transform: scale(0.95);
+        filter: brightness(1.2);
+    }
+    .btn-shatter::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(135deg, transparent 45%, rgba(255,255,255,0.4) 50%, transparent 55%);
+        background-size: 200% 200%;
+        animation: glass-shimmer 3s infinite;
+    }
+    @keyframes glass-shimmer {
+        0% { background-position: 200% 200%; }
+        100% { background-position: -200% -200%; }
+    }
+    .help-guide { margin-top: 30px; border-top: 1px solid var(--alvarez-border); padding-top: 50px; color: oklch(75% 0 0); font-family: 'Inter', sans-serif; }
+    .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 50px; margin-top: 35px; }
+    .help-item h4 { font-family: 'Montserrat', sans-serif; color: oklch(90% 0 0); font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: flex; align-items: center; gap: 12px; }
+    .help-item p { font-size: 1.05rem; line-height: 1.8; margin: 0; font-weight: 400; color: oklch(70% 0 0); }
+    .btn-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-top: 50px; background: oklch(100% 0 0 / 2.5%); padding: 35px; border-radius: 16px; border: 1px solid var(--alvarez-border); }
+    .legend-item { display: flex; align-items: flex-start; gap: 18px; font-size: 0.95rem; font-weight: 400; line-height: 1.6; color: oklch(65% 0 0); }
+    .legend-item strong { font-family: 'Montserrat', sans-serif; color: oklch(95% 0 0); display: block; margin-bottom: 4px; font-size: 0.9rem; letter-spacing: 0.5px; }
+    .legend-item i { width: 38px; height: 38px; background: var(--glass-bg); border: 1px solid var(--alvarez-border); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--alvarez-red); flex-shrink: 0; font-size: 1rem; margin-top: 2px; }
+</style>
+
+<div id="smartcut-bar" class="smart-bar hidden">
+    <div class="smart-label">SMARTCUT PRO <span style="background: var(--alvarez-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.5rem; margin-left: 10px;">v5.6.5 INDUSTRIAL</span></div>
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <div style="position: relative;">
+            <i class="fas fa-cog" onclick="toggleConfig()" style="color: #444; font-size: 1.2rem; cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#444'"></i>
+            <span style="position: absolute; top: -8px; right: -8px; background: var(--alvarez-red); color: white; font-size: 0.5rem; padding: 2px 4px; border-radius: 50%; font-weight: 900;">18%</span>
+        </div>
+        <button onclick="showDashboard()" class="btn-main">PROYECTOS</button>
+    </div>
+</div>
+
+<aside id="expert-panel" class="config-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+        <h3 style="font-size: 1.2rem; font-weight: 900; letter-spacing: -1px;">AJUSTES INDUSTRIALES</h3>
+        <i class="fas fa-times" onclick="toggleConfig()" style="cursor: pointer; color: #444; font-size: 1.5rem;"></i>
+    </div>
+
+    <div class="config-section">
+        <div class="config-title">Estrategia de Optimización</div>
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px;">
+            <div><label>MODO</label>
+                <select id="cfg-mode" onchange="updateEngineCfg()">
+                    <option value="MIXED">MIXTA (MAX. APROV.)</option>
+                    <option value="H">HORIZONTAL (TIRAS)</option>
+                    <option value="V">VERTICAL (COLUMNAS)</option>
+                </select>
+            </div>
+            <div><label>SIERRA (mm)</label><input type="number" id="cfg-kerf" value="4" onchange="updateEngineCfg()"></div>
+        </div>
+        <p style="font-size: 0.6rem; color: #444; margin-top: 10px;">La opción MIXTA realiza 3 simulaciones simultáneas y elige la más eficiente.</p>
+    </div>
+
+    <div class="config-section">
+        <div class="config-title">Insumos y Desperdicio</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div><label>DESP. TAPACANTO %</label><input type="number" id="cfg-edge-waste" value="18" onchange="updateEngineCfg()"></div>
+            <div><label>REFILADO (mm)</label><input type="number" id="cfg-trim" value="5" onchange="updateEngineCfg()"></div>
+        </div>
+        <p style="font-size: 0.6rem; color: #444; margin-top: 15px; line-height: 1.4;">El desperdicio se aplica sobre el cálculo lineal de cada espesor (0.45, 1, 2mm).</p>
+    </div>
+
+    <div class="config-section">
+        <div class="config-title">Ajuste de Algoritmo (Rueda Dentada)</div>
+        <label>PRECISIÓN / PASOS</label>
+        <input type="range" id="cfg-steps" min="100" max="2000" step="100" value="900" onchange="updateEngineCfg()">
+        <div style="display: flex; justify-content: space-between; font-size: 0.6rem; color: #333; margin-top: 5px;"><span>RÁPIDO</span><span>ÓPTIMO</span></div>
+    </div>
+
+    <button onclick="toggleConfig()" class="btn-main" style="width: 100%; margin-top: 40px; background: var(--alvarez-red);">APLICAR CAMBIOS</button>
+</aside>
+
+<div class="container-sc">
+    <section id="view-dashboard" class="animate-in">
+        <h2 style="font-size: 5rem; font-weight: 900; margin-bottom: 0; letter-spacing: -4px;">Smart Cut <span style="color: var(--alvarez-red)">PRO</span></h2>
+        <div style="width: 100px; height: 4px; background: var(--alvarez-red); margin-bottom: 20px;"></div>
+        <p style="color: #444; font-size: 1.1rem; margin-bottom: 60px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;">Industrial Cutting Engine v5.6.5</p>
+        
+        <div style="display: flex; gap: 20px;">
+            <button onclick="showSetup()" class="btn-main" style="background: var(--alvarez-red);"><i class="fas fa-plus"></i> NUEVA OPTIMIZACIÓN</button>
+            <button id="btn-final-send" onclick="handleBudgetClick()" class="btn-action-glass budget hidden" style="height: 55px; border-radius: 6px; font-weight: 900; background: var(--glass-bg);">
+                <i class="fas fa-file-invoice"></i>
+                <span>GENERAR PRESUPUESTO</span>
+            </button>
+        </div>
+        <div id="projects-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 20px;"></div>
+
+        <div class="help-guide animate-in" style="animation-delay: 0.2s;">
+            <div class="help-grid">
+                <div class="help-item">
+                    <h4><i class="fas fa-info-circle"></i> Funcionamiento</h4>
+                    <p>SmartCut PRO utiliza un algoritmo de guillotina industrial. Configura los tapacantos para el cálculo preciso de insumos y reporte de producción. La medida ingresada es la medida final de corte, optimizando el flujo de trabajo con la pegadora de cantos.</p>
+                </div>
+                <div class="help-item">
+                    <h4><i class="fas fa-keyboard"></i> Carga de Datos</h4>
+                    <p>Diseñado para velocidad: usa la tecla <strong>ENTER</strong> para saltar entre campos y añadir piezas rápidamente. En móviles, el formulario se adapta para una carga táctil optimizada con controles de mayor tamaño.</p>
+                </div>
+            </div>
+
+            <div class="btn-legend">
+                <div class="legend-item">
+                    <i class="fas fa-microchip"></i>
+                    <div><strong>MIX</strong><span>Cálculo inteligente que busca el máximo ahorro combinando orientaciones.</span></div>
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-grip-lines"></i>
+                    <div><strong>HOR</strong><span>Optimización horizontal. Maximiza tiras largas, ideal para cortes pasantes.</span></div>
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-grip-lines-vertical"></i>
+                    <div><strong>VER</strong><span>Optimización vertical. Útil cuando la veta de la madera es dominante.</span></div>
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-sync-alt"></i>
+                    <div><strong>CALC</strong><span>Refresca el algoritmo y fuerza un nuevo cálculo con los ajustes actuales.</span></div>
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-save"></i>
+                    <div><strong>GUARDAR</strong><span>Guarda el progreso del proyecto y vuelve al panel de administración.</span></div>
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-th"></i>
+                    <div><strong>PLANO</strong><span>(Móvil) Alterna la vista del diagrama de corte sobre el tablero.</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-setup" class="hidden animate-in" style="max-width: 600px; margin: 40px auto;">
+        <div class="config-title">Configuración del Material</div>
+        <div style="display: grid; gap: 20px;">
+            <div><label>MARCA</label><select id="plate-brand"><option value="FAPLAC">FAPLAC (2750x1820)</option><option value="EGGER">EGGER (2600x1820)</option><option value="SADEPAN">SADEPAN (2820x1830)</option><option value="NOVA">NOVA (3660x1830)</option><option value="OSB">OSB (2440x1220)</option><option value="CUSTOM">PERSONALIZADA...</option></select></div>
+            <div><label>MODELO / DISEÑO</label><input type="text" id="setup-design" list="designs-list" placeholder="Ej: Sahara, Mesopotamia..."></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div><label>ESPESOR PLACA (mm)</label>
+                    <select id="plate-thickness">
+                        <option value="30">30 mm</option>
+                        <option value="28">28 mm</option>
+                        <option value="25">25 mm</option>
+                        <option value="18" selected>18 mm</option>
+                        <option value="15">15 mm</option>
+                        <option value="12">12 mm</option>
+                        <option value="9">9 mm</option>
+                        <option value="5.5">5.5 mm</option>
+                        <option value="3">3 mm (Plus)</option>
+                    </select>
+                </div>
+                <div id="custom-dims" class="hidden" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><label>LARGO</label><input type="number" id="setup-w" value="2750"></div>
+                    <div><label>ANCHO</label><input type="number" id="setup-h" value="1830"></div>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 15px; margin-top: 40px;">
+            <button onclick="createProjectSC()" class="btn-main" style="flex: 1; background: var(--alvarez-red);">COMENZAR</button>
+            <button onclick="showDashboard()" style="background:transparent; border:none; color:#444; font-weight:800; cursor:pointer;">VOLVER</button>
+        </div>
+    </section>
+
+    <section id="view-editor" class="hidden animate-in">
+        <div class="stats-bar">
+            <div class="stat-item"><span>DISEÑO</span><strong id="display-proj-design">-</strong></div>
+            <div class="stat-item"><span>PLACAS</span><strong id="stat-sheets">0</strong></div>
+            <div class="stat-item"><span>EFICIENCIA</span><strong id="stat-eff" style="color:var(--alvarez-red)">0%</strong></div>
+            <div class="stat-item"><span>TAPACANTO TOTAL</span><strong id="stat-edges">0.0m</strong></div>
+        </div>
+
+        <div class="lepton-form">
+            <div class="lepton-row">
+                <div><label>CANT</label><input type="number" id="p-qty" value="1" inputmode="numeric" maxlength="2"></div>
+                <div><label>LARGO</label><input type="number" id="p-len" inputmode="numeric"></div>
+                <div><label>ANCHO</label><input type="number" id="p-wid" inputmode="numeric"></div>
+                <div><label>PIEZA</label><input type="text" id="p-label" placeholder="Ej: Lateral"></div>
+                <div style="text-align: center;"><label>GIRAR</label><input type="checkbox" id="p-rot" checked style="width:30px;height:30px;cursor:pointer;"></div>
+            </div>
+            <div class="tapacantos-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--alvarez-border); padding-top: 20px; margin-top: 20px; gap: 20px;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 0.6rem; font-weight: 900; color: #444; width: 100%;">TAPACANTOS:</span>
+                    <select id="pe-t" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <select id="pe-b" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <select id="pe-l" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <select id="pe-r" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                </div>
+                <button onclick="window.addPieceSC()" class="btn-shatter">AÑADIR PIEZA</button>
+            </div>
+
+            <div id="strategy-selector-root" class="strategy-panel-industrial">
+                <div style="display: flex; gap: 10px;">
+                    <div id="btn-mode-MIXED" class="btn-strategy active" onclick="setStrategyMode('MIXED')" title="Cálculo Mixto">
+                        <i class="fas fa-microchip"></i>
+                        <span>MIX</span>
+                    </div>
+                    <div id="btn-mode-H" class="btn-strategy" onclick="setStrategyMode('H')" title="Cálculo Horizontal">
+                        <i class="fas fa-grip-lines"></i>
+                        <span>HOR</span>
+                    </div>
+                    <div id="btn-mode-V" class="btn-strategy" onclick="setStrategyMode('V')" title="Cálculo Vertical">
+                        <i class="fas fa-grip-lines-vertical"></i>
+                        <span>VER</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; border-left: 1px solid var(--alvarez-border); padding-left: 10px; margin-left: 5px;">
+                    <div class="btn-action-glass" onclick="renderEditorSC()" title="Recalcular todo">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>CALC</span>
+                    </div>
+                    <div id="btn-view-plan" class="btn-action-glass hidden mobile-only" onclick="toggleMobilePlan()" title="Ver Plano de Corte">
+                        <i class="fas fa-th"></i>
+                        <span>PLANO</span>
+                    </div>
+                    <div class="btn-action-glass save" onclick="showDashboard()" title="Guardar y volver">
+                        <i class="fas fa-save"></i>
+                        <span>GUARDAR</span>
+                    </div>
+                </div>
+
+                <div class="strategy-info-text">
+                    <strong>Algoritmo Inteligente v5.7</strong>
+                    <span id="strategy-desc">Modo Mixto: Simulación triple que busca el máximo aprovechamiento del tablero combinando orientaciones.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mobile-stack-grid" style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+            <aside>
+                <div style="background: #0a0a0c; border: 1px solid #151517; padding: 25px; border-radius: 10px;">
+                    <div style="font-size: 0.7rem; font-weight: 900; color: #444; margin-bottom: 20px; letter-spacing: 1px;">LISTA DE PIEZAS (<span id="count-label">0</span>)</div>
+                    <div id="pieces-list" style="max-height: 600px; overflow-y: auto; padding-right: 10px;"></div>
+                </div>
+            </aside>
+            <main id="plates-container" class="mobile-hidden"></main>
+        </div>
+    </section>
+
+    <div id="login-wall" class="modal-overlay hidden">
+        <div style="background:#0a0a0c; border:1px solid #1a1a1c; padding:50px; border-radius:15px; width:450px; text-align:center;" class="animate-in">
+            <i class="fas fa-lock" style="font-size: 3rem; color: var(--alvarez-red); margin-bottom: 20px;"></i>
+            <h3 style="font-size: 1.8rem; margin-bottom: 10px; letter-spacing: -1px;">Enviar Presupuesto</h3>
+            <p style="color: #666; margin-bottom: 40px; font-size: 0.9rem;">Para procesar el pedido industrial y enviar los archivos de corte al vendedor, debes estar registrado.</p>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <a href="/login" class="btn-main" style="width:100%; background: var(--alvarez-red);">INICIAR SESIÓN</a>
+                <button onclick="document.getElementById('login-wall').classList.add('hidden')" style="background:transparent; border:none; color:#444; cursor:pointer; font-weight: 800;">VOLVER</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script is:inline>
+    const IS_LOGGED_IN = {isLoggedIn};
+    let engine, visualizer;
+    let session = { projects: [], currentIndex: -1, config: { kerf: 4, trim: 5, edgeWaste: 18, philosophy: 'V', steps: 900 } };
+    const BRANDS = { 'FAPLAC': { w: 2750, h: 1820 }, 'EGGER': { w: 2600, h: 1820 }, 'SADEPAN': { w: 2820, h: 1830 }, 'NOVA': { w: 3660, h: 1830 }, 'OSB': { w: 2440, h: 1220 } };
+
+    async function initSC() {
+        try {
+            const opt = await import('/herramientas/logic/core/optimizer.js?v=' + Date.now());
+            const vis = await import('/herramientas/logic/core/visualizer.js?v=' + Date.now());
+            engine = new opt.SmartCutEngine(session.config);
+            visualizer = new vis.SmartCutVisualizer('plates-container');
+            
+            // KEYBOARD FLOW INTEGRATION
+            setupKeyboardFlow();
+            
+            showDashboard();
+        } catch (e) { setTimeout(initSC, 1000); }
+    }
+
+    function setupKeyboardFlow() {
+        const fields = ['p-qty', 'p-len', 'p-wid', 'p-label', 'pe-t', 'pe-b', 'pe-l', 'pe-r'];
+        fields.forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (idx < fields.length - 1) {
+                        const next = document.getElementById(fields[idx + 1]);
+                        next.focus();
+                        if (next.tagName === 'INPUT') next.select();
+                    } else {
+                        window.addPieceSC();
+                    }
+                }
+            });
+        });
+    }
+
+    window.toggleConfig = () => document.getElementById('expert-panel').classList.toggle('open');
+
+    window.updateEngineCfg = () => {
+        session.config = {
+            kerf: parseInt(document.getElementById('cfg-kerf').value),
+            trim: parseInt(document.getElementById('cfg-trim').value),
+            edgeWaste: parseInt(document.getElementById('cfg-edge-waste').value),
+            mode: document.getElementById('cfg-mode')?.value || session.config.mode,
+            steps: parseInt(document.getElementById('cfg-steps').value)
+        };
+        engine = new engine.constructor(session.config);
+        if (session.currentIndex !== -1) renderEditorSC();
+    };
+
+    window.setStrategyMode = (m) => {
+        session.config.mode = m;
+        // Actualizar UI
+        document.querySelectorAll('.btn-strategy').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-mode-${m}`).classList.add('active');
+        
+        const descs = {
+            'MIXED': 'Modo Mixto: Simulación triple (Japón/Alemania) que busca el máximo aprovechamiento del tablero combinando orientaciones.',
+            'H': 'Modo Horizontal: Optimización por tiras largas. Ideal para escuadradoras verticales (TECNO LD), maximizando la estabilidad.',
+            'V': 'Modo Vertical: Optimización por columnas. Útil para piezas con veta vertical dominante.'
+        };
+        document.getElementById('strategy-desc').textContent = descs[m];
+        
+        // Recalcular
+        engine = new engine.constructor(session.config);
+        renderEditorSC();
+    };
+
+    window.showDashboard = () => {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById('view-dashboard').classList.remove('hidden');
+        document.getElementById('smartcut-bar').classList.add('hidden');
+        renderProjectsSC();
+    };
+
+    window.showSetup = () => {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById('view-setup').classList.remove('hidden');
+    };
+
+    window.showEditorSC = (i) => {
+        session.currentIndex = i;
+        const p = session.projects[i];
+        document.getElementById('display-proj-design').textContent = p.design;
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById('view-editor').classList.remove('hidden');
+        document.getElementById('smartcut-bar').classList.remove('hidden');
+        renderEditorSC();
+    };
+
+    window.createProjectSC = () => {
+        const b = document.getElementById('plate-brand').value;
+        const d = document.getElementById('setup-design').value || b;
+        let w = b === 'CUSTOM' ? parseInt(document.getElementById('setup-w').value) : BRANDS[b].w;
+        let h = b === 'CUSTOM' ? parseInt(document.getElementById('setup-h').value) : BRANDS[b].h;
+        session.projects.push({ brand: b, design: d, w, h, pieces: [], result: null });
+        window.showEditorSC(session.projects.length - 1);
+    };
+
+    window.addPieceSC = () => {
+        const p = session.projects[session.currentIndex];
+        const l = parseInt(document.getElementById('p-len').value);
+        const w = parseInt(document.getElementById('p-wid').value);
+        if (!l || !w) return;
+
+        // VALIDACIÓN DE TAMAÑO INDUSTRIAL
+        const maxDim = Math.max(p.w, p.h);
+        const minDim = Math.min(p.w, p.h);
+        const pMax = Math.max(l, w);
+        const pMin = Math.min(l, w);
+
+        if (pMax > maxDim || pMin > minDim) {
+            alert(`⚠️ ERROR DE MEDIDA: La pieza (${l}x${w}) es más grande que la placa (${p.w}x${p.h}). No se puede cortar.`);
+            return;
+        }
+
+        p.pieces.push({
+            id: Date.now(), q: parseInt(document.getElementById('p-qty').value) || 1, l, h: w, 
+            label: document.getElementById('p-label').value || 'PIEZA', canRotate: document.getElementById('p-rot').checked,
+            edges: { t: parseFloat(document.getElementById('pe-t').value), b: parseFloat(document.getElementById('pe-b').value), l: parseFloat(document.getElementById('pe-l').value), r: parseFloat(document.getElementById('pe-r').value) }
+        });
+        ['p-len', 'p-wid'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('p-qty').value = '1'; document.getElementById('p-qty').focus(); document.getElementById('p-qty').select();
+        renderEditorSC();
+    };
+
+    function renderEditorSC() {
+        const p = session.projects[session.currentIndex];
+        const list = document.getElementById('pieces-list');
+        list.innerHTML = p.pieces.slice().reverse().map(pc => `
+            <div style="background:#0d0d0f; border:1px solid #1a1a1c; padding:15px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.85rem; font-family:var(--font-mono)"><strong>${pc.q}x</strong> ${pc.l}x${pc.h} <small style="color:#444; margin-left:10px;">${pc.label}</small></span>
+                <div class="delete-actions">
+                    <i class="fas fa-trash-alt desktop-only" style="color:#222; cursor:pointer;" onmouseover="this.style.color='#ff2800'" onmouseout="this.style.color='#222'" onclick="removePieceSC(${pc.id})"></i>
+                    <i class="fas fa-times mobile-only" style="color:var(--alvarez-red); font-size:1.4rem; cursor:pointer;" onclick="removePieceSC(${pc.id})"></i>
+                </div>
+            </div>`).join('');
+        document.getElementById('count-label').textContent = p.pieces.length;
+        if (p.pieces.length > 0) {
+            p.result = engine.optimize(p.w, p.h, p.pieces);
+            if (p.result && p.result.plates.length > 0) visualizer.render(p.result, p.w, p.h, (u) => { p.result = u; updateStatsSC(); });
+            updateStatsSC();
+        } else {
+            document.getElementById('plates-container').innerHTML = '';
+            ['stat-sheets', 'stat-eff', 'stat-edges'].forEach(id => document.getElementById(id).textContent = '0');
+        }
+    }
+
+    function updateStatsSC() {
+        const p = session.projects[session.currentIndex];
+        if (!p || !p.result || !p.result.stats) return;
+        const s = p.result.stats;
+        document.getElementById('stat-sheets').textContent = s.totalPlates;
+        document.getElementById('stat-eff').textContent = s.efficiency.toFixed(1) + '%';
+        const totalEdges = Object.values(s.edgeMeters).reduce((a, b) => a + b, 0);
+        document.getElementById('stat-edges').textContent = totalEdges.toFixed(1) + 'm';
+    }
+
+    function renderProjectsSC() {
+        const list = document.getElementById('projects-list');
+        const btnFinal = document.getElementById('btn-final-send');
+        if (session.projects.length > 0) {
+            btnFinal.classList.remove('hidden');
+            list.innerHTML = session.projects.map((p, i) => `
+                <div style="background:#0a0a0c; border:1px solid #151517; padding:25px; border-radius:10px; cursor:pointer; position:relative; transition:0.3s;" onclick="showEditorSC(${i})" onmouseover="this.style.borderColor='var(--alvarez-red)'" onmouseout="this.style.borderColor='#151517'">
+                    <i class="fas fa-times" style="position:absolute; top:15px; right:15px; color:#222;" onclick="removeProjectSC(${i}, event)"></i>
+                    <h3 style="color:var(--alvarez-red); margin:0 0 10px 0; font-size:1.1rem; letter-spacing:-0.5px;">${p.design}</h3>
+                    <p style="font-size:0.6rem; color:#444; font-weight:900; text-transform:uppercase;">${p.brand} • ${p.pieces.length} PIEZAS</p>
+                </div>`).join('');
+        } else {
+            btnFinal.classList.add('hidden');
+            list.innerHTML = '<p style="color:#222; grid-column: 1/-1; text-align:center; padding:30px 0; font-weight:900; text-transform:uppercase; letter-spacing:2px; font-size:1.5rem; opacity:0.3; margin:0;">Sin proyectos activos</p>';
+        }
+    }
+
+    window.removePieceSC = (id) => { session.projects[session.currentIndex].pieces = session.projects[session.currentIndex].pieces.filter(x => x.id !== id); renderEditorSC(); };
+    window.removeProjectSC = (i, e) => { if (e) { e.preventDefault(); e.stopPropagation(); } if (confirm(`Eliminar ${session.projects[i].design}?`)) { session.projects.splice(i, 1); renderProjectsSC(); } };
+    window.openLoginWall = () => document.getElementById('login-wall').classList.remove('hidden');
+
+    window.handleBudgetClick = () => {
+        if (!IS_LOGGED_IN) {
+            openLoginWall();
+            return;
+        }
+        saveBudgetToDirectus();
+    };
+
+    async function saveBudgetToDirectus() {
+        const btn = document.getElementById('btn-final-send');
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ENVIANDO...';
+
+        try {
+            // Recopilar datos de todos los proyectos activos
+            const data = {
+                projects: session.projects.map(p => ({
+                    brand: p.brand,
+                    design: p.design,
+                    pieces: p.pieces,
+                    stats: p.result?.stats
+                }))
+            };
+
+            const response = await fetch('/api/herramientas/save-budget', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const res = await response.json();
+            if (res.success) {
+                alert('✅ Presupuesto enviado con éxito. Un vendedor revisará tu propuesta y te contactará en breve.');
+                // Opcional: limpiar sesión o redirigir
+            } else {
+                alert('❌ Error: ' + res.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('❌ Error de conexión al enviar el presupuesto.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    }
+    window.toggleMobilePlan = () => {
+        const container = document.getElementById('plates-container');
+        const btn = document.getElementById('btn-view-plan');
+        const isHidden = container.classList.toggle('mobile-hidden');
+        btn.querySelector('span').textContent = isHidden ? 'PLANO' : 'CERRAR';
+        btn.querySelector('i').className = isHidden ? 'fas fa-th' : 'fas fa-times';
+        if (!isHidden) container.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    document.getElementById('plate-brand').onchange = (e) => { document.getElementById('custom-dims').classList.toggle('hidden', e.target.value !== 'CUSTOM'); };
+
+    initSC();
+</script>

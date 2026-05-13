@@ -5,7 +5,7 @@
 const { placa } = Astro.props;
 
 // Identificamos si estamos usando el logo de fallback (para ajustar el estilo)
-const isFallback = placa.imagen.includes('assets/76aefcd2');
+const isFallback = placa.imagen.includes('assets/209a486b');
 ---
 
 <div 
@@ -40,7 +40,26 @@ const isFallback = placa.imagen.includes('assets/76aefcd2');
   <!-- Detalles -->
   <div class="p-5 flex flex-col flex-grow">
     <div class="mb-4">
-      <p class="text-primary text-[10px] font-bold uppercase tracking-widest mb-1">{placa.brand}</p>
+      <div class="flex items-center gap-2 mb-1">
+        <p class="text-primary text-[10px] font-bold uppercase tracking-widest">{placa.brand}</p>
+        {placa.estado && (
+          <div class="flex flex-wrap gap-1">
+            {(Array.isArray(placa.estado) ? placa.estado : [placa.estado]).map((tag) => (
+              <span 
+                class={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter shadow-sm ${
+                  tag === 'Stock' ? 'bg-[#c0c0c0] text-black' :
+                  tag === 'Sin Stock' ? 'bg-red-900/30 text-red-500 border border-red-500/20' :
+                  tag === 'Outlet' ? 'bg-[#FFD60A] text-black' :
+                  tag === 'Nuevo' ? 'bg-[#007AFF] text-white' :
+                  tag === 'Descontinuado' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400'
+                }`}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
       <h3 class="text-white font-bold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5rem]">
         {placa.name}
       </h3>

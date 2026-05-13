@@ -1,0 +1,165 @@
+---
+/**
+ * Página de Atención a Proveedores
+ * Diseño premium para captación de socios estratégicos.
+ */
+import Layout from '@layouts/Layout.astro';
+import Header from '@components/Header.astro';
+import Footer from '@components/Footer.astro';
+
+// Datos de contacto específicos para proveedores
+const PROVEEDORES_WA = "541131844902";
+const PROVEEDORES_EMAIL = "proveedores@alvarezplacas.com.ar";
+---
+
+<Layout title="Proveedores | Alvarez Placas" description="Espacio dedicado a proveedores y socios estratégicos de Alvarez Placas. Envíanos tu propuesta.">
+    <Header />
+    
+    <main class="bg-[#0a0a0a] min-h-screen pt-32 pb-20">
+        <div class="max-w-7xl mx-auto px-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+                
+                <!-- Left Side: Content -->
+                <div class="space-y-10 animate-fade-in">
+                    <div>
+                        <span class="text-primary font-bold tracking-[0.2em] text-xs uppercase mb-4 block">Socios Estratégicos</span>
+                        <h1 class="text-5xl md:text-6xl font-bold text-white leading-tight">
+                            Atención a <br/><span class="text-primary">Proveedores</span>
+                        </h1>
+                    </div>
+
+                    <div class="prose prose-invert prose-lg max-w-none text-gray-400 leading-relaxed">
+                        <p>
+                            En <strong>Alvarez Placas</strong>, entendemos que nuestros proveedores son el pilar fundamental de nuestra cadena de valor. 
+                            Buscamos establecer relaciones a largo plazo con empresas que compartan nuestra pasión por la calidad industrial y la innovación.
+                        </p>
+                        
+                        <div class="bg-white/5 border border-white/10 rounded-2xl p-8 my-10">
+                            <h3 class="text-white text-xl font-bold mb-4 flex items-center gap-3">
+                                <i class="fa-solid fa-handshake text-primary"></i>
+                                Nuestro Proceso
+                            </h3>
+                            <ul class="space-y-4 text-sm">
+                                <li class="flex gap-3 italic">
+                                    <span class="text-primary font-bold">01.</span>
+                                    <span><strong>Recepción de Propuestas:</strong> Evaluamos catálogos y listas de precios para asegurar competitividad y calidad.</span>
+                                </li>
+                                <li class="flex gap-3 italic">
+                                    <span class="text-primary font-bold">02.</span>
+                                    <span><strong>Cita Personal:</strong> Valoramos el trato directo. Nos gusta concretar reuniones presenciales para conocer el producto de primera mano.</span>
+                                </li>
+                                <li class="flex gap-3 italic">
+                                    <span class="text-primary font-bold">03.</span>
+                                    <span><strong>Puesta en Escena:</strong> Planificamos juntos la promoción y el posicionamiento de tus productos con criterio profesional.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <p>
+                            Si tienes un producto que aporte valor a la carpintería moderna, queremos escucharte.
+                        </p>
+                    </div>
+
+                    <!-- Direct Contact Options -->
+                    <div class="flex flex-col sm:flex-row gap-6 pt-6">
+                        <a href={`https://wa.me/${PROVEEDORES_WA}`} class="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white font-bold py-4 px-8 rounded-xl flex items-center justify-center gap-3 transition-all transform hover:-translate-y-1">
+                            <i class="fa-brands fa-whatsapp text-xl"></i>
+                            WhatsApp Exclusivo
+                        </a>
+                        <a href={`mailto:${PROVEEDORES_EMAIL}`} class="flex-1 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold py-4 px-8 rounded-xl flex items-center justify-center gap-3 transition-all transform hover:-translate-y-1">
+                            <i class="fa-solid fa-envelope text-xl text-primary"></i>
+                            Email Directo
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right Side: Form -->
+                <div class="bg-[#111111] border border-white/5 rounded-3xl p-8 md:p-12 sticky top-32 shadow-2xl animate-slide-up">
+                    <h2 class="text-2xl font-bold text-white mb-2">Envíanos tu Propuesta</h2>
+                    <p class="text-gray-500 text-sm mb-8">Adjunta tu catálogo o envíanos un mensaje detallado.</p>
+
+                    <form class="space-y-6" id="proveedorForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Empresa / Marca</label>
+                                <input type="text" name="empresa" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Ej: Herrajes Premium S.A." />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Nombre de Contacto</label>
+                                <input type="text" name="nombre" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Tu nombre completo" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Correo Electrónico</label>
+                            <input type="email" name="email" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="ejemplo@proveedor.com" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Mensaje / Propuesta</label>
+                            <textarea name="mensaje" rows="4" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" placeholder="Cuéntanos un poco sobre tus productos y por qué deberíamos trabajar juntos..."></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-primary hover:bg-red-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3">
+                            Enviar Mensaje al Dashboard
+                            <i class="fa-solid fa-paper-plane text-sm"></i>
+                        </button>
+                    </form>
+                    
+                    <div id="successMsg" class="hidden mt-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-500 text-center text-sm font-medium">
+                        ¡Propuesta enviada con éxito! Nos pondremos en contacto pronto.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <Footer />
+</Layout>
+
+<script>
+    const form = document.getElementById('proveedorForm');
+    const successMsg = document.getElementById('successMsg');
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // Simulamos el envío al dashboard (Directus mensajes)
+            // En una fase posterior integraremos el endpoint real de la API
+            console.log('Enviando propuesta de proveedor:', data);
+            
+            form.style.opacity = '0.5';
+            form.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                form.classList.add('hidden');
+                successMsg.classList.remove('hidden');
+            }, 1000);
+        });
+    }
+</script>
+
+<style>
+    .text-primary { color: #ff3e3e; }
+    .bg-primary { background-color: #ff3e3e; }
+    .border-primary { border-color: #ff3e3e; }
+    .animate-fade-in {
+        animation: fadeIn 0.8s ease-out forwards;
+    }
+    .animate-slide-up {
+        animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>

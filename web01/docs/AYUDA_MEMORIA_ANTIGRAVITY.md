@@ -91,7 +91,11 @@
 - **No tocar Dashboards**: Se mantienen aislados en `Backend/dashboard`.
 - **SEO & Performance**: Prioridad absoluta en el Frontend Público.
 - **Modularidad**: Cada sector tiene sus propias instrucciones en su carpeta.
-- **Subidas al VPS**: Siempre via `git pull` en la carpeta `/opt/alvarez_v16/web01/site/`, nunca manualmente.
+- **Subidas al VPS (¡CRÍTICO!)**: Astro **NO COMPILA SOLO** al reiniciar el contenedor. El proceso exacto para que los cambios se vean es:
+  1. `git pull origin main` en `/opt/alvarez_v16/web01/site/web01`
+  2. Compilar: `docker run --rm -v /opt/alvarez_v16/web01/site/web01:/app -w /app node:22-alpine sh -c "npm install && npm run build"`
+  3. Reiniciar: `docker compose -f /opt/alvarez_v16/web01/docker-compose.vps.yml restart alvarezplacas_web`
+  NUNCA saltearse el paso 2, de lo contrario el contenedor cargará el `dist/` viejo.
 - **DB**: Nunca borrar el volumen `web01_alvarez_data_v16`.
 
 ---

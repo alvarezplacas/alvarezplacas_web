@@ -2,14 +2,8 @@ import type { APIRoute } from 'astro';
 import { createDirectus, rest, readItems, createItem, staticToken, updateItem } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
 
-const getEnv = () => {
-    if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env;
-    return process.env;
-};
-
-const env = getEnv();
-const DIRECTUS_URL = env.DIRECTUS_URL_INTERNAL || env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const STATIC_TOKEN = env.DIRECTUS_TOKEN || 'sv47_8QErnkx0-EBKFBnAoBw433CJs13';
+const DIRECTUS_URL = import.meta.env.DIRECTUS_URL_INTERNAL || import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
+const STATIC_TOKEN = import.meta.env.DIRECTUS_TOKEN || 'sv47_8QErnkx0-EBKFBnAoBw433CJs13';
 
 // Inicialización del cliente de Directus
 const directusClient = createDirectus(DIRECTUS_URL)
@@ -29,7 +23,7 @@ export const POST: APIRoute = async ({ request }) => {
             body = await request.json();
         } else {
             const formData = await request.formData();
-            body = Object.fromEntries(formData.entries());
+            body = Object.fromEntries(formData);
         }
 
         const { name, email, phone, address, password, vendedor_id } = body;
@@ -41,7 +35,29 @@ export const POST: APIRoute = async ({ request }) => {
             }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
 
-        // 1. Verificar si el usuario ya existe
+        // 🔒 SEGURIDAD: Bloquear emails de dominio interno
+        if (email.toLowerCase().endsWith('@alvarezplacas.com.ar')) {
+            return new Response(JSON.stringify({ 
+                success: false, 
+                message: 'No se puede registrar con ese correo electrónico' 
+            }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // 🔒 SEGURIDAD: Verificar que el email no pertenezca a un vendedor
+        // Los vendedores SOLO se administran desde Directus, nunca desde el registro público
+        const existingVendedor = await directusClient.request(readItems('vendedores', {
+            filter: { email: { _eq: email.toLowerCase() } },
+            limit: 1
+        }));
+        if (existingVendedor.length > 0) {
+            // Mensaje genérico para no revelar que es vendedor
+            return new Response(JSON.stringify({ 
+                success: false, 
+                message: 'El correo electrónico ya está registrado' 
+            }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // 1. Verificar si el usuario ya existe en clientes
         const existing = await directusClient.request(readItems('clientes', {
             filter: { email: { _eq: email.toLowerCase() } }
         }));
@@ -81,8 +97,6 @@ export const POST: APIRoute = async ({ request }) => {
                 }));
                 
                 if (allSellers.length > 0) {
-                    // Obtener conteo de clientes por vendedor para balancear (Simplificado)
-                    // En una versión más robusta, usaríamos una consulta de agregación
                     const randomIndex = Math.floor(Math.random() * allSellers.length);
                     assignedSellerId = allSellers[randomIndex].id;
                 }
@@ -97,14 +111,14 @@ export const POST: APIRoute = async ({ request }) => {
         try {
             await directusClient.request(createItem('clientes', {
                 name,
-                email: email.toLowerCase(),
-                phone: phone || '',
+                email: email.toLowerCase().trim(),
+                phone: phone ? phone.replace(/\D/g, '') : '',
                 address: address || '',
                 password_hash,
                 client_number,
                 status: 'active',
                 scoring: 1,
-                vendedor_id: assignedSellerId, // Relacionamos con el vendedor
+                vendedor_id: assignedSellerId,
                 registration_date: new Date().toISOString()
             }));
 

@@ -291,4 +291,65 @@ docker compose -f docker-compose.vps.yml restart alvarezplacas_directus
 
 ---
 
-*Documentación actualizada: Abril 2026 — Alvarez Placas v16 Estable*
+*Documentación actualizada: Mayo 2026 — Alvarez Placas v16 Activo*
+
+---
+
+## 🏆 HISTORIAL DE LOGROS — Sesiones con Agente IA
+
+> Este registro documenta todas las funcionalidades implementadas para referencia de futuros agentes y del equipo de desarrollo.
+
+---
+
+### ✅ Mayo 2026 — Sesión: Proveedores, SmartCut PRO & Autenticación
+
+#### 🏭 Módulo de Proveedores (`/proveedores`)
+- **Nueva página `/proveedores`**: Diseño industrial de alta conversión con formulario de contacto y botones de acción directa a WhatsApp exclusivo (`+541131844902`).
+- **Sección "SOCIOS" en Footer**: Integrada en `Frontend/shared/components/Footer.astro` para visibilidad comercial permanente.
+- **Formulario Dual**: El proveedor puede contactar via WhatsApp (instancia inmediata) o formulario web con envío a `proveedores@alvarezplacas.com.ar` y al dashboard de administración.
+- **Copy profesional**: Bienvenida, explicación del proceso de evaluación y cita personal redactada con enfoque de conversión industrial.
+
+#### 🔧 SmartCut PRO v5.6.5 — Optimizador Industrial
+- **Botón GUARDAR mejorado**: En escritorio (`>901px`) muestra la etiqueta "GUARDAR" con diseño expandido y color verde (`oklch(70% 0.15 140)`), manteniendo consistencia visual.
+- **Botón "GENERAR PRESUPUESTO"**: Rediseñado con estilo verde idéntico al botón GUARDAR (`btn-action-glass budget`), con ícono `fa-file-invoice`.
+- **Login Wall implementado**: Si el cliente no está logueado e intenta generar un presupuesto, se muestra un modal de bloqueo que redirige al login. La herramienta sigue siendo usable, pero la descarga de planos y el envío de presupuesto quedan restringidos.
+- **Endpoint `/api/herramientas/save-budget`**: Nuevo endpoint TypeScript que valida la sesión del cliente (`client_session` cookie) y guarda los datos de la optimización en la colección `pedidos` de Directus, vinculando el proyecto al cliente y haciendo visible el pedido en el dashboard de vendedores.
+
+#### 🔐 Sistema de Autenticación — Login Inteligente
+- **Verificación de credenciales (Braian)**: Confirmado que el hash de `bcrypt` en la base de datos es correcto para la cuenta `braian@alvarezplacas.com.ar`. Contraseña: `Braian/tecno315`.
+- **Acceso Preferencial Corporativo**: Implementado en `src/pages/api/auth/login-client.ts`. Si el email ingresado termina en `@alvarezplacas.com.ar`, el sistema busca PRIMERO en la colección `vendedores` antes que en `clientes`, redirigiendo automáticamente al panel `/vendedor`. Los vendedores ya no necesitan saber que existe una URL especial.
+- **URL del Portal de Vendedores**: `https://alvarezplacas.com.ar/vendedor/login` (también accesible desde el login general).
+
+#### 🛠️ Infraestructura y Despliegue
+- **Script `04-SUBIR_CAMBIOS_Y_REINICIAR.bat`**: Consolidado y estabilizado para despliegues desde PC local. Realiza: compresión → SCP al VPS → extracción → `npm run build` → `docker compose restart`.
+- **Script `COMPRIMIR_PARA_WEB.bat`**: Utilidad basada en FFmpeg para comprimir videos antes de subirlos a Directus. Instalación de FFmpeg: `C:\Program Files\ffmpeg-2026-05-11-git-17bc88e67f-essentials_build\bin\ffmpeg.exe`.
+- **Diagnóstico de Error 502**: Causa identificada: frontmatter `---` faltante en `SmartCutApp.astro` después de edición. Solución: SCP del archivo corregido + `docker compose run --rm --entrypoint 'npm run build'` para compilación en modo aislado cuando el contenedor está en restart loop.
+- **Comando de emergencia** para build cuando el contenedor no responde:
+  ```bash
+  ssh -i alvarez_vps.key root@144.217.163.13 \
+    "cd /opt/alvarez_v16/web01 && \
+     docker compose -f docker-compose.vps.yml stop alvarezplacas_web && \
+     docker compose -f docker-compose.vps.yml run --rm --entrypoint 'npm run build' alvarezplacas_web && \
+     docker compose -f docker-compose.vps.yml start alvarezplacas_web"
+  ```
+
+#### 📸 Gestión de Contenido Visual
+- **Sección "Quiénes Somos"**: Configurada para tomar imágenes y videos exclusivamente de la carpeta `quienes_somos` en Directus (no del catálogo completo).
+- **Límite de tamaño Cloudflare**: 100MB máximo por upload. Para videos > 100MB usar el script de compresión FFmpeg antes de subir.
+
+---
+
+### ✅ Mayo 2026 — Sesiones Anteriores: Dashboard de Vendedores
+
+#### 👔 Workspace de Vendedores (Panel Profesional)
+- **QuickNotes**: Sistema de notas rápidas persistentes por vendedor en Directus (`vendedor_notas`).
+- **Layout Adobe-inspired**: Navegación por íconos con tooltips, optimizado para monitores 17".
+- **Rol "Sales Manager" (Facundo)**: Acceso granular a precios y catálogo, sin acceso a SKU.
+- **Motor de SKU automático**: Generación secuencial `x-yy-zzzz` por Rubro/Marca vía endpoint `/api/admin/generate-sku`.
+- **Colección `mensajes`**: Campo `visto` (boolean) para tracking de lectura de mensajes entre clientes y vendedores.
+
+---
+
+> [!IMPORTANT]
+> **Para el próximo agente IA:** Ver el archivo `_INSTRUCCIONES/PROMPT_HERRAMIENTA_CUBICA.md` para las instrucciones completas sobre la próxima herramienta a desarrollar: **Calculadora de Muebles a Medida (CubiCal PRO)**.
+

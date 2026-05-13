@@ -22,17 +22,26 @@ let recentOrders = [];
 let topSellers = [];
 let market = { usd: {}, stocks: [] };
 
+// 6. Mercado Externo (Independiente de Directus)
+try {
+    market = await getMarketData();
+} catch (e) {
+    console.error("[Market Fetch Error]:", e);
+}
+
 try {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-    // 1. Pedidos Hoy
-    const resHoy = await directus.request(aggregate('pedidos', {
-        aggregate: { count: '*' },
-        query: { filter: { date_created: { _gte: startOfToday } } }
-    }));
-    stats.newOrders = parseInt(resHoy[0]?.count || '0');
+    // 1. Pedidos Hoy (Usando campo alternativo si date_created falla, o simplemente manejando el error)
+    try {
+        const resHoy = await directus.request(aggregate('pedidos', {
+            aggregate: { count: '*' },
+            query: { filter: { date_created: { _gte: startOfToday } } }
+        }));
+        stats.newOrders = parseInt(resHoy[0]?.count || '0');
+    } catch (e) { console.warn("Fallo al obtener pedidos hoy (date_created issue)"); }
 
     // 2. Procesando (Factory Flow)
     const resProc = await directus.request(aggregate('pedidos', {
@@ -48,19 +57,21 @@ try {
     }));
     stats.activeClients = parseInt(resClients[0]?.count || '0');
 
-    // 4. Ventas del Mes (Sumatoria)
-    const resSales = await directus.request(aggregate('pedidos', {
-        aggregate: { sum: ['total'] },
-        query: { 
-            filter: { 
-                _and: [
-                    { date_created: { _gte: startOfMonth } },
-                    { status: { _neq: 'presupuesto' } }
-                ]
-            } 
-        }
-    }));
-    stats.monthlySales = parseFloat(resSales[0]?.sum?.total || '0');
+    // 4. Ventas del Mes
+    try {
+        const resSales = await directus.request(aggregate('pedidos', {
+            aggregate: { sum: ['total'] },
+            query: { 
+                filter: { 
+                    _and: [
+                        { date_created: { _gte: startOfMonth } },
+                        { status: { _neq: 'presupuesto' } }
+                    ]
+                } 
+            }
+        }));
+        stats.monthlySales = parseFloat(resSales[0]?.sum?.total || '0');
+    } catch (e) { console.warn("Fallo al obtener ventas mes (date_created issue)"); }
 
     // 5. Saldo Deudor Total
     const resDebt = await directus.request(aggregate('clientes', {
@@ -68,25 +79,22 @@ try {
     }));
     stats.totalDebt = parseFloat(resDebt[0]?.sum?.debt_amount || '0');
 
-    // 6. Mercado Externo
-    market = await getMarketData();
-
     // 7. Rankings y Listados
     const orders = await directus.request(readItems('pedidos', {
-        sort: ['-date_created'],
+        sort: ['-id'],
         limit: 5,
-        fields: ['id', 'status', 'total', 'metodo_entrega', { cliente_id: ['nombre', 'nombre_empresa'] }]
+        fields: ['id', 'status', 'total', 'metodo_entrega', { cliente_id: ['name'] }]
     }));
 
     recentOrders = (orders || []).map((o) => ({
         id: o.id.toString(),
-        cliente: o.cliente_id?.nombre_empresa || o.cliente_id?.nombre || 'Consumidor Final',
+        cliente: o.cliente_id?.name || 'Consumidor Final',
         status: o.status,
         logistics: o.metodo_entrega || 'Retiro'
     }));
 
 } catch (e) {
-    console.error("[Dashboard BI Error]:", e);
+    console.error("[Dashboard BI Stats Error]:", e);
 }
 
 const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
@@ -150,20 +158,10 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                     </div>
                 </div>
 
-                <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6">
-                    <h3 class="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                         <i class="fas fa-building text-blue-400"></i> Cotización de Proveedores
-                    </h3>
-                    <div class="space-y-4">
-                        {market.stocks.map(s => (
-                            <div class="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5">
-                                <span class="text-[11px] font-bold text-gray-300">{s.name}</span>
-                                <span class={`text-sm font-black ${s.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
-                                    {s.value} <i class={`fas fa-caret-${s.trend === 'up' ? 'up' : 'down'} ml-1`}></i>
-                                </span>
-                            </div>
-                        ))}
-                    </div>
+                <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center opacity-20 border-dashed">
+                    <i class="fas fa-chart-line text-4xl text-gray-700 mb-3"></i>
+                    <p class="text-[10px] font-black text-gray-600 uppercase tracking-widest">Análisis de Mercado Externo</p>
+                    <p class="text-[9px] text-gray-700 italic">Módulo a la espera de fuentes de datos oficiales</p>
                 </div>
             </div>
         </div>

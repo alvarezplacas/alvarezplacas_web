@@ -1,0 +1,608 @@
+---
+import '../../../Frontend/home/styles/global.css';
+import QuickNotes from '../components/QuickNotes.astro';
+import AgendaPanel from '../components/AgendaPanel.astro';
+import { directus, readItems } from '@conexiones/directus.js';
+import { aggregate } from '@directus/sdk';
+import { CommunicationService } from '../logic/communication.js';
+
+interface Props {
+	title: string;
+    vendedor_id?: string;
+    role?: string;
+    activeView?: string; // 'dashboard' | 'clientes' | 'pedidos' | 'mensajes' | 'agenda'
+}
+
+const { title, vendedor_id, role, activeView = 'dashboard' } = Astro.props;
+
+const JEFE_ROLE_ID = "75e0f734-0913-4a3c-ae0b-4f5135710b97";
+const isJefe = role === JEFE_ROLE_ID;
+const sellerName = isJefe ? "Facundo (Jefe)" : "Vendedor Pro";
+
+// Unread messages count para el badge del toolbar
+let unreadCount = 0;
+try {
+    unreadCount = await CommunicationService.getUnreadCount(vendedor_id || '1');
+} catch(e) {}
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title} | Workspace Pro</title>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+	</head>
+	<body>
+        <!-- TOP MENU BAR -->
+        <header class="top-bar">
+            <div class="top-bar-brand">
+                <span class="brand-accent">AP</span>
+                <span class="brand-sep">|</span>
+            </div>
+            <nav class="top-bar-nav">
+                <span class="nav-item">Archivo</span>
+                <span class="nav-item active">Vista</span>
+                <span class="nav-item">Ventana</span>
+                <span class="nav-item">Ayuda</span>
+            </nav>
+            <div class="top-bar-status">
+                <div class="live-badge">
+                    <i class="fas fa-circle live-dot"></i>
+                    LIVE: {sellerName}
+                </div>
+                <div class="top-bar-divider"></div>
+                <i class="fas fa-search top-bar-icon"></i>
+                <i class="fas fa-user-circle top-bar-icon"></i>
+            </div>
+        </header>
+
+        <div class="workspace-body">
+            <!-- LEFT TOOLBAR -->
+            <aside class="toolbar">
+                <div class="toolbar-top">
+                    <a href="javascript:void(0)"
+                       class="tool-btn tooltip-trigger"
+                       data-view="dashboard"
+                       data-tooltip="Panel Principal"
+                       id="tool-dashboard">
+                        <i class="fas fa-th-large"></i>
+                    </a>
+                    <a href="javascript:void(0)"
+                       class="tool-btn tooltip-trigger"
+                       data-view="agenda"
+                       data-tooltip="Agenda y Recordatorios"
+                       id="tool-agenda">
+                        <i class="fas fa-calendar-alt"></i>
+                    </a>
+                    <a href="javascript:void(0)"
+                       class="tool-btn tooltip-trigger"
+                       data-view="clientes"
+                       data-tooltip="Base de Clientes"
+                       id="tool-clientes">
+                        <i class="fas fa-users"></i>
+                    </a>
+                    <a href="javascript:void(0)"
+                       class="tool-btn tooltip-trigger msg-tool-btn"
+                       data-view="mensajes"
+                       data-tooltip="Mensajería y Chat"
+                       id="tool-mensajes">
+                        <i class="fas fa-comments"></i>
+                        {unreadCount > 0 && (
+                            <span class="tool-badge" id="msg-badge">{unreadCount}</span>
+                        )}
+                    </a>
+
+                    <div class="toolbar-sep"></div>
+
+                    <a href="javascript:void(0)"
+                       class="tool-btn tooltip-trigger"
+                       data-view="pedidos"
+                       data-tooltip="Pedidos y Seguimiento"
+                       id="tool-pedidos">
+                        <i class="fas fa-clipboard-list"></i>
+                    </a>
+
+                    {isJefe && (
+                        <>
+                            <div class="toolbar-sep"></div>
+                            <a href="/admin/dashboard"
+                               class="tool-btn tool-btn--admin tooltip-trigger"
+                               data-tooltip="Panel de Administración">
+                                <i class="fas fa-user-shield"></i>
+                            </a>
+                        </>
+                    )}
+                </div>
+
+                <div class="toolbar-bottom">
+                    <button id="logout-btn"
+                            class="tool-btn tool-btn--danger tooltip-trigger"
+                            data-tooltip="Cerrar Sesión">
+                        <i class="fas fa-power-off"></i>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- MAIN CANVAS -->
+            <main class="canvas-area">
+                <!-- TABS BAR -->
+                <div class="tabs-bar">
+                    <div class="tab active" id="active-tab">
+                        <span id="active-tab-name">{title}.psd</span>
+                        <i class="fas fa-times tab-close"></i>
+                    </div>
+                </div>
+
+                <!-- CANVAS CONTENT -->
+                <div class="canvas-content" id="workspace-canvas">
+                    <!-- Dashboard (vista inicial) -->
+                    <div id="view-dashboard-static">
+                        <slot />
+                    </div>
+                    <!-- Vistas dinámicas se inyectan aquí -->
+                    <div id="view-dynamic" class="hidden"></div>
+
+                    <!-- Loading state -->
+                    <div id="view-loading" class="hidden loading-state">
+                        <div class="spinner"></div>
+                        <p>Cargando...</p>
+                    </div>
+                </div>
+            </main>
+
+            <!-- RIGHT PANEL -->
+            <aside class="right-panel">
+                <div class="panel-header">
+                    <span class="panel-title">Propiedades</span>
+                    <i class="fas fa-chevron-right panel-chevron"></i>
+                </div>
+
+                <div class="panel-body">
+                    <!-- Contexto -->
+                    <div class="context-card">
+                        <p class="context-label">Contexto Actual</p>
+                        <div class="context-rows">
+                            <div class="context-row">
+                                <span class="context-key">Vendedor:</span>
+                                <span class="context-val">{sellerName} (ID: {vendedor_id || '—'})</span>
+                            </div>
+                            <div class="context-row">
+                                <span class="context-key">Sesión:</span>
+                                <span class="context-val context-active">ACTIVA</span>
+                            </div>
+                            <div class="context-row context-row--border">
+                                <span class="context-key">Rango:</span>
+                                <span class="context-val context-rank">{isJefe ? 'Jefe de Ventas' : 'Vendedor'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Herramientas Sugeridas -->
+                    <div class="suggested-tools">
+                        <p class="context-label">Herramientas Sugeridas</p>
+                        <div class="suggested-list">
+                            <button class="suggested-item" data-view="clientes" onclick="workspaceLoadView('clientes')">
+                                <i class="fas fa-magic suggested-icon" style="color:#3b82f6"></i>
+                                <span>Ver Cartera</span>
+                            </button>
+                            <button class="suggested-item" data-view="mensajes" onclick="workspaceLoadView('mensajes')">
+                                <i class="fas fa-bolt suggested-icon" style="color:#f59e0b"></i>
+                                <span>Ir a Mensajería</span>
+                            </button>
+                            <button class="suggested-item" data-view="pedidos" onclick="workspaceLoadView('pedidos')">
+                                <i class="fas fa-list suggested-icon" style="color:#22c55e"></i>
+                                <span>Ver Pedidos</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Notes -->
+                <div class="right-panel-section notes-section">
+                    <QuickNotes vendedor_id={vendedor_id || ''} />
+                </div>
+
+                <!-- Agenda -->
+                <div class="right-panel-section agenda-section">
+                    <AgendaPanel vendedor_id={vendedor_id || ''} />
+                </div>
+            </aside>
+        </div>
+
+        <!-- BOTTOM STATUS BAR -->
+        <footer class="status-bar">
+            <div class="status-left">
+                <span class="status-item status-item--bold">Doc: 100% (RGB/8)</span>
+                <span class="status-item" id="status-latency">Latencia: —</span>
+                <span class="status-item" id="status-directus">Directus: Verificando...</span>
+            </div>
+            <div class="status-right">
+                <i class="fas fa-bell"></i>
+                <span class="status-item--bold">ALVAREZ PLACAS v16.5</span>
+            </div>
+        </footer>
+
+        <!-- TOOLTIP -->
+        <div id="tooltip" class="tooltip-popup">TOOLTIP</div>
+
+	</body>
+</html>
+
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 13px;
+        background: #1e1e1e;
+        color: #cccccc;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+        user-select: none;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* TOP BAR */
+    .top-bar {
+        height: 30px;
+        background: #2d2d2d;
+        border-bottom: 1px solid #111;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        gap: 16px;
+        flex-shrink: 0;
+        z-index: 50;
+    }
+    .top-bar-brand { display: flex; align-items: center; gap: 6px; font-weight: 900; font-size: 11px; color: #fff; text-transform: uppercase; letter-spacing: -.5px; }
+    .brand-accent { color: #e02020; }
+    .brand-sep { opacity: .2; }
+    .top-bar-nav { display: flex; gap: 16px; }
+    .nav-item { font-size: 11px; cursor: pointer; color: #aaa; transition: color .15s; }
+    .nav-item:hover { color: #fff; }
+    .nav-item.active { color: #fff; font-weight: 700; border-bottom: 2px solid rgba(224,32,32,.5); padding-bottom: 1px; }
+    .top-bar-status { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .live-badge { display: flex; align-items: center; gap: 6px; color: #e02020; font-weight: 700; font-size: 11px; }
+    .live-dot { font-size: 6px; animation: blink 1.5s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .top-bar-divider { width: 1px; height: 14px; background: rgba(255,255,255,.1); }
+    .top-bar-icon { font-size: 13px; cursor: pointer; color: #888; transition: color .15s; }
+    .top-bar-icon:hover { color: #fff; }
+
+    /* WORKSPACE BODY */
+    .workspace-body { flex: 1; display: flex; overflow: hidden; }
+
+    /* TOOLBAR */
+    .toolbar {
+        width: 44px;
+        background: #2d2d2d;
+        border-right: 1px solid #111;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 6px 0;
+        z-index: 40;
+        flex-shrink: 0;
+    }
+    .toolbar-top { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+    .toolbar-bottom { display: flex; flex-direction: column; align-items: center; padding-bottom: 6px; }
+    .tool-btn {
+        width: 36px; height: 36px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 6px;
+        color: #888;
+        cursor: pointer;
+        transition: all .15s;
+        font-size: 13px;
+        position: relative;
+        border: none; background: transparent;
+        text-decoration: none;
+    }
+    .tool-btn:hover { background: #3d3d3d; color: #fff; }
+    .tool-btn.active { background: #e02020; color: #fff; box-shadow: 0 0 12px rgba(224,32,32,.4); }
+    .tool-btn--admin { color: #e02020; }
+    .tool-btn--admin:hover { background: rgba(224,32,32,.15); color: #e02020; }
+    .tool-btn--danger:hover { background: rgba(239,68,68,.1); color: #ef4444; }
+    .tool-badge {
+        position: absolute; top: 2px; right: 2px;
+        min-width: 14px; height: 14px;
+        background: #ef4444; color: #fff;
+        font-size: 8px; font-weight: 900;
+        border-radius: 7px; padding: 0 3px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .toolbar-sep { width: 24px; height: 1px; background: rgba(255,255,255,.06); margin: 4px 0; }
+    .msg-tool-btn { position: relative; }
+
+    /* CANVAS AREA */
+    .canvas-area { flex: 1; display: flex; flex-direction: column; background: #1e1e1e; overflow: hidden; }
+
+    /* TABS */
+    .tabs-bar {
+        height: 34px;
+        background: #252525;
+        border-bottom: 1px solid #111;
+        display: flex;
+        align-items: flex-end;
+        padding: 0 8px;
+        gap: 0;
+        flex-shrink: 0;
+    }
+    .tab {
+        background: #1e1e1e;
+        border: 1px solid #111;
+        border-bottom: none;
+        border-radius: 4px 4px 0 0;
+        padding: 0 14px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        color: #fff;
+        font-weight: 500;
+        position: relative;
+        top: 1px;
+        transition: background .15s;
+    }
+    .tab-close { font-size: 8px; opacity: .3; cursor: pointer; }
+    .tab-close:hover { opacity: 1; }
+
+    /* CANVAS CONTENT */
+    .canvas-content {
+        flex: 1;
+        overflow: auto;
+        background: #111;
+        padding: 20px;
+    }
+    .canvas-content::-webkit-scrollbar { width: 5px; height: 5px; }
+    .canvas-content::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    /* LOADING */
+    .loading-state {
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        height: 200px; gap: 16px; color: #555;
+    }
+    .spinner {
+        width: 28px; height: 28px;
+        border: 2px solid #333;
+        border-top-color: #e02020;
+        border-radius: 50%;
+        animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+
+    /* RIGHT PANEL */
+    .right-panel {
+        width: 240px;
+        background: #2d2d2d;
+        border-left: 1px solid #111;
+        display: flex;
+        flex-direction: column;
+        z-index: 30;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    .panel-header {
+        height: 30px;
+        background: #333;
+        border-bottom: 1px solid #111;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+    .panel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #fff; }
+    .panel-chevron { font-size: 9px; opacity: .3; }
+    .panel-body { padding: 10px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+
+    /* Context Card */
+    .context-card { background: #1e1e1e; border: 1px solid #111; border-radius: 6px; padding: 10px; }
+    .context-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #e02020; margin-bottom: 8px; }
+    .context-rows { display: flex; flex-direction: column; gap: 4px; }
+    .context-row { display: flex; justify-content: space-between; font-size: 10px; }
+    .context-key { opacity: .5; }
+    .context-val { color: #fff; font-weight: 500; text-align: right; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .context-active { color: #22c55e !important; }
+    .context-rank { color: #60a5fa !important; font-weight: 700; font-size: 9px; text-transform: uppercase; }
+    .context-row--border { padding-top: 5px; border-top: 1px solid rgba(255,255,255,.05); margin-top: 2px; }
+
+    /* Suggested tools */
+    .suggested-tools { border-top: 1px solid rgba(255,255,255,.05); padding-top: 10px; }
+    .suggested-list { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+    .suggested-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 7px 8px; border-radius: 5px;
+        background: transparent; border: none;
+        color: #aaa; font-size: 11px; cursor: pointer;
+        transition: all .15s; text-align: left; width: 100%;
+    }
+    .suggested-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .suggested-icon { width: 14px; text-align: center; font-size: 11px; }
+
+    /* Right panel sections */
+    .right-panel-section { border-top: 1px solid #111; flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .notes-section { max-height: 35%; }
+    .agenda-section { flex: 1; }
+
+    /* STATUS BAR */
+    .status-bar {
+        height: 22px;
+        background: #007acc;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        justify-content: space-between;
+        font-size: 10px;
+        flex-shrink: 0;
+        z-index: 50;
+    }
+    .status-left { display: flex; align-items: center; gap: 16px; }
+    .status-right { display: flex; align-items: center; gap: 8px; }
+    .status-item { opacity: .8; }
+    .status-item--bold { font-weight: 700; opacity: 1; }
+
+    /* TOOLTIP */
+    .tooltip-popup {
+        position: fixed;
+        pointer-events: none;
+        background: #000;
+        color: #fff;
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255,255,255,.1);
+        opacity: 0;
+        transition: opacity .15s;
+        z-index: 9999;
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+</style>
+
+<script>
+    // ============================================
+    // WORKSPACE SPA ENGINE
+    // ============================================
+    const VIEW_LABELS: Record<string, string> = {
+        dashboard: 'Operaciones Diarias',
+        clientes:  'Base de Clientes',
+        pedidos:   'Pedidos y Estados',
+        mensajes:  'Mensajería',
+        agenda:    'Agenda'
+    };
+
+    let currentView = 'dashboard';
+
+    // Expose globally so child HTML can call it
+    (window as any).workspaceLoadView = loadView;
+
+    async function loadView(viewKey: string) {
+        // Parse view + query params (e.g. "mensajes?client=5")
+        const [view, queryStr] = viewKey.split('?');
+        const params = queryStr ? '?' + queryStr : '';
+
+        if (view === currentView && !queryStr) return;
+        currentView = view;
+
+        const canvas = document.getElementById('workspace-canvas');
+        const staticView = document.getElementById('view-dashboard-static');
+        const dynamicView = document.getElementById('view-dynamic');
+        const loadingView = document.getElementById('view-loading');
+        const tabName = document.getElementById('active-tab-name');
+
+        if (!canvas || !staticView || !dynamicView || !loadingView) return;
+
+        // Update tab label
+        if (tabName) tabName.textContent = (VIEW_LABELS[view] || view) + '.psd';
+
+        // Update toolbar active state
+        document.querySelectorAll('.tool-btn[data-view]').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-view') === view);
+        });
+
+        if (view === 'dashboard') {
+            dynamicView.classList.add('hidden');
+            loadingView.classList.add('hidden');
+            staticView.classList.remove('hidden');
+            return;
+        }
+
+        // Show loading, hide others
+        staticView.classList.add('hidden');
+        dynamicView.classList.add('hidden');
+        loadingView.classList.remove('hidden');
+
+        try {
+            const res = await fetch(`/api/vendedor/views/${view}${params}`);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const html = await res.text();
+
+            dynamicView.innerHTML = html;
+
+            // Execute inline scripts from the loaded HTML
+            dynamicView.querySelectorAll('script').forEach(oldScript => {
+                const newScript = document.createElement('script');
+                newScript.textContent = oldScript.textContent;
+                document.body.appendChild(newScript);
+                document.body.removeChild(newScript);
+            });
+
+            dynamicView.classList.remove('hidden');
+            loadingView.classList.add('hidden');
+        } catch (e) {
+            loadingView.classList.add('hidden');
+            dynamicView.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:#555;gap:12px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size:32px;color:#ef4444;opacity:.5"></i>
+                    <p style="font-size:12px;">Error al cargar la vista. Intenta nuevamente.</p>
+                    <button onclick="workspaceLoadView('${view}')" style="background:#333;border:none;color:#aaa;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:11px;">Reintentar</button>
+                </div>`;
+            dynamicView.classList.remove('hidden');
+            console.error('[Workspace] Error cargando vista:', e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // ---- Toolbar click handlers ----
+        document.querySelectorAll('.tool-btn[data-view]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const view = btn.getAttribute('data-view');
+                if (view) loadView(view);
+            });
+        });
+
+        // Set initial active state
+        const initialBtn = document.querySelector('.tool-btn[data-view="dashboard"]');
+        if (initialBtn) initialBtn.classList.add('active');
+
+        // ---- Tooltip ----
+        const tooltip = document.getElementById('tooltip');
+        document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
+            trigger.addEventListener('mouseenter', () => {
+                const text = trigger.getAttribute('data-tooltip');
+                if (tooltip && text) {
+                    tooltip.textContent = text;
+                    tooltip.style.opacity = '1';
+                    const rect = (trigger as HTMLElement).getBoundingClientRect();
+                    tooltip.style.left = (rect.right + 10) + 'px';
+                    tooltip.style.top = (rect.top + rect.height / 2 - 10) + 'px';
+                }
+            });
+            trigger.addEventListener('mouseleave', () => {
+                if (tooltip) tooltip.style.opacity = '0';
+            });
+        });
+
+        // ---- Logout ----
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
+            window.location.href = '/api/auth/logout';
+        });
+
+        // ---- Status bar: ping Directus ----
+        const statusDirectus = document.getElementById('status-directus');
+        const statusLatency = document.getElementById('status-latency');
+        const t0 = Date.now();
+        fetch('/api/health').then(r => {
+            const ms = Date.now() - t0;
+            if (statusLatency) statusLatency.textContent = `Latencia: ${ms}ms`;
+            if (statusDirectus) {
+                statusDirectus.textContent = r.ok ? 'Directus: Conectado' : 'Directus: Error';
+                statusDirectus.style.color = r.ok ? '#4ade80' : '#f87171';
+            }
+        }).catch(() => {
+            if (statusDirectus) { statusDirectus.textContent = 'Directus: Sin conexión'; statusDirectus.style.color = '#f87171'; }
+        });
+    });
+</script>

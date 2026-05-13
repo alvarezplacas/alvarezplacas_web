@@ -1,0 +1,103 @@
+---
+/**
+ * Términos y Condiciones - Diseño Premium.
+ */
+import Layout from '../../home/layouts/Layout.astro';
+---
+
+<Layout title="Términos y Condiciones - Alvarez Placas">
+    <div class="min-h-screen bg-[#0a0a0a] pt-32 pb-20 px-4 relative overflow-hidden">
+        <!-- Background elements -->
+        <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[150px] pointer-events-none"></div>
+
+        <div class="max-w-4xl mx-auto relative z-10">
+            <!-- Header -->
+            <div class="text-center mb-16">
+                <h1 class="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter uppercase">
+                    Términos y <span class="text-primary italic text-shadow-glow">Condiciones</span>
+                </h1>
+                <div class="h-1 w-20 bg-primary mx-auto rounded-full"></div>
+                <p class="mt-8 text-gray-400 font-medium">Última actualización: Mayo 2026</p>
+            </div>
+
+            <!-- Content Card -->
+            <div class="glass-card bg-white/5 border border-white/10 p-8 md:p-12 rounded-[2.5rem] shadow-2xl backdrop-blur-xl">
+                <div class="prose prose-invert max-w-none space-y-10 text-gray-300 leading-relaxed">
+                    
+                    <section>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3 mb-6">
+                            <i class="fas fa-shield-alt text-primary"></i> 1. Protección de Datos
+                        </h2>
+                        <p class="text-lg">
+                            En <span class="text-white font-bold">ALVAREZ PLACAS</span>, la privacidad de nuestros clientes es una prioridad absoluta. Los datos personales proporcionados durante el registro (Nombre, Email, Teléfono, Dirección) serán tratados bajo estrictas medidas de seguridad.
+                        </p>
+                        <div class="mt-4 p-6 bg-primary/5 border-l-4 border-primary rounded-r-2xl italic text-gray-200">
+                            "Sus datos <span class="text-white font-bold">no serán utilizados para fines comerciales ajenos</span>, ni compartidos con terceros sin su consentimiento explícito."
+                        </div>
+                    </section>
+
+                    <section>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3 mb-6">
+                            <i class="fas fa-handshake text-primary"></i> 2. Uso de la Información
+                        </h2>
+                        <p>
+                            La información recolectada tiene como único objetivo:
+                        </p>
+                        <ul class="list-none space-y-4 ml-2">
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check-circle text-primary text-sm"></i>
+                                <span>Coordinar logística de entregas y seguimiento de pedidos en tiempo real.</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check-circle text-primary text-sm"></i>
+                                <span>Brindar soporte técnico y atención personalizada por parte de su vendedor asignado.</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check-circle text-primary text-sm"></i>
+                                <span>Gestionar el sistema de puntos y beneficios del Club de Clientes.</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check-circle text-primary text-sm"></i>
+                                <span>Enviar notificaciones críticas sobre cambios en el estado de sus trabajos.</span>
+                            </li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3 mb-6">
+                            <i class="fas fa-user-lock text-primary"></i> 3. Seguridad de Acceso
+                        </h2>
+                        <p>
+                            Cada usuario es responsable de mantener la confidencialidad de su contraseña. El sistema utiliza encriptación de grado bancario (BCrypt) para asegurar que ni siquiera nuestro personal administrativo pueda visualizar sus claves de acceso.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3 mb-6">
+                            <i class="fas fa-info-circle text-primary"></i> 4. Consentimiento
+                        </h2>
+                        <p>
+                            Al registrarse en nuestra plataforma, usted acepta que Alvarez Placas procese sus datos bajo los términos aquí descritos, garantizando que el uso de los mismos se limita estrictamente a la operativa interna de nuestra empresa para mejorar su experiencia como cliente profesional.
+                        </p>
+                    </section>
+                </div>
+
+                <div class="mt-16 pt-8 border-t border-white/5 text-center">
+                    <a href="/registro" class="inline-flex items-center gap-2 text-primary hover:text-white font-bold transition-all group">
+                        <i class="fas fa-arrow-left transition-transform group-hover:-translate-x-1"></i> Volver al registro
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</Layout>
+
+<style>
+    .text-shadow-glow {
+        text-shadow: 0 0 20px rgba(255, 40, 0, 0.4);
+    }
+</style>
+
+<!-- FontAwesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />

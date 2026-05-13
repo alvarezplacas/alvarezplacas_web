@@ -54,6 +54,10 @@ export const POST: APIRoute = async ({ request }) => {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rawData = xlsx.utils.sheet_to_json(sheet);
         
+        // Obtener IDs pre-seleccionados del body
+        const overrideCategoryId = formData.get('category_id');
+        const overrideBrandId = formData.get('brand_id');
+
         let processedCount = 0;
 
         // Procesamiento por Lotes (Chunks de 10)
@@ -63,59 +67,49 @@ export const POST: APIRoute = async ({ request }) => {
             await Promise.all(chunk.map(async (row: any) => {
                 const nombre = row['Nombre'] || '';
                 const descripcion = row['Descripción'] || '';
-                const sku = row['SKU'] || '';
-                const categoria = row['Categoría'] || 'General';
+                let sku = row['SKU'] || '';
+                const categoria = row['Categoría'] || row['Rubro'] || 'General';
                 const marca = row['Marca'] || 'Varios';
-                const linea = row['Línea'] || 'Estándar';
                 const espesor = row['Espesor'] || '';
-                const color = row['Color'] || '';
-                const textura = row['Textura'] || '';
-                const medidas = row['Medidas'] || '';
                 const precio = parseFloat(row['Precio'] || 0);
-                const stock = parseInt(row['Stock'] || 0);
 
-                if (!nombre || !sku) return;
+                if (!nombre) return;
 
-                // Excluir Proveedores
-                const lowerMarca = marca.toLowerCase();
-                if (lowerMarca.includes('madergold') || lowerMarca.includes('santi')) return;
+                // 2. Resolución de Entidades Relacionales (Priorizando Overrides)
+                let finalCategoryId = overrideCategoryId;
+                let finalBrandId = overrideBrandId;
 
-                // 2. Mapeo de Entidades Relacionales
-                const catRes = await upsertItem('categorias', { nombre: { _eq: categoria } }, { nombre: categoria }, token);
-                const marcaRes = await upsertItem('marcas', { nombre: { _eq: marca } }, { nombre: marca }, token);
-                const lineaRes = await upsertItem('lineas', { 
-                    _and: [{ nombre: { _eq: linea } }, { marca_id: { _eq: marcaRes.data.id } }] 
-                }, { nombre: linea, marca_id: marcaRes.data.id }, token);
+                if (!finalCategoryId) {
+                    const catRes = await upsertItem('Rubros', { nombre: { _eq: categoria } }, { nombre: categoria }, token);
+                    finalCategoryId = catRes.data.id;
+                }
 
-                // 3. Preparar Atributos y Tags
-                const atributos = { 
-                    Línea: linea, 
-                    Espesor: espesor, 
-                    Color: color, 
-                    Textura: textura, 
-                    Medidas: medidas 
-                };
-                
-                const tags = [
-                    categoria, marca, linea, color, textura, espesor
-                ].filter(Boolean).map(s => s.toLowerCase());
+                if (!finalBrandId) {
+                    const marcaRes = await upsertItem('marcas', { nombre: { _eq: marca } }, { nombre: marca, rubro: finalCategoryId }, token);
+                    finalBrandId = marcaRes.data.id;
+                }
 
-                // 4. UPSERT de Producto (Hierarchical Image logic via route string)
-                // Usamos SKU como identificador único para el UPSERT
-                await upsertItem('productos', { sku: { _eq: sku } }, {
+                // 3. Generación Automática de SKU si falta
+                if (!sku) {
+                    try {
+                        const skuReq = await fetch(`${request.url.split('/api')[0]}/api/admin/generate-sku?rubro=${finalCategoryId}&marca=${finalBrandId}`);
+                        const skuData = await skuReq.json();
+                        sku = skuData.sku;
+                    } catch (e) {
+                        sku = `GEN-${Math.random().toString(36).substring(7).toUpperCase()}`;
+                    }
+                }
+
+                // 4. UPSERT de Producto
+                await upsertItem('Productos', { sku: { _eq: sku } }, {
                     status: 'published',
                     nombre,
                     descripcion,
                     sku,
-                    precio,
-                    stock,
-                    categoria_id: catRes.data.id,
-                    marca_id: marcaRes.data.id,
-                    linea_id: lineaRes.data.id,
-                    atributos,
-                    tags,
-                    // La imagen se resuelve en el frontend vía /Placas/[Marca]/[Linea]/[Nombre].avif
-                    slug: sku.toLowerCase()
+                    precio_L1: precio,
+                    rubro: finalCategoryId,
+                    marca: finalBrandId,
+                    espesor: espesor
                 }, token);
 
                 processedCount++;

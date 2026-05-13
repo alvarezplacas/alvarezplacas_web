@@ -36,6 +36,9 @@ export default defineConfig({
     origin: 'https://alvarezplacas.com.ar',
     allowedHosts: ['alvarezplacas.com.ar']
   },
+  security: {
+    checkOrigin: false
+  },
   vite: {
     plugins: [tailwindcss()],
     resolve: {

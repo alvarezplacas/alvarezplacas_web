@@ -37,6 +37,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         if (isPasswordValid) {
+            console.log(`[Seller Login Success] ID: ${user.id}`);
             cookies.set('seller_session', user.id.toString(), {
                 path: '/',
                 maxAge: 60 * 60 * 24 // 24 horas
@@ -45,12 +46,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 success: true, 
                 message: 'Bienvenido al Portal de Ventas',
                 redirectUrl: '/vendedor'
-            }), { status: 200 });
+            }), { 
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
 
-        return new Response(JSON.stringify({ success: false, message: 'Credenciales inválidas' }), { status: 401 });
+        console.log(`[Seller Login Failed] Contraseña incorrecta para: ${email}`);
+        return new Response(JSON.stringify({ success: false, message: 'Credenciales inválidas' }), { 
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
     } catch (e: any) {
-        console.error('[Seller Login Error]:', e);
-        return new Response(JSON.stringify({ success: false, message: 'Error en el servidor' }), { status: 500 });
+        console.error('[Login Error Detail]:', e);
+        return new Response(JSON.stringify({ 
+            success: false, 
+            message: 'Error interno de autenticación'
+        }), { 
+            status: 500, 
+            headers: { 'Content-Type': 'application/json' } 
+        });
     }
 };

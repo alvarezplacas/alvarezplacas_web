@@ -33,7 +33,7 @@ export class CommunicationService {
     /**
      * Send a message.
      */
-    static async sendMessage(fromId, toId, content, pedidoId = null) {
+    static async sendMessage(fromId, toId, content, pedidoId = null, prioridad = 'media') {
         try {
             return await directus.request(createItem(this.COLLECTION, {
                 remitente_id: fromId,
@@ -41,7 +41,8 @@ export class CommunicationService {
                 mensaje: content,
                 fecha_envio: new Date().toISOString(),
                 visto: false,
-                pedido_id: pedidoId
+                pedido_id: pedidoId,
+                prioridad: prioridad
             }));
         } catch (e) {
             console.error("Error sending message:", e);
@@ -75,6 +76,28 @@ export class CommunicationService {
             return parseInt(res[0]?.count || '0');
         } catch (e) {
             return 0;
+        }
+    }
+
+    /**
+     * Get unread stats grouped by priority.
+     */
+    static async getPriorityStats(sellerId) {
+        try {
+            const res = await directus.request(readItems(this.COLLECTION, {
+                filter: { destinatario_id: { _eq: sellerId }, visto: { _eq: false } },
+                fields: ['prioridad'],
+            }));
+            
+            const stats = { alta: 0, media: 0, baja: 0 };
+            res.forEach(m => {
+                if (m.prioridad === 'alta') stats.alta++;
+                else if (m.prioridad === 'baja') stats.baja++;
+                else stats.media++;
+            });
+            return stats;
+        } catch (e) {
+            return { alta: 0, media: 0, baja: 0 };
         }
     }
 }

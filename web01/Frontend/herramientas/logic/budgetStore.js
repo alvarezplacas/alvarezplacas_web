@@ -5,11 +5,13 @@ import { atom, computed } from 'nanostores';
  * Propiedad del Agente 5 (Frontend/Herramientas).
  */
 
+export const SIERRA_ESPESOR = 4; // 0.4 cm = 4.0 mm
+
 export const BRANDS = {
-    'EGGER': { width: 2600, height: 1830, netWidth: 2590, netHeight: 1820 },
-    'FAPLAC': { width: 2750, height: 1830, netWidth: 2740, netHeight: 1820 },
-    'SADEPAN': { width: 2820, height: 1830, netWidth: 2810, netHeight: 1820 },
-    'OTRO': { width: 2600, height: 1830, netWidth: 2590, netHeight: 1820 }
+    'EGGER': { width: 2600, height: 1830, netWidth: 2595, netHeight: 1825 },
+    'FAPLAC': { width: 2750, height: 1830, netWidth: 2745, netHeight: 1825 },
+    'SADEPAN': { width: 2820, height: 1830, netWidth: 2815, netHeight: 1825 },
+    'OTRO': { width: 2600, height: 1830, netWidth: 2595, netHeight: 1825 }
 };
 
 export const sellers = atom([]);
@@ -55,10 +57,37 @@ export const updateSheetConfig = (updates) => {
     sheetConfig.set(newConfig);
 };
 
+/**
+ * Calcula la medida de corte real restando los tapacantos
+ */
+export const calculateCutDimensions = (piece) => {
+    const { length, width, edges } = piece;
+    let cutLength = length;
+    let cutWidth = width;
+
+    // Tapacantos en Largo (Top y Bottom afectan el Ancho? No, según convención: Largo es la veta)
+    // En el rubro: El tapacanto en las puntas del largo descuenta del largo.
+    // Tapacanto en los laterales descuenta del ancho.
+    // L=Largo, A=Alto/Ancho. 
+    // Tapacanto Superior/Inferior descuenta de la medida Vertical (Alto).
+    // Tapacanto Izquierdo/Derecho descuenta de la medida Horizontal (Largo).
+    
+    cutLength -= (edges.left || 0);
+    cutLength -= (edges.right || 0);
+    
+    cutWidth -= (edges.top || 0);
+    cutWidth -= (edges.bottom || 0);
+
+    return { cutLength, cutWidth };
+};
+
 export const addPiece = (piece) => {
+    const { cutLength, cutWidth } = calculateCutDimensions(piece);
     currentSheetItems.set([...currentSheetItems.get(), {
         id: crypto.randomUUID(),
-        ...piece
+        ...piece,
+        cutLength,
+        cutWidth
     }]);
 };
 
@@ -91,7 +120,8 @@ export const getLeptomRaw = (allData) => {
             const cDer = item.edges?.right || 0;
             const cIzq = item.edges?.left || 0;
             const detalle = (item.label || 'Pieza').substring(0, 30).replace(/;/g, ',');
-            exportText += `${item.quantity};${item.length};${item.width};${detalle};${materialName};${rotaVal};${cArr};${cAbj};${cDer};${cIzq}\n`;
+            // Importante: Lepton suele recibir la medida de CORTE
+            exportText += `${item.quantity};${item.cutLength};${item.cutWidth};${detalle};${materialName};${rotaVal};${cArr};${cAbj};${cDer};${cIzq}\n`;
         });
     });
     return exportText;
@@ -116,9 +146,9 @@ export const getVisualSummary = () => {
     
     allData.forEach((s, idx) => {
         summary += `*PLACA #${idx + 1}: ${s.config.plateName || s.config.brand} (${s.config.thickness}mm)*\n`;
-        summary += `_Medida: ${s.config.width}x${s.config.height}mm_\n`;
+        summary += `_Medida Placa: ${s.config.width}x${s.config.height}mm_\n`;
         s.items.forEach((item) => {
-            summary += `• ${item.quantity}un | ${item.length}x${item.width} [${item.label || '-'}]\n`;
+            summary += `• ${item.quantity}un | Final: ${item.length}x${item.width} | Corte: ${item.cutLength}x${item.cutWidth} [${item.label || '-'}]\n`;
         });
         summary += `\n`;
     });

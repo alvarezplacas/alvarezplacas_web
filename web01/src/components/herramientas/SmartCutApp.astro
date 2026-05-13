@@ -1,0 +1,251 @@
+---
+// Componente Maestro SmartCut v5.5.3
+---
+<style is:inline>
+    :root { --alvarez-red: #ff2800; --alvarez-dark: #000; --alvarez-border: rgba(255,255,255,0.1); }
+    .smart-bar { background: #0a0a0c; padding: 12px 40px; border-bottom: 1px solid #1a1a1c; display: flex; justify-content: space-between; align-items: center; }
+    .smart-label { font-size: 0.65rem; font-weight: 900; color: var(--alvarez-red); letter-spacing: 2px; }
+    .container-app { padding: 30px 40px; max-width: 1600px; margin: 0 auto; position: relative; }
+    .hidden { display: none !important; }
+    .animate-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Estilos de Botones y Formas */
+    .btn-main { background: var(--alvarez-red); color: white; border: none; padding: 18px 45px; border-radius: 50px; font-weight: 900; cursor: pointer; text-transform: uppercase; display: inline-flex; align-items: center; gap: 10px; }
+    .card-app { background: #08080a; border: 1px solid #151517; padding: 25px; border-radius: 12px; }
+    input, select { width: 100%; background: #050505; border: 1px solid #222; color: #fff; padding: 14px; border-radius: 8px; font-family: 'JetBrains Mono'; margin-bottom: 20px; }
+    
+    .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 25px; }
+    .stat-item { background: #08080a; border: 1px solid #151517; padding: 18px; border-radius: 10px; text-align: center; }
+    .stat-item span { font-size: 0.6rem; color: #555; font-weight: 900; display: block; margin-bottom: 5px; }
+    .stat-item strong { font-size: 1.4rem; color: var(--alvarez-red); display: block; }
+
+    .piece-row { display: grid; grid-template-columns: 80px 1fr 1fr 1.5fr 70px 140px; gap: 15px; margin-bottom: 15px; }
+    .piece-item { background: #050505; border: 1px solid #111; padding: 15px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .trash-btn { color: #222; cursor: pointer; transition: 0.2s; font-size: 1.1rem; }
+    .trash-btn:hover { color: var(--alvarez-red); }
+
+    .del-btn-icon { position: absolute; top: 25px; right: 25px; color: #ff2800; font-size: 1.2rem; cursor: pointer; opacity: 0.6; }
+    .del-btn-icon:hover { opacity: 1; transform: scale(1.1); }
+</style>
+
+<div id="smartcut-bar" class="smart-bar hidden">
+    <div class="smart-label">SMARTCUT PRO <span style="background: var(--alvarez-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.5rem; margin-left: 10px;">v5.5.3 MASTER</span></div>
+    <div style="display: flex; gap: 15px;">
+        <button onclick="if(confirm('¿Reiniciar?')){location.reload()}" style="background: transparent; border: 1px solid #333; color: #666; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 800;">REINICIAR</button>
+        <button onclick="showDashboard()" style="background: var(--alvarez-red); border: none; color: #fff; padding: 8px 25px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 800;">MIS PROYECTOS</button>
+    </div>
+</div>
+
+<div class="container-app">
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="animate-in" style="text-align: center; padding: 60px 0;">
+        <h2 style="font-size: 4rem; font-weight: 900; margin-bottom: 10px;">Smart Cut <span style="color: var(--alvarez-red)">PRO</span></h2>
+        <p style="color: #666; font-size: 1.1rem; margin-bottom: 50px;">Optimizador de Corte Maestro para Alvarez Placas.</p>
+        <button onclick="showSetup()" class="btn-main"><i class="fas fa-plus"></i> NUEVO PROYECTO</button>
+        <div id="projects-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 50px; text-align: left;"></div>
+    </section>
+
+    <!-- SETUP -->
+    <section id="view-setup" class="card-app hidden animate-in" style="max-width: 600px; margin: 0 auto;">
+        <div style="font-size: 0.7rem; font-weight: 900; color: #555; margin-bottom: 25px;">CONFIGURACIÓN DEL PROYECTO</div>
+        <label style="font-size:0.7rem;color:#777;font-weight:900;">MARCA / TABLERO</label>
+        <select id="plate-brand">
+            <option value="FAPLAC">FAPLAC (2750x1820)</option>
+            <option value="EGGER">EGGER (2600x1820)</option>
+            <option value="SADEPAN">SADEPAN (2820x1830)</option>
+            <option value="NOVA">NOVA (3660x1830)</option>
+            <option value="FIBROPLUS">FIBROPLUS (2600x1830)</option>
+            <option value="OSB">OSB (2440x1220)</option>
+            <option value="CUSTOM">PERSONALIZADA...</option>
+        </select>
+        <label style="font-size:0.7rem;color:#777;font-weight:900;">DISEÑO / TEXTURA (RUBRO M)</label>
+        <input type="text" id="setup-design" list="designs-list" placeholder="Sahara, Blanco, Roble...">
+        <datalist id="designs-list"></datalist>
+        <div id="custom-dims" class="hidden" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div><label>LARGO</label><input type="number" id="setup-w" value="2750"></div>
+            <div><label>ANCHO</label><input type="number" id="setup-h" value="1830"></div>
+        </div>
+        <label style="font-size:0.7rem;color:#777;font-weight:900;">ESPESOR</label>
+        <select id="setup-t">
+            <option value="3">3 mm</option><option value="5.5">5.5 mm</option><option value="9">9 mm</option>
+            <option value="12">12 mm</option><option value="15">15 mm</option><option value="18" selected>18 mm</option>
+            <option value="25">25 mm</option><option value="30">30 mm</option>
+        </select>
+        <div style="display: flex; gap: 15px; margin-top: 30px;">
+            <button onclick="createProject()" class="btn-main" style="flex: 1; justify-content: center;">CONTINUAR AL EDITOR</button>
+            <button onclick="showDashboard()" style="background:transparent; border:none; color:#444; font-weight:800; cursor:pointer;">CANCELAR</button>
+        </div>
+    </section>
+
+    <!-- EDITOR -->
+    <section id="view-editor" class="hidden animate-in">
+        <div class="stats-bar">
+            <div class="stat-item"><span>DISEÑO ACTIVO</span><strong id="display-proj-design" style="font-size: 0.9rem; color: #fff;">-</strong></div>
+            <div class="stat-item"><span>PLACAS</span><strong id="stat-sheets">0</strong></div>
+            <div class="stat-item"><span>PIEZAS</span><strong id="stat-pieces">0</strong></div>
+            <div class="stat-item"><span>M² ÚTILES</span><strong id="stat-m2">0.00</strong></div>
+            <div class="stat-item"><span>TAPACANTO</span><strong id="stat-edges">0.0</strong></div>
+        </div>
+
+        <div class="card-app" style="background:#000; margin-bottom: 25px;">
+            <div class="piece-row">
+                <div><label>CANT</label><input type="number" id="p-qty" value="1"></div>
+                <div><label>LARGO</label><input type="number" id="p-len"></div>
+                <div><label>ANCHO</label><input type="number" id="p-wid"></div>
+                <div><label>PIEZA</label><input type="text" id="p-label" placeholder="Lateral"></div>
+                <div style="text-align: center;"><label>GIRAR</label><input type="checkbox" id="p-rot" checked style="width:25px;height:25px;"></div>
+                <button onclick="addPiece()" class="btn-main" style="padding:10px;font-size:0.8rem;">AÑADIR</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1a1a1a; padding-top: 20px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="font-size: 0.65rem; font-weight: 900; color: #444;">BORDES:</span>
+                    <select id="pe-t" style="width:70px;margin:0;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <select id="pe-b" style="width:70px;margin:0;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <select id="pe-l" style="width:70px;margin:0;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <select id="pe-r" style="width:70px;margin:0;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                </div>
+                <button onclick="renderEditor()" class="btn-main" style="background:#ff4d00;">CALCULAR CORTES</button>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+            <div class="card-app">
+                <div style="font-size: 0.7rem; font-weight: 900; color: #555; margin-bottom: 20px;">LISTADO DE PIEZAS (<span id="count-label">0</span>)</div>
+                <div id="pieces-list" style="max-height: 500px; overflow-y: auto;"></div>
+            </div>
+            <div id="plates-container"></div>
+        </div>
+    </section>
+</div>
+
+<script is:inline>
+    let engine, visualizer;
+    let session = { projects: [], currentIndex: -1 };
+    const BRANDS = { 'FAPLAC': { w: 2750, h: 1820 }, 'EGGER': { w: 2600, h: 1820 }, 'SADEPAN': { w: 2820, h: 1830 }, 'NOVA': { w: 3660, h: 1830 }, 'FIBROPLUS': { w: 2600, h: 1830 }, 'OSB': { w: 2440, h: 1220 } };
+
+    async function init() {
+        try {
+            const opt = await import('/herramientas/logic/core/optimizer.js?v=' + Date.now());
+            const vis = await import('/herramientas/logic/core/visualizer.js?v=' + Date.now());
+            engine = new opt.SmartCutEngine({ kerf: 4, trim: 5 });
+            visualizer = new vis.SmartCutVisualizer('plates-container');
+            showDashboard();
+            fetchDesigns('FAPLAC');
+        } catch (e) { setTimeout(init, 2000); }
+    }
+
+    async function fetchDesigns(brand) {
+        try {
+            const url = `https://admin.alvarezplacas.com.ar/items/productos?filter[rubro][letra][_eq]=M&filter[marca][nombre][_icontains]=${brand}&fields=nombre&limit=50`;
+            const res = await fetch(url);
+            const data = await res.json();
+            document.getElementById('designs-list').innerHTML = data.data.map(i => `<option value="${i.nombre}">`).join('');
+        } catch (e) {}
+    }
+
+    window.showDashboard = () => {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById('view-dashboard').classList.remove('hidden');
+        document.getElementById('smartcut-bar').classList.add('hidden');
+        renderProjects();
+    };
+
+    window.showSetup = () => {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById('view-setup').classList.remove('hidden');
+    };
+
+    window.showEditor = (i) => {
+        session.currentIndex = i;
+        const p = session.projects[i];
+        document.getElementById('display-proj-design').textContent = p.design;
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById('view-editor').classList.remove('hidden');
+        document.getElementById('smartcut-bar').classList.remove('hidden');
+        renderEditor();
+    };
+
+    window.createProject = () => {
+        const b = document.getElementById('plate-brand').value;
+        const d = document.getElementById('setup-design').value || b;
+        let w = b === 'CUSTOM' ? parseInt(document.getElementById('setup-w').value) : BRANDS[b].w;
+        let h = b === 'CUSTOM' ? parseInt(document.getElementById('setup-h').value) : BRANDS[b].h;
+        session.projects.push({ brand: b, design: d, w, h, pieces: [], result: null });
+        showEditor(session.projects.length - 1);
+    };
+
+    window.removeProject = (i, e) => {
+        if (e) e.stopPropagation();
+        if (confirm('¿Eliminar proyecto?')) {
+            session.projects.splice(i, 1);
+            renderProjects();
+        }
+    };
+
+    window.addPiece = () => {
+        const p = session.projects[session.currentIndex];
+        const l = parseInt(document.getElementById('p-len').value);
+        const w = parseInt(document.getElementById('p-wid').value);
+        if (!l || !w) return;
+        p.pieces.push({
+            id: Date.now(), q: parseInt(document.getElementById('p-qty').value) || 1, l, h: w, 
+            label: document.getElementById('p-label').value || 'P', canRotate: document.getElementById('p-rot').checked,
+            edges: { t: parseFloat(document.getElementById('pe-t').value), b: parseFloat(document.getElementById('pe-b').value), l: parseFloat(document.getElementById('pe-l').value), r: parseFloat(document.getElementById('pe-r').value) }
+        });
+        ['p-len', 'p-wid'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('p-qty').value = '1'; document.getElementById('p-qty').focus();
+        renderEditor();
+    };
+
+    function renderEditor() {
+        const p = session.projects[session.currentIndex];
+        const list = document.getElementById('pieces-list');
+        list.innerHTML = p.pieces.slice().reverse().map(pc => `
+            <div class="piece-item">
+                <span><strong>${pc.q}x</strong> ${pc.l}x${pc.h} <small style="color:#444">${pc.label}</small></span>
+                <i class="fas fa-trash-alt trash-btn" onclick="removePiece(${pc.id})"></i>
+            </div>`).join('');
+        document.getElementById('count-label').textContent = p.pieces.length;
+        if (p.pieces.length > 0) {
+            p.result = engine.optimize(p.w, p.h, p.pieces);
+            if (p.result && p.result.plates.length > 0) visualizer.render(p.result, p.w, p.h, (u) => { p.result = u; updateStats(); });
+            updateStats();
+        } else document.getElementById('plates-container').innerHTML = '';
+    }
+
+    function updateStats() {
+        const p = session.projects[session.currentIndex];
+        if (!p || !p.result || !p.result.stats) return;
+        const s = p.result.stats;
+        document.getElementById('stat-sheets').textContent = s.totalPlates;
+        document.getElementById('stat-pieces').textContent = s.totalPieces;
+        document.getElementById('stat-m2').textContent = s.totalM2.toFixed(2);
+        document.getElementById('stat-edges').textContent = (s.edgeMeters["0.45"] + s.edgeMeters["1"] + s.edgeMeters["2"]).toFixed(1);
+    }
+
+    function renderProjects() {
+        const list = document.getElementById('projects-list');
+        list.innerHTML = session.projects.map((p, i) => `
+            <div class="project-card animate-in" onclick="showEditor(${i})" style="background:#0a0a0c;border:1px solid #1a1a1c;padding:25px;border-radius:12px;cursor:pointer;position:relative;">
+                <i class="fas fa-trash-alt del-btn-icon" onclick="removeProject(${i}, event)"></i>
+                <h3 style="color:var(--alvarez-red);margin-bottom:5px">${p.design}</h3>
+                <p style="font-size:0.75rem;color:#444">${p.brand} | ${p.pieces.length} piezas</p>
+            </div>`).join('');
+    }
+
+    window.removePiece = (id) => { 
+        if (confirm('¿Quitar pieza?')) {
+            const p = session.projects[session.currentIndex];
+            p.pieces = p.pieces.filter(x => x.id !== id);
+            renderEditor();
+        }
+    };
+
+    document.getElementById('plate-brand').onchange = (e) => { 
+        document.getElementById('custom-dims').classList.toggle('hidden', e.target.value !== 'CUSTOM'); 
+        fetchDesigns(e.target.value);
+    };
+
+    init();
+</script>

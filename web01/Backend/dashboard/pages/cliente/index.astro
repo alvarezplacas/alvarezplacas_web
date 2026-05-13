@@ -17,7 +17,7 @@ let recentOrders = [];
 try {
     // 2. Cargar Datos del Cliente
     clientData = await directus.request(readItem('clientes', clientId, {
-        fields: ['*', { vendedor_id: ['name', 'whatsapp'] }]
+        fields: ['*', { vendedor_id: ['id', 'name', 'whatsapp'] }]
     })) as any;
 
     if (clientData.vendedor_id) {
@@ -27,7 +27,7 @@ try {
     // 3. Cargar Pedidos Recientes
     recentOrders = await directus.request(readItems('pedidos', {
         filter: { cliente_id: { _eq: clientId } },
-        sort: ['-date_created'],
+        sort: ['-fecha_pedido'],
         limit: 3
     })) as any;
 
@@ -97,7 +97,7 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                                     </div>
                                     <div>
                                         <p class="text-xs font-black text-white uppercase">Pedido #{order.id}</p>
-                                        <p class="text-[10px] text-gray-500 font-medium">{new Date(order.date_created).toLocaleDateString('es-AR')}</p>
+                                        <p class="text-[10px] text-gray-500 font-medium">{new Date(order.fecha_pedido).toLocaleDateString('es-AR')}</p>
                                     </div>
                                 </div>
                                 <div class="text-right">
@@ -152,9 +152,64 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                     <a href={`https://wa.me/${assignedSeller.whatsapp}`} target="_blank" class="w-full bg-[#25D366] hover:bg-white text-white hover:text-[#25D366] font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all uppercase tracking-widest text-[11px]">
                         <i class="fab fa-whatsapp text-lg"></i> Consultar por WhatsApp
                     </a>
-                    <button class="w-full bg-white/5 hover:bg-white/10 text-white font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all uppercase tracking-widest text-[11px] border border-white/5">
+                    <button id="open-message-modal" class="w-full bg-white/5 hover:bg-white/10 text-white font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all uppercase tracking-widest text-[11px] border border-white/5">
                         <i class="fas fa-envelope"></i> Enviar Mensaje Interno
                     </button>
+                </div>
+            </div>
+
+            <!-- Message Modal -->
+            <div id="message-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+                <div class="bg-[#1a1a1a] border border-white/10 w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xs font-black text-white uppercase tracking-[0.3em]">Nuevo Mensaje</h3>
+                        <button id="close-message-modal" class="text-gray-500 hover:text-white transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <form id="internal-message-form" class="space-y-6">
+                        <input type="hidden" name="toId" value={assignedSeller.id} />
+                        
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Nivel de Urgencia</label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="prioridad" value="baja" class="peer hidden">
+                                    <div class="p-3 border border-white/5 bg-white/5 rounded-xl text-center peer-checked:border-blue-500 peer-checked:bg-blue-500/10 transition-all">
+                                        <p class="text-[9px] font-black text-gray-500 peer-checked:text-blue-500 uppercase">Baja</p>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="prioridad" value="media" checked class="peer hidden">
+                                    <div class="p-3 border border-white/5 bg-white/5 rounded-xl text-center peer-checked:border-primary peer-checked:bg-primary/10 transition-all">
+                                        <p class="text-[9px] font-black text-gray-500 peer-checked:text-primary uppercase">Media</p>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="prioridad" value="alta" class="peer hidden">
+                                    <div class="p-3 border border-white/5 bg-white/5 rounded-xl text-center peer-checked:border-red-500 peer-checked:bg-red-500/10 transition-all">
+                                        <p class="text-[9px] font-black text-gray-500 peer-checked:text-red-500 uppercase">Alta</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Mensaje</label>
+                            <textarea 
+                                name="content" 
+                                required 
+                                rows="4" 
+                                class="w-full bg-black/50 border border-white/5 rounded-2xl p-4 text-white text-sm outline-none focus:border-primary transition-all resize-none"
+                                placeholder="Describe brevemente tu consulta..."
+                            ></textarea>
+                        </div>
+
+                        <button type="submit" id="send-btn" class="w-full bg-primary hover:bg-white text-white hover:text-black font-black py-4 rounded-2xl flex items-center justify-center gap-3 transition-all uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20">
+                            Enviar Mensaje <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
 
@@ -174,4 +229,57 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
             </div>
         </div>
     </div>
+    <!-- Client-side Logic for Messaging -->
+    <script is:inline>
+        const modal = document.getElementById('message-modal');
+        const openBtn = document.getElementById('open-message-modal');
+        const closeBtn = document.getElementById('close-message-modal');
+        const form = document.getElementById('internal-message-form');
+        const sendBtn = document.getElementById('send-btn');
+
+        if (openBtn) {
+            openBtn.onclick = () => modal.classList.remove('hidden');
+        }
+
+        if (closeBtn) {
+            closeBtn.onclick = () => modal.classList.add('hidden');
+        }
+
+        if (form) {
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const originalBtn = sendBtn.innerHTML;
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+                const formData = new FormData(form);
+                const data = {
+                    toId: formData.get('toId'),
+                    content: formData.get('content'),
+                    prioridad: formData.get('prioridad')
+                };
+
+                try {
+                    const res = await fetch('/api/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (res.ok) {
+                        alert('Mensaje enviado correctamente');
+                        modal.classList.add('hidden');
+                        form.reset();
+                    } else {
+                        alert('Error al enviar el mensaje');
+                    }
+                } catch (err) {
+                    alert('Error de conexión');
+                } finally {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = originalBtn;
+                }
+            };
+        }
+    </script>
 </ClienteLayout>

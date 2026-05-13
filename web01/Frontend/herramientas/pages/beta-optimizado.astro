@@ -1,0 +1,348 @@
+---
+// Alvarez SmartCut - SUPERIOR v5.2 (Lepton Killer)
+// Entorno Profesional de Alta Eficiencia
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartCut v5.2 | Profesional | Alvarez Placas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    
+    <style is:inline>
+        :root {
+            --alvarez-red: #ff2800;
+            --alvarez-dark: #0a0a0b;
+            --alvarez-card: #111114;
+            --alvarez-border: #222;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--alvarez-dark); color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        
+        .header-main { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; border-bottom: 1px solid #1a1a1a; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
+        .logo h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -1px; }
+        .logo .accent { color: var(--alvarez-red); }
+
+        .container { padding: 30px 40px; max-width: 1600px; margin: 0 auto; }
+
+        /* DASHBOARD */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
+        .project-card { background: var(--alvarez-card); border: 1px solid var(--alvarez-border); padding: 25px; border-radius: 8px; transition: all 0.3s; cursor: pointer; }
+        .project-card:hover { border-color: var(--alvarez-red); transform: translateY(-5px); }
+        .project-card h3 { color: var(--alvarez-red); margin-bottom: 10px; font-size: 1rem; }
+        .project-card p { font-size: 0.8rem; color: #666; margin-bottom: 20px; }
+        .btn-new-project { background: var(--alvarez-red); color: white; border: none; padding: 20px 40px; border-radius: 50px; font-weight: 800; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; gap: 15px; margin: 0 auto; box-shadow: 0 10px 30px rgba(255, 40, 0, 0.2); }
+
+        /* EDITOR LAYOUT */
+        .editor-layout { display: grid; grid-template-columns: 350px 1fr; gap: 30px; }
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+        
+        .card { background: var(--alvarez-card); border: 1px solid var(--alvarez-border); padding: 20px; border-radius: 8px; }
+        .card-header { font-size: 0.7rem; font-weight: 900; color: #444; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* LEPTON FORM (REDISEÑADO) */
+        .lepton-form-fixed { background: #000; border: 1px solid #333; padding: 20px; border-radius: 6px; margin-bottom: 20px; }
+        .lepton-row { display: grid; grid-template-columns: repeat(5, 1fr) 50px; gap: 10px; margin-bottom: 10px; }
+        .lepton-row-edges { display: grid; grid-template-columns: auto repeat(4, 1fr) auto; gap: 10px; align-items: center; border-top: 1px solid #111; padding-top: 10px; margin-top: 10px; }
+        
+        label { display: block; font-size: 0.6rem; color: #555; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
+        input, select { width: 100%; background: #0a0a0a; border: 1px solid #222; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; padding: 8px; border-radius: 3px; }
+        input:focus { border-color: var(--alvarez-red); }
+
+        .btn-add-lepton { height: 100%; background: #fff; color: #000; border: none; font-weight: 900; cursor: pointer; border-radius: 3px; font-size: 0.7rem; }
+        .btn-add-lepton:hover { background: var(--alvarez-red); color: white; }
+
+        /* VISUALIZER */
+        .visual-area { display: flex; flex-direction: column; gap: 40px; }
+        canvas { border: 1px solid #222; background: #000; border-radius: 4px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); width: 100%; }
+
+        /* STATS GRID */
+        .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .stat-item { background: #111; border: 1px solid #222; padding: 15px; border-radius: 6px; text-align: center; }
+        .stat-item span { font-size: 0.6rem; color: #444; font-weight: 800; display: block; margin-bottom: 5px; }
+        .stat-item strong { font-size: 1.2rem; color: var(--alvarez-red); display: block; }
+
+        .btn-action { background: #222; color: #aaa; border: 1px solid #333; padding: 10px 20px; border-radius: 4px; font-weight: 800; font-size: 0.7rem; cursor: pointer; text-transform: uppercase; }
+        .btn-action:hover { border-color: var(--alvarez-red); color: white; }
+        .btn-gold { background: linear-gradient(135deg, #d4af37, #aa8507) !important; color: #000 !important; }
+
+        .hidden { display: none !important; }
+        .animate-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* SCROLL PIEZAS */
+        .pieces-scroll { max-height: 400px; overflow-y: auto; padding-right: 5px; }
+        .piece-item { background: #080808; border: 1px solid #111; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
+        .piece-item strong { color: var(--alvarez-red); margin-right: 8px; }
+        .piece-item .del { color: #333; cursor: pointer; }
+        .piece-item .del:hover { color: var(--alvarez-red); }
+    </style>
+</head>
+<body>
+    <header class="header-main">
+        <div class="logo">
+            <h1>ALVAREZ <span class="accent">SMARTCUT</span> <span style="font-size: 0.6rem; background: #222; padding: 2px 6px; border-radius: 3px; font-weight: 400; vertical-align: middle; margin-left: 10px;">PRO v5.2</span></h1>
+        </div>
+        <div id="top-nav" class="hidden">
+            <button onclick="showDashboard()" class="btn-action"><i class="fas fa-th-large"></i> MIS PROYECTOS</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- VISTA DASHBOARD -->
+        <section id="view-dashboard" class="animate-in">
+            <div style="text-align: center; margin-bottom: 60px;">
+                <h2 style="font-size: 2rem; margin-bottom: 10px;">Bienvenido al Futuro del Corte</h2>
+                <p style="color: #666;">Optimización industrial con precisión ASH y control Lepton.</p>
+            </div>
+            <button onclick="showSetup()" class="btn-new-project"><i class="fas fa-plus"></i> NUEVA CARGA DE MATERIAL</button>
+            <div id="projects-list" class="dashboard-grid"></div>
+        </section>
+
+        <!-- VISTA SETUP -->
+        <section id="view-setup" class="card hidden animate-in" style="max-width: 600px; margin: 40px auto;">
+            <div class="card-header">CONFIGURAR MATERIAL</div>
+            <div style="display: grid; gap: 20px;">
+                <div>
+                    <label>Marca / Tablero</label>
+                    <select id="plate-brand">
+                        <option value="FAPLAC">FAPLAC (2750x1830)</option>
+                        <option value="EGGER">EGGER (2600x1830)</option>
+                        <option value="OSB">OSB (2440x1220)</option>
+                        <option value="CUSTOM">PERSONALIZADO...</option>
+                    </select>
+                </div>
+                <div id="custom-dims" class="hidden" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><label>Largo (mm)</label><input type="number" id="setup-w" value="2750"></div>
+                    <div><label>Ancho (mm)</label><input type="number" id="setup-h" value="1830"></div>
+                </div>
+                <div><label>Espesor</label><select id="setup-t"><option value="18">18 mm</option><option value="15">15 mm</option><option value="12">12 mm</option><option value="25">25 mm</option></select></div>
+                <button onclick="createProject()" class="btn-new-project" style="width: 100%; justify-content: center;">CONFIRMAR E INICIAR</button>
+                <button onclick="showDashboard()" style="background: transparent; border: none; color: #444; cursor: pointer; font-size: 0.8rem; font-weight: 700;">CANCELAR</button>
+            </div>
+        </section>
+
+        <!-- VISTA EDITOR -->
+        <section id="view-editor" class="hidden animate-in">
+            <div class="stats-bar">
+                <div class="stat-item"><span>PROYECTO</span><strong id="display-proj-name" style="font-size: 0.8rem; color: #fff;">FAPLAC 18MM</strong></div>
+                <div class="stat-item"><span>PLACAS</span><strong id="stat-sheets">0</strong></div>
+                <div class="stat-item"><span>PIEZAS</span><strong id="stat-pieces">0</strong></div>
+                <div class="stat-item"><span>M² ÚTILES</span><strong id="stat-m2">0.00</strong></div>
+                <div class="stat-item"><span>TAPACANTO (M)</span><strong id="stat-edges">0.0</strong></div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-recalc" class="btn-action btn-gold" style="flex:1"><i class="fas fa-sync"></i> RE-CALCULAR</button>
+                    <button onclick="saveAndExit()" class="btn-action" style="flex:1">GUARDAR Y SALIR</button>
+                </div>
+            </div>
+
+            <div class="lepton-form-fixed">
+                <div class="lepton-row">
+                    <div><label>CANT</label><input type="number" id="p-qty" value="1" data-next="p-len"></div>
+                    <div><label>LARGO</label><input type="number" id="p-len" placeholder="0000" data-next="p-wid"></div>
+                    <div><label>ANCHO</label><input type="number" id="p-wid" placeholder="0000" data-next="p-label"></div>
+                    <div><label>NOMBRE</label><input type="text" id="p-label" placeholder="PIEZA" data-next="pe-t"></div>
+                    <div style="text-align: center;"><label>GIRAR</label><input type="checkbox" id="p-rot" checked style="width: auto; margin-top: 5px;"></div>
+                    <button id="btn-add-piece" class="btn-add-lepton">AÑADIR</button>
+                </div>
+                <div class="lepton-row-edges">
+                    <span style="font-size: 0.6rem; font-weight: 900; color: var(--alvarez-red);">TAPACANTO (S|I|L|D):</span>
+                    <select id="pe-t" data-next="pe-b"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <select id="pe-b" data-next="pe-l"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <select id="pe-l" data-next="pe-r"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <select id="pe-r" data-next="btn-add-piece"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    <span style="font-size: 0.6rem; color: #444;">ATAJO: ENTER PARA SALTAR</span>
+                </div>
+            </div>
+
+            <div class="editor-layout">
+                <aside class="sidebar">
+                    <div class="card">
+                        <div class="card-header">PIEZAS CARGADAS <span id="count-label" style="color: var(--alvarez-red)">0</span></div>
+                        <div id="pieces-list" class="pieces-scroll"></div>
+                    </div>
+                    <div class="card" style="font-size: 0.7rem; color: #444;">
+                        <i class="fas fa-info-circle"></i> Tip: Haz clic en Re-calcular para que el algoritmo ASH busque una mejor eficiencia.
+                    </div>
+                </aside>
+                <main class="visual-area">
+                    <div id="plates-container"></div>
+                </main>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        import { SmartCutEngine } from '../logic/core/optimizer.js';
+        import { SmartCutVisualizer } from '../logic/core/visualizer.js';
+
+        const engine = new SmartCutEngine({ kerf: 4, trim: 5 });
+        const visualizer = new SmartCutVisualizer('plates-container');
+        
+        let session = {
+            projects: [],
+            currentIndex: -1
+        };
+
+        const BRANDS = { 'FAPLAC': { w: 2750, h: 1830 }, 'EGGER': { w: 2600, h: 1830 }, 'OSB': { w: 2440, h: 1220 } };
+
+        // Views
+        window.showDashboard = () => {
+            document.getElementById('view-dashboard').classList.remove('hidden');
+            document.getElementById('view-setup').classList.add('hidden');
+            document.getElementById('view-editor').classList.add('hidden');
+            document.getElementById('top-nav').classList.add('hidden');
+            renderProjects();
+        };
+
+        window.showSetup = () => {
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-setup').classList.remove('hidden');
+            document.getElementById('view-editor').classList.add('hidden');
+        };
+
+        window.showEditor = (index) => {
+            session.currentIndex = index;
+            const p = session.projects[index];
+            document.getElementById('display-proj-name').textContent = `${p.brand} ${p.thickness}MM`;
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-setup').classList.add('hidden');
+            document.getElementById('view-editor').classList.remove('hidden');
+            document.getElementById('top-nav').classList.remove('hidden');
+            renderEditor();
+        };
+
+        // Logic
+        window.createProject = () => {
+            const b = document.getElementById('plate-brand').value;
+            const t = document.getElementById('setup-t').value;
+            let w = parseInt(document.getElementById('setup-w').value);
+            let h = parseInt(document.getElementById('setup-h').value);
+            
+            session.projects.push({
+                brand: b, thickness: t, w, h, pieces: [], result: null
+            });
+            showEditor(session.projects.length - 1);
+        };
+
+        window.addPiece = () => {
+            const p = session.projects[session.currentIndex];
+            const qty = parseInt(document.getElementById('p-qty').value) || 1;
+            const l = parseInt(document.getElementById('p-len').value);
+            const w = parseInt(document.getElementById('p-wid').value);
+            const label = document.getElementById('p-label').value || 'PIEZA';
+            
+            if (!l || !w) return;
+
+            p.pieces.push({
+                id: Date.now(), q: qty, l, h: w, label,
+                canRotate: document.getElementById('p-rot').checked,
+                edges: {
+                    t: parseFloat(document.getElementById('pe-t').value),
+                    b: parseFloat(document.getElementById('pe-b').value),
+                    l: parseFloat(selectors.form.el.value || 0), // Fix if el missing
+                    r: parseFloat(document.getElementById('pe-r').value)
+                }
+            });
+
+            // Hack para el selector faltante (L) que no puse en el grid
+            p.pieces[p.pieces.length-1].edges.l = parseFloat(document.getElementById('pe-l').value);
+
+            // Reset
+            ['p-len', 'p-wid', 'p-label'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('p-qty').value = '1';
+            document.getElementById('p-qty').focus();
+            renderEditor();
+        };
+
+        window.removePiece = (id) => {
+            const p = session.projects[session.currentIndex];
+            p.pieces = p.pieces.filter(pc => pc.id !== id);
+            renderEditor();
+        };
+
+        function renderProjects() {
+            const list = document.getElementById('projects-list');
+            list.innerHTML = session.projects.map((p, i) => `
+                <div class="project-card" onclick="showEditor(${i})">
+                    <h3>${p.brand} ${p.thickness}MM</h3>
+                    <p>${p.pieces.length} piezas | ${p.result ? p.result.plates.length : 0} placas</p>
+                    <div style="font-size: 0.7rem; color: #444; display: flex; justify-content: space-between;">
+                        <span>Eficiencia: ${p.result ? p.result.plates[0]?.efficiency.toFixed(1) : 0}%</span>
+                        <i class="fas fa-edit"></i>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderEditor() {
+            const p = session.projects[session.currentIndex];
+            const list = document.getElementById('pieces-list');
+            list.innerHTML = p.pieces.slice().reverse().map(pc => `
+                <div class="piece-item">
+                    <div><strong>${pc.q}un</strong> ${pc.l}x${pc.h} <small style="color:#333">${pc.label}</small></div>
+                    <i class="fas fa-trash del" onclick="removePiece(${pc.id})"></i>
+                </div>
+            `).join('');
+            document.getElementById('count-label').textContent = p.pieces.length;
+
+            if (p.pieces.length > 0) {
+                p.result = engine.optimize(p.w, p.h, p.pieces);
+                visualizer.render(p.result, p.w, p.h);
+                
+                document.getElementById('stat-sheets').textContent = p.result.stats.totalPlates;
+                document.getElementById('stat-pieces').textContent = p.result.stats.totalPieces;
+                document.getElementById('stat-m2').textContent = p.result.stats.totalM2.toFixed(2);
+                const edges = p.result.stats.edgeMeters['0.45'] + p.result.stats.edgeMeters['1'] + p.result.stats.edgeMeters['2'];
+                document.getElementById('stat-edges').textContent = edges.toFixed(1);
+            } else {
+                document.getElementById('plates-container').innerHTML = '<div style="text-align: center; padding: 100px; color: #222;"><i class="fas fa-layer-group" style="font-size: 3rem; margin-bottom: 20px;"></i><p>AÑADE PIEZAS PARA VER EL PLANO</p></div>';
+            }
+        }
+
+        window.saveAndExit = () => showDashboard();
+
+        document.getElementById('btn-recalc').onclick = () => {
+            engine.optimizationLevel = 5000; // Aumentar potencia
+            renderEditor();
+            engine.optimizationLevel = 1000; // Volver a normal
+        };
+
+        document.getElementById('btn-add-piece').onclick = addPiece;
+
+        // Custom Dims Logic
+        document.getElementById('plate-brand').onchange = (e) => {
+            const custom = document.getElementById('custom-dims');
+            if (e.target.value === 'CUSTOM') custom.classList.remove('hidden');
+            else {
+                custom.classList.add('hidden');
+                document.getElementById('setup-w').value = BRANDS[e.target.value].w;
+                document.getElementById('setup-h').value = BRANDS[e.target.value].h;
+            }
+        };
+
+        // Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                const nextId = active?.getAttribute('data-next');
+                if (nextId) {
+                    e.preventDefault();
+                    if (nextId === 'btn-add-piece') addPiece();
+                    else {
+                        const nextEl = document.getElementById(nextId);
+                        if (nextEl) { nextEl.focus(); if (nextEl.tagName === 'INPUT') nextEl.select(); }
+                    }
+                }
+            }
+        });
+
+        // Init
+        showDashboard();
+    </script>
+</body>
+</html>

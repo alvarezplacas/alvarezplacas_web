@@ -1,72 +1,271 @@
 ---
+/**
+ * Gestión de Productos - Panel de Control de Inventario.
+ * Propiedad del Agente Antigravity (Google Deepmind).
+ */
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import { directus, readItems } from '../../../conexiones/directus.js';
+
+let productos = [];
+let rubros = [];
+let marcas = [];
+
+// URL Interna para máxima estabilidad en el VPS
+const D_URL = 'http://alvarezplacas_directus:8055';
+const STATIC_TOKEN = 'alvarez-api-token-v16-2026';
+
+console.log("[Admin Products] Iniciando carga de datos (Auditada v3)...");
+
+try {
+    const authHeader = { headers: { 'Authorization': `Bearer ${STATIC_TOKEN}` } };
+
+    // 1. Cargar Productos (Colección: 'Productos')
+    // Agregamos status=* para ver TODOS los productos independientemente de su estado (draft, published, etc.)
+    const resProd = await fetch(`${D_URL}/items/Productos?fields=*,Marca.*,marca.*&sort=-id&limit=50&status=*`, authHeader);
+    const dataProd = await resProd.json();
+    
+    if (dataProd.data && dataProd.data.length > 0) {
+        console.log("[Admin Products] Ejemplo de producto:", JSON.stringify(dataProd.data[0]).substring(0, 200));
+        productos = dataProd.data.map(p => ({
+            id: p.id,
+            nombre: p.nombre || p.Nombre || p.sku || p.SKU || 'Sin nombre',
+            sku: p.sku || p.SKU || 'N/A',
+            precio: p.precio || p.Precio || p.precio_l0 || p.Precio_L0 || 0,
+            status: p.status || p.Status || p.estado || p.Estado || 'draft',
+            date_updated: p.date_updated || p.Date_Updated || p.date_created,
+            marca_nombre: p.marca?.nombre || p.Marca?.nombre || p.marca_id?.nombre || 'Genérico'
+        }));
+    } else {
+        console.log("[Admin Products] No se encontraron productos en 'Productos' incluso con status=*.");
+        console.log("[Admin Products] Response:", JSON.stringify(dataProd));
+    }
+
+    // 2. Cargar Rubros
+    const resRubros = await fetch(`${D_URL}/items/Rubros?sort=nombre&limit=-1`, authHeader);
+    const dataRubros = await resRubros.json();
+    rubros = (dataRubros.data || []).map(r => ({ 
+        id: r.id, 
+        nombre: r.nombre || r.Nombre || r.codigo || 'Sin nombre' 
+    }));
+
+    // 3. Cargar Marcas
+    const resMarcas = await fetch(`${D_URL}/items/marcas?sort=nombre&limit=-1`, authHeader);
+    const dataMarcas = await resMarcas.json();
+    marcas = (dataMarcas.data || []).map(m => ({ 
+        id: m.id, 
+        nombre: m.nombre || m.Nombre || m.codigo || 'Sin nombre' 
+    }));
+
+    console.log(`[Admin Products Success] Productos: ${productos.length}, Rubros: ${rubros.length}, Marcas: ${marcas.length}`);
+
+} catch (e) {
+    console.error("[Admin Products Exception]:", e);
+}
+
+const formatDate = (dateStr) => {
+    if (!dateStr) return 'Nunca';
+    return new Date(dateStr).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
 ---
 
 <AdminLayout title="Gestión de Productos - Admin">
-    <div class="mb-8">
-        <h2 class="text-3xl font-black text-white mb-2">Gestión de <span class="text-primary">Productos</span></h2>
-        <p class="text-gray-400">Carga masiva por Excel, actualización de precios y gestión de fotos.</p>
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h2 class="text-3xl font-black text-white mb-2 uppercase tracking-tight">Gestión de <span class="text-primary italic">Productos</span></h2>
+            <p class="text-gray-400 font-medium">Control de catálogo, carga masiva y monitor de precios.</p>
+        </div>
+        <div class="text-right">
+            <p class="text-[10px] font-black text-gray-500 uppercase">Estado del Catálogo</p>
+            <p class="text-xs font-bold text-green-500"><i class="fas fa-check-circle mr-1"></i> Sincronizado</p>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
         <!-- Excel Upload Section -->
         <div class="lg:col-span-1 space-y-6">
-            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 shadow-xl">
-                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-3xl p-6 shadow-2xl sticky top-8">
+                <h3 class="text-xs font-black text-white mb-6 uppercase tracking-widest flex items-center gap-2">
                     <i class="fas fa-file-excel text-green-500"></i> Actualización Masiva
                 </h3>
-                <p class="text-xs text-gray-500 mb-6">
-                    Sube un archivo .xlsx o .csv con las columnas: Nombre, Marca, Espesor, Precio m2.
-                </p>
                 
-                <div class="border-2 border-dashed border-gray-800 rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer group" id="drop-zone">
-                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-700 group-hover:text-primary transition-colors mb-4"></i>
-                    <p class="text-sm text-gray-400 mb-2">Arrastra tu archivo aquí</p>
-                    <p class="text-xs text-gray-600">o haz clic para buscar</p>
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Pre-clasificar Rubro</label>
+                        <select id="upload-category" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="">-- Automático (desde Excel) --</option>
+                            {rubros.map(r => <option value={r.id}>{r.nombre}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Pre-clasificar Marca</label>
+                        <select id="upload-brand" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="">-- Automático (desde Excel) --</option>
+                            {marcas.map(m => <option value={m.id}>{m.nombre}</option>)}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="border-2 border-dashed border-gray-800 rounded-2xl p-8 text-center hover:border-primary/50 transition-all cursor-pointer group bg-black/20" id="drop-zone">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-700 group-hover:text-primary group-hover:scale-110 transition-all mb-4"></i>
+                    <p class="text-xs text-gray-400 font-bold mb-1" id="file-name">Suelta tu archivo aquí</p>
+                    <p class="text-[10px] text-gray-600 uppercase">.XLSX, .CSV</p>
                     <input type="file" id="excel-input" class="hidden" accept=".xlsx, .xls, .csv" />
                 </div>
 
-                <button id="process-excel" class="w-full mt-6 py-3 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-xl transition-all border border-primary/20">
-                    PROCESAR ARCHIVO
+                <button id="process-excel" class="w-full mt-6 py-4 bg-primary text-white font-black text-xs rounded-xl transition-all hover:bg-white hover:text-black shadow-[0_0_20px_rgba(255,40,0,0.2)] uppercase tracking-widest disabled:opacity-50">
+                    Procesar Catálogo
                 </button>
             </div>
         </div>
 
         <!-- Material List / Results -->
-        <div class="lg:col-span-2">
-            <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
-                <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black/20">
+        <div class="lg:col-span-3">
+            <div class="bg-[#1a1a1a] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
+                <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/2">
+                    <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest">Vista Previa del Stock</h4>
                     <div class="flex gap-2">
-                        <button class="px-3 py-1 bg-primary text-black text-xs font-bold rounded">Todos</button>
+                        <span class="px-3 py-1 bg-white/5 text-[10px] font-bold text-gray-400 rounded-full border border-white/5">Mostrando últimos {productos.length}</span>
                     </div>
                 </div>
 
                 <table class="w-full text-left text-sm">
-                    <thead class="bg-gray-900/50 text-gray-500 uppercase text-[10px] font-bold">
+                    <thead class="bg-black/40 text-gray-500 uppercase text-[9px] font-black tracking-widest border-b border-gray-800">
                         <tr>
-                            <th class="px-4 py-3">Producto</th>
-                            <th class="px-4 py-3">Marca</th>
-                            <th class="px-4 py-3">Precio m2</th>
-                            <th class="px-4 py-3 text-right">Acciones</th>
+                            <th class="px-6 py-4">Producto / SKU</th>
+                            <th class="px-6 py-4">Marca</th>
+                            <th class="px-6 py-4">Estado</th>
+                            <th class="px-6 py-4">Últ. Act.</th>
+                            <th class="px-6 py-4">Precio m2</th>
+                            <th class="px-6 py-4 text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-800">
-                        <tr class="hover:bg-white/5 transition-colors">
-                            <td class="px-4 py-4 flex items-center gap-3">
-                                <span class="text-white font-medium">Ejemplo de Material</span>
-                            </td>
-                            <td class="px-4 py-4 text-gray-400">---</td>
-                            <td class="px-4 py-4 text-white font-bold">$0.00</td>
-                            <td class="px-4 py-4 text-right">
-                                <button class="text-gray-500 hover:text-primary p-2">
-                                    <i class="fas fa-camera"></i>
-                                </button>
-                            </td>
-                        </tr>
+                    <tbody class="divide-y divide-gray-800/50">
+                        {productos.map(p => (
+                            <tr class="hover:bg-white/[0.02] transition-colors group">
+                                <td class="px-6 py-4">
+                                    <p class="text-white font-bold text-sm leading-tight mb-1">{p.nombre}</p>
+                                    <p class="text-[10px] text-gray-600 font-mono tracking-tighter uppercase">{p.sku}</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-[10px] font-black text-gray-400 uppercase bg-white/5 px-2 py-1 rounded">{p.marca_nombre}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${p.status === 'published' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
+                                        {p.status === 'published' ? 'Activo' : 'Borrador'}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-[10px] font-bold text-gray-500">
+                                    {formatDate(p.date_updated)}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-white font-black">$ {p.precio?.toLocaleString('es-AR')}</span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-gray-600 hover:text-primary transition-colors p-2" title="Gestionar Fotos">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                        {productos.length === 0 && (
+                            <tr>
+                                <td colspan="6" class="px-6 py-20 text-center">
+                                    <i class="fas fa-box-open text-4xl text-gray-800 mb-4 block"></i>
+                                    <p class="text-gray-600 font-bold italic">No hay productos cargados en el sistema.</p>
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <!-- Toast de Notificación -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] hidden bg-white text-black px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl animate-in slide-in-from-bottom duration-300">
+    </div>
+
+    <script is:inline>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('excel-input');
+        const processBtn = document.getElementById('process-excel');
+        const fileNameLabel = document.getElementById('file-name');
+        const toast = document.getElementById('toast');
+
+        function showToast(msg, error = false) {
+            toast.innerText = msg;
+            toast.classList.remove('hidden');
+            if (error) toast.classList.add('bg-primary', 'text-white');
+            else toast.classList.remove('bg-primary', 'text-white');
+            setTimeout(() => toast.classList.add('hidden'), 5000);
+        }
+
+        dropZone.onclick = () => fileInput.click();
+        
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                fileNameLabel.innerText = file.name;
+                fileNameLabel.classList.add('text-primary');
+            }
+        };
+
+        processBtn.onclick = async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showToast('Por favor selecciona un archivo primero', true);
+                return;
+            }
+
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> PROCESANDO...';
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('category_id', document.getElementById('upload-category').value);
+            formData.append('brand_id', document.getElementById('upload-brand').value);
+
+            try {
+                const res = await fetch('/api/admin/upload-catalog', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    showToast(`Éxito: Se procesaron ${result.processed} productos correctamente.`);
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    showToast(result.error || 'Error al procesar el archivo', true);
+                    processBtn.disabled = false;
+                    processBtn.innerText = 'PROCESAR CATÁLOGO';
+                }
+            } catch (err) {
+                showToast('Error de conexión con el servidor', true);
+                processBtn.disabled = false;
+                processBtn.innerText = 'PROCESAR CATÁLOGO';
+            }
+        };
+
+        // Drag & Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-primary');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-primary');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileNameLabel.innerText = e.dataTransfer.files[0].name;
+                fileNameLabel.classList.add('text-primary');
+            }
+        });
+    </script>
 </AdminLayout>

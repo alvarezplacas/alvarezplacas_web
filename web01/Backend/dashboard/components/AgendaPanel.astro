@@ -1,0 +1,108 @@
+---
+/**
+ * Componente de Agenda (Eventos y Recordatorios)
+ * Estilo Adobe Photoshop - Panel de Eventos/Línea de Tiempo
+ */
+import { directus, readItems } from '@conexiones/directus.js';
+
+interface Props {
+    vendedor_id: string;
+}
+
+const { vendedor_id } = Astro.props;
+
+// Fetch de los recordatorios pendientes
+let eventos = [];
+try {
+    eventos = await directus.request(readItems('vendedor_notas', {
+        filter: {
+            vendedor_id: { _eq: vendedor_id },
+            completada: { _eq: false },
+            es_recordatorio: { _eq: true }
+        },
+        sort: ['fecha_vencimiento'],
+        limit: 10
+    }));
+} catch (e) {
+    console.error("Error cargando agenda:", e);
+}
+
+const formatTime = (dateStr: string) => {
+    if (!dateStr) return 'Pendiente';
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + 'hs';
+};
+
+const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'Sin fecha';
+    const d = new Date(dateStr);
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) return 'Hoy';
+    return d.toLocaleDateString();
+};
+---
+
+<div class="flex flex-col h-full bg-[#252525]">
+    <div class="h-8 bg-[#333] border-b border-[#111] flex items-center px-3 justify-between shrink-0">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-white">Eventos de Agenda</span>
+        <div class="flex gap-2">
+            <i class="fas fa-calendar-check text-[10px] opacity-30"></i>
+        </div>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-1 space-y-1 bg-[#1a1a1a]">
+        {eventos.length === 0 ? (
+            <div class="p-8 text-center">
+                <i class="fas fa-calendar-day text-2xl opacity-10 mb-2"></i>
+                <p class="text-[10px] opacity-30 italic">No hay eventos próximos</p>
+            </div>
+        ) : (
+            eventos.map((evento) => (
+                <div class="px-3 py-2 border-b border-black/20 hover:bg-white/5 cursor-pointer flex items-center gap-3 group transition-colors">
+                    <button class="complete-agenda-btn text-[10px] text-primary/40 hover:text-primary transition-colors" data-id={evento.id}>
+                        <i class="fas fa-circle"></i>
+                    </button>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[11px] font-bold truncate text-white leading-tight">{evento.contenido}</p>
+                        <div class="flex justify-between items-center mt-0.5">
+                            <p class="text-[9px] opacity-50 truncate">
+                                {formatDate(evento.fecha_vencimiento)}, {formatTime(evento.fecha_vencimiento)}
+                            </p>
+                            {evento.relacion_tipo && evento.relacion_tipo !== 'general' && (
+                                <span class="text-[7px] bg-white/5 text-gray-400 px-1 rounded uppercase">
+                                    {evento.relacion_tipo}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            ))
+        )}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.complete-agenda-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const id = btn.getAttribute('data-id');
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = 'fas fa-check-circle';
+                
+                try {
+                    await fetch(`/api/vendedor/notes?id=${id}`, { method: 'PATCH' });
+                    setTimeout(() => window.location.reload(), 500);
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+</style>

@@ -1,5 +1,11 @@
 {
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "checkJs": false,
     "baseUrl": ".",
     "paths": {
       "@backend/*": ["Backend/*"],
@@ -8,7 +14,8 @@
       "@home/*": ["Frontend/home/*"],
       "@catalogo/*": ["Frontend/catalogo/*"],
       "@herramientas/*": ["Frontend/herramientas/*"],
-      "@dashboard/*": ["Backend/dashboard/*"]
+      "@dashboard/*": ["Backend/dashboard/*"],
+      "@components/*": ["Frontend/shared/components/*"]
     }
   }
 }

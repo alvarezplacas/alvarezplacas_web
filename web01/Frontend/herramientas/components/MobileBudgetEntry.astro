@@ -1,0 +1,89 @@
+---
+/**
+ * MobileBudgetEntry - Sistema de carga rápida para celulares.
+ */
+---
+<div class="md:hidden space-y-4" id="mobile-entry-form">
+    <div class="bg-primary p-6 rounded-3xl shadow-2xl border-b-8 border-black/20">
+        <h3 class="text-black font-black uppercase text-center mb-6 tracking-tighter">Carga Rápida Móvil</h3>
+        
+        <div class="space-y-6">
+            <!-- Cantidad -->
+            <div class="flex items-center justify-between bg-white/20 p-4 rounded-2xl border border-black/10">
+                <span class="text-black font-black uppercase text-xs">Cantidad</span>
+                <div class="flex items-center gap-4">
+                    <button class="w-10 h-10 bg-black text-white rounded-full font-black" onclick="document.getElementById('m-p-qty').stepDown()">-</button>
+                    <input type="number" id="m-p-qty" value="1" class="w-12 bg-transparent text-center text-xl font-black text-black outline-none" />
+                    <button class="w-10 h-10 bg-black text-white rounded-full font-black" onclick="document.getElementById('m-p-qty').stepUp()">+</button>
+                </div>
+            </div>
+
+            <!-- Medidas -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white/20 p-4 rounded-2xl border border-black/10">
+                    <span class="block text-black font-black uppercase text-[10px] mb-2">Largo (mm)</span>
+                    <input type="number" id="m-p-len" placeholder="0" class="w-full bg-transparent text-2xl font-black text-black outline-none" inputmode="numeric" />
+                </div>
+                <div class="bg-white/20 p-4 rounded-2xl border border-black/10">
+                    <span class="block text-black font-black uppercase text-[10px] mb-2">Alto (mm)</span>
+                    <input type="number" id="m-p-wid" placeholder="0" class="w-full bg-transparent text-2xl font-black text-black outline-none" inputmode="numeric" />
+                </div>
+            </div>
+
+            <!-- Tapacantos Simplificados -->
+             <div class="bg-white/20 p-4 rounded-2xl border border-black/10">
+                <span class="block text-black font-black uppercase text-[10px] mb-4 text-center">Tapacantos</span>
+                <div class="grid grid-cols-4 gap-2">
+                    <div class="flex flex-col items-center">
+                        <span class="text-[8px] font-black text-black/40 mb-1">SUP</span>
+                        <select id="m-pe-t" class="w-full bg-black text-white rounded-lg py-2 text-[10px] font-black appearance-none text-center">
+                            <option value="0">0</option>
+                            <option value="0.45">.45</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[8px] font-black text-black/40 mb-1">INF</span>
+                        <select id="m-pe-b" class="w-full bg-black text-white rounded-lg py-2 text-[10px] font-black appearance-none text-center">
+                            <option value="0">0</option>
+                            <option value="0.45">.45</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[8px] font-black text-black/40 mb-1">IZQ</span>
+                        <select id="m-pe-l" class="w-full bg-black text-white rounded-lg py-2 text-[10px] font-black appearance-none text-center">
+                            <option value="0">0</option>
+                            <option value="0.45">.45</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[8px] font-black text-black/40 mb-1">DER</span>
+                        <select id="m-pe-r" class="w-full bg-black text-white rounded-lg py-2 text-[10px] font-black appearance-none text-center">
+                            <option value="0">0</option>
+                            <option value="0.45">.45</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button id="m-p-add-btn" class="w-full mt-8 py-5 bg-black text-white font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-2">
+            <i class="fas fa-plus"></i> AGREGAR PIEZA
+        </button>
+    </div>
+</div>
+
+<style>
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+</style>

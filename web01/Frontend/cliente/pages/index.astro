@@ -6,10 +6,7 @@
 import Layout from '../../home/layouts/Layout.astro';
 import Header from '@components/Header.astro';
 import BottomNav from '@components/BottomNav.astro';
-import { createDirectus, rest, readItems, readItem } from '@directus/sdk';
-
-const PUBLIC_DIRECTUS_URL = import.meta.env.PUBLIC_DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const directus = createDirectus(PUBLIC_DIRECTUS_URL).with(rest());
+import { directus, readItems, readItem } from '@conexiones/directus.js';
 
 // Strict session check
 const userCookie = Astro.cookies.get('client_session')?.value;
@@ -23,14 +20,15 @@ let pedidos = [];
 
 try {
     cliente = await directus.request(readItem('clientes', userId, {
-        fields: ['*', { vendedor_asignado: ['Nombre', 'Whatsapp'] }]
+        fields: ['*', { vendedor_id: ['id', 'name', 'whatsapp'] }]
     }));
     pedidos = await directus.request(readItems('pedidos', {
         filter: { cliente_id: { _eq: userId } },
+        fields: ['id', 'status', 'total_m2', 'fecha_pedido', 'total', 'tracking_id'],
         sort: ['-fecha_pedido']
     }));
-} catch (e) {
-    console.error('Error Directus Dashboard:', e);
+} catch (e: any) {
+    console.error('Error Directus Dashboard:', e?.message || e);
 }
 
 if (!cliente) {
@@ -40,20 +38,20 @@ if (!cliente) {
 
 const templateData = {
     ...cliente,
-    seller_name: cliente.vendedor_asignado?.Nombre || 'Sin asignar',
-    seller_phone: cliente.vendedor_asignado?.Whatsapp || '',
-    full_name: cliente.nombre_empresa || cliente.nombre,
-    points: cliente.puntaje || 0,
+    seller_name: cliente.vendedor_id?.name || 'Sin asignar',
+    seller_phone: cliente.vendedor_id?.whatsapp || '',
+    full_name: cliente.nombre_empresa || cliente.name,
+    points: cliente.scoring || 0,
     debt_amount: cliente.debt_amount || 0,
     fin_status: cliente.fin_status || 'clean',
-    client_number: cliente.id
+    client_number: cliente.client_number || cliente.id
 };
 
 const processedPedidos = (pedidos || []).map((p) => ({
     ...p,
     created_at: p.fecha_pedido,
     total_amount: p.total,
-    tracking_code: p.tracking_id,
+    tracking_code: p.tracking_id || p.id,
     status: p.status,
     // Map status to a more readable label
     statusLabel: {
@@ -66,12 +64,12 @@ const processedPedidos = (pedidos || []).map((p) => ({
     }[p.status] || p.status
 }));
 
-const sellerId = cliente.vendedor_asignado?.id;
+const sellerId = cliente.vendedor_id?.id;
 let unreadCount = 0;
 let chatMessages = [];
 try {
     const unreadRes = await directus.request(readItems('mensajes', {
-        filter: { destinatario_id: { _eq: userId }, visto: { _eq: false } },
+        filter: { destinatario_id: { _eq: userId.toString() }, visto: { _eq: false } },
         aggregate: { count: ['*'] }
     }));
     unreadCount = parseInt(unreadRes[0]?.count?.['*'] || '0');
@@ -79,8 +77,8 @@ try {
         chatMessages = await directus.request(readItems('mensajes', {
             filter: {
                 _or: [
-                    { remitente_id: { _eq: userId }, destinatario_id: { _eq: sellerId } },
-                    { remitente_id: { _eq: sellerId }, destinatario_id: { _eq: userId } }
+                    { remitente_id: { _eq: userId.toString() }, destinatario_id: { _eq: sellerId.toString() } },
+                    { remitente_id: { _eq: sellerId.toString() }, destinatario_id: { _eq: userId.toString() } }
                 ]
             },
             sort: ['fecha_envio'],
@@ -220,6 +218,7 @@ try {
                                 Enviar
                             </button>
                         </form>
+                        <p id="chat-error-msg" class="text-xs text-amber-500 mt-2 hidden">No tienes un vendedor asignado aún. Contáctanos por WhatsApp.</p>
                     </div>
                 </section>
 
@@ -260,10 +259,11 @@ try {
 
     <BottomNav />
 
-    <script>
-        const chatForm = document.getElementById('client-chat-form') as HTMLFormElement;
-        const chatInput = document.getElementById('client-chat-input') as HTMLInputElement;
+    <script define:vars={{ sellerId: templateData.vendedor_id?.id ?? null, clientId: templateData.id }}>
+        const chatForm = document.getElementById('client-chat-form');
+        const chatInput = document.getElementById('client-chat-input');
         const chatBox = document.getElementById('client-chat-box');
+        const chatError = document.getElementById('chat-error-msg');
 
         if (chatForm && chatInput) {
             chatForm.addEventListener('submit', async (e) => {
@@ -271,22 +271,38 @@ try {
                 const msg = chatInput.value.trim();
                 if (!msg) return;
 
-                // Simple integration using our new API
-                // We'll pass the IDs from the template data if available or let the backend extract from session
-                // Since this is a demo, we'll try to fetch the essential IDs
+                // Verificar que hay vendedor asignado antes de enviar
+                if (!sellerId) {
+                    if (chatError) chatError.style.display = 'block';
+                    return;
+                }
+
+                const submitBtn = chatForm.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+
                 try {
                     const response = await fetch('/api/messages', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ content: msg, isClient: true }) // Backend can identify role from session
+                        body: JSON.stringify({
+                            content: msg,
+                            fromId: String(clientId),
+                            toId: String(sellerId),
+                            prioridad: 'media'
+                        })
                     });
 
                     if (response.ok) {
                         chatInput.value = '';
                         location.reload();
+                    } else {
+                        const err = await response.json();
+                        console.error("Chat API error:", err);
                     }
                 } catch (err) {
-                    console.error("Chat error:", err);
+                    console.error("Chat network error:", err);
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
                 }
             });
 

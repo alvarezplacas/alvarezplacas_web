@@ -1,80 +1,117 @@
 ---
 /**
- * Gestión de Vendedores.
- * Propiedad del Agente Antigravity (Google Deepmind).
+ * Gestión de Vendedores — Con manejo de contraseñas y estado.
+ * Accessible from /admin/vendedores
  */
-import AdminLayout from '../../layouts/AdminLayout.astro';
-import { directus, readItems } from '../../../conexiones/directus.js';
+import AdminLayout from '@dashboard/layouts/AdminLayout.astro';
+import { directus, readItems } from '@conexiones/directus.js';
 
 let vendedores = [];
 let errorMsg = null;
 
 try {
-    const res = await directus.request(readItems('vendedores', {
+    vendedores = await directus.request(readItems('vendedores', {
         sort: ['id'],
-        fields: ['*']
-    }));
-    vendedores = (res || []).map((v) => ({
-        ...v,
-        // CORRECCIÓN: El campo en Directus es 'nombre', no 'name'
-        nombre: v.nombre || v.name || v.Nombre || 'Sin nombre',
-        whatsapp: v.whatsapp || v.Whatsapp || 'N/A',
-        estado: 'Activo'
+        fields: ['id', 'name', 'email', 'whatsapp', 'role', 'status', 'password_hash']
     }));
 } catch (e: any) {
-    errorMsg = (e && typeof e === 'object' && 'errors' in e) ? JSON.stringify(e.errors) : (e instanceof Error ? e.message : 'Error de conexión');
-    console.error("[Backend Sellers Error]:", errorMsg);
+    errorMsg = e?.message || 'Error de conexión con Directus';
+    console.error("[Admin Vendedores Error]:", errorMsg);
 }
 ---
 
 <AdminLayout title="Gestión de Vendedores">
+    
+    <!-- Header -->
     <div class="mb-8 flex justify-between items-center">
         <div>
             <h2 class="text-3xl font-black text-white mb-2 uppercase tracking-tight">Equipo de <span class="text-primary italic">Ventas</span></h2>
-            <p class="text-gray-400 font-medium">Gestión de ventanillas y atención al cliente.</p>
+            <p class="text-gray-400 font-medium">Administrá contraseñas, estado y permisos del equipo comercial.</p>
         </div>
-        <button id="open-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all flex items-center gap-2">
+        <button id="open-new-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-blue-600/20">
             <i class="fas fa-plus"></i> Nuevo Vendedor
         </button>
     </div>
 
-    <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+    <!-- Toast -->
+    <div id="toast" class="fixed top-6 right-6 z-[200] hidden">
+        <div id="toast-inner" class="flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-2xl backdrop-blur text-sm font-bold">
+            <i id="toast-icon" class="fas"></i>
+            <span id="toast-msg"></span>
+        </div>
+    </div>
+
+    <!-- Tabla de vendedores -->
+    <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-white/2 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-800">
                     <th class="px-6 py-4">ID</th>
-                    <th class="px-6 py-4">Nombre</th>
-                    <th class="px-6 py-4 text-center">WhatsApp</th>
-                    <th class="px-6 py-4">Estado</th>
+                    <th class="px-6 py-4">Vendedor</th>
+                    <th class="px-6 py-4">WhatsApp</th>
+                    <th class="px-6 py-4 text-center">Contraseña</th>
+                    <th class="px-6 py-4 text-center">Rol</th>
+                    <th class="px-6 py-4 text-center">Estado</th>
                     <th class="px-6 py-4 text-right">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-800">
                 {vendedores.length === 0 ? (
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-gray-500 italic">
-                            <i class="fas fa-plug mb-2 block text-xl"></i>
-                            No se detectaron vendedores. Verifica la conexión con Directus.
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500 italic">
+                            {errorMsg ? `❌ ${errorMsg}` : 'No hay vendedores registrados.'}
                         </td>
                     </tr>
                 ) : vendedores.map(v => (
-                    <tr class="hover:bg-white/2 transition-colors group">
-                        <td class="px-6 py-4 text-sm font-mono text-gray-500">{v.id}</td>
+                    <tr class="hover:bg-white/2 transition-colors group" data-id={v.id}>
+                        <td class="px-6 py-4 text-sm font-mono text-gray-500">#{v.id}</td>
                         <td class="px-6 py-4">
-                            <p class="text-white font-bold text-sm">{v.nombre}</p>
-                            <p class="text-[10px] text-gray-500">{v.email || 'Sin Correo'}</p>
+                            <p class="text-white font-bold text-sm">{v.name}</p>
+                            <p class="text-[10px] text-gray-500">{v.email}</p>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-400">{v.whatsapp || '—'}</td>
+                        <td class="px-6 py-4 text-center">
+                            {v.password_hash ? (
+                                <span class="bg-green-500/10 text-green-500 px-2 py-1 rounded-lg text-[10px] font-black uppercase">✅ Configurada</span>
+                            ) : (
+                                <span class="bg-red-500/10 text-red-500 px-2 py-1 rounded-lg text-[10px] font-black uppercase">⚠️ Sin clave</span>
+                            )}
                         </td>
                         <td class="px-6 py-4 text-center">
-                            <span class={`text-sm font-medium ${v.whatsapp === 'N/A' ? 'text-gray-600' : 'text-green-500'}`}>
-                                {v.whatsapp}
+                            <span class={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${v.role === 'admin' ? 'bg-purple-500/10 text-purple-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                                {v.role || 'seller'}
                             </span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded text-[10px] font-black uppercase">Activo</span>
+                        <td class="px-6 py-4 text-center">
+                            <span class={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${v.status === 'active' ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'}`}>
+                                {v.status === 'active' ? 'Activo' : 'Inactivo'}
+                            </span>
                         </td>
-                        <td class="px-6 py-4 text-right">
-                            <a href={`https://wa.me/${v.whatsapp?.replace(/\D/g, '')}`} target="_blank" class="p-2 hover:text-green-500 transition-colors"><i class="fab fa-whatsapp"></i></a>
-                            <button class="p-2 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
+                        <td class="px-6 py-4 text-right flex items-center justify-end gap-2">
+                            <!-- Botón cambiar contraseña -->
+                            <button
+                                class="change-pass-btn bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-black px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all"
+                                data-id={v.id}
+                                data-name={v.name}
+                                title="Cambiar contraseña"
+                            >
+                                <i class="fas fa-key mr-1"></i>Contraseña
+                            </button>
+                            <!-- Botón activar/desactivar -->
+                            <button
+                                class="toggle-status-btn px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all"
+                                data-id={v.id}
+                                data-status={v.status}
+                                class:list={[
+                                    v.status === 'active'
+                                        ? 'bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-black'
+                                        : 'bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-black'
+                                ]}
+                                title={v.status === 'active' ? 'Desactivar vendedor' : 'Activar vendedor'}
+                            >
+                                <i class={`fas ${v.status === 'active' ? 'fa-ban' : 'fa-check'} mr-1`}></i>
+                                {v.status === 'active' ? 'Desactivar' : 'Activar'}
+                            </button>
                         </td>
                     </tr>
                 ))}
@@ -82,65 +119,243 @@ try {
         </table>
     </div>
 
-    <!-- Modal Nuevo Vendedor -->
-    <div id="seller-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="bg-[#1a1a1a] border border-gray-800 w-full max-w-md rounded-2xl p-8 shadow-2xl transform scale-95 transition-all" id="modal-content">
-            <h3 class="text-2xl font-black text-white mb-2 uppercase italic tracking-tight">Nuevo <span class="text-primary">Vendedor</span></h3>
-            <p class="text-gray-500 text-sm mb-6">Registra un nuevo integrante en el equipo comercial.</p>
+    <!-- ===== MODAL: Cambiar contraseña ===== -->
+    <div id="pass-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-[#111] border border-gray-800 w-full max-w-md rounded-2xl p-8 shadow-2xl">
+            <h3 class="text-xl font-black text-white mb-1 uppercase">Cambiar <span class="text-orange-400 italic">Contraseña</span></h3>
+            <p id="pass-modal-subtitle" class="text-gray-500 text-sm mb-6"></p>
 
-            <form id="seller-form" class="space-y-4">
+            <form id="pass-form" class="space-y-4">
+                <input type="hidden" id="pass-vendedor-id" />
                 <div>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Nombre Completo</label>
-                    <input type="text" name="nombre" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-primary transition-all outline-none" placeholder="Ariel Santivañez" />
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Nueva Contraseña</label>
+                    <div class="relative">
+                        <input
+                            type="password"
+                            id="nueva-pass"
+                            required
+                            minlength="6"
+                            placeholder="Mínimo 6 caracteres"
+                            class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 pr-12 text-white text-sm focus:border-orange-400 transition-all outline-none"
+                        />
+                        <button type="button" onclick="togglePass('nueva-pass', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-400 transition-colors p-1">
+                            <i class="fa-solid fa-eye text-sm"></i>
+                        </button>
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Correo Electrónico</label>
-                    <input type="email" name="email" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-primary transition-all outline-none" placeholder="ariel@alvarezplacas.com.ar" />
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Confirmar Contraseña</label>
+                    <div class="relative">
+                        <input
+                            type="password"
+                            id="confirmar-pass"
+                            required
+                            minlength="6"
+                            placeholder="Repetí la contraseña"
+                            class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 pr-12 text-white text-sm focus:border-orange-400 transition-all outline-none"
+                        />
+                        <button type="button" onclick="togglePass('confirmar-pass', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-400 transition-colors p-1">
+                            <i class="fa-solid fa-eye text-sm"></i>
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">WhatsApp (Con código de país)</label>
-                    <input type="text" name="whatsapp" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-primary transition-all outline-none" placeholder="54911..." />
+                <p id="pass-error" class="text-red-500 text-xs hidden">Las contraseñas no coinciden</p>
+                <div class="pt-2 flex gap-3">
+                    <button type="button" id="close-pass-modal" class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl font-bold transition-all text-sm uppercase">Cancelar</button>
+                    <button type="submit" id="pass-submit-btn" class="flex-1 py-3 bg-orange-500 hover:bg-white text-white hover:text-black rounded-xl font-black transition-all text-sm uppercase shadow-lg shadow-orange-500/20">
+                        Guardar Contraseña
+                    </button>
                 </div>
+            </form>
+        </div>
+    </div>
 
-                <div class="pt-4 flex gap-3">
-                    <button type="button" id="close-modal-btn" class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl font-bold transition-all text-sm uppercase">Cancelar</button>
-                    <button type="submit" class="flex-1 py-3 bg-primary hover:bg-white text-white hover:text-black rounded-xl font-black transition-all text-sm uppercase shadow-lg shadow-primary/20">Registrar</button>
+    <!-- ===== MODAL: Nuevo Vendedor ===== -->
+    <div id="new-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-[#111] border border-gray-800 w-full max-w-md rounded-2xl p-8 shadow-2xl">
+            <h3 class="text-xl font-black text-white mb-1 uppercase">Nuevo <span class="text-blue-400 italic">Vendedor</span></h3>
+            <p class="text-gray-500 text-sm mb-6">El vendedor podrá ingresar con estas credenciales desde /login</p>
+
+            <form id="new-seller-form" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Nombre Completo</label>
+                    <input type="text" name="name" required placeholder="Ej: Ariel García" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-400 transition-all outline-none" />
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Email</label>
+                    <input type="email" name="email" required placeholder="vendedor@alvarezplacas.com.ar" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-400 transition-all outline-none" />
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">WhatsApp</label>
+                    <input type="text" name="whatsapp" placeholder="5491112345678" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-400 transition-all outline-none" />
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Contraseña Inicial</label>
+                    <input type="password" name="password" required minlength="6" placeholder="Mínimo 6 caracteres" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-400 transition-all outline-none" />
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Rol</label>
+                    <select name="role" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-400 transition-all outline-none">
+                        <option value="seller">Vendedor (seller)</option>
+                        <option value="admin">Administrador (admin)</option>
+                    </select>
+                </div>
+                <div class="pt-2 flex gap-3">
+                    <button type="button" id="close-new-modal" class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl font-bold transition-all text-sm uppercase">Cancelar</button>
+                    <button type="submit" id="new-submit-btn" class="flex-1 py-3 bg-blue-600 hover:bg-white text-white hover:text-black rounded-xl font-black transition-all text-sm uppercase shadow-lg shadow-blue-600/20">
+                        Crear Vendedor
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <script is:inline>
-        const modal = document.getElementById('seller-modal');
-        const openBtn = document.getElementById('open-modal-btn');
-        const closeBtn = document.getElementById('close-modal-btn');
-        const modalContent = document.getElementById('modal-content');
-        const form = document.getElementById('seller-form');
+        // ─── Toggle mostrar/ocultar contraseña ───────────────────────
+        function togglePass(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon  = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+                btn.classList.add('text-orange-400');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+                btn.classList.remove('text-orange-400');
+            }
+        }
 
-        openBtn.onclick = () => {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => modalContent.classList.remove('scale-95'), 10);
-        };
+        // ─── Toast ───────────────────────────────────────────────────
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const inner = document.getElementById('toast-inner');
+            const icon  = document.getElementById('toast-icon');
+            const text  = document.getElementById('toast-msg');
 
-        const closeModal = () => {
-            modalContent.classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.remove('flex');
-                modal.classList.add('hidden');
-            }, 200);
-        };
+            text.textContent = msg;
+            if (type === 'success') {
+                inner.className = 'flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-2xl backdrop-blur text-sm font-bold bg-green-500/10 border-green-500/20 text-green-400';
+                icon.className = 'fas fa-check-circle';
+            } else {
+                inner.className = 'flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-2xl backdrop-blur text-sm font-bold bg-red-500/10 border-red-500/20 text-red-400';
+                icon.className = 'fas fa-exclamation-circle';
+            }
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 4000);
+        }
 
-        closeBtn.onclick = closeModal;
-        modal.onclick = (e) => { if(e.target === modal) closeModal(); };
+        // ─── Modal: Cambiar Contraseña ────────────────────────────────
+        const passModal = document.getElementById('pass-modal');
+        const passForm  = document.getElementById('pass-form');
+        const closePassBtn = document.getElementById('close-pass-modal');
 
-        form.onsubmit = async (e) => {
+        document.querySelectorAll('.change-pass-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('pass-vendedor-id').value = btn.dataset.id;
+                document.getElementById('pass-modal-subtitle').textContent = `Vendedor: ${btn.dataset.name}`;
+                document.getElementById('nueva-pass').value = '';
+                document.getElementById('confirmar-pass').value = '';
+                document.getElementById('pass-error').classList.add('hidden');
+                passModal.classList.remove('hidden');
+                passModal.classList.add('flex');
+            });
+        });
+
+        closePassBtn.onclick = () => { passModal.classList.add('hidden'); passModal.classList.remove('flex'); };
+        passModal.onclick = (e) => { if (e.target === passModal) closePassBtn.click(); };
+
+        passForm.onsubmit = async (e) => {
             e.preventDefault();
-            const btn = form.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            const pass1 = document.getElementById('nueva-pass').value;
+            const pass2 = document.getElementById('confirmar-pass').value;
+            const errEl = document.getElementById('pass-error');
+            const btn   = document.getElementById('pass-submit-btn');
+            const id    = document.getElementById('pass-vendedor-id').value;
 
-            const formData = new FormData(form);
+            if (pass1 !== pass2) {
+                errEl.classList.remove('hidden');
+                return;
+            }
+            errEl.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+
+            try {
+                const res = await fetch('/api/admin/set-seller-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sellerId: id, password: pass1 })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    closePassBtn.click();
+                    showToast('✅ Contraseña actualizada correctamente');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast('❌ Error: ' + result.error, 'error');
+                }
+            } catch (err) {
+                showToast('❌ Error de conexión', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar Contraseña';
+            }
+        };
+
+        // ─── Botones: Activar / Desactivar ───────────────────────────
+        document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const currentStatus = btn.dataset.status;
+                const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+                const accion = newStatus === 'active' ? 'activar' : 'desactivar';
+
+                if (!confirm(`¿Confirmas ${accion} este vendedor?`)) return;
+
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                try {
+                    const res = await fetch('/api/admin/toggle-seller-status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sellerId: id, status: newStatus })
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        showToast(`Vendedor ${newStatus === 'active' ? 'activado ✅' : 'desactivado 🔴'}`);
+                        setTimeout(() => location.reload(), 1200);
+                    } else {
+                        showToast('❌ Error: ' + result.error, 'error');
+                    }
+                } catch (err) {
+                    showToast('❌ Error de conexión', 'error');
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        });
+
+        // ─── Modal: Nuevo Vendedor ────────────────────────────────────
+        const newModal = document.getElementById('new-modal');
+        document.getElementById('open-new-modal-btn').onclick = () => {
+            newModal.classList.remove('hidden');
+            newModal.classList.add('flex');
+        };
+        document.getElementById('close-new-modal').onclick = () => {
+            newModal.classList.add('hidden');
+            newModal.classList.remove('flex');
+        };
+        newModal.onclick = (e) => { if (e.target === newModal) document.getElementById('close-new-modal').click(); };
+
+        document.getElementById('new-seller-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('new-submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creando...';
+
+            const formData = new FormData(e.target);
             const data = Object.fromEntries(formData);
 
             try {
@@ -150,17 +365,18 @@ try {
                     body: JSON.stringify(data)
                 });
                 const result = await res.json();
-                if(result.success) {
-                    window.location.reload();
+                if (result.success) {
+                    showToast('✅ Vendedor creado exitosamente');
+                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    alert('Error: ' + result.error);
+                    showToast('❌ ' + result.error, 'error');
                     btn.disabled = false;
-                    btn.innerHTML = 'Registrar';
+                    btn.innerHTML = 'Crear Vendedor';
                 }
             } catch (err) {
-                console.error(err);
+                showToast('❌ Error de conexión', 'error');
                 btn.disabled = false;
-                btn.innerHTML = 'Registrar';
+                btn.innerHTML = 'Crear Vendedor';
             }
         };
     </script>

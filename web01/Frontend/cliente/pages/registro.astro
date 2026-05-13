@@ -9,8 +9,8 @@ import { directus, readItems } from '@conexiones/directus.js';
 let sellers = [];
 try {
     sellers = await directus.request(readItems('vendedores', {
-        fields: ['id', 'name'],
-        sort: ['id']
+        fields: ['id', 'name'], 
+        sort: ['name']
     }));
 } catch (e) {
     console.error("Error fetching sellers for registration:", e);
@@ -127,6 +127,13 @@ try {
                                 Registrarme en el Club <i class="fas fa-arrow-right"></i>
                             </button>
                         </div>
+
+                        <div class="text-center pt-4">
+                            <p class="text-xs text-gray-500">
+                                ¿Ya tienes cuenta? 
+                                <a href="/login" class="text-primary font-bold hover:underline ml-1">Inicia sesión aquí</a>
+                            </p>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -169,6 +176,41 @@ try {
                     setTimeout(() => toast.remove(), 500);
                 }, 6000);
             }
+
+            // Validación en tiempo real para Email y Teléfono
+            const validateField = async (input, field) => {
+                const value = input.value;
+                if (value.length < 5) return;
+
+                try {
+                    const res = await fetch('/api/auth/check-availability', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ field, value })
+                    });
+                    const result = await res.json();
+                    
+                    if (!result.available) {
+                        input.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                        input.classList.remove('border-gray-700', 'focus:border-primary');
+                        showToast(result.message, 'error');
+                    } else {
+                        input.classList.remove('border-red-500', 'ring-red-500');
+                        input.classList.add('border-gray-700');
+                    }
+                } catch (e) {}
+            };
+
+            const emailInput = document.getElementById('email');
+            const phoneInput = document.getElementById('whatsapp');
+
+            let debounceTimer;
+            [emailInput, phoneInput].forEach(input => {
+                input.addEventListener('blur', () => {
+                    const field = input.id === 'email' ? 'email' : 'phone';
+                    validateField(input, field);
+                });
+            });
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();

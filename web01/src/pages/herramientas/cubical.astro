@@ -1,0 +1,37 @@
+---
+/**
+ * CubiCal PRO - Pagina Maestra
+ * Solo accesible para clientes registrados.
+ */
+import MainLayout from '@layouts/MainLayout.astro';
+import CubicalApp from '../../Frontend/herramientas/CubicalApp.astro';
+
+// 🔐 AUTH GUARD
+const isLoggedIn = Astro.cookies.has('client_session');
+if (!isLoggedIn) {
+    return Astro.redirect('/login?from=/herramientas/cubical');
+}
+
+const clientId = parseInt(Astro.cookies.get('client_session')?.value || '0');
+---
+
+<MainLayout title="CubiCal PRO - Calculadora de Muebles | Alvarez Placas">
+    <main class="bg-[#0a0a0c] min-h-screen pt-20">
+        <CubicalApp clientId={clientId} />
+    </main>
+</MainLayout>
+
+<style is:global>
+    :root {
+        --alvarez-red: oklch(62.8% 0.25 29.23);
+        --alvarez-green: oklch(70% 0.15 140);
+        --alvarez-blue: oklch(65% 0.18 220);
+        --glass-bg: oklch(100% 0 0 / 4%);
+        --alvarez-border: oklch(100% 0 0 / 8%);
+    }
+
+    body {
+        background-color: #0a0a0c;
+        color: white;
+    }
+</style>

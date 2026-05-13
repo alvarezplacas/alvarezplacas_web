@@ -74,9 +74,26 @@ try {
                         <td class="px-6 py-4">
                             <span class="bg-green-500/10 text-green-500 px-2 py-0.5 rounded text-[10px] font-black uppercase">Activo</span>
                         </td>
-                        <td class="px-6 py-4 text-right">
-                            <button class="p-2 hover:text-primary transition-colors text-gray-500"><i class="fas fa-edit"></i></button>
-                            <button class="p-2 hover:text-red-500 transition-colors text-gray-500"><i class="fas fa-trash-alt"></i></button>
+                        <td class="px-6 py-4 text-right flex justify-end gap-2">
+                            <button 
+                                class="p-2 hover:text-primary transition-colors text-gray-500 edit-btn"
+                                data-id={c.id}
+                                data-name={c.nombre}
+                                data-email={c.email}
+                                data-phone={c.phone}
+                                data-address={c.address}
+                                data-vendedor={c.vendedor_id}
+                                data-status={c.status}
+                            >
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button 
+                                class="p-2 hover:text-red-500 transition-colors text-gray-500 delete-btn"
+                                data-id={c.id}
+                                data-name={c.nombre}
+                            >
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </td>
                     </tr>
                 ))}
@@ -84,53 +101,63 @@ try {
         </table>
     </div>
 
-    <!-- Modal Nuevo Cliente -->
+    <!-- Modal Nuevo/Editar Cliente -->
     <div id="modal-cliente" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] hidden items-center justify-center p-4">
         <div class="bg-[#1a1a1a] w-full max-w-lg rounded-3xl border border-gray-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             <div class="p-8 border-b border-gray-800 bg-white/2 flex justify-between items-center">
-                <h3 class="text-xl font-black text-white uppercase tracking-tight">Alta de <span class="text-primary italic">Cliente</span></h3>
+                <h3 class="text-xl font-black text-white uppercase tracking-tight" id="modal-title">Alta de <span class="text-primary italic">Cliente</span></h3>
                 <button id="close-modal" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times"></i></button>
             </div>
             
-            <form id="new-client-form" class="p-8 space-y-4">
+            <form id="client-form" class="p-8 space-y-4">
+                <input type="hidden" name="id" id="client-id" />
                 <div class="grid grid-cols-1 gap-4">
                     <div>
                         <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Nombre / Empresa</label>
-                        <input type="text" name="name" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Ej: Carpintería Alvarez" />
+                        <input type="text" name="name" id="field-name" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Ej: Carpintería Alvarez" />
                     </div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Correo Electrónico</label>
-                        <input type="email" name="email" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="correo@ejemplo.com" />
+                        <input type="email" name="email" id="field-email" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="correo@ejemplo.com" />
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">WhatsApp / Tel</label>
-                        <input type="text" name="phone" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="+54 9..." />
+                        <input type="text" name="phone" id="field-phone" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="+54 9..." />
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Dirección Fiscal / Obra</label>
-                    <input type="text" name="address" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Calle, Altura, Localidad" />
+                    <input type="text" name="address" id="field-address" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Calle, Altura, Localidad" />
                 </div>
 
-                <div>
-                    <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Asignar Vendedor</label>
-                    <select name="vendedor_id" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
-                        <option value="">-- Seleccionar Vendedor --</option>
-                        {vendedores.map(v => (
-                            <option value={v.id}>{v.name}</option>
-                        ))}
-                    </select>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Vendedor</label>
+                        <select name="vendedor_id" id="field-vendedor" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="">-- Seleccionar --</option>
+                            {vendedores.map(v => (
+                                <option value={v.id}>{v.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Estado</label>
+                        <select name="status" id="field-status" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <option value="active">Activo</option>
+                            <option value="inactive">Inactivo</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="pt-4">
-                    <button type="submit" class="w-full bg-primary hover:bg-white hover:text-black text-white font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs">
-                        Registrar Cliente <i class="fas fa-check-circle ml-2"></i>
+                    <button type="submit" id="submit-btn" class="w-full bg-primary hover:bg-white hover:text-black text-white font-black py-4 rounded-xl transition-all uppercase tracking-widest text-xs">
+                        Guardar Cliente <i class="fas fa-check-circle ml-2"></i>
                     </button>
-                    <p class="text-[9px] text-gray-600 text-center mt-3 uppercase italic">La contraseña inicial será: <span class="text-white">Alvarez2026</span></p>
+                    <p id="pass-notice" class="text-[9px] text-gray-600 text-center mt-3 uppercase italic">La contraseña inicial será: <span class="text-white">Alvarez2026</span></p>
                 </div>
             </form>
         </div>
@@ -144,8 +171,10 @@ try {
         const modal = document.getElementById('modal-cliente');
         const openBtn = document.getElementById('open-modal');
         const closeBtn = document.getElementById('close-modal');
-        const form = document.getElementById('new-client-form');
+        const form = document.getElementById('client-form');
         const toast = document.getElementById('toast');
+        const modalTitle = document.getElementById('modal-title');
+        const passNotice = document.getElementById('pass-notice');
 
         function showToast(msg, error = false) {
             toast.innerText = msg;
@@ -156,25 +185,72 @@ try {
             setTimeout(() => toast.classList.add('hidden'), 4000);
         }
 
-        openBtn.onclick = () => modal.classList.remove('hidden');
-        openBtn.onclick = () => modal.classList.add('flex');
-        
-        // Fix for flex/hidden
-        openBtn.addEventListener('click', () => {
+        function openModal(edit = false, data = {}) {
+            form.reset();
+            if (edit) {
+                modalTitle.innerHTML = 'Editar <span class="text-primary italic">Cliente</span>';
+                passNotice.classList.add('hidden');
+                document.getElementById('client-id').value = data.id;
+                document.getElementById('field-name').value = data.name;
+                document.getElementById('field-email').value = data.email;
+                document.getElementById('field-phone').value = data.phone || '';
+                document.getElementById('field-address').value = data.address || '';
+                document.getElementById('field-vendedor').value = data.vendedor || '';
+                document.getElementById('field-status').value = data.status || 'active';
+            } else {
+                modalTitle.innerHTML = 'Alta de <span class="text-primary italic">Cliente</span>';
+                passNotice.classList.remove('hidden');
+                document.getElementById('client-id').value = '';
+            }
             modal.style.display = 'flex';
-        });
+        }
 
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
+        openBtn.onclick = () => openModal(false);
+        closeBtn.onclick = () => modal.style.display = 'none';
+
+        // Acciones de Editar y Borrar
+        document.addEventListener('click', async (e) => {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+
+            if (editBtn) {
+                openModal(true, editBtn.dataset);
+            }
+
+            if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                const name = deleteBtn.dataset.name;
+                if (confirm(`¿Estás seguro de que quieres eliminar a ${name}?`)) {
+                    try {
+                        const res = await fetch('/api/admin/delete-client', {
+                            method: 'POST',
+                            body: JSON.stringify({ id }),
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const result = await res.json();
+                        if (res.ok) {
+                            showToast(result.message);
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            showToast(result.message, true);
+                        }
+                    } catch (err) {
+                        showToast('Error al eliminar', true);
+                    }
+                }
+            }
         });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
+            const isEdit = !!data.id;
+
+            const endpoint = isEdit ? '/api/admin/update-client' : '/api/admin/create-client';
 
             try {
-                const res = await fetch('/api/admin/create-client', {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     body: JSON.stringify(data),
                     headers: { 'Content-Type': 'application/json' }
@@ -185,18 +261,15 @@ try {
                     showToast(result.message);
                     setTimeout(() => window.location.reload(), 1500);
                 } else {
-                    showToast(result.message || 'Error al crear cliente', true);
+                    showToast(result.message || 'Error en la operación', true);
                 }
             } catch (err) {
-                showToast('Error de conexión con el servidor', true);
+                showToast('Error de conexión', true);
             }
         });
 
-        // Cerrar modal al clickear fuera
         window.onclick = (event) => {
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
+            if (event.target == modal) modal.style.display = 'none';
         }
     </script>
 </AdminLayout>

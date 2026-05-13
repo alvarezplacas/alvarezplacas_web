@@ -11,16 +11,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     try {
         const body = await request.json();
-        const { nombre, email, whatsapp } = body;
+        const { name, nombre, email, whatsapp } = body;
+        const finalName = name || nombre;
 
-        if (!nombre || !email) {
+        if (!finalName || !email) {
             return new Response(JSON.stringify({ error: 'Nombre y Email son obligatorios' }), { status: 400 });
         }
 
         const result = await directus.request(createItem('vendedores', {
-            nombre: nombre,
+            name: finalName,
             email: email,
-            whatsapp: whatsapp || null
+            whatsapp: whatsapp || null,
+            status: 'active',
+            role: 'seller',
+            password_hash: null // Usará el fallback 'Vendedor2026!'
         }));
 
         return new Response(JSON.stringify({ success: true, data: result }), { status: 200 });

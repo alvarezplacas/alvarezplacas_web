@@ -1,188 +1,100 @@
 ---
 /**
- * Hero - Sección de impacto principal con fondo dinámico.
- * Propiedad del Agente 3 (Frontend/Home).
+ * Hero - Versión Final Estandarizada (Astro 6 + Directus SDK 18).
  */
-import { directus, readItems } from '@conexiones/directus.js';
+import { directus } from '@conexiones/directus.js';
+import { readFiles } from '@directus/sdk';
 
-// ID de la carpeta 'background' en Directus
-const BG_FOLDER_ID = "ed123b78-b419-4264-a7a8-37e38432a822";
+// IDs de las subcarpetas de background
+const FOLDER_IDS = [
+    "5a7d169e-14d5-4f0b-8002-366fbc223e43", // D
+    "a491f578-f1da-48fc-889a-5f66d2e352ad", // H
+    "036c8173-5a1e-4a50-90ce-e84c49b8a2b0", // I
+    "e85b8fee-3409-4425-8312-07a2bbf786b2", // M
+    "11fcca14-6c93-4d54-8dde-59cad7ed7ddf", // R
+    "01417601-e3dc-4695-b044-073d35c2b7ae", // S
+    "05303f39-97bd-4d6c-a4c2-1792e881a6ba"  // T
+];
 
 let backgroundImages = [];
 
 try {
-    const files = await directus.request(readItems('directus_files', {
-        filter: { folder: { _eq: BG_FOLDER_ID } },
-        fields: ['id', 'title'],
-        limit: 10
+    // 🛡️ Usando readFiles (Requerido por SDK v18 para colecciones core)
+    const files = await directus.request(readFiles({
+        filter: { 
+          folder: { _in: FOLDER_IDS },
+          type: { _contains: 'image' }
+        },
+        fields: ['id'],
+        limit: 30
     }));
-    backgroundImages = (files || []).map(f => `https://admin.alvarezplacas.com.ar/assets/${f.id}`);
+    
+    backgroundImages = (files || []).map(f => `https://admin.alvarezplacas.com.ar/assets/${f.id}?quality=80&format=webp`);
+    // Mezcla aleatoria para frescura visual
+    backgroundImages = backgroundImages.sort(() => Math.random() - 0.5);
+
 } catch (e) {
-    console.error("Error cargando fondos del Hero:", e);
-    // Fallback si falla Directus
-    backgroundImages = ["/images/hero-fallback.jpg"]; 
+    console.error("❌ Error Directus SDK 18:", e);
 }
 ---
-<section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-black border-b border-white/5">
+<section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#0a0a0a]">
   
-  <!-- BACKGROUND SLIDER -->
-  <div class="absolute inset-0 z-0 overflow-hidden" id="hero-slider">
-    {backgroundImages.map((img, index) => (
-      <div 
-        class={`absolute inset-0 bg-cover bg-center transition-opacity duration-[2000ms] ease-in-out hero-slide ${index === 0 ? 'opacity-100' : 'opacity-0'}`}
-        style={`background-image: url('${img}');`}
-      >
-        <!-- Overlay de desvanecimiento hacia abajo -->
-        <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black"></div>
-      </div>
-    ))}
-    <!-- Overlay General para legibilidad -->
-    <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px]"></div>
+  <div class="absolute inset-0 z-0" id="hero-slider">
+    {backgroundImages.length > 0 ? (
+      backgroundImages.map((img, index) => (
+        <div 
+          class={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-in-out hero-slide ${index === 0 ? 'opacity-100 scale-100' : 'opacity-0 scale-110'}`}
+          style={`background-image: url('${img}');`}
+        >
+          <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#0a0a0a]"></div>
+        </div>
+      ))
+    ) : (
+      <div class="absolute inset-0 bg-gradient-to-br from-neutral-900 to-black"></div>
+    )}
   </div>
 
-  <div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center">
-    <div class="text-center max-w-4xl mx-auto mb-12">
-      <h2 class="text-5xl md:text-8xl font-black text-white tracking-tighter mb-6 uppercase italic leading-none">
+  <div class="relative z-10 w-full max-w-7xl mx-auto px-4 py-20 text-center">
+      <h2 class="text-6xl md:text-9xl font-black text-white tracking-tighter mb-8 uppercase italic leading-[0.8] animate-fade-in">
         Inspiración <br/> 
-        <span class="text-primary drop-shadow-[0_0_30px_rgba(255,40,0,0.6)]">Tecnológica</span>
+        <span class="text-primary drop-shadow-[0_0_50px_rgba(255,77,0,0.7)]">Tecnológica</span>
       </h2>
-      <p class="text-xl md:text-2xl text-gray-200 font-medium mb-10 max-w-2xl mx-auto drop-shadow-lg">
-        La mejor calidad en cortes de melamina y soluciones integrales para el mobiliario moderno.
+      <p class="text-xl md:text-3xl text-white/90 font-medium mb-12 max-w-2xl mx-auto drop-shadow-2xl">
+        Innovación en cortes y materiales para tus proyectos.
       </p>
       
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-5">
-        <a href="/presupuestador" class="w-full sm:w-auto px-12 py-5 bg-primary text-black font-black rounded-2xl shadow-[0_20px_50px_-10px_rgba(255,77,0,0.5)] hover:scale-105 hover:-translate-y-1 transition-all duration-500 text-lg uppercase tracking-widest">
-          Presupuestar Ahora
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+        <a href="/presupuestador" class="w-full sm:w-auto px-16 py-6 bg-primary text-black font-black rounded-2xl shadow-2xl hover:scale-105 transition-all text-xl uppercase tracking-widest">
+          Presupuestar
         </a>
-        <a href="/contacto" class="w-full sm:w-auto px-12 py-5 bg-white/10 border border-white/20 backdrop-blur-xl text-white font-black rounded-2xl hover:bg-white/20 transition-all duration-500 text-lg uppercase tracking-widest">
-          Contactar
+        <a href="/contacto" class="w-full sm:w-auto px-16 py-6 bg-white/5 border border-white/20 backdrop-blur-2xl text-white font-black rounded-2xl hover:bg-white/10 transition-all text-xl uppercase tracking-widest">
+          Contacto
         </a>
       </div>
-    </div>
-
-    <!-- Widgets Vanguardia Rediseñados -->
-    <div class="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-      <nav class="flex flex-col gap-4 w-full">
-        <a href="/catalogo" class="flex items-center gap-4 w-full p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 hover:border-primary/50 transition-all group">
-          <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-white/5 text-white group-hover:text-primary transition-colors border border-white/5">
-            <i class="fas fa-book-open text-2xl"></i>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-white font-black text-xl uppercase tracking-tighter">Catálogo interactivo</span>
-            <span class="text-gray-400 text-sm">Explorá todos nuestros materiales</span>
-          </div>
-          <i class="fas fa-arrow-right ml-auto text-white/20 group-hover:text-primary group-hover:translate-x-2 transition-all"></i>
-        </a>
-        
-        <a href="/presupuestador" class="flex items-center gap-4 w-full p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 hover:border-primary/50 transition-all group">
-          <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-white/5 text-white group-hover:text-primary transition-colors border border-white/5">
-            <i class="fas fa-calculator text-2xl"></i>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-white font-black text-xl uppercase tracking-tighter">Presupuesto Online</span>
-            <span class="text-gray-400 text-sm">Cotizá tus cortes en segundos</span>
-          </div>
-          <i class="fas fa-arrow-right ml-auto text-white/20 group-hover:text-primary group-hover:translate-x-2 transition-all"></i>
-        </a>
-      </nav>
-
-      <!-- Status Card -->
-      <div id="live-status-card" class="relative overflow-hidden w-full p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-2xl flex flex-col items-center justify-center text-center transition-all duration-700">
-        <div id="status-glow" class="absolute top-0 right-0 w-40 h-40 blur-[80px] rounded-full opacity-20 transition-colors duration-500"></div>
-        <div class="relative z-10 w-full flex flex-col items-center gap-5">
-          <div class="flex items-center justify-center gap-4">
-            <div id="status-indicator" class="relative flex h-4 w-4">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
-              <span id="status-dot" class="relative inline-flex rounded-full h-4 w-4 bg-gray-500"></span>
-            </div>
-            <span id="live-status-text" class="text-3xl font-black tracking-tighter text-white uppercase italic">
-              Cargando...
-            </span>
-          </div>
-          <p class="text-gray-400 text-base font-medium">Av. Vergara 1605, Villa Tesei, Hurlingham</p>
-          <a href="https://www.google.com/maps/search/?api=1&query=Alvarez+Placas+Av.+Vergara+1605+Villa+Tesei" target="_blank" class="px-10 py-3 rounded-xl bg-white/10 hover:bg-primary hover:text-black border border-white/20 text-white text-sm font-black transition-all uppercase tracking-widest shadow-xl">
-            <i class="fas fa-map-marker-alt mr-2"></i> Ver cómo llegar
-          </a>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 
-<style>
-  .status-closed { border-color: rgba(255, 60, 60, 0.3); background-color: rgba(255, 0, 0, 0.05); }
-  .status-closed #status-dot { @apply bg-red-500; box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
-  .status-closed span.animate-ping { @apply bg-red-400; }
-  
-  .status-open { border-color: rgba(0, 255, 127, 0.3); background-color: rgba(0, 255, 127, 0.05); }
-  .status-open #status-dot { @apply bg-emerald-500; box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); }
-  .status-open span.animate-ping { @apply bg-emerald-400; }
-
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fade-in { animation: fade-in 0.8s ease-out forwards; }
-</style>
-
 <script>
-  // Lógica del Slider de Fondo
-  function initHeroSlider() {
+  function runSlider() {
     const slides = document.querySelectorAll('.hero-slide');
     if (slides.length <= 1) return;
-
-    let currentIndex = 0;
+    let current = 0;
     setInterval(() => {
-      slides[currentIndex].classList.replace('opacity-100', 'opacity-0');
-      currentIndex = (currentIndex + 1) % slides.length;
-      slides[currentIndex].classList.replace('opacity-0', 'opacity-100');
-    }, 3000);
+      slides[current].classList.replace('opacity-100', 'opacity-0');
+      slides[current].classList.add('scale-110');
+      current = (current + 1) % slides.length;
+      slides[current].classList.replace('opacity-0', 'opacity-100');
+      slides[current].classList.remove('scale-110');
+    }, 5000);
   }
-
-  // Lógica de Estado de Negocio
-  function updateBusinessStatus() {
-    const now = new Date();
-    const targetOffset = -3 * 60; // Buenos Aires
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const localNow = new Date(utc + (60000 * targetOffset));
-    const dayOfWeek = localNow.getDay();
-    const hour = localNow.getHours() + (localNow.getMinutes() / 60);
-
-    let isOpen = false;
-    const weekdayOpen = 8.0, weekdayClose = 17.0, lunchStart = 13.0, lunchEnd = 14.0;
-    const satOpen = 8.0, satClose = 13.0;
-
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        if (hour >= weekdayOpen && hour < lunchStart) isOpen = true;
-        else if (hour >= lunchEnd && hour < weekdayClose) isOpen = true;
-    } else if (dayOfWeek === 6) {
-        if (hour >= satOpen && hour < satClose) isOpen = true;
-    }
-
-    const card = document.getElementById('live-status-card');
-    const textEl = document.getElementById('live-status-text');
-    if (card && textEl) {
-        card.className = "relative overflow-hidden w-full p-8 rounded-3xl backdrop-blur-2xl flex flex-col items-center justify-center text-center transition-all duration-700 border " + (isOpen ? "status-open" : "status-closed");
-        textEl.innerHTML = isOpen ? "¡Abierto ahora!" : "¡Cerrado ahora!";
-    }
-  }
-
-  // Inicializar todo
-  document.addEventListener('astro:page-load', () => {
-    initHeroSlider();
-    updateBusinessStatus();
-  });
-
-  // Fallback para carga sin ViewTransitions
-  if (document.readyState === 'complete') {
-    initHeroSlider();
-    updateBusinessStatus();
-  } else {
-    window.addEventListener('load', () => {
-      initHeroSlider();
-      updateBusinessStatus();
-    });
-  }
-
-  setInterval(updateBusinessStatus, 60000);
+  document.addEventListener('astro:page-load', runSlider);
+  runSlider();
 </script>
+
+<style>
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in { animation: fade-in 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+</style>

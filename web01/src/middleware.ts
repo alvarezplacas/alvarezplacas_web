@@ -1,45 +1,44 @@
 import { defineMiddleware } from 'astro:middleware';
-import { directus, readItems } from '@conexiones/directus.js';
 
 export const onRequest = defineMiddleware(async (context: any, next: any) => {
-    const isPublicStatic = context.url.pathname.startsWith('/_astro') || context.url.pathname.startsWith('/favicon');
-    const isMaintenancePage = context.url.pathname === '/mantenimiento';
-    const isAdmin = context.url.pathname.startsWith('/admin');
-    const isApi = context.url.pathname.startsWith('/api');
+    const path = context.url.pathname;
 
-    if (context.url.pathname === '/administrador' || context.url.pathname === '/administrador/') {
-        return context.redirect('/admin');
+    // Rutas públicas que no requieren verificación
+    const isPublic = path.startsWith('/_astro') || path.startsWith('/favicon') || path === '/mantenimiento';
+    const isLoginPage = path === '/login' || path === '/admin/login' || path === '/vendedor/login';
+    const isApiRoute = path.startsWith('/api');
+
+    // Extraer identidades de sesión si existen (Globalmente)
+    const sellerSession = context.cookies.get('seller_session');
+    if (sellerSession) context.locals.vendedor_id = sellerSession.value;
+
+    const clientSession = context.cookies.get('client_session');
+    if (clientSession) context.locals.cliente_id = clientSession.value;
+
+    if (isPublic || isLoginPage || isApiRoute) {
+        return next();
     }
 
-    let isMaintenanceActive = false;
-    try {
-        // Usar Directus (resiliente) en lugar de query directo
-        const settings = await directus.request(readItems('site_settings', {
-            filter: { key: { _eq: 'maintenance_mode' } },
-            limit: 1
-        }));
-        if (settings && settings.length > 0) isMaintenanceActive = settings[0].value === 'true';
-    } catch (e) { 
-        console.error("[Middleware] Falló la verificación de mantenimiento:", e);
-    }
-
-    const isAdminLogin = context.url.pathname === '/admin/login';
-    const isClient = context.url.pathname.startsWith('/cliente');
-    const isVendedor = context.url.pathname.startsWith('/vendedor');
-    const isClientLogin = context.url.pathname === '/login'; 
-
-    if (isAdmin && !isAdminLogin) {
+    // Proteger rutas /admin/*
+    if (path.startsWith('/admin')) {
         const session = context.cookies.get('admin_session');
-        if (!session || session.value !== 'authenticated_javier') return context.redirect('/admin/login');
+        if (!session || session.value !== 'authenticated_javier') {
+            return context.redirect('/login');
+        }
     }
 
-    if (isVendedor && context.url.pathname !== '/vendedor/login') {
-        const session = context.cookies.get('seller_session');
-        if (!session) return context.redirect('/vendedor/login');
+    // Proteger rutas /vendedor/*
+    if (path.startsWith('/vendedor')) {
+        if (!sellerSession) {
+            return context.redirect('/login');
+        }
     }
 
-    if (isMaintenanceActive && !isMaintenancePage && !isAdmin && !isApi && !isPublicStatic) {
-        return context.redirect('/mantenimiento');
+    // Proteger rutas /cliente/*
+    if (path.startsWith('/cliente')) {
+        if (!clientSession) {
+            return context.redirect('/login');
+        }
     }
 
     return next();

@@ -19,12 +19,17 @@ export function initCatalog() {
     const mPriceMain = document.getElementById('modalPriceMain');
     const mWhatsAppBtn = document.getElementById('modalWhatsAppBtn');
     const mSmartMatchBtn = document.getElementById('modalSmartMatchBtn');
+    const mEstadoContainer = document.getElementById('modalEstadoContainer');
 
     if (!searchInput || !cards.length) return;
 
     let currentBrand = 'Todos';
     let currentBucket = 'Todo';
     let currentSearchTerm = '';
+    let currentPage = 1;
+    const itemsPerPage = 25;
+
+    const paginationContainer = document.getElementById('paginationContainer');
 
     function updateBrandButtons(bucket) {
         const validBrands = window.BRANDS_BY_BUCKET[bucket] || [];
@@ -75,6 +80,7 @@ export function initCatalog() {
             target.classList.add('bg-primary', 'text-black', 'border-primary', 'active');
 
             currentBucket = target.dataset.bucket;
+            currentPage = 1; // Reset a pag 1
             updateBrandButtons(currentBucket);
             filterCards();
         });
@@ -92,31 +98,75 @@ export function initCatalog() {
             target.classList.add('bg-gray-800', 'text-white', 'border-gray-600', 'shadow-lg', 'active');
 
             currentBrand = target.dataset.filter;
+            currentPage = 1; // Reset a pag 1
             filterCards();
         });
     });
 
     searchInput.addEventListener('input', (e) => {
         currentSearchTerm = e.target.value.toLowerCase().trim();
+        currentPage = 1; // Reset a pag 1
         filterCards();
     });
 
+    function renderPagination(totalItems) {
+        if (!paginationContainer) return;
+        paginationContainer.innerHTML = '';
+        
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        if (totalPages <= 1) return;
+
+        // Limitar número de botones visibles si hay demasiados (ej: 10 max)
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, startPage + 4);
+        
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
+
+        // Botón Anterior
+        if (currentPage > 1) {
+            createPageBtn('Prev', currentPage - 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            createPageBtn(i, i, i === currentPage);
+        }
+
+        // Botón Siguiente
+        if (currentPage < totalPages) {
+            createPageBtn('Next', currentPage + 1);
+        }
+    }
+
+    function createPageBtn(label, pageNum, isActive = false) {
+        const btn = document.createElement('button');
+        btn.className = `px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 border ${
+            isActive 
+            ? 'bg-primary text-black border-primary shadow-lg shadow-primary/20' 
+            : 'bg-[#151515] text-gray-500 border-gray-800 hover:border-gray-600 hover:text-white'
+        }`;
+        btn.textContent = label;
+        btn.onclick = () => {
+            currentPage = pageNum;
+            filterCards();
+            window.scrollTo({ top: searchInput.offsetTop - 100, behavior: 'smooth' });
+        };
+        paginationContainer.appendChild(btn);
+    }
+
     function filterCards() {
-        let visibleCount = 0;
+        let matchingItems = [];
         const searchTerms = currentSearchTerm.split(' ').filter(term => term.length > 0);
 
         cards.forEach(card => {
             const cardBucket = card.dataset.bucket;
             const cardBrand = card.dataset.brand;
 
-            // 1. Filtrado por Grandes Grupos (Buckets)
             const matchesBucket = currentBucket === 'Todo' || cardBucket === currentBucket;
-            
-            // 2. Filtrado por Marca (Case-Insensitive)
             const matchesBrand = currentBrand === 'Todos' || 
                                cardBrand.toUpperCase().trim() === currentBrand.toUpperCase().trim();
             
-            // 3. Búsqueda SEGMENTADA (solo busca dentro del bucket activo)
             let matchesSearch = true;
             if (searchTerms.length > 0) {
                 const cardDataString = card.dataset.search || "";
@@ -124,15 +174,24 @@ export function initCatalog() {
             }
 
             if (matchesBucket && matchesBrand && matchesSearch) {
-                card.style.display = 'flex';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
+                matchingItems.push(card);
             }
+            card.style.display = 'none'; // Ocultar todos por defecto
         });
 
+        // Aplicar Paginación sobre los que matchean
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageItems = matchingItems.slice(start, end);
+
+        pageItems.forEach(card => {
+            card.style.display = 'flex';
+        });
+
+        renderPagination(matchingItems.length);
+
         if (noResults) {
-            if (visibleCount === 0) noResults.classList.remove('hidden');
+            if (matchingItems.length === 0) noResults.classList.remove('hidden');
             else noResults.classList.add('hidden');
         }
     }
@@ -161,6 +220,25 @@ export function initCatalog() {
             if (mCategory) {
                 mCategory.textContent = data.category;
                 mCategory.className = `text-xs font-bold uppercase tracking-widest ${isTablero ? 'text-primary' : (isHerramienta ? 'text-red-500' : 'text-blue-400')}`;
+            }
+
+            if (mEstadoContainer) {
+                mEstadoContainer.innerHTML = '';
+                if (data.estado) {
+                    const states = Array.isArray(data.estado) ? data.estado : [data.estado];
+                    states.forEach(tag => {
+                        const badge = document.createElement('span');
+                        const colorClass = 
+                            tag === 'Stock' ? 'bg-[#c0c0c0] text-black' :
+                            tag === 'Sin Stock' ? 'bg-red-900/30 text-red-500 border border-red-500/20' :
+                            tag === 'Outlet' ? 'bg-[#FFD60A] text-black' :
+                            tag === 'Nuevo' ? 'bg-[#007AFF] text-white' :
+                            tag === 'Descontinuado' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400';
+                        badge.className = `text-[9px] font-black px-2 py-1 rounded uppercase tracking-tighter shadow-sm ${colorClass}`;
+                        badge.textContent = tag;
+                        mEstadoContainer.appendChild(badge);
+                    });
+                }
             }
 
             // Fill Specs & Interactive Selectors
@@ -284,10 +362,10 @@ export function initCatalog() {
                 let targetVariant = null;
                 if (isTablero && data.variants) {
                     const matchingVariants = data.variants.filter(v => v.espesor === esp && v.soporte.toUpperCase() === sup);
-                    // Prioritize variants that have a price configured
+                    // Prioritize variants that have final price or cost configured
                     targetVariant = matchingVariants.find(v => 
-                        (v.precio_L2 && !isNaN(parseFloat(v.precio_L2)) && parseFloat(v.precio_L2) > 0) || 
-                        (v.precio_L1 && !isNaN(parseFloat(v.precio_L1)) && parseFloat(v.precio_L1) > 0)
+                        (v.precio_efectivo && parseFloat(v.precio_efectivo) > 0) || 
+                        (v.precio_L1 && parseFloat(v.precio_L1) > 0)
                     );
                     // Fallback to the first matching variant if none have prices
                     if (!targetVariant && matchingVariants.length > 0) {
@@ -298,19 +376,34 @@ export function initCatalog() {
                 }
 
                 if (targetVariant) {
-                    const l1 = parseFloat(targetVariant.precio_L1);
-                    const l2 = parseFloat(targetVariant.precio_L2);
+                    let finalPrice = null;
+                    let isEfectivo = false;
 
-                    if (l2 && !isNaN(l2) && l2 > 0) {
-                        mPriceMain.textContent = formatCurrency(l2);
+                    const pEfectivo = parseFloat(targetVariant.precio_efectivo);
+                    const pL1 = parseFloat(targetVariant.precio_L1);
+
+                    // Escenario 1: Viene pre-configurado desde el Excel (precio_efectivo)
+                    if (pEfectivo && !isNaN(pEfectivo) && pEfectivo > 0) {
+                        finalPrice = pEfectivo;
+                        isEfectivo = true;
+                    } 
+                    // Escenario 2: Cálculo Dinámico a partir del Costo (L1)
+                    else if (pL1 && !isNaN(pL1) && pL1 > 0) {
+                        const iva = (parseFloat(targetVariant.iva_porcentaje) || 21) / 100;
+                        const margenEfc = (parseFloat(targetVariant.margen_efectivo) || 30) / 100;
+                        finalPrice = pL1 * (1 + iva) * (1 + margenEfc);
+                        isEfectivo = true;
+                    }
+
+                    if (finalPrice !== null && finalPrice > 0) {
+                        mPriceMain.textContent = formatCurrency(finalPrice);
                         mPriceMain.classList.add('text-primary');
                         mPriceMain.classList.remove('text-white');
-                        if (l1 && !isNaN(l1) && l1 > l2) {
-                            mPriceL1.textContent = formatCurrency(l1);
-                            mPriceL1.classList.remove('hidden');
+                        
+                        const labelSpan = mPriceDisplay.querySelector('span:first-child');
+                        if (labelSpan) {
+                            labelSpan.textContent = isEfectivo ? "Precio Efectivo" : "Precio Final";
                         }
-                    } else if (l1 && !isNaN(l1) && l1 > 0) {
-                        mPriceMain.textContent = formatCurrency(l1);
                     }
                 }
             }
@@ -386,4 +479,5 @@ export function initCatalog() {
     });
 
     updateBrandButtons(currentBucket);
+    filterCards(); // ACTIVAR PAGINACION AL INICIO
 }
