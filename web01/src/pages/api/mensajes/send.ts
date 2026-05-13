@@ -4,7 +4,7 @@
  * Body: { fromId, toId, mensaje, prioridad? }
  */
 import type { APIRoute } from 'astro';
-import { CommunicationService } from '../../../Backend/dashboard/logic/communication.js';
+import { CommunicationService } from '@dashboard/logic/communication.js';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
     try {
