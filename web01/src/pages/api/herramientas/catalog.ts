@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ url }) => {
     try {
         if (type === 'lines') {
             const response = await directus.request(readItems('Productos', {
-                fields: ['modelo'],
+                fields: ['modelo', 'nombre'],
                 filter: {
                     _and: [
                         { rubro: { letra: { _eq: 'M' } } },
@@ -21,8 +21,16 @@ export const GET: APIRoute = async ({ url }) => {
             }));
             
             const rawProducts = Array.isArray(response) ? response : (response as any).data || [];
-            // Si el modelo está vacío, lo agrupamos en "GENERAL"
-            const lines = [...new Set(rawProducts.map((p: any) => p.modelo || 'GENERAL'))].sort();
+            
+            // Lógica Industrial: Una "Línea" solo es válida si es distinta al nombre del producto.
+            // Si el modelo está vacío o es igual al nombre, lo mandamos a "GENERAL".
+            const lines = [...new Set(rawProducts.map((p: any) => {
+                const mod = (p.modelo || '').trim();
+                const nom = (p.nombre || '').trim();
+                if (!mod || mod === nom) return 'GENERAL';
+                return mod;
+            }))].sort();
+
             return new Response(JSON.stringify(lines), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
@@ -45,6 +53,7 @@ export const GET: APIRoute = async ({ url }) => {
                 filters.push({ modelo: { _eq: line } });
             }
         }
+
         if (search) {
             filters.push({
                 _or: [
@@ -58,10 +67,19 @@ export const GET: APIRoute = async ({ url }) => {
         const response = await directus.request(readItems('Productos', {
             fields: ['id', 'nombre', 'sku', 'modelo', 'espesor', 'soporte', 'marca.nombre', 'foto_principal'],
             filter: { _and: filters },
-            limit: 50
+            limit: 250 // Aumentamos límite para búsquedas generales
         }));
 
-        const products = Array.isArray(response) ? response : (response as any).data || [];
+        let products = Array.isArray(response) ? response : (response as any).data || [];
+
+        // Filtro adicional en JS para el caso GENERAL (modelo === nombre)
+        if (line === 'GENERAL') {
+            products = products.filter((p: any) => {
+                const mod = (p.modelo || '').trim();
+                const nom = (p.nombre || '').trim();
+                return !mod || mod === nom;
+            });
+        }
 
         return new Response(JSON.stringify(products), {
             status: 200,
