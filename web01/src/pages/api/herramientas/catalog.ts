@@ -1,75 +1,81 @@
 import type { APIRoute } from 'astro';
 import { directus, readItems } from '@conexiones/directus.js';
 
-// Campos base que siempre devolvemos para productos
+// Campos base que devolvemos para productos
 const PRODUCT_FIELDS = [
     'id', 'nombre', 'sku', 'modelo', 'linea',
     'espesor', 'soporte', 'marca.nombre', 'foto_principal'
 ] as const;
 
-// Helper: normaliza la respuesta del SDK de Directus (siempre devuelve array)
-function toArray<T>(response: T[] | { data: T[] }): T[] {
-    return Array.isArray(response) ? response : (response as any).data ?? [];
+// Helper: normaliza la respuesta del SDK (siempre devuelve array)
+function toArray<T>(response: unknown): T[] {
+    if (Array.isArray(response)) return response as T[];
+    if (response && typeof response === 'object' && 'data' in response) {
+        return (response as any).data as T[];
+    }
+    return [];
 }
 
-// Helper: construye el filtro base para productos de Madera (Rubro M)
-function baseFilter(brand: string, line?: string) {
-    const conditions: any[] = [
-        { rubro: { letra: { _eq: 'M' } } },
-        { marca: { nombre: { _eq: brand } } },
-        // Estado es un array en Directus — usamos _contains para "tiene Stock" 
-        // o simplemente no filtramos por publicado para permitir items en proceso de carga
-    ];
-
-    if (line) {
-        if (line === 'GENERAL') {
-            // GENERAL = productos sin línea asignada
-            conditions.push({
-                _or: [
-                    { linea: { _null: true } },
-                    { linea: { _empty: true } }
-                ]
-            });
-        } else {
-            conditions.push({ linea: { _eq: line } });
-        }
-    }
-
-    return { _and: conditions };
+// Resuelve el ID numérico de una marca por su nombre.
+// CRÍTICO: Directus almacena 'marca' como FK numérica en Productos.
+// Filtrar por nombre via JOIN es poco fiable — usamos el ID directo.
+async function resolveBrandId(brandName: string): Promise<number | null> {
+    const res = toArray<{ id: number }>(
+        await directus.request(readItems('marcas', {
+            fields: ['id'],
+            filter: { nombre: { _eq: brandName } },
+            limit: 1
+        }))
+    );
+    return res[0]?.id ?? null;
 }
 
 export const GET: APIRoute = async ({ url }) => {
     const brand  = url.searchParams.get('brand')  ?? '';
     const line   = url.searchParams.get('line')   ?? '';
     const search = url.searchParams.get('search') ?? '';
-    const type   = url.searchParams.get('type')   ?? 'products'; // 'lines' | 'products'
+    const type   = url.searchParams.get('type')   ?? 'products';
 
     if (!brand) {
-        return new Response(JSON.stringify([]), {
+        return new Response(JSON.stringify({ error: 'brand is required' }), {
             status: 400,
             headers: { 'Content-Type': 'application/json' }
         });
     }
 
     try {
-        // ── MODO LÍNEAS: devuelve la lista de colecciones/grupos de la marca ──────
-        if (type === 'lines') {
-            const raw = toArray(await directus.request(readItems('Productos', {
-                fields: ['linea'],
-                filter: {
-                    _and: [
-                        { rubro: { letra: { _eq: 'M' } } },
-                        { marca: { nombre: { _eq: brand } } }
-                    ]
-                },
-                limit: -1
-            })));
+        // Resolvemos el ID de la marca UNA SOLA VEZ al inicio.
+        // Esto garantiza que el filtro sea exacto sin depender de JOINs en Directus.
+        const brandId = await resolveBrandId(brand);
 
-            // Agrupamos fielmente por el campo 'linea' de Directus.
-            // Si está vacío → GENERAL. Ordenamos alfabéticamente.
-            const lines = [...new Set(
-                raw.map((p: any) => (p.linea ?? '').toString().trim() || 'GENERAL')
-            )].sort() as string[];
+        if (!brandId) {
+            console.warn(`[catalog.ts] Marca no encontrada: "${brand}"`);
+            return new Response(JSON.stringify([]), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        // ── MODO LÍNEAS ──────────────────────────────────────────────────────────
+        // Devuelve los valores únicos del campo 'linea' para la marca seleccionada.
+        // Si un producto tiene 'linea' vacía → aparece como "GENERAL".
+        if (type === 'lines') {
+            const raw = toArray<{ linea: string | null }>(
+                await directus.request(readItems('Productos', {
+                    fields: ['linea'],
+                    filter: {
+                        _and: [
+                            { rubro: { letra: { _eq: 'M' } } },
+                            { marca: { _eq: brandId } }
+                        ]
+                    },
+                    limit: -1
+                }))
+            );
+
+            const lines = [
+                ...new Set(raw.map(p => (p.linea ?? '').toString().trim() || 'GENERAL'))
+            ].sort();
 
             return new Response(JSON.stringify(lines), {
                 status: 200,
@@ -77,34 +83,43 @@ export const GET: APIRoute = async ({ url }) => {
             });
         }
 
-        // ── MODO PRODUCTOS: devuelve diseños/colores del grupo seleccionado ────────
-        const filters = baseFilter(brand, line || undefined);
+        // ── MODO PRODUCTOS ───────────────────────────────────────────────────────
+        // Devuelve los productos de la marca + línea seleccionada.
+        // Si la línea es "GENERAL" → productos SIN línea asignada en Directus.
+        const lineFilter = !line
+            ? []
+            : line === 'GENERAL'
+                ? [{ _or: [{ linea: { _null: true } }, { linea: { _empty: true } }] }]
+                : [{ linea: { _eq: line } }];
 
-        // Búsqueda de texto opcional (barra de búsqueda)
-        const combinedFilter = search
-            ? {
-                _and: [
-                    filters,
-                    {
-                        _or: [
-                            { nombre: { _icontains: search } },
-                            { modelo: { _icontains: search } },
-                            { sku:    { _icontains: search } }
-                        ]
-                    }
+        const searchFilter = search
+            ? [{
+                _or: [
+                    { nombre: { _icontains: search } },
+                    { modelo:  { _icontains: search } },
+                    { sku:     { _icontains: search } }
                 ]
-              }
-            : filters;
+              }]
+            : [];
 
-        const raw = toArray(await directus.request(readItems('Productos', {
-            fields: PRODUCT_FIELDS,
-            filter: combinedFilter,
-            limit: 500
-        })));
+        const raw = toArray<any>(
+            await directus.request(readItems('Productos', {
+                fields: PRODUCT_FIELDS,
+                filter: {
+                    _and: [
+                        { rubro: { letra: { _eq: 'M' } } },
+                        { marca: { _eq: brandId } },
+                        ...lineFilter,
+                        ...searchFilter
+                    ]
+                },
+                limit: 500
+            }))
+        );
 
-        // nombre_corto: descripción corta del diseño para el desplegable.
-        // Usamos 'modelo' si existe (ej: "GRIS SOMBRA"), sino el nombre completo.
-        const products = raw.map((p: any) => ({
+        // nombre_corto: preferimos 'modelo' (descripción corta del color),
+        // si no existe usamos el nombre completo del producto.
+        const products = raw.map(p => ({
             ...p,
             nombre_corto: (p.modelo ?? '').trim() || p.nombre
         }));
