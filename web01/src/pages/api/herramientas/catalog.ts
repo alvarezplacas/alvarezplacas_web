@@ -30,7 +30,7 @@ export const GET: APIRoute = async ({ url }) => {
 
         const filters: any[] = [
             { rubro: { letra: { _eq: 'M' } } },
-            { Estado: { _eq: 'published' } }
+            { Estado: { _neq: 'archived' } } // Permitimos Stock, published, etc.
         ];
 
         if (brand) filters.push({ marca: { nombre: { _eq: brand } } });
