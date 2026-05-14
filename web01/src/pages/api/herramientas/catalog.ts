@@ -9,8 +9,9 @@ export const GET: APIRoute = async ({ url }) => {
     
     try {
         if (type === 'lines') {
+            console.log(`[Catalog API] Fetching lines for brand: "${brand}"`);
             const response = await directus.request(readItems('Productos', {
-                fields: ['linea'],
+                fields: ['linea', 'marca.nombre'],
                 filter: {
                     _and: [
                         { rubro: { letra: { _eq: 'M' } } },
@@ -20,10 +21,20 @@ export const GET: APIRoute = async ({ url }) => {
                 limit: -1
             }));
             
-            const rawProducts = Array.isArray(response) ? response : (response as any).data || [];
+            let rawProducts = Array.isArray(response) ? response : (response as any).data || [];
             
+            // Filtro de seguridad extra en JS por si el join de Directus falla o trae de más
+            const filteredProducts = rawProducts.filter((p: any) => {
+                const b = p.marca?.nombre || '';
+                return b === brand;
+            });
+
+            if (rawProducts.length !== filteredProducts.length) {
+                console.warn(`[Catalog API] FILTERED OUT ${rawProducts.length - filteredProducts.length} leaked products from other brands.`);
+            }
+
             // Usamos el campo literal 'linea' de Directus para la agrupación.
-            const lines = [...new Set(rawProducts.map((p: any) => (p.linea || '').toString().trim() || 'GENERAL'))].sort();
+            const lines = [...new Set(filteredProducts.map((p: any) => (p.linea || '').toString().trim() || 'GENERAL'))].sort();
 
             return new Response(JSON.stringify(lines), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
@@ -64,14 +75,17 @@ export const GET: APIRoute = async ({ url }) => {
             limit: 500 
         }));
 
-        const products = (Array.isArray(response) ? response : (response as any).data || []).map((p: any) => ({
+        let products = (Array.isArray(response) ? response : (response as any).data || []).filter((p: any) => {
+            if (!brand) return true;
+            return p.marca?.nombre === brand;
+        });
+
+        const mappedProducts = products.map((p: any) => ({
             ...p,
-            // Usamos el campo 'modelo' como nombre del diseño si está disponible, 
-            // sino usamos el nombre general del producto.
             nombre_corto: p.modelo || p.nombre
         }));
 
-        return new Response(JSON.stringify(products), {
+        return new Response(JSON.stringify(mappedProducts), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
