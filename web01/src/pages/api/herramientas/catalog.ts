@@ -1,114 +1,124 @@
 import type { APIRoute } from 'astro';
 import { directus, readItems } from '@conexiones/directus.js';
 
-export const GET: APIRoute = async ({ url }) => {
-    const search = url.searchParams.get('search') || '';
-    const brand = url.searchParams.get('brand') || '';
-    const line = url.searchParams.get('line') || '';
-    const type = url.searchParams.get('type') || 'products'; // 'products' or 'lines'
-    
-    try {
-        // Resolvemos el ID de la marca primero para un filtrado 100% exacto y sin fugas
-        const marcasRes = await directus.request(readItems('marcas', {
-            filter: { nombre: { _eq: brand } },
-            fields: ['id']
-        }));
-        const brandObj = (Array.isArray(marcasRes) ? marcasRes[0] : (marcasRes as any).data?.[0]);
-        const brandId = brandObj?.id;
+// Campos base que siempre devolvemos para productos
+const PRODUCT_FIELDS = [
+    'id', 'nombre', 'sku', 'modelo', 'linea',
+    'espesor', 'soporte', 'marca.nombre', 'foto_principal'
+] as const;
 
+// Helper: normaliza la respuesta del SDK de Directus (siempre devuelve array)
+function toArray<T>(response: T[] | { data: T[] }): T[] {
+    return Array.isArray(response) ? response : (response as any).data ?? [];
+}
+
+// Helper: construye el filtro base para productos de Madera (Rubro M)
+function baseFilter(brand: string, line?: string) {
+    const conditions: any[] = [
+        { rubro: { letra: { _eq: 'M' } } },
+        { marca: { nombre: { _eq: brand } } },
+        // Estado es un array en Directus — usamos _contains para "tiene Stock" 
+        // o simplemente no filtramos por publicado para permitir items en proceso de carga
+    ];
+
+    if (line) {
+        if (line === 'GENERAL') {
+            // GENERAL = productos sin línea asignada
+            conditions.push({
+                _or: [
+                    { linea: { _null: true } },
+                    { linea: { _empty: true } }
+                ]
+            });
+        } else {
+            conditions.push({ linea: { _eq: line } });
+        }
+    }
+
+    return { _and: conditions };
+}
+
+export const GET: APIRoute = async ({ url }) => {
+    const brand  = url.searchParams.get('brand')  ?? '';
+    const line   = url.searchParams.get('line')   ?? '';
+    const search = url.searchParams.get('search') ?? '';
+    const type   = url.searchParams.get('type')   ?? 'products'; // 'lines' | 'products'
+
+    if (!brand) {
+        return new Response(JSON.stringify([]), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    try {
+        // ── MODO LÍNEAS: devuelve la lista de colecciones/grupos de la marca ──────
         if (type === 'lines') {
-            console.log(`[Catalog API] Fetching lines for brand: "${brand}" (ID: ${brandId})`);
-            
-            const response = await directus.request(readItems('Productos', {
-                fields: ['linea', 'marca.nombre'],
+            const raw = toArray(await directus.request(readItems('Productos', {
+                fields: ['linea'],
                 filter: {
                     _and: [
                         { rubro: { letra: { _eq: 'M' } } },
-                        { marca: { _eq: brandId } },
-                        { Estado: { _neq: 'archived' } }
+                        { marca: { nombre: { _eq: brand } } }
                     ]
                 },
                 limit: -1
-            }));
-            
-            let rawProducts = Array.isArray(response) ? response : (response as any).data || [];
-            
-            // Usamos el campo literal 'linea' de Directus para la agrupación.
-            const lines = [...new Set(rawProducts.map((p: any) => (p.linea || '').toString().trim() || 'GENERAL'))].sort();
+            })));
 
-            return new Response(JSON.stringify(lines), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
+            // Agrupamos fielmente por el campo 'linea' de Directus.
+            // Si está vacío → GENERAL. Ordenamos alfabéticamente.
+            const lines = [...new Set(
+                raw.map((p: any) => (p.linea ?? '').toString().trim() || 'GENERAL')
+            )].sort() as string[];
 
-        const filters: any[] = [
-            { rubro: { letra: { _eq: 'M' } } },
-            { marca: { _eq: brandId } },
-            { Estado: { _neq: 'archived' } }
-        ];
-        
-        if (line) {
-            if (line === 'GENERAL') {
-                const allResponse = await directus.request(readItems('Productos', {
-                    fields: ['id', 'nombre', 'sku', 'modelo', 'linea', 'espesor', 'soporte', 'marca.nombre', 'foto_principal'],
-                    filter: { 
-                        _and: [
-                            { rubro: { letra: { _eq: 'M' } } },
-                            { marca: { _eq: brandId } },
-                            { Estado: { _neq: 'archived' } }
-                        ]
-                    },
-                    limit: -1
-                }));
-                const allProducts = Array.isArray(allResponse) ? allResponse : (allResponse as any).data || [];
-                
-                const products = allProducts.filter((p: any) => {
-                    const l = (p.linea || '').toString().trim();
-                    return !l;
-                });
-
-                const mappedProducts = products.map((p: any) => ({
-                    ...p,
-                    nombre_corto: p.modelo || p.nombre
-                }));
-
-                return new Response(JSON.stringify(mappedProducts), { status: 200, headers: { 'Content-Type': 'application/json' } });
-            } else {
-                filters.push({ linea: { _eq: line } });
-            }
-        }
-
-        if (search) {
-            filters.push({
-                _or: [
-                    { nombre: { _icontains: search } },
-                    { modelo: { _icontains: search } },
-                    { sku: { _icontains: search } }
-                ]
+            return new Response(JSON.stringify(lines), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
             });
         }
 
-        const response = await directus.request(readItems('Productos', {
-            fields: ['id', 'nombre', 'sku', 'modelo', 'linea', 'espesor', 'soporte', 'marca.id', 'marca.nombre', 'foto_principal'],
-            filter: { _and: filters },
-            limit: 500 
-        }));
+        // ── MODO PRODUCTOS: devuelve diseños/colores del grupo seleccionado ────────
+        const filters = baseFilter(brand, line || undefined);
 
-        let products = (Array.isArray(response) ? response : (response as any).data || []).filter((p: any) => {
-            if (!brandId) return true;
-            return (p.marca?.id === brandId || p.marca === brandId);
-        });
+        // Búsqueda de texto opcional (barra de búsqueda)
+        const combinedFilter = search
+            ? {
+                _and: [
+                    filters,
+                    {
+                        _or: [
+                            { nombre: { _icontains: search } },
+                            { modelo: { _icontains: search } },
+                            { sku:    { _icontains: search } }
+                        ]
+                    }
+                ]
+              }
+            : filters;
 
-        const mappedProducts = products.map((p: any) => ({
+        const raw = toArray(await directus.request(readItems('Productos', {
+            fields: PRODUCT_FIELDS,
+            filter: combinedFilter,
+            limit: 500
+        })));
+
+        // nombre_corto: descripción corta del diseño para el desplegable.
+        // Usamos 'modelo' si existe (ej: "GRIS SOMBRA"), sino el nombre completo.
+        const products = raw.map((p: any) => ({
             ...p,
-            nombre_corto: p.modelo || p.nombre
+            nombre_corto: (p.modelo ?? '').trim() || p.nombre
         }));
 
-        return new Response(JSON.stringify(mappedProducts), {
+        return new Response(JSON.stringify(products), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
 
-    } catch (e: any) {
-        console.error("[Catalog API Error]:", e);
-        return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    } catch (err: any) {
+        console.error('[catalog.ts] Error:', err?.message ?? err);
+        return new Response(JSON.stringify([]), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 };
