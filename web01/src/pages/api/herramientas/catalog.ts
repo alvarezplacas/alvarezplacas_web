@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ url }) => {
     try {
         if (type === 'lines') {
             const response = await directus.request(readItems('Productos', {
-                fields: ['modelo'],
+                fields: ['linea'],
                 filter: {
                     _and: [
                         { rubro: { letra: { _eq: 'M' } } },
@@ -22,20 +22,8 @@ export const GET: APIRoute = async ({ url }) => {
             
             const rawProducts = Array.isArray(response) ? response : (response as any).data || [];
             
-            // Contamos cuántas veces aparece cada modelo para identificar grupos reales
-            const counts: Record<string, number> = {};
-            rawProducts.forEach((p: any) => {
-                const m = (p.modelo || '').trim();
-                counts[m] = (counts[m] || 0) + 1;
-            });
-
-            // Lógica Industrial: Una "Línea" solo se considera real si es compartida por más de un producto
-            // (Como los grupos "3" o líneas como "HILADOS"). Si es única, es probablemente un nombre de color sucio.
-            const lines = [...new Set(rawProducts.map((p: any) => {
-                const m = (p.modelo || '').trim();
-                if (!m || counts[m] <= 1) return 'GENERAL';
-                return m;
-            }))].sort();
+            // Usamos el campo literal 'linea' de Directus para la agrupación.
+            const lines = [...new Set(rawProducts.map((p: any) => (p.linea || '').toString().trim() || 'GENERAL'))].sort();
 
             return new Response(JSON.stringify(lines), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
@@ -49,16 +37,14 @@ export const GET: APIRoute = async ({ url }) => {
         
         if (line) {
             if (line === 'GENERAL') {
-                // Para GENERAL, buscamos productos sin modelo o con modelo único (sucio)
-                // Nota: El filtro de modelo único lo haremos en el paso de products para ser exactos
                 filters.push({
                     _or: [
-                        { modelo: { _null: true } },
-                        { modelo: { _eq: '' } }
+                        { linea: { _null: true } },
+                        { linea: { _eq: '' } }
                     ]
                 });
             } else {
-                filters.push({ modelo: { _eq: line } });
+                filters.push({ linea: { _eq: line } });
             }
         }
 
@@ -72,44 +58,18 @@ export const GET: APIRoute = async ({ url }) => {
             });
         }
 
-        if (line === 'GENERAL') {
-            // Si es GENERAL, necesitamos traer todo de la marca para filtrar por frecuencia en JS
-            const allResponse = await directus.request(readItems('Productos', {
-                fields: ['id', 'nombre', 'sku', 'modelo', 'espesor', 'soporte', 'marca.nombre', 'foto_principal'],
-                filter: { 
-                    _and: [
-                        { rubro: { letra: { _eq: 'M' } } },
-                        { marca: { nombre: { _eq: brand } } },
-                        { Estado: { _eq: 'published' } }
-                    ]
-                },
-                limit: -1
-            }));
-            const allProducts = Array.isArray(allResponse) ? allResponse : (allResponse as any).data || [];
-            
-            // Contamos frecuencias de modelos en el set completo
-            const counts: Record<string, number> = {};
-            allProducts.forEach((p: any) => {
-                const m = (p.modelo || '').trim();
-                counts[m] = (counts[m] || 0) + 1;
-            });
-
-            // Filtramos solo los que no tienen modelo o su modelo es UNICO (no es una línea)
-            const products = allProducts.filter((p: any) => {
-                const m = (p.modelo || '').trim();
-                return !m || counts[m] <= 1;
-            });
-
-            return new Response(JSON.stringify(products), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-
         const response = await directus.request(readItems('Productos', {
-            fields: ['id', 'nombre', 'sku', 'modelo', 'espesor', 'soporte', 'marca.nombre', 'foto_principal'],
+            fields: ['id', 'nombre', 'sku', 'modelo', 'linea', 'espesor', 'soporte', 'marca.nombre', 'foto_principal'],
             filter: { _and: filters },
             limit: 500 
         }));
 
-        const products = Array.isArray(response) ? response : (response as any).data || [];
+        const products = (Array.isArray(response) ? response : (response as any).data || []).map((p: any) => ({
+            ...p,
+            // Usamos el campo 'modelo' como nombre del diseño si está disponible, 
+            // sino usamos el nombre general del producto.
+            nombre_corto: p.modelo || p.nombre
+        }));
 
         return new Response(JSON.stringify(products), {
             status: 200,

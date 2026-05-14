@@ -757,7 +757,7 @@ const { isLoggedIn = false } = Astro.props;
                 const products = await res.json();
                 if (Array.isArray(products) && products.length > 0) {
                     designSelect.innerHTML = '<option value="">-- Seleccionar Color --</option>' + 
-                        products.map(p => `<option value="${p.nombre}" data-img="https://admin.alvarezplacas.com.ar/assets/${p.foto_principal}" data-thickness="${p.espesor}" data-support="${p.soporte}">${p.nombre}</option>`).join('');
+                        products.map(p => `<option value="${p.nombre_corto}" data-img="https://admin.alvarezplacas.com.ar/assets/${p.foto_principal}" data-thickness="${p.espesor}" data-support="${p.soporte}">${p.nombre_corto}</option>`).join('');
                 } else {
                     designSelect.innerHTML = '<option value="">-- Sin diseños --</option>';
                 }
