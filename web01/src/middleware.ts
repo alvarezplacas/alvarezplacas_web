@@ -9,10 +9,12 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     const isApiRoute = path.startsWith('/api');
 
     // Extraer identidades de sesión si existen (Globalmente)
+    const adminSession = context.cookies.get('admin_session');
     const sellerSession = context.cookies.get('seller_session');
-    if (sellerSession) context.locals.vendedor_id = sellerSession.value;
-
     const clientSession = context.cookies.get('client_session');
+
+    if (adminSession) context.locals.admin_id = adminSession.value;
+    if (sellerSession) context.locals.vendedor_id = sellerSession.value;
     if (clientSession) context.locals.cliente_id = clientSession.value;
 
     if (isPublic || isLoginPage || isApiRoute) {
@@ -21,22 +23,23 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
 
     // Proteger rutas /admin/*
     if (path.startsWith('/admin')) {
-        const session = context.cookies.get('admin_session');
-        if (!session || session.value !== 'authenticated_javier') {
+        if (!adminSession || adminSession.value !== 'authenticated_javier') {
             return context.redirect('/login');
         }
     }
 
     // Proteger rutas /vendedor/*
     if (path.startsWith('/vendedor')) {
-        if (!sellerSession) {
+        // Un administrador también puede ver rutas de vendedor
+        if (!sellerSession && !adminSession) {
             return context.redirect('/login');
         }
     }
 
     // Proteger rutas /cliente/*
     if (path.startsWith('/cliente')) {
-        if (!clientSession) {
+        // Un administrador o un vendedor también pueden ver rutas de cliente (para soporte)
+        if (!clientSession && !sellerSession && !adminSession) {
             return context.redirect('/login');
         }
     }

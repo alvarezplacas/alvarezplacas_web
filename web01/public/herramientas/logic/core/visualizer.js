@@ -163,34 +163,37 @@ export class SmartCutVisualizer {
         ctx.save();
         ctx.scale(this.scale, this.scale);
 
-        // Fondo (Negro Industrial para Pantalla)
-        ctx.fillStyle = '#0a0a0c';
+        // Detectar modo claro para impresión o visualización técnica
+        const isLightMode = document.body.getAttribute('data-theme') === 'bone';
+
+        // Fondo de la placa
+        ctx.fillStyle = isLightMode ? '#ffffff' : '#0a0a0c';
         ctx.fillRect(0, 0, pw, ph);
         
-        // DIBUJAR DESPERDICIO (Líneas diagonales industriales)
-        this.drawWastePattern(ctx, pw, ph, plate);
+        // DIBUJAR DESPERDICIO (Hachurado Industrial)
+        this.drawWastePattern(ctx, pw, ph, plate, isLightMode);
         
         // Dibujar piezas
         plate.strips.forEach((strip, sIdx) => {
             // Líneas de corte Nivel 1
-            ctx.strokeStyle = 'oklch(100% 0 0 / 10%)'; 
+            ctx.strokeStyle = isLightMode ? 'rgba(0,0,0,0.2)' : 'oklch(100% 0 0 / 10%)'; 
             ctx.setLineDash([5, 5]);
             ctx.strokeRect(strip.x, strip.y, strip.w, strip.h);
             ctx.setLineDash([]);
 
             strip.items.forEach(item => {
-                this.drawItem(ctx, item);
+                this.drawItem(ctx, item, isLightMode);
             });
         });
         ctx.restore();
     }
 
-    drawWastePattern(ctx, pw, ph, plate) {
+    drawWastePattern(ctx, pw, ph, plate, isLightMode) {
         ctx.save();
-        ctx.strokeStyle = 'oklch(100% 0 0 / 5%)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = isLightMode ? 'rgba(0,0,0,0.1)' : 'oklch(100% 0 0 / 5%)';
+        ctx.lineWidth = 0.5;
         
-        // Trama diagonal en toda la placa
+        // Trama diagonal marcada
         const step = 20;
         for (let i = -ph; i < pw + ph; i += step) {
             ctx.beginPath();
@@ -201,12 +204,17 @@ export class SmartCutVisualizer {
         ctx.restore();
     }
 
-    drawItem(ctx, item) {
+    drawItem(ctx, item, isLightMode) {
         const isDragging = this.dragState.dragging && this.dragState.item === item;
         
         // Cuerpo de la pieza
-        ctx.fillStyle = isDragging ? 'oklch(62.8% 0.25 29.23 / 40%)' : 'oklch(20% 0.01 280)';
-        ctx.strokeStyle = isDragging ? 'oklch(62.8% 0.25 29.23)' : 'oklch(100% 0 0 / 15%)';
+        if (isLightMode) {
+            ctx.fillStyle = isDragging ? 'rgba(0,0,0,0.05)' : '#ffffff';
+            ctx.strokeStyle = '#000000';
+        } else {
+            ctx.fillStyle = isDragging ? 'oklch(62.8% 0.25 29.23 / 40%)' : 'oklch(20% 0.01 280)';
+            ctx.strokeStyle = isDragging ? 'oklch(62.8% 0.25 29.23)' : 'oklch(100% 0 0 / 15%)';
+        }
         ctx.lineWidth = 1;
         
         ctx.beginPath();
@@ -214,24 +222,44 @@ export class SmartCutVisualizer {
         ctx.fill();
         ctx.stroke();
 
-        // Tapacantos (Línea punteada Industrial)
+        // Tapacantos (Comunicación Visual al Operador)
         if (item.edges) {
             ctx.save();
-            ctx.lineWidth = 3 / this.scale;
-            ctx.setLineDash([5 / this.scale, 5 / this.scale]);
+            const edgeWidth = 3 / this.scale;
+            ctx.lineWidth = edgeWidth;
             
-            const drawE = (x1, y1, x2, y2, t) => {
-                ctx.strokeStyle = this.getEdgeColor(t);
+            const drawE = (x1, y1, x2, y2, t, side) => {
+                ctx.strokeStyle = isLightMode ? '#000000' : this.getEdgeColor(t);
+                // Línea sólida para 2mm, punteada para el resto en B/N
+                ctx.setLineDash(isLightMode && t < 2 ? [5 / this.scale, 5 / this.scale] : []);
+                
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.stroke();
+
+                // Etiqueta de espesor (Informativa)
+                ctx.setLineDash([]);
+                ctx.fillStyle = isLightMode ? '#000' : '#fff';
+                ctx.font = `bold ${9 / this.scale}px Inter`;
+                ctx.textAlign = 'center';
+                
+                let tx = (x1 + x2) / 2;
+                let ty = (y1 + y2) / 2;
+                let val = t === "0.45" ? ".4" : t;
+
+                if (side === 't') ty += 12 / this.scale;
+                if (side === 'b') ty -= 4 / this.scale;
+                if (side === 'l') { tx += 12 / this.scale; }
+                if (side === 'r') { tx -= 12 / this.scale; }
+                
+                ctx.fillText(val, tx, ty);
             };
 
-            if (item.edges.t) drawE(item.x, item.y, item.x + item.l, item.y, item.edges.t);
-            if (item.edges.b) drawE(item.x, item.y + item.h, item.x + item.l, item.y + item.h, item.edges.b);
-            if (item.edges.l) drawE(item.x, item.y, item.x, item.y + item.h, item.edges.l);
-            if (item.edges.r) drawE(item.x + item.l, item.y, item.x + item.l, item.y + item.h, item.edges.r);
+            if (item.edges.t) drawE(item.x, item.y, item.x + item.l, item.y, item.edges.t, 't');
+            if (item.edges.b) drawE(item.x, item.y + item.h, item.x + item.l, item.y + item.h, item.edges.b, 'b');
+            if (item.edges.l) drawE(item.x, item.y, item.x, item.y + item.h, item.edges.l, 'l');
+            if (item.edges.r) drawE(item.x + item.l, item.y, item.x + item.l, item.y + item.h, item.edges.r, 'r');
             
             ctx.restore();
         }
@@ -240,7 +268,7 @@ export class SmartCutVisualizer {
         const fontSize = 12 / this.scale;
         const subFontSize = 9 / this.scale;
         
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = isLightMode ? '#000' : '#fff';
         ctx.font = `bold ${fontSize}px Inter`;
         ctx.textAlign = 'center';
         
@@ -253,7 +281,7 @@ export class SmartCutVisualizer {
             ctx.restore();
             
             ctx.font = `600 ${subFontSize}px Inter`;
-            ctx.fillStyle = 'oklch(100% 0 0 / 40%)';
+            ctx.fillStyle = isLightMode ? 'rgba(0,0,0,0.4)' : 'oklch(100% 0 0 / 40%)';
             ctx.fillText(item.label.toUpperCase(), item.x + item.l/2, item.y + item.h/2 + (subFontSize/2));
         }
     }

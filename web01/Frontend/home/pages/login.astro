@@ -7,6 +7,15 @@ import Layout from '../../home/layouts/Layout.astro';
 // Determinamos a dónde enviar el POST basándonos en la URL actual
 const { pathname } = Astro.url;
 const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/auth/login-client';
+
+// REGLA CRÍTICA: Redirección automática si ya hay sesión activa
+const adminSession = Astro.cookies.get('admin_session')?.value;
+const sellerSession = Astro.cookies.get('seller_session')?.value;
+const clientSession = Astro.cookies.get('client_session')?.value;
+
+if (adminSession === 'authenticated_javier') return Astro.redirect('/admin');
+if (sellerSession) return Astro.redirect('/vendedor');
+if (clientSession) return Astro.redirect('/cliente');
 ---
 
 <Layout title="Iniciar Sesión - Alvarez Placas">
