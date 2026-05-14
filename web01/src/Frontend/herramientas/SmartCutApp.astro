@@ -724,6 +724,16 @@ const { isLoggedIn = false } = Astro.props;
         if (step === 'brand') {
             lineSelect.innerHTML = '<option value="">Cargando...</option>';
             designSelect.innerHTML = '<option value="">-- Seleccionar Color --</option>';
+            // Restaurar opciones de espesor estándar al cambiar de marca
+            document.getElementById('plate-thickness').innerHTML = `
+                <option value="18">18 mm</option><option value="15">15 mm</option>
+                <option value="12">12 mm</option><option value="9">9 mm</option>
+                <option value="5.5">5.5 mm (Plus)</option><option value="3">3 mm (Plus)</option>
+                <option value="25">25 mm</option><option value="36">36 mm</option>
+            `;
+            // Limpiar previsualización
+            previewImg.classList.add('hidden');
+            previewPlaceholder.classList.remove('hidden');
             
             if (brand === 'CUSTOM') {
                 document.getElementById('custom-dims').classList.remove('hidden');
@@ -752,36 +762,69 @@ const { isLoggedIn = false } = Astro.props;
         if (step === 'line') {
             const line = lineSelect.value;
             designSelect.innerHTML = '<option value="">Cargando...</option>';
+            // Limpiar previsualización
+            previewImg.classList.add('hidden');
+            previewPlaceholder.classList.remove('hidden');
             try {
-                const res = await fetch(`/api/herramientas/catalog?brand=${brand}&line=${line}`);
-                const products = await res.json();
-                if (Array.isArray(products) && products.length > 0) {
+                // MEJORA: usamos type=colors para obtener colores únicos con sus espesores disponibles
+                const res = await fetch(`/api/herramientas/catalog?type=colors&brand=${brand}&line=${line}`);
+                const colors = await res.json();
+                if (Array.isArray(colors) && colors.length > 0) {
                     designSelect.innerHTML = '<option value="">-- Seleccionar Color --</option>' + 
-                        products.map(p => `<option value="${p.nombre_corto}" data-img="https://admin.alvarezplacas.com.ar/assets/${p.foto_principal}" data-thickness="${p.espesor}" data-support="${p.soporte}">${p.nombre_corto}</option>`).join('');
+                        colors.map(c => {
+                            const imgUrl = c.foto_principal 
+                                ? `https://admin.alvarezplacas.com.ar/assets/${c.foto_principal}`
+                                : '';
+                            // Guardamos todos los espesores como JSON en el data attribute
+                            const espJson = JSON.stringify(c.espesores || []);
+                            return `<option value="${c.nombre_corto}" data-img="${imgUrl}" data-espesores='${espJson}'>${c.nombre_corto}</option>`;
+                        }).join('');
                 } else {
-                    designSelect.innerHTML = '<option value="">-- Sin diseños --</option>';
+                    designSelect.innerHTML = '<option value="">-- Sin diseños disponibles --</option>';
                 }
+                toggleManualMode(false);
             } catch (e) { 
-                console.error(e); 
+                console.error('[SmartCut] Error cargando colores:', e); 
                 designSelect.innerHTML = '<option value="">-- Error al cargar --</option>';
             }
         }
 
         if (step === 'design') {
             const opt = designSelect.options[designSelect.selectedIndex];
+            if (!opt || !opt.value) return;
+
+            // Mostrar foto del material inmediatamente
             const img = opt.dataset.img;
-            if (img && !img.includes('null')) {
-                previewImg.src = img + '?width=200&quality=80';
+            if (img && !img.includes('null') && img !== '') {
+                previewImg.src = img + '?width=300&quality=85';
                 previewImg.classList.remove('hidden');
                 previewPlaceholder.classList.add('hidden');
             } else {
                 previewImg.classList.add('hidden');
                 previewPlaceholder.classList.remove('hidden');
             }
-            
-            // Auto-set thickness/support if available
-            if (opt.dataset.thickness) document.getElementById('plate-thickness').value = parseFloat(opt.dataset.thickness).toString();
-            if (opt.dataset.support) document.getElementById('plate-support').value = opt.dataset.support.toUpperCase();
+
+            // Actualizar selector de espesor con las variantes disponibles para este color
+            const espesoresRaw = opt.dataset.espesores;
+            const thicknessEl = document.getElementById('plate-thickness');
+            const supportEl = document.getElementById('plate-support');
+
+            if (espesoresRaw) {
+                try {
+                    const espesores = JSON.parse(espesoresRaw);
+                    if (espesores.length > 0) {
+                        // Reemplazar opciones del selector de espesor
+                        thicknessEl.innerHTML = espesores.map(e =>
+                            `<option value="${e.espesor}" data-soporte="${e.soporte}">${e.espesor} mm (${e.soporte})</option>`
+                        ).join('');
+                        // Seleccionar el primer espesor y su soporte automáticamente
+                        thicknessEl.selectedIndex = 0;
+                        const firstOpt = thicknessEl.options[0];
+                        if (firstOpt.dataset.soporte) supportEl.value = firstOpt.dataset.soporte;
+                    }
+                } catch (_) { /* ignorar error de parse */ }
+            }
+
             applySupportRules();
         }
     };
@@ -866,8 +909,12 @@ const { isLoggedIn = false } = Astro.props;
             image = opt.dataset.img;
         }
 
-        const thickness = document.getElementById('plate-thickness').value;
-        const support = document.getElementById('plate-support').value;
+        const thicknessEl = document.getElementById('plate-thickness');
+        const thickness = thicknessEl.value;
+        // Capturar soporte: primero del data-soporte del espesor elegido (cargado desde catálogo),
+        // si no, del selector manual de soporte
+        const selectedThickOpt = thicknessEl.options[thicknessEl.selectedIndex];
+        const support = (selectedThickOpt?.dataset?.soporte) || document.getElementById('plate-support').value;
 
         if ((thickness === '3' || thickness === '5.5') && support === 'AGLOMERADO') {
             alert(`⚠️ ERROR INDUSTRIAL: 3mm/5.5mm solo existen en soporte MDF.`);

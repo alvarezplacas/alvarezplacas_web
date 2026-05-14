@@ -83,9 +83,7 @@ export const GET: APIRoute = async ({ url }) => {
             });
         }
 
-        // ── MODO PRODUCTOS ───────────────────────────────────────────────────────
-        // Devuelve los productos de la marca + línea seleccionada.
-        // Si la línea es "GENERAL" → productos SIN línea asignada en Directus.
+        // ── FILTROS BASE ────────────────────────────────────────────────────────
         const lineFilter = !line
             ? []
             : line === 'GENERAL'
@@ -113,14 +111,57 @@ export const GET: APIRoute = async ({ url }) => {
                         ...searchFilter
                     ]
                 },
-                limit: 500
+                limit: 500,
+                sort: ['modelo', 'espesor']
             }))
         );
 
+        // ── MODO COLORES (deduplicado) ───────────────────────────────────────────
+        // Devuelve colores únicos con todos sus espesores/soportes disponibles.
+        // Ideal para el dropdown: el operario elige el color, luego el espesor se actualiza.
+        if (type === 'colors') {
+            const colorMap = new Map<string, any>();
+
+            for (const p of raw) {
+                const colorKey = (p.modelo ?? '').trim() || p.nombre;
+                if (!colorMap.has(colorKey)) {
+                    colorMap.set(colorKey, {
+                        nombre_corto: colorKey,
+                        foto_principal: p.foto_principal,
+                        marca: p.marca?.nombre ?? brand,
+                        espesores: [],     // lista de { espesor, soporte, id, sku }
+                    });
+                }
+                const entry = colorMap.get(colorKey)!;
+                // Agregar este espesor/soporte si no está ya
+                const espesor = parseFloat(p.espesor ?? 0);
+                const soporte = (p.soporte ?? '').toUpperCase();
+                const yaExiste = entry.espesores.some(
+                    (e: any) => e.espesor === espesor && e.soporte === soporte
+                );
+                if (!yaExiste) {
+                    entry.espesores.push({ espesor, soporte, id: p.id, sku: p.sku });
+                    // Ordenar espesores de menor a mayor
+                    entry.espesores.sort((a: any, b: any) => a.espesor - b.espesor);
+                }
+                // Preferir la foto que sí exista
+                if (!entry.foto_principal && p.foto_principal) {
+                    entry.foto_principal = p.foto_principal;
+                }
+            }
+
+            return new Response(JSON.stringify([...colorMap.values()]), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        // ── MODO PRODUCTOS (lista completa, para búsqueda libre) ────────────────
         // nombre_corto: preferimos 'modelo' (descripción corta del color),
         // si no existe usamos el nombre completo del producto.
         const products = raw.map(p => ({
             ...p,
+            espesor: parseFloat(p.espesor ?? 0),
             nombre_corto: (p.modelo ?? '').trim() || p.nombre
         }));
 
