@@ -24,7 +24,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (email === 'admin@alvarezplacas.com.ar') {
             const MASTER_PASSWORD = 'JavierMix2026!';
             if (password === MASTER_PASSWORD) {
-                cookies.set('admin_session', 'authenticated_javier', { path: '/', maxAge: 60 * 60 * 24 });
+                const rememberMe = formData.get('remember-me') === 'on';
+                cookies.set('admin_session', 'authenticated_javier', { 
+                    path: '/', 
+                    maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 
+                });
                 return new Response(JSON.stringify({ 
                     success: true, 
                     message: '¡Bienvenido, Javier! 🚀',
@@ -100,15 +104,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         // Set appropriate cookie
+        const rememberMe = formData.get('remember-me') === 'on';
+        
         if (userType === 'seller') {
             cookies.set('seller_session', user.id.toString(), {
                 path: '/',
-                maxAge: 60 * 60 * 24
+                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24
             });
         } else {
             cookies.set('client_session', user.id.toString(), {
                 path: '/',
-                maxAge: 60 * 60 * 24 * 30
+                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 * 30
             });
         }
 

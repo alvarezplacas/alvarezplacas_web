@@ -56,12 +56,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         if (isPasswordValid) {
             // Set session cookie
+            const rememberMe = formData.get('remember-me') === 'on';
             cookies.set('admin_session', 'authenticated_javier', {
                 path: '/',
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production', 
                 sameSite: 'lax',
-                maxAge: 60 * 60 * 24 // 24 horas
+                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 // 1 año o 24 horas
             });
 
             return new Response(JSON.stringify({ 

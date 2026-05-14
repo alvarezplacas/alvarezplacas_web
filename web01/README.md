@@ -353,3 +353,141 @@ docker compose -f docker-compose.vps.yml restart alvarezplacas_directus
 > [!IMPORTANT]
 > **Para el próximo agente IA:** Ver el archivo `_INSTRUCCIONES/PROMPT_HERRAMIENTA_CUBICA.md` para las instrucciones completas sobre la próxima herramienta a desarrollar: **Calculadora de Muebles a Medida (CubiCal PRO)**.
 
+---
+
+### ✅ Mayo 2026 — Sesión: Portal Vendedor SPA + Fix de Build
+
+#### 🖥️ Workspace de Vendedores — Arquitectura SPA Completa
+
+El portal de vendedores fue migrado a una **Single-Page Application** donde el panel izquierdo (estilo Adobe Photoshop) carga contenido dinámico en el canvas central sin recargar la página.
+
+**Cómo funciona:**
+- `VendedorWorkspace.astro` es el shell/contenedor SPA. Expone `window.workspaceLoadView(viewKey)` globalmente.
+- Cada herramienta del toolbar llama a `loadView('nombre')` que hace `fetch` a `/api/vendedor/views/<nombre>`.
+- El endpoint retorna **HTML parcial** (sin `<html>/<head>/<body>`), que se inyecta en `#view-dynamic`.
+- Los `<script>` dentro del HTML parcial se re-ejecutan dinámicamente para activar la interactividad de cada vista.
+
+**Vistas disponibles:**
+
+| URL de Vista | Herramienta | Ícono toolbar |
+|---|---|---|
+| `/api/vendedor/views/clientes` | Gestión de Cartera | `fa-users` |
+| `/api/vendedor/views/pedidos` | Seguimiento de Pedidos | `fa-clipboard-list` |
+| `/api/vendedor/views/mensajes` | Chat Interno | `fa-comments` |
+| `/api/vendedor/views/mensajes?client=<id>` | Chat con cliente específico | — |
+| `/api/vendedor/views/agenda` | Agenda y Recordatorios | `fa-calendar-alt` |
+
+**Para agregar una herramienta nueva al Workspace:**
+1. Crear `src/pages/api/vendedor/views/nueva-herramienta.ts` que retorne HTML parcial con `Content-Type: text/html`
+2. Agregar un botón `<a data-view="nueva-herramienta">` en el toolbar de `VendedorWorkspace.astro`
+3. No hay que tocar el motor SPA — funciona automáticamente.
+
+**Endpoint de mensajería:**
+- `/api/mensajes/send` — POST `{ toId, mensaje, prioridad? }` — Usa la cookie `seller_session` como `fromId` (seguridad).
+- El endpoint viejo `/api/messages` sigue activo para compatibilidad con el portal de clientes.
+
+**Rutas legacy redirigidas:**
+- `/vendedor/clientes` → `/vendedor` (el contenido está en el endpoint de vistas)
+- `/vendedor/pedidos` → `/vendedor`
+- `/vendedor/mensajes` → `/vendedor`
+
+---
+
+#### ⚠️ GOTCHAS Y DESCUBRIMIENTOS CRÍTICOS PARA FUTUROS AGENTES
+
+> [!CAUTION]
+> **Imports en archivos `.ts` dentro de `src/pages/api/`**
+>
+> Los paths relativos hacia `Backend/` **NO FUNCIONAN** con el sistema de alias de Astro/Vite en subcarpetas profundas.
+>
+> ❌ **MAL** (falla en build):
+> ```ts
+> import { directus } from '../../../../Backend/conexiones/directus.js';
+> ```
+>
+> ✅ **BIEN** (siempre usar los aliases de `astro.config.mjs`):
+> ```ts
+> import { directus } from '@conexiones/directus.js';
+> import { CommunicationService } from '@dashboard/logic/communication.js';
+> ```
+>
+> **Aliases configurados en `astro.config.mjs`:**
+> - `@conexiones` → `./Backend/conexiones`
+> - `@dashboard` → `./Backend/dashboard`
+> - `@layouts` → `./Frontend/home/layouts`
+> - (ver el archivo completo para la lista definitiva)
+
+> [!CAUTION]
+> **Protocolo de emergencia cuando el container está en Restart Loop (502)**
+>
+> Si el build falla, `dist/` queda borrado y el container crashea en loop. No se puede hacer `docker exec` porque el container no llega a estar `Running`.
+>
+> **Solución correcta:** Build con container temporal montando el mismo volumen:
+> ```bash
+> docker run --rm \
+>   --network web01_alvarez_v16_net \
+>   -v /opt/alvarez_v16/web01/site/web01:/app \
+>   -w /app \
+>   -e PUBLIC_DIRECTUS_URL=https://admin.alvarezplacas.com.ar \
+>   -e DIRECTUS_URL_INTERNAL=http://alvarezplacas_directus:8055 \
+>   -e DIRECTUS_TOKEN=alvarez-api-token-v16-2026 \
+>   node:22-alpine \
+>   sh -c 'npm run build'
+> ```
+>
+> **Luego levantar el container parado:**
+> ```bash
+> cd /opt/alvarez_v16/web01
+> docker compose -f docker-compose.vps.yml start alvarezplacas_web
+> ```
+>
+> **Red correcta del proyecto** (verificar con `docker network ls | grep alvarez`): `web01_alvarez_v16_net`
+
+> [!WARNING]
+> **`MainLayout.astro` vs `Layout.astro`**
+>
+> El único layout en `Frontend/home/layouts/` se llama `Layout.astro`.
+> Algunos archivos nuevos (ej: `cubical.astro`) pueden importar `@layouts/MainLayout.astro`.
+> Ambos archivos existen ahora y son idénticos. Si se modifica uno, modificar el otro también.
+> La solución definitiva futura es unificarlos en uno solo.
+
+> [!NOTE]
+> **El script `04-SUBIR_CAMBIOS_Y_REINICIAR.bat` borra `dist/` antes de hacer el build.**
+>
+> Esto es correcto e intencional (fuerza recompilación limpia). Pero si el build falla por cualquier motivo, el sitio queda en 502 inmediatamente.
+>
+> **Regla de oro**: Antes de correr el bat, asegurarse que el código compila localmente o que no hay errores de import obvios. Si hay duda, subir los archivos por SCP primero y hacer el build manual desde el VPS.
+
+---
+
+#### 🗂️ Estado del `VendedorLayout.astro`
+
+El layout viejo (`Backend/dashboard/layouts/VendedorLayout.astro`) existe pero **ninguna página lo usa actualmente**. Puede ser eliminado de forma segura en cualquier sesión futura de limpieza. No afecta el funcionamiento.
+
+---
+
+### 🚀 Actualización 13 de Mayo 2026: Estabilización SmartCut PRO y Dashboard Cliente
+
+En esta sesión se resolvieron bloqueos críticos en la herramienta de optimización y se completó el flujo de conversión para el cliente.
+
+#### 1. SmartCut PRO: Solución de "Utility" (Botones Congelados)
+- **Error detectado**: Un error de sintaxis en el script cliente (`IS_LOGGED_IN`) impedía que el motor se inicializara, dejando los botones sin respuesta.
+- **Solución**: Se reemplazó el uso de `define:vars` en scripts `is:inline` por el uso de atributos de datos (`data-is-logged-in`) en el DOM. Esto garantiza que el estado de la sesión sea legible por el navegador sin errores de compilación de Astro.
+
+#### 2. Flujo de Conversión y Registro
+- **Login Wall**: Se agregó un botón de **REGISTRO** en el cartel que bloquea la generación de presupuestos para usuarios anónimos.
+- **Redirección Post-Guardado**: Ahora, al terminar una optimización y guardarla, el sistema redirige automáticamente al usuario a su panel de pedidos (`/cliente/pedidos`) en lugar de mostrar solo un alert.
+
+#### 3. Reporte Industrial para Clientes
+- **Nueva Página de Impresión**: Creada en `src/pages/cliente/pedido/[id]/print.astro`.
+- **Funcionalidad**: Permite al cliente visualizar y descargar (vía impresión/PDF) el reporte detallado de su pedido.
+- **Motor de Render**: El reporte utiliza el mismo motor industrial de SmartCut para recalcular y dibujar los planos de corte exactos en un formato apto para impresión (Blanco y Negro con detalles técnicos destacados).
+- **Integración Dashboard**: Se agregaron enlaces directos "Reporte Industrial" tanto en el Home del cliente como en la lista de pedidos.
+
+#### ⚠️ Notas Técnicas para Futuras Sesiones:
+- **Campos Directus**: El campo `datos_optimizacion` en la colección `pedidos` es fundamental. Si se modifica la estructura del JSON en `SmartCutApp.astro`, se debe actualizar también la lógica de lectura en `print.astro`.
+- **Impresión**: Los estilos de la página de impresión están optimizados con `@media print` para ocultar botones de interfaz y ajustar el contraste de los planos de corte.
+
+---
+
+*Última actualización: 13 de Mayo 2026 — Antigravity (Google Deepmind)*

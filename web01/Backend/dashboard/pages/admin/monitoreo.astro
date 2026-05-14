@@ -1,0 +1,141 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import VendedorWorkspace from '../../layouts/VendedorWorkspace.astro';
+
+// Detect if it's admin or seller based on the session or props
+// For now, we'll check which layout to use based on the URL or session
+const sellerSession = Astro.cookies.get('seller_session')?.value;
+const adminSession = Astro.cookies.get('admin_session')?.value;
+
+const isSeller = !!sellerSession && !adminSession;
+const Layout = isSeller ? VendedorWorkspace : AdminLayout;
+---
+
+<Layout title="Monitoreo de Planta">
+    <div class="monitor-container animate-in">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-black text-white uppercase tracking-tight">Estado de <span class="text-primary">Planta</span> 🏭</h2>
+                <p class="text-gray-400 font-medium">Sincronización en tiempo real con el taller industrial.</p>
+            </div>
+            <div id="connection-indicator" class="px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 text-green-500 text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Conectado vía VPN
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-[#1a1a1a] border border-gray-800 p-6 rounded-2xl text-center">
+                <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Pendientes</p>
+                <div id="m-pendientes" class="text-4xl font-black text-yellow-500 font-mono">--</div>
+            </div>
+            <div class="bg-[#1a1a1a] border border-gray-800 p-6 rounded-2xl text-center">
+                <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Placas a Cortar</p>
+                <div id="m-placas" class="text-4xl font-black text-white font-mono">--</div>
+            </div>
+            <div class="bg-[#1a1a1a] border border-gray-800 p-6 rounded-2xl text-center">
+                <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Entregas Hoy</p>
+                <div id="m-entregas" class="text-4xl font-black text-green-500 font-mono">--</div>
+            </div>
+            <div class="bg-[#1a1a1a] border border-gray-800 p-6 rounded-2xl text-center">
+                <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Deuda Global Planta</p>
+                <div id="m-deuda" class="text-2xl font-black text-white font-mono mt-2">$ --</div>
+            </div>
+        </div>
+
+        <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-6 overflow-hidden">
+            <h3 class="text-xs font-black text-gray-500 uppercase tracking-widest mb-6">Próximos Retiros (Pedidos Listos)</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-[10px] font-black text-gray-600 uppercase tracking-tighter border-b border-gray-800">
+                            <th class="pb-4">Factura / Orden</th>
+                            <th class="pb-4">Cliente</th>
+                            <th class="pb-4">Último Cambio</th>
+                            <th class="pb-4 text-right">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="m-table-body">
+                        <tr>
+                            <td colspan="4" class="py-12 text-center text-gray-600 font-bold uppercase text-[11px] tracking-widest italic opacity-50">
+                                <i class="fas fa-spinner fa-spin mr-2"></i> Consultando servidor local...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="mt-8 p-4 bg-blue-500/5 border border-blue-500/10 rounded-xl flex items-center gap-4">
+            <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+            <p class="text-xs text-blue-300/70 leading-relaxed">
+                <strong>Nota Técnica:</strong> Los datos visualizados provienen directamente del ERP local en planta vía <strong>Tailscale</strong>. 
+                Si el indicador superior muestra "Desconectado", es posible que el servidor en el taller esté apagado o fuera de línea.
+            </p>
+        </div>
+    </div>
+</Layout>
+
+<script is:inline>
+    const PROXY_URL = '/api/admin/planta-status'; 
+
+    async function refreshMonitor() {
+        try {
+            const res = await fetch(PROXY_URL);
+            if (!res.ok) throw new Error('Servidor Offline');
+            
+            const data = await res.json();
+
+            document.getElementById('m-pendientes').innerText = data.produccion.pendientes;
+            document.getElementById('m-placas').innerText = data.produccion.placas_pendientes;
+            document.getElementById('m-entregas').innerText = data.produccion.entregados_hoy;
+            document.getElementById('m-deuda').innerText = '$ ' + data.finanzas.total_global.toLocaleString('es-AR');
+
+            const body = document.getElementById('m-table-body');
+            body.innerHTML = '';
+            
+            if (data.recientes_listos && data.recientes_listos.length > 0) {
+                data.recientes_listos.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-gray-800/50 hover:bg-white/5 transition-colors";
+                    tr.innerHTML = `
+                        <td class="py-4 font-mono font-black text-white text-xs">${r.factura}</td>
+                        <td class="py-4 text-xs font-bold text-gray-400">${r.cliente}</td>
+                        <td class="py-4 text-xs font-medium text-gray-500">${new Date(r.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs</td>
+                        <td class="py-4 text-right">
+                            <span class="px-2 py-1 rounded bg-green-500/10 text-green-500 text-[9px] font-black uppercase">LISTO</span>
+                        </td>
+                    `;
+                    body.appendChild(tr);
+                });
+            } else {
+                body.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-gray-600 uppercase text-[10px] font-black">No hay pedidos listos pendientes de retiro</td></tr>';
+            }
+            
+            document.getElementById('connection-indicator').innerHTML = '<span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> CONECTADO VÍA VPN';
+            document.getElementById('connection-indicator').classList.replace('text-red-500', 'text-green-500');
+            document.getElementById('connection-indicator').classList.replace('bg-red-500/10', 'bg-green-500/10');
+            document.getElementById('connection-indicator').classList.replace('border-red-500/20', 'border-green-500/20');
+        } catch (e) {
+            document.getElementById('connection-indicator').innerHTML = '<span class="w-2 h-2 bg-red-500 rounded-full"></span> DESCONECTADO (TALLER OFFLINE)';
+            document.getElementById('connection-indicator').classList.replace('text-green-500', 'text-red-500');
+            document.getElementById('connection-indicator').classList.replace('bg-green-500/10', 'bg-red-500/10');
+            document.getElementById('connection-indicator').classList.replace('border-green-500/20', 'border-red-500/20');
+            
+            document.getElementById('m-table-body').innerHTML = '<tr><td colspan="4" class="py-12 text-center text-red-500/50 font-bold uppercase text-[11px] tracking-widest italic">Servidor de planta no responde</td></tr>';
+        }
+    }
+
+    refreshMonitor();
+    setInterval(refreshMonitor, 30000); // Refrescar cada 30 segundos
+</script>
+
+<style>
+    .animate-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>

@@ -40,9 +40,12 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
                         <label for="email-address" class="sr-only">Correo electrónico</label>
                         <input id="email-address" name="email" type="email" autocomplete="email" required class="appearance-none rounded-lg relative block w-full px-3 py-4 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm transition-all" placeholder="Correo electrónico" />
                     </div>
-                    <div>
+                    <div class="relative group/pass">
                         <label for="password" class="sr-only">Contraseña</label>
-                        <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-lg relative block w-full px-3 py-4 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm transition-all" placeholder="Contraseña" />
+                        <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-lg relative block w-full px-3 py-4 border border-gray-700 bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm transition-all pr-12" placeholder="Contraseña" />
+                        <button type="button" id="toggle-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors focus:outline-none z-20">
+                            <i class="fas fa-eye" id="eye-icon"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -69,8 +72,8 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
             </form>
         </div>
 
-        <!-- Toast Container -->
-        <div id="toast-container" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-4"></div>
+        <!-- Toast Container - Centered for Mobile Visibility -->
+        <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-4 w-full max-w-xs sm:max-w-md px-4"></div>
     </div>
 
     <script is:inline>
@@ -78,8 +81,23 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
             const form = document.querySelector('#login-form');
             const submitBtn = document.querySelector('#submit-btn');
             const toastContainer = document.getElementById('toast-container');
+            const passwordInput = document.getElementById('password');
+            const togglePasswordBtn = document.getElementById('toggle-password');
+            const eyeIcon = document.getElementById('eye-icon');
 
             if (!form || !toastContainer) return;
+
+            // Lógica para mostrar/ocultar contraseña
+            if (togglePasswordBtn && passwordInput && eyeIcon) {
+                togglePasswordBtn.addEventListener('click', () => {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    // Cambiar icono
+                    eyeIcon.classList.toggle('fa-eye');
+                    eyeIcon.classList.toggle('fa-eye-slash');
+                });
+            }
 
             function showToast(message, type = 'error') {
                 const toast = document.createElement('div');

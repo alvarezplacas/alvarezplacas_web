@@ -28,7 +28,8 @@ try {
     recentOrders = await directus.request(readItems('pedidos', {
         filter: { cliente_id: { _eq: clientId } },
         sort: ['-fecha_pedido'],
-        limit: 3
+        limit: 3,
+        fields: ['id', 'status', 'fecha_pedido', 'total', 'datos_optimizacion']
     })) as any;
 
 } catch (e) {
@@ -100,13 +101,20 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                                         <p class="text-[10px] text-gray-500 font-medium">{new Date(order.fecha_pedido).toLocaleDateString('es-AR')}</p>
                                     </div>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-black text-white mb-1">{formatCurrency(order.total)}</p>
-                                    <span class={`text-[9px] font-black uppercase px-3 py-1 rounded-full ${
-                                        order.status === 'entregado' ? 'bg-green-500/20 text-green-500' : 'bg-orange-500/20 text-orange-500'
-                                    }`}>
-                                        {order.status}
-                                    </span>
+                                <div class="text-right flex flex-col items-end gap-2">
+                                    <p class="text-sm font-black text-white">{formatCurrency(order.total)}</p>
+                                    <div class="flex items-center gap-2">
+                                        {order.datos_optimizacion && (
+                                            <a href={`/cliente/pedido/${order.id}/print`} target="_blank" class="text-[8px] font-black uppercase text-primary border border-primary/20 px-2 py-1 rounded hover:bg-primary/10 transition-all">
+                                                Reporte
+                                            </a>
+                                        )}
+                                        <span class={`text-[9px] font-black uppercase px-3 py-1 rounded-full ${
+                                            order.status === 'entregado' ? 'bg-green-500/20 text-green-500' : 'bg-orange-500/20 text-orange-500'
+                                        }`}>
+                                            {order.status}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         ))

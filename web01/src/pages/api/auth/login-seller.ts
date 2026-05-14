@@ -38,9 +38,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         if (isPasswordValid) {
             console.log(`[Seller Login Success] ID: ${user.id}`);
+            const rememberMe = formData.get('remember-me') === 'on';
             cookies.set('seller_session', user.id.toString(), {
                 path: '/',
-                maxAge: 60 * 60 * 24 // 24 horas
+                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 // 1 año o 24 horas
             });
             return new Response(JSON.stringify({ 
                 success: true, 

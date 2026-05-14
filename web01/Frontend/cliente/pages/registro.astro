@@ -98,9 +98,14 @@ try {
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <!-- Password -->
-                            <div>
+                            <div class="relative group/pass">
                                 <label class="block text-gray-400 text-sm font-semibold mb-2" for="password">Contraseña *</label>
-                                <input type="password" id="password" name="password" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary text-sm" placeholder="Min. 8 caracteres">
+                                <div class="relative">
+                                    <input type="password" id="password" name="password" required class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors focus:ring-1 focus:ring-primary text-sm pr-12" placeholder="Min. 8 caracteres">
+                                    <button type="button" id="toggle-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors focus:outline-none">
+                                        <i class="fas fa-eye" id="eye-icon"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Vendedor -->
@@ -140,8 +145,8 @@ try {
 
         </div>
 
-        <!-- Toast Notification Container -->
-        <div id="toast-container" class="fixed bottom-10 right-10 z-[100] flex flex-col gap-4"></div>
+        <!-- Toast Notification Container - Centered for Mobile -->
+        <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-4 w-full max-w-xs sm:max-w-md px-4"></div>
 
     </section>
 
@@ -149,8 +154,21 @@ try {
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.querySelector('form');
             const toastContainer = document.getElementById('toast-container');
+            const passwordInput = document.getElementById('password');
+            const togglePasswordBtn = document.getElementById('toggle-password');
+            const eyeIcon = document.getElementById('eye-icon');
 
             if (!form || !toastContainer) return;
+
+            // Lógica para mostrar/ocultar contraseña
+            if (togglePasswordBtn && passwordInput && eyeIcon) {
+                togglePasswordBtn.addEventListener('click', () => {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    eyeIcon.classList.toggle('fa-eye');
+                    eyeIcon.classList.toggle('fa-eye-slash');
+                });
+            }
 
             function showToast(message, type = 'error') {
                 const toast = document.createElement('div');
