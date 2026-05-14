@@ -14,16 +14,15 @@ export const GET: APIRoute = async ({ url }) => {
                 filter: {
                     _and: [
                         { rubro: { letra: { _eq: 'M' } } },
-                        { marca: { nombre: { _eq: brand } } },
-                        { modelo: { _nnull: true } },
-                        { modelo: { _neq: '' } }
+                        { marca: { nombre: { _eq: brand } } }
                     ]
                 },
                 limit: -1
             }));
             
             const rawProducts = Array.isArray(response) ? response : (response as any).data || [];
-            const lines = [...new Set(rawProducts.map((p: any) => p.modelo))].filter(Boolean).sort();
+            // Si el modelo está vacío, lo agrupamos en "GENERAL"
+            const lines = [...new Set(rawProducts.map((p: any) => p.modelo || 'GENERAL'))].sort();
             return new Response(JSON.stringify(lines), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
@@ -33,7 +32,19 @@ export const GET: APIRoute = async ({ url }) => {
         ];
 
         if (brand) filters.push({ marca: { nombre: { _eq: brand } } });
-        if (line) filters.push({ modelo: { _eq: line } });
+        
+        if (line) {
+            if (line === 'GENERAL') {
+                filters.push({
+                    _or: [
+                        { modelo: { _null: true } },
+                        { modelo: { _eq: '' } }
+                    ]
+                });
+            } else {
+                filters.push({ modelo: { _eq: line } });
+            }
+        }
         if (search) {
             filters.push({
                 _or: [
