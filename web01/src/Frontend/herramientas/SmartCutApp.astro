@@ -6,18 +6,7 @@ const { isLoggedIn = false } = Astro.props;
         --alvarez-red: oklch(62.8% 0.25 29.23);
         --font-mono: 'JetBrains Mono', monospace;
         
-        /* Tema Oscuro (Default) */
-        --sc-bg: oklch(8% 0.01 280);
-        --sc-surface: #0a0a0c;
-        --sc-surface-alt: #0d0d0f;
-        --sc-text: oklch(98% 0.01 280);
-        --sc-text-dim: oklch(60% 0 0);
-        --sc-border: oklch(100% 0 0 / 8%);
-        --sc-input-bg: #000;
-        --glass-bg: oklch(100% 0 0 / 4%);
-    }
-
-    [data-theme="bone"] {
+        /* Tema Claro / Hueso (Default Industrial) */
         --sc-bg: #f5f5ed;
         --sc-surface: #ffffff;
         --sc-surface-alt: #fcfcfc;
@@ -26,6 +15,17 @@ const { isLoggedIn = false } = Astro.props;
         --sc-border: rgba(0,0,0,0.1);
         --sc-input-bg: #fff;
         --glass-bg: rgba(0,0,0,0.03);
+    }
+
+    [data-theme="dark"] {
+        --sc-bg: oklch(8% 0.01 280);
+        --sc-surface: #0a0a0c;
+        --sc-surface-alt: #0d0d0f;
+        --sc-text: oklch(98% 0.01 280);
+        --sc-text-dim: oklch(60% 0 0);
+        --sc-border: oklch(100% 0 0 / 8%);
+        --sc-input-bg: #000;
+        --glass-bg: oklch(100% 0 0 / 4%);
     }
 
     body { background: var(--sc-bg); color: var(--sc-text); font-family: 'Inter', sans-serif; margin: 0; transition: background 0.3s, color 0.3s; }
@@ -582,6 +582,16 @@ const { isLoggedIn = false } = Astro.props;
 </div>
 
 <script is:inline>
+    // 🛡️ Inicialización inmediata del tema para evitar parpadeo
+    (function() {
+        const savedTheme = localStorage.getItem('sc-theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+        } else {
+            document.body.removeAttribute('data-theme');
+        }
+    })();
+
     const IS_LOGGED_IN = document.getElementById('smartcut-bar').dataset.isLoggedIn === 'true';
     let engine, visualizer;
     let session = { projects: [], currentIndex: -1, config: { kerf: 4, trim: 5, edgeWaste: 18, philosophy: 'V', steps: 900 } };
@@ -589,16 +599,15 @@ const { isLoggedIn = false } = Astro.props;
 
     async function initSC() {
         try {
-            // Cargar tema guardado (Claro/Hueso por defecto)
-            const savedTheme = localStorage.getItem('sc-theme') || 'bone';
-            if (savedTheme === 'bone') {
-                document.body.setAttribute('data-theme', 'bone');
-                document.getElementById('theme-text').textContent = 'MODO OSCURO';
-                document.getElementById('theme-icon').className = 'fas fa-moon';
+            // Actualizar textos del botón de tema según estado actual
+            const themeText = document.getElementById('theme-text');
+            const themeIcon = document.getElementById('theme-icon');
+            if (document.body.getAttribute('data-theme') === 'dark') {
+                themeText.textContent = 'MODO CLARO';
+                themeIcon.className = 'fas fa-sun';
             } else {
-                document.body.removeAttribute('data-theme');
-                document.getElementById('theme-text').textContent = 'MODO CLARO';
-                document.getElementById('theme-icon').className = 'fas fa-sun';
+                themeText.textContent = 'MODO OSCURO';
+                themeIcon.className = 'fas fa-moon';
             }
 
             // Actualizar UI de navegación dinámicamente según sesión
@@ -646,16 +655,16 @@ const { isLoggedIn = false } = Astro.props;
         const text = document.getElementById('theme-text');
         const icon = document.getElementById('theme-icon');
         
-        if (body.getAttribute('data-theme') === 'bone') {
+        if (body.getAttribute('data-theme') === 'dark') {
             body.removeAttribute('data-theme');
+            text.textContent = 'MODO OSCURO';
+            icon.className = 'fas fa-moon';
+            localStorage.setItem('sc-theme', 'light');
+        } else {
+            body.setAttribute('data-theme', 'dark');
             text.textContent = 'MODO CLARO';
             icon.className = 'fas fa-sun';
             localStorage.setItem('sc-theme', 'dark');
-        } else {
-            body.setAttribute('data-theme', 'bone');
-            text.textContent = 'MODO OSCURO';
-            icon.className = 'fas fa-moon';
-            localStorage.setItem('sc-theme', 'bone');
         }
     };
 

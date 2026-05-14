@@ -164,7 +164,7 @@ export class SmartCutVisualizer {
         ctx.scale(this.scale, this.scale);
 
         // Detectar modo claro para impresión o visualización técnica
-        const isLightMode = document.body.getAttribute('data-theme') === 'bone';
+        const isLightMode = document.body.getAttribute('data-theme') !== 'dark';
 
         // Fondo de la placa
         ctx.fillStyle = isLightMode ? '#ffffff' : '#0a0a0c';
