@@ -4,15 +4,33 @@ const { isLoggedIn = false } = Astro.props;
 <style is:inline>
     :root {
         --alvarez-red: oklch(62.8% 0.25 29.23);
-        --alvarez-dark: oklch(12% 0.01 280);
-        --alvarez-border: oklch(100% 0 0 / 8%);
-        --glass-bg: oklch(100% 0 0 / 4%);
         --font-mono: 'JetBrains Mono', monospace;
+        
+        /* Tema Oscuro (Default) */
+        --sc-bg: oklch(8% 0.01 280);
+        --sc-surface: #0a0a0c;
+        --sc-surface-alt: #0d0d0f;
+        --sc-text: oklch(98% 0.01 280);
+        --sc-text-dim: oklch(60% 0 0);
+        --sc-border: oklch(100% 0 0 / 8%);
+        --sc-input-bg: #000;
+        --glass-bg: oklch(100% 0 0 / 4%);
     }
 
-    body { background: oklch(8% 0.01 280); color: oklch(98% 0.01 280); font-family: 'Inter', sans-serif; margin: 0; }
+    [data-theme="bone"] {
+        --sc-bg: #f5f5ed;
+        --sc-surface: #ffffff;
+        --sc-surface-alt: #fcfcfc;
+        --sc-text: #1a1a1c;
+        --sc-text-dim: #666;
+        --sc-border: rgba(0,0,0,0.1);
+        --sc-input-bg: #fff;
+        --glass-bg: rgba(0,0,0,0.03);
+    }
 
-    .smart-bar { background: #0a0a0c; padding: 12px 40px; border-bottom: 1px solid #1a1a1c; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    body { background: var(--sc-bg); color: var(--sc-text); font-family: 'Inter', sans-serif; margin: 0; transition: background 0.3s, color 0.3s; }
+
+    .smart-bar { background: var(--sc-surface); padding: 12px 40px; border-bottom: 1px solid var(--sc-border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
     .smart-label { font-size: 0.65rem; font-weight: 900; color: var(--alvarez-red); letter-spacing: 2px; }
 
     .container-sc { padding: 30px 40px; max-width: 1600px; margin: 0 auto; position: relative; min-height: 80vh; }
@@ -86,8 +104,8 @@ const { isLoggedIn = false } = Astro.props;
     .strategy-info-text strong { color: oklch(80% 0 0); display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
 
     .config-panel {
-        background: #0a0a0c;
-        border-left: 1px solid #1a1a1c;
+        background: var(--sc-surface);
+        border-left: 1px solid var(--sc-border);
         width: 400px;
         position: fixed;
         right: -400px;
@@ -96,37 +114,37 @@ const { isLoggedIn = false } = Astro.props;
         z-index: 2000;
         padding: 40px;
         transition: 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-        box-shadow: -30px 0 60px rgba(0,0,0,0.8);
+        box-shadow: -30px 0 60px rgba(0,0,0,0.4);
     }
     .config-panel.open { right: 0; }
     .config-section { margin-bottom: 35px; }
-    .config-title { font-size: 0.7rem; font-weight: 900; color: #444; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 1.5px; border-bottom: 1px solid #111; padding-bottom: 10px; }
+    .config-title { font-size: 0.7rem; font-weight: 900; color: var(--sc-text-dim); text-transform: uppercase; margin-bottom: 20px; letter-spacing: 1.5px; border-bottom: 1px solid var(--sc-border); padding-bottom: 10px; }
 
-    input, select { width: 100%; background: #000; border: 1px solid #222; color: #fff; padding: 12px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; transition: 0.3s; }
+    input, select { width: 100%; background: var(--sc-input-bg); border: 1px solid var(--sc-border); color: var(--sc-text); padding: 12px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; transition: 0.3s; }
     input:focus { border-color: var(--alvarez-red); outline: none; }
-    label { display: block; font-size: 0.6rem; color: #666; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
+    label { display: block; font-size: 0.6rem; color: var(--sc-text-dim); font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
 
     .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
-    .stat-item { background: #0a0a0c; border: 1px solid #151517; padding: 20px; border-radius: 8px; text-align: left; }
-    .stat-item span { display: block; font-size: 0.6rem; font-weight: 900; color: #444; margin-bottom: 5px; text-transform: uppercase; }
-    .stat-item strong { font-size: 1.2rem; font-family: var(--font-mono); color: #fff; }
+    .stat-item { background: var(--sc-surface); border: 1px solid var(--sc-border); padding: 20px; border-radius: 8px; text-align: left; }
+    .stat-item span { display: block; font-size: 0.6rem; font-weight: 900; color: var(--sc-text-dim); margin-bottom: 5px; text-transform: uppercase; }
+    .stat-item strong { font-size: 1.2rem; font-family: var(--font-mono); color: var(--sc-text); }
 
     /* INDUSTRIAL VISUALIZER STYLES */
-    .plate-view-wrap { background: #08080a; border: 1px solid #151517; border-radius: 12px; overflow: hidden; margin-top: 20px; }
-    .plate-header-industrial { background: #0d0d0f; padding: 15px 25px; border-bottom: 1px solid #1a1a1c; display: flex; justify-content: space-between; align-items: center; }
+    .plate-view-wrap { background: var(--sc-surface-alt); border: 1px solid var(--sc-border); border-radius: 12px; overflow: hidden; margin-top: 20px; }
+    .plate-header-industrial { background: var(--sc-surface); padding: 15px 25px; border-bottom: 1px solid var(--sc-border); display: flex; justify-content: space-between; align-items: center; }
     .plate-title { font-size: 0.9rem; font-weight: 900; color: var(--alvarez-red); text-transform: uppercase; }
-    .plate-subtitle { font-size: 0.6rem; color: #444; font-weight: 800; text-transform: uppercase; }
+    .plate-subtitle { font-size: 0.6rem; color: var(--sc-text-dim); font-weight: 800; text-transform: uppercase; }
     
-    .industrial-canvas { display: block; margin: 20px auto; border: 1px solid #1a1a1c; background: #000; }
+    .industrial-canvas { display: block; margin: 20px auto; border: 1px solid var(--sc-border); background: #000; }
 
-    .industrial-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #1a1a1c; border-top: 1px solid #1a1a1c; }
-    .stats-group { background: #0d0d0f; padding: 20px 25px; }
+    .industrial-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--sc-border); border-top: 1px solid var(--sc-border); }
+    .stats-group { background: var(--sc-surface); padding: 20px 25px; }
     .stat-main { margin-bottom: 15px; }
-    .stat-main span { display: block; font-size: 0.55rem; font-weight: 900; color: #444; margin-bottom: 2px; }
-    .stat-main strong { font-size: 1.1rem; font-family: var(--font-mono); }
+    .stat-main span { display: block; font-size: 0.55rem; font-weight: 900; color: var(--sc-text-dim); margin-bottom: 2px; }
+    .stat-main strong { font-size: 1.1rem; font-family: var(--font-mono); color: var(--sc-text); }
     
-    .edge-stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #151517; }
-    .edge-stat span { font-size: 0.65rem; color: #666; font-weight: 600; }
+    .edge-stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--sc-border); }
+    .edge-stat span { font-size: 0.65rem; color: var(--sc-text-dim); font-weight: 600; }
     .edge-stat strong { font-size: 0.8rem; font-family: var(--font-mono); color: #25d366; }
 
     .hidden { display: none !important; }
@@ -220,16 +238,78 @@ const { isLoggedIn = false } = Astro.props;
     .legend-item { display: flex; align-items: flex-start; gap: 18px; font-size: 0.95rem; font-weight: 400; line-height: 1.6; color: oklch(65% 0 0); }
     .legend-item strong { font-family: 'Montserrat', sans-serif; color: oklch(95% 0 0); display: block; margin-bottom: 4px; font-size: 0.9rem; letter-spacing: 0.5px; }
     .legend-item i { width: 38px; height: 38px; background: var(--glass-bg); border: 1px solid var(--alvarez-border); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--alvarez-red); flex-shrink: 0; font-size: 1rem; margin-top: 2px; }
+    
+    .nav-link-sc {
+        color: #666;
+        text-decoration: none;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.3s;
+    }
+    .nav-link-sc:hover { color: var(--alvarez-red); }
+
+    /* CATALOG SUGGESTIONS INDUSTRIAL */
+    .catalog-suggestion {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--sc-border);
+        transition: 0.2s;
+    }
+    .catalog-suggestion:hover { background: var(--alvarez-red); }
+    .catalog-suggestion:hover * { color: white !important; }
+    
+    #catalog-results::-webkit-scrollbar { width: 6px; }
+    #catalog-results::-webkit-scrollbar-thumb { background: var(--sc-border); border-radius: 10px; }
+
+    .selected-product-preview {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: var(--sc-surface-alt);
+        border: 1px solid var(--sc-border);
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 10px;
+        animation: fadeIn 0.3s ease;
+    }
+    .selected-product-preview img { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 1px solid var(--sc-border); }
+    .selected-product-info { flex: 1; }
+    .selected-product-info strong { display: block; font-size: 0.85rem; color: var(--sc-text); text-transform: uppercase; }
+    .selected-product-info span { font-size: 0.65rem; color: var(--sc-text-dim); font-weight: 700; }
 </style>
 
-<div id="smartcut-bar" class="smart-bar hidden" data-is-logged-in={isLoggedIn}>
-    <div class="smart-label">SMARTCUT PRO <span style="background: var(--alvarez-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.5rem; margin-left: 10px;">v5.6.5 INDUSTRIAL</span></div>
-    <div style="display: flex; gap: 15px; align-items: center;">
+<div id="smartcut-bar" class="smart-bar" data-is-logged-in={isLoggedIn}>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <a href="/" class="nav-link-sc">
+            <i class="fas fa-home"></i> INICIO
+        </a>
+        <div class="smart-label">
+            SMARTCUT PRO <span style="background: var(--alvarez-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.5rem; margin-left: 10px;">v5.6.5 INDUSTRIAL</span>
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 20px; align-items: center;">
+        <div id="theme-toggle" onclick="toggleTheme()" class="nav-link-sc" style="cursor:pointer; color: var(--sc-text-dim);">
+            <i id="theme-icon" class="fas fa-moon"></i> <span id="theme-text">MODO OSCURO</span>
+        </div>
+        <div style="width: 1px; height: 20px; background: var(--sc-border);"></div>
+        <a href={isLoggedIn ? "/cliente/pedidos" : "/login"} class="nav-link-sc" style="font-weight: 800; color: var(--sc-text);">
+            <i class="fas fa-user-circle"></i> {isLoggedIn ? 'MI PANEL' : 'INGRESAR'}
+        </a>
+        <div style="width: 1px; height: 20px; background: var(--sc-border);"></div>
         <div style="position: relative;">
-            <i class="fas fa-cog" onclick="toggleConfig()" style="color: #444; font-size: 1.2rem; cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#444'"></i>
+            <i class="fas fa-cog" onclick="toggleConfig()" style="color: var(--sc-text-dim); font-size: 1.2rem; cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='var(--sc-text)'" onmouseout="this.style.color='var(--sc-text-dim)'"></i>
             <span style="position: absolute; top: -8px; right: -8px; background: var(--alvarez-red); color: white; font-size: 0.5rem; padding: 2px 4px; border-radius: 50%; font-weight: 900;">18%</span>
         </div>
-        <button onclick="showDashboard()" class="btn-main">PROYECTOS</button>
+        <button onclick="showDashboard()" class="btn-main" id="btn-projects-sc">PROYECTOS</button>
     </div>
 </div>
 
@@ -290,15 +370,15 @@ const { isLoggedIn = false } = Astro.props;
 
         <div class="help-guide animate-in" style="animation-delay: 0.2s;">
             { !isLoggedIn && (
-                <div style="background: linear-gradient(135deg, var(--alvarez-red), #ff5a3c); color: white; padding: 40px; border-radius: 20px; margin-bottom: 50px; text-align: center; box-shadow: 0 20px 40px oklch(62.8% 0.25 29.23 / 30%); width: 100%; border: 1px solid rgba(255,255,255,0.2);">
-                    <div style="font-size: 3rem; margin-bottom: 15px;"><i class="fas fa-lock"></i></div>
-                    <h3 style="font-size: 1.8rem; font-weight: 900; margin-bottom: 15px; text-transform: uppercase; letter-spacing: -1px;">Atención: Acceso para Clientes Profesionales</h3>
-                    <p style="font-size: 1.2rem; opacity: 0.95; margin-bottom: 30px; max-width: 800px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+                <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--alvarez-red); color: white; padding: 30px 40px; border-radius: 20px; margin-bottom: 40px; text-align: center; backdrop-filter: blur(10px); box-shadow: 0 15px 30px rgba(0,0,0,0.5); width: 100%;">
+                    <div style="font-size: 2rem; margin-bottom: 10px; color: var(--alvarez-red);"><i class="fas fa-lock"></i></div>
+                    <h3 style="font-size: 1.4rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: -1px;">Atención: Acceso para Clientes Profesionales</h3>
+                    <p style="font-size: 1.05rem; opacity: 0.8; margin-bottom: 25px; max-width: 800px; margin-left: auto; margin-right: auto; line-height: 1.5;">
                         Para poder **descargar planos industriales**, **guardar presupuestos** y enviar tus pedidos directamente a producción, es necesario estar registrado en nuestro Club de Clientes.
                     </p>
-                    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                        <a href="/login" class="btn-main" style="background: white; color: var(--alvarez-red); border: none; font-weight: 900; padding: 15px 40px; font-size: 0.85rem;">INICIAR SESIÓN</a>
-                        <a href="/registro" class="btn-main" style="background: rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.5); font-weight: 900; padding: 15px 40px; font-size: 0.85rem;">REGISTRARME GRATIS</a>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <a href="/login" class="btn-main" style="background: var(--alvarez-red); color: white; border: none; font-weight: 900; padding: 12px 30px; font-size: 0.8rem;">INICIAR SESIÓN</a>
+                        <a href="/registro" class="btn-main" style="background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.2); font-weight: 900; padding: 12px 30px; font-size: 0.8rem;">REGISTRARME GRATIS</a>
                     </div>
                 </div>
             )}
@@ -345,11 +425,16 @@ const { isLoggedIn = false } = Astro.props;
     <section id="view-setup" class="hidden animate-in" style="max-width: 600px; margin: 40px auto;">
         <div class="config-title">Configuración del Material</div>
         <div style="display: grid; gap: 20px;">
-            <div><label>MARCA</label><select id="plate-brand"><option value="FAPLAC">FAPLAC (2750x1820)</option><option value="EGGER">EGGER (2600x1820)</option><option value="SADEPAN">SADEPAN (2820x1830)</option><option value="NOVA">NOVA (3660x1830)</option><option value="OSB">OSB (2440x1220)</option><option value="CUSTOM">PERSONALIZADA...</option></select></div>
-            <div><label>MODELO / DISEÑO</label><input type="text" id="setup-design" list="designs-list" placeholder="Ej: Sahara, Mesopotamia..."></div>
+            <div><label>MARCA</label><select id="plate-brand" onchange="applySupportRules()"><option value="FAPLAC">FAPLAC (2750x1820)</option><option value="EGGER">EGGER (2600x1820)</option><option value="SADEPAN">SADEPAN (2820x1830)</option><option value="NOVA">NOVA (3660x1830)</option><option value="OSB">OSB (2440x1220)</option><option value="CUSTOM">PERSONALIZADA...</option></select></div>
+            <div style="position: relative;">
+                <label>MODELO / DISEÑO</label>
+                <input type="text" id="setup-design" autocomplete="off" oninput="searchCatalog(this.value)" placeholder="Ej: Sahara, Mesopotamia...">
+                <div id="catalog-results" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: #1a1a1c; border: 1px solid var(--alvarez-border); z-index: 100; border-radius: 8px; max-height: 300px; overflow-y: auto; margin-top: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></div>
+                <div id="selected-product-box" class="hidden"></div>
+            </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div><label>ESPESOR PLACA (mm)</label>
-                    <select id="plate-thickness">
+                    <select id="plate-thickness" onchange="applySupportRules()">
                         <option value="30">30 mm</option>
                         <option value="28">28 mm</option>
                         <option value="25">25 mm</option>
@@ -359,6 +444,13 @@ const { isLoggedIn = false } = Astro.props;
                         <option value="9">9 mm</option>
                         <option value="5.5">5.5 mm</option>
                         <option value="3">3 mm (Plus)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>SOPORTE</label>
+                    <select id="plate-support">
+                        <option value="AGLOMERADO">AGLOMERADO</option>
+                        <option value="MDF">MDF</option>
                     </select>
                 </div>
                 <div id="custom-dims" class="hidden" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -471,6 +563,26 @@ const { isLoggedIn = false } = Astro.props;
 
     async function initSC() {
         try {
+            // Cargar tema guardado (Claro/Hueso por defecto)
+            const savedTheme = localStorage.getItem('sc-theme') || 'bone';
+            if (savedTheme === 'bone') {
+                document.body.setAttribute('data-theme', 'bone');
+                document.getElementById('theme-text').textContent = 'MODO OSCURO';
+                document.getElementById('theme-icon').className = 'fas fa-moon';
+            } else {
+                document.body.removeAttribute('data-theme');
+                document.getElementById('theme-text').textContent = 'MODO CLARO';
+                document.getElementById('theme-icon').className = 'fas fa-sun';
+            }
+
+            // Actualizar UI de navegación dinámicamente según sesión
+            const hasSession = document.cookie.includes('client_session=') || document.cookie.includes('seller_session=') || document.cookie.includes('admin_session=');
+            const navBtn = document.querySelector('.nav-link-sc[style*="font-weight: 800"]');
+            if (hasSession && navBtn) {
+                navBtn.innerHTML = '<i class="fas fa-user-circle"></i> MI PANEL';
+                navBtn.setAttribute('href', '/cliente');
+            }
+
             const opt = await import('/herramientas/logic/core/optimizer.js?v=' + Date.now());
             const vis = await import('/herramientas/logic/core/visualizer.js?v=' + Date.now());
             engine = new opt.SmartCutEngine(session.config);
@@ -502,6 +614,24 @@ const { isLoggedIn = false } = Astro.props;
             });
         });
     }
+
+    window.toggleTheme = () => {
+        const body = document.body;
+        const text = document.getElementById('theme-text');
+        const icon = document.getElementById('theme-icon');
+        
+        if (body.getAttribute('data-theme') === 'bone') {
+            body.removeAttribute('data-theme');
+            text.textContent = 'MODO CLARO';
+            icon.className = 'fas fa-sun';
+            localStorage.setItem('sc-theme', 'dark');
+        } else {
+            body.setAttribute('data-theme', 'bone');
+            text.textContent = 'MODO OSCURO';
+            icon.className = 'fas fa-moon';
+            localStorage.setItem('sc-theme', 'bone');
+        }
+    };
 
     window.toggleConfig = () => document.getElementById('expert-panel').classList.toggle('open');
 
@@ -538,31 +668,183 @@ const { isLoggedIn = false } = Astro.props;
     window.showDashboard = () => {
         document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         document.getElementById('view-dashboard').classList.remove('hidden');
-        document.getElementById('smartcut-bar').classList.add('hidden');
+        document.getElementById('btn-projects-sc').classList.add('hidden');
         renderProjectsSC();
     };
 
     window.showSetup = () => {
         document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         document.getElementById('view-setup').classList.remove('hidden');
+        applySupportRules(); // Cargar reglas iniciales
+    };
+
+    window.searchCatalog = async (val) => {
+        const resultsEl = document.getElementById('catalog-results');
+        const brand = document.getElementById('plate-brand').value;
+
+        if (val.length < 2) {
+            resultsEl.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/api/herramientas/catalog?search=${encodeURIComponent(val)}`);
+            const items = await resp.json();
+
+            if (items.length > 0) {
+                resultsEl.innerHTML = items.map(item => {
+                    const img = item.foto_principal ? `https://admin.alvarezplacas.com.ar/assets/${item.foto_principal}?width=60&quality=80` : 'https://placehold.co/60x60?text=P';
+                    const itemBrand = (item.marca?.nombre || 'FAPLAC').toUpperCase();
+                    
+                    return `
+                    <div class="catalog-suggestion" onclick="selectProduct('${item.nombre}', '${itemBrand}', '${item.espesor}', '${item.soporte}', '${img}')">
+                        <img src="${img}" style="width:40px; height:40px; border-radius:4px; object-fit:cover; border:1px solid rgba(255,255,255,0.1);">
+                        <div style="flex:1">
+                            <div style="font-size:0.85rem; font-weight:700; color:#fff;">${item.nombre}</div>
+                            <div style="font-size:0.65rem; color:var(--alvarez-red); font-weight:800; letter-spacing:0.5px;">${itemBrand} - ${item.espesor || '18'}mm</div>
+                        </div>
+                    </div>`;
+                }).join('');
+                resultsEl.classList.remove('hidden');
+            } else {
+                resultsEl.classList.add('hidden');
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    window.selectProduct = (name, brand, thickness, support, img) => {
+        const designInput = document.getElementById('setup-design');
+        const brandSelect = document.getElementById('plate-brand');
+        const previewBox = document.getElementById('selected-product-box');
+        const thickEl = document.getElementById('plate-thickness');
+        const suppEl = document.getElementById('plate-support');
+
+        // Sincronizar Campos
+        designInput.value = name;
+        brandSelect.value = brand.toUpperCase();
+        if (thickness) thickEl.value = parseFloat(thickness).toString();
+        if (support) suppEl.value = support.toUpperCase();
+
+        // BLOQUEO INDUSTRIAL: Si viene del catálogo, la configuración es incuestionable
+        [brandSelect, thickEl, suppEl].forEach(el => {
+            el.disabled = true;
+            el.style.opacity = '0.6';
+            el.style.cursor = 'not-allowed';
+        });
+
+        // Mostrar Preview Visual
+        previewBox.innerHTML = `
+            <div class="selected-product-preview">
+                <img src="${img}" alt="${name}">
+                <div class="selected-product-info">
+                    <strong>${name}</strong>
+                    <span><i class="fas fa-shield-alt" style="color:var(--alvarez-red)"></i> CONFIGURACIÓN VALIDADA POR CATÁLOGO</span>
+                </div>
+                <button onclick="window.clearSelectedProduct()" style="background:none; border:none; color:var(--alvarez-red); cursor:pointer; font-weight:800;">CAMBIAR</button>
+            </div>
+        `;
+        previewBox.classList.remove('hidden');
+        document.getElementById('catalog-results').classList.add('hidden');
+        
+        designInput.dataset.selectedImg = img;
+        designInput.dataset.selectedBrand = brand;
+    };
+
+    window.clearSelectedProduct = () => {
+        const designInput = document.getElementById('setup-design');
+        const brandSelect = document.getElementById('plate-brand');
+        const thickEl = document.getElementById('plate-thickness');
+        const suppEl = document.getElementById('plate-support');
+
+        designInput.value = '';
+        delete designInput.dataset.selectedImg;
+        delete designInput.dataset.selectedBrand;
+        document.getElementById('selected-product-box').classList.add('hidden');
+
+        // LIBERAR CAMPOS
+        [brandSelect, thickEl, suppEl].forEach(el => {
+            el.disabled = false;
+            el.style.opacity = '1';
+            el.style.cursor = 'pointer';
+        });
+        applySupportRules();
+    };
+
+    window.applySupportRules = () => {
+        const brand = document.getElementById('plate-brand').value;
+        const thickness = document.getElementById('plate-thickness').value;
+        const supportEl = document.getElementById('plate-support');
+        
+        // REGLA DE ORO: 3mm y 5.5mm (PLUS) SIEMPRE SON MDF
+        const isThin = (thickness === '3' || thickness === '5.5');
+        const isNova = (brand === 'NOVA');
+
+        if (isThin || isNova) {
+            supportEl.value = 'MDF';
+            // Deshabilitar la opción de Aglomerado para evitar el error industrial
+            Array.from(supportEl.options).forEach(opt => {
+                if (opt.value === 'AGLOMERADO') opt.disabled = true;
+            });
+            supportEl.classList.add('locked');
+            if (isThin) console.log("⚙️ SmartCut: Forzando MDF para espesor fino (Plus).");
+        } else {
+            Array.from(supportEl.options).forEach(opt => opt.disabled = false);
+            supportEl.classList.remove('locked');
+        }
     };
 
     window.showEditorSC = (i) => {
         session.currentIndex = i;
         const p = session.projects[i];
-        document.getElementById('display-proj-design').textContent = p.design;
+        
+        const designHeader = document.getElementById('display-proj-design');
+        if (p.image) {
+            designHeader.innerHTML = `<img src="${p.image}" style="width:30px; height:30px; border-radius:4px; vertical-align:middle; margin-right:10px; border:1px solid var(--sc-border);"> ${p.design}`;
+        } else {
+            designHeader.textContent = p.design;
+        }
+
         document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         document.getElementById('view-editor').classList.remove('hidden');
-        document.getElementById('smartcut-bar').classList.remove('hidden');
+        document.getElementById('btn-projects-sc').classList.remove('hidden');
         renderEditorSC();
     };
 
     window.createProjectSC = () => {
+        const designInput = document.getElementById('setup-design');
         const b = document.getElementById('plate-brand').value;
-        const d = document.getElementById('setup-design').value || b;
+        const d = designInput.value || b;
+        const thickness = document.getElementById('plate-thickness').value;
+        const support = document.getElementById('plate-support').value;
+        
+        // Validación de Consistencia Industrial
+        if (designInput.dataset.selectedBrand && designInput.dataset.selectedBrand.toUpperCase() !== b.toUpperCase()) {
+            alert(`⚠️ INCONSISTENCIA DE MARCA: El diseño seleccionado pertenece a ${designInput.dataset.selectedBrand}, pero has elegido ${b}. Por favor, corrige la marca para continuar.`);
+            return;
+        }
+
+        // Sanity Check: Espesores Plus (3/5.5) nunca pueden ser Aglomerado
+        if ((thickness === '3' || thickness === '5.5') && support === 'AGLOMERADO') {
+            alert(`⚠️ ERROR INDUSTRIAL: Los espesores de 3mm y 5.5mm (Plus) solo existen en soporte MDF. No se puede crear como Aglomerado.`);
+            return;
+        }
+
         let w = b === 'CUSTOM' ? parseInt(document.getElementById('setup-w').value) : BRANDS[b].w;
         let h = b === 'CUSTOM' ? parseInt(document.getElementById('setup-h').value) : BRANDS[b].h;
-        session.projects.push({ brand: b, design: d, w, h, pieces: [], result: null });
+        
+        const projectDesign = `${d} (${b} ${thickness}mm ${support})`;
+        
+        session.projects.push({ 
+            brand: b, 
+            design: projectDesign, 
+            designName: d,
+            thickness, 
+            support, 
+            w, h, 
+            image: designInput.dataset.selectedImg || null,
+            pieces: [], 
+            result: null 
+        });
         window.showEditorSC(session.projects.length - 1);
     };
 
@@ -647,7 +929,10 @@ const { isLoggedIn = false } = Astro.props;
     window.openLoginWall = () => document.getElementById('login-wall').classList.remove('hidden');
 
     window.handleBudgetClick = () => {
-        if (!IS_LOGGED_IN) {
+        // REGLA CRÍTICA: Verificar cookie además de variable de servidor para evitar login redundante
+        const hasSession = document.cookie.includes('client_session=') || document.cookie.includes('seller_session=') || document.cookie.includes('admin_session=');
+        
+        if (!hasSession && !IS_LOGGED_IN) {
             openLoginWall();
             return;
         }
