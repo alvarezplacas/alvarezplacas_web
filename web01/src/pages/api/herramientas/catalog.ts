@@ -8,14 +8,24 @@ export const GET: APIRoute = async ({ url }) => {
     const type = url.searchParams.get('type') || 'products'; // 'products' or 'lines'
     
     try {
+        // Resolvemos el ID de la marca primero para un filtrado 100% exacto y sin fugas
+        const marcasRes = await directus.request(readItems('marcas', {
+            filter: { nombre: { _eq: brand } },
+            fields: ['id']
+        }));
+        const brandObj = (Array.isArray(marcasRes) ? marcasRes[0] : (marcasRes as any).data?.[0]);
+        const brandId = brandObj?.id;
+
         if (type === 'lines') {
-            console.log(`[Catalog API] Fetching lines for brand: "${brand}"`);
+            console.log(`[Catalog API] Fetching lines for brand: "${brand}" (ID: ${brandId})`);
+            
             const response = await directus.request(readItems('Productos', {
                 fields: ['linea', 'marca.nombre'],
                 filter: {
                     _and: [
                         { rubro: { letra: { _eq: 'M' } } },
-                        { marca: { nombre: { _eq: brand } } }
+                        { marca: { _eq: brandId } },
+                        { Estado: { _neq: 'archived' } }
                     ]
                 },
                 limit: -1
@@ -23,37 +33,44 @@ export const GET: APIRoute = async ({ url }) => {
             
             let rawProducts = Array.isArray(response) ? response : (response as any).data || [];
             
-            // Filtro de seguridad extra en JS por si el join de Directus falla o trae de más
-            const filteredProducts = rawProducts.filter((p: any) => {
-                const b = p.marca?.nombre || '';
-                return b === brand;
-            });
-
-            if (rawProducts.length !== filteredProducts.length) {
-                console.warn(`[Catalog API] FILTERED OUT ${rawProducts.length - filteredProducts.length} leaked products from other brands.`);
-            }
-
             // Usamos el campo literal 'linea' de Directus para la agrupación.
-            const lines = [...new Set(filteredProducts.map((p: any) => (p.linea || '').toString().trim() || 'GENERAL'))].sort();
+            const lines = [...new Set(rawProducts.map((p: any) => (p.linea || '').toString().trim() || 'GENERAL'))].sort();
 
             return new Response(JSON.stringify(lines), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
         const filters: any[] = [
             { rubro: { letra: { _eq: 'M' } } },
-            { Estado: { _neq: 'archived' } } // Permitimos Stock, published, etc.
+            { marca: { _eq: brandId } },
+            { Estado: { _neq: 'archived' } }
         ];
-
-        if (brand) filters.push({ marca: { nombre: { _eq: brand } } });
         
         if (line) {
             if (line === 'GENERAL') {
-                filters.push({
-                    _or: [
-                        { linea: { _null: true } },
-                        { linea: { _eq: '' } }
-                    ]
+                const allResponse = await directus.request(readItems('Productos', {
+                    fields: ['id', 'nombre', 'sku', 'modelo', 'linea', 'espesor', 'soporte', 'marca.nombre', 'foto_principal'],
+                    filter: { 
+                        _and: [
+                            { rubro: { letra: { _eq: 'M' } } },
+                            { marca: { _eq: brandId } },
+                            { Estado: { _neq: 'archived' } }
+                        ]
+                    },
+                    limit: -1
+                }));
+                const allProducts = Array.isArray(allResponse) ? allResponse : (allResponse as any).data || [];
+                
+                const products = allProducts.filter((p: any) => {
+                    const l = (p.linea || '').toString().trim();
+                    return !l;
                 });
+
+                const mappedProducts = products.map((p: any) => ({
+                    ...p,
+                    nombre_corto: p.modelo || p.nombre
+                }));
+
+                return new Response(JSON.stringify(mappedProducts), { status: 200, headers: { 'Content-Type': 'application/json' } });
             } else {
                 filters.push({ linea: { _eq: line } });
             }
@@ -70,14 +87,14 @@ export const GET: APIRoute = async ({ url }) => {
         }
 
         const response = await directus.request(readItems('Productos', {
-            fields: ['id', 'nombre', 'sku', 'modelo', 'linea', 'espesor', 'soporte', 'marca.nombre', 'foto_principal'],
+            fields: ['id', 'nombre', 'sku', 'modelo', 'linea', 'espesor', 'soporte', 'marca.id', 'marca.nombre', 'foto_principal'],
             filter: { _and: filters },
             limit: 500 
         }));
 
         let products = (Array.isArray(response) ? response : (response as any).data || []).filter((p: any) => {
-            if (!brand) return true;
-            return p.marca?.nombre === brand;
+            if (!brandId) return true;
+            return (p.marca?.id === brandId || p.marca === brandId);
         });
 
         const mappedProducts = products.map((p: any) => ({
