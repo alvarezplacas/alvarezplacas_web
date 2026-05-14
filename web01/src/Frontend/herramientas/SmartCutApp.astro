@@ -424,45 +424,71 @@ const { isLoggedIn = false } = Astro.props;
 
     <section id="view-setup" class="hidden animate-in" style="max-width: 600px; margin: 40px auto;">
         <div class="config-title">Configuración del Material</div>
-        <div style="display: grid; gap: 20px;">
-            <div><label>MARCA</label><select id="plate-brand" onchange="applySupportRules()"><option value="FAPLAC">FAPLAC (2750x1820)</option><option value="EGGER">EGGER (2600x1820)</option><option value="SADEPAN">SADEPAN (2820x1830)</option><option value="NOVA">NOVA (3660x1830)</option><option value="OSB">OSB (2440x1220)</option><option value="CUSTOM">PERSONALIZADA...</option></select></div>
-            <div style="position: relative;">
-                <label>MODELO / DISEÑO</label>
-                <input type="text" id="setup-design" autocomplete="off" oninput="searchCatalog(this.value)" placeholder="Ej: Sahara, Mesopotamia...">
-                <div id="catalog-results" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: #1a1a1c; border: 1px solid var(--alvarez-border); z-index: 100; border-radius: 8px; max-height: 300px; overflow-y: auto; margin-top: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></div>
-                <div id="selected-product-box" class="hidden"></div>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div><label>ESPESOR PLACA (mm)</label>
-                    <select id="plate-thickness" onchange="applySupportRules()">
-                        <option value="30">30 mm</option>
-                        <option value="28">28 mm</option>
-                        <option value="25">25 mm</option>
-                        <option value="18" selected>18 mm</option>
-                        <option value="15">15 mm</option>
-                        <option value="12">12 mm</option>
-                        <option value="9">9 mm</option>
-                        <option value="5.5">5.5 mm</option>
-                        <option value="3">3 mm (Plus)</option>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                <div>
+                    <label style="font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 8px; display: block;">1. MARCA</label>
+                    <select id="plate-brand" onchange="updateCatalogFlow('brand')" style="width: 100%; padding: 15px; background: #000; border: 1px solid #333; color: white; border-radius: 12px; font-weight: 700;">
+                        <option value="FAPLAC">FAPLAC (2750x1820)</option>
+                        <option value="EGGER">EGGER (2600x1820)</option>
+                        <option value="SADEPAN">SADEPAN (2820x1830)</option>
+                        <option value="NOVA">NOVA (3660x1830)</option>
+                        <option value="CUSTOM">PERSONALIZADA...</option>
                     </select>
                 </div>
                 <div>
-                    <label>SOPORTE</label>
-                    <select id="plate-support">
-                        <option value="AGLOMERADO">AGLOMERADO</option>
-                        <option value="MDF">MDF</option>
+                    <label style="font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 8px; display: block;">2. LÍNEA / COLECCIÓN</label>
+                    <select id="setup-line" onchange="updateCatalogFlow('line')" style="width: 100%; padding: 15px; background: #000; border: 1px solid #333; color: white; border-radius: 12px; font-weight: 700;">
+                        <option value="">-- Seleccionar Línea --</option>
                     </select>
                 </div>
-                <div id="custom-dims" class="hidden" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div><label>LARGO</label><input type="number" id="setup-w" value="2750"></div>
-                    <div><label>ANCHO</label><input type="number" id="setup-h" value="1830"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 25px;">
+                <div style="position: relative;">
+                    <label style="font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 8px; display: block;">3. COLOR / DISEÑO</label>
+                    <div id="design-container">
+                        <select id="setup-design-select" onchange="updateCatalogFlow('design')" style="width: 100%; padding: 15px; background: #000; border: 1px solid #333; color: white; border-radius: 12px; font-weight: 700;">
+                            <option value="">-- Seleccionar Color --</option>
+                        </select>
+                        <input type="text" id="setup-design-manual" class="hidden" placeholder="Ej: Definido por Cliente..." style="width: 100%; padding: 15px; background: #000; border: 1px solid var(--alvarez-red); color: white; border-radius: 12px;">
+                    </div>
+                    <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+                        <input type="checkbox" id="check-manual" onchange="toggleManualMode(this.checked)">
+                        <label for="check-manual" style="font-size: 0.65rem; font-weight: 800; color: #666; cursor: pointer;">EL COLOR NO ESTÁ EN LA LISTA (MANUAL)</label>
+                    </div>
+                </div>
+                <div id="setup-preview-box" style="background: rgba(255,255,255,0.02); border: 2px dashed #333; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 120px;">
+                    <div id="preview-placeholder" style="text-align: center; color: #444;">
+                        <i class="fas fa-image" style="font-size: 2rem; display: block; margin-bottom: 5px;"></i>
+                        <span style="font-size: 0.5rem; font-weight: 900; text-transform: uppercase;">Vista Previa</span>
+                    </div>
+                    <img id="preview-img" class="hidden" style="width: 100%; height: 100%; object-fit: cover;">
                 </div>
             </div>
-        </div>
-        <div style="display: flex; gap: 15px; margin-top: 40px;">
-            <button onclick="createProjectSC()" class="btn-main" style="flex: 1; background: var(--alvarez-red);">COMENZAR</button>
-            <button onclick="showDashboard()" style="background:transparent; border:none; color:#444; font-weight:800; cursor:pointer;">VOLVER</button>
-        </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <div>
+                    <label style="font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 8px; display: block;">ESPESOR (MM)</label>
+                    <select id="plate-thickness" onchange="applySupportRules()" style="width: 100%; padding: 15px; background: #000; border: 1px solid #333; color: white; border-radius: 12px; font-weight: 700;">
+                        <option value="18">18 mm</option><option value="15">15 mm</option><option value="12">12 mm</option><option value="9">9 mm</option><option value="5.5">5.5 mm (Plus)</option><option value="3">3 mm (Plus)</option><option value="25">25 mm</option><option value="36">36 mm</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 8px; display: block;">SOPORTE</label>
+                    <select id="plate-support" style="width: 100%; padding: 15px; background: #000; border: 1px solid #333; color: white; border-radius: 12px; font-weight: 700;">
+                        <option value="AGLOMERADO">AGLOMERADO</option><option value="MDF">MDF (Fibrofacil)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="custom-dims" class="hidden" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                <div><label style="font-size: 0.6rem; color: #666;">LARGO</label><input type="number" id="setup-w" value="2750" style="width: 100%; padding: 10px; background: #000; border: 1px solid #333; color: white; border-radius: 8px;"></div>
+                <div><label style="font-size: 0.6rem; color: #666;">ANCHO</label><input type="number" id="setup-h" value="1830" style="width: 100%; padding: 10px; background: #000; border: 1px solid #333; color: white; border-radius: 8px;"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px;">
+                <button onclick="createProjectSC()" class="btn-main" style="background: var(--alvarez-red); color: white; border: none; font-weight: 900; padding: 20px; font-size: 0.9rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(255,40,0,0.3);">COMENZAR OPTIMIZACIÓN</button>
+                <button onclick="window.location.reload()" class="btn-main" style="background: rgba(255,255,255,0.05); color: #888; border: 1px solid #333; font-weight: 900; padding: 20px; font-size: 0.9rem; border-radius: 15px;">VOLVER</button>
+            </div>
     </section>
 
     <section id="view-editor" class="hidden animate-in">
@@ -675,104 +701,82 @@ const { isLoggedIn = false } = Astro.props;
     window.showSetup = () => {
         document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         document.getElementById('view-setup').classList.remove('hidden');
-        applySupportRules(); // Cargar reglas iniciales
+        applySupportRules(); 
+        updateCatalogFlow('brand'); // Cargar catálogo inicial (FAPLAC)
     };
 
-    window.searchCatalog = async (val) => {
-        const resultsEl = document.getElementById('catalog-results');
+    window.updateCatalogFlow = async (step) => {
         const brand = document.getElementById('plate-brand').value;
+        const lineSelect = document.getElementById('setup-line');
+        const designSelect = document.getElementById('setup-design-select');
+        const previewImg = document.getElementById('preview-img');
+        const previewPlaceholder = document.getElementById('preview-placeholder');
 
-        if (val.length < 2) {
-            resultsEl.classList.add('hidden');
-            return;
-        }
-
-        // BLOQUEO DE SEGURIDAD: Evitar que el usuario escriba el nombre de otra marca como diseño
-        const forbiddenBrands = ['FAPLAC', 'EGGER', 'SADEPAN', 'NOVA'].filter(b => b !== brand);
-        if (forbiddenBrands.some(b => val.toUpperCase().includes(b))) {
-            resultsEl.innerHTML = `<div style="padding:15px; color:var(--alvarez-red); font-size:0.75rem; font-weight:800; background:rgba(255,0,0,0.1);">⚠️ ESTÁS USANDO UNA MARCA COMO DISEÑO. POR FAVOR, SELECCIONA LA MARCA CORRECTA ARRIBA.</div>`;
-            resultsEl.classList.remove('hidden');
-            return;
-        }
-
-        try {
-            const resp = await fetch(`/api/herramientas/catalog?search=${encodeURIComponent(val)}`);
-            const items = await resp.json();
-
-            if (items.length > 0) {
-                resultsEl.innerHTML = items.map(item => {
-                    const img = item.foto_principal ? `https://admin.alvarezplacas.com.ar/assets/${item.foto_principal}?width=60&quality=80` : 'https://placehold.co/60x60?text=P';
-                    const itemBrand = (item.marca?.nombre || 'FAPLAC').toUpperCase();
-                    
-                    return `
-                    <div class="catalog-suggestion" onclick="selectProduct('${item.nombre}', '${itemBrand}', '${item.espesor}', '${item.soporte}', '${img}')">
-                        <img src="${img}" style="width:40px; height:40px; border-radius:4px; object-fit:cover; border:1px solid rgba(255,255,255,0.1);">
-                        <div style="flex:1">
-                            <div style="font-size:0.85rem; font-weight:700; color:#fff;">${item.nombre}</div>
-                            <div style="font-size:0.65rem; color:var(--alvarez-red); font-weight:800; letter-spacing:0.5px;">${itemBrand} - ${item.espesor || '18'}mm</div>
-                        </div>
-                    </div>`;
-                }).join('');
-                resultsEl.classList.remove('hidden');
+        if (step === 'brand') {
+            lineSelect.innerHTML = '<option value="">Cargando...</option>';
+            designSelect.innerHTML = '<option value="">-- Seleccionar Color --</option>';
+            
+            if (brand === 'CUSTOM') {
+                document.getElementById('custom-dims').classList.remove('hidden');
+                toggleManualMode(true);
+                return;
             } else {
-                resultsEl.innerHTML = `<div style="padding:15px; color:#666; font-size:0.75rem;">No se encontraron resultados en el catálogo para "${brand}". Se usará como diseño manual.</div>`;
-                resultsEl.classList.remove('hidden');
+                document.getElementById('custom-dims').classList.add('hidden');
             }
-        } catch (e) { console.error(e); }
+
+            try {
+                const res = await fetch(`/api/herramientas/catalog?type=lines&brand=${brand}`);
+                const lines = await res.json();
+                lineSelect.innerHTML = '<option value="">-- Seleccionar Línea --</option>' + 
+                    lines.map(l => `<option value="${l}">${l}</option>`).join('');
+                toggleManualMode(false);
+            } catch (e) { console.error(e); }
+        }
+
+        if (step === 'line') {
+            const line = lineSelect.value;
+            designSelect.innerHTML = '<option value="">Cargando...</option>';
+            try {
+                const res = await fetch(`/api/herramientas/catalog?brand=${brand}&line=${line}`);
+                const products = await res.json();
+                designSelect.innerHTML = '<option value="">-- Seleccionar Color --</option>' + 
+                    products.map(p => `<option value="${p.nombre}" data-img="https://admin.alvarezplacas.com.ar/assets/${p.foto_principal}" data-thickness="${p.espesor}" data-support="${p.soporte}">${p.nombre}</option>`).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        if (step === 'design') {
+            const opt = designSelect.options[designSelect.selectedIndex];
+            const img = opt.dataset.img;
+            if (img && !img.includes('null')) {
+                previewImg.src = img + '?width=200&quality=80';
+                previewImg.classList.remove('hidden');
+                previewPlaceholder.classList.add('hidden');
+            } else {
+                previewImg.classList.add('hidden');
+                previewPlaceholder.classList.remove('hidden');
+            }
+            
+            // Auto-set thickness/support if available
+            if (opt.dataset.thickness) document.getElementById('plate-thickness').value = parseFloat(opt.dataset.thickness).toString();
+            if (opt.dataset.support) document.getElementById('plate-support').value = opt.dataset.support.toUpperCase();
+            applySupportRules();
+        }
     };
 
-    window.selectProduct = (name, brand, thickness, support, img) => {
-        const designInput = document.getElementById('setup-design');
-        const brandSelect = document.getElementById('plate-brand');
-        const previewBox = document.getElementById('selected-product-box');
-        const thickEl = document.getElementById('plate-thickness');
-        const suppEl = document.getElementById('plate-support');
-
-        designInput.value = name;
-        brandSelect.value = brand.toUpperCase();
-        if (thickness) thickEl.value = parseFloat(thickness).toString();
-        if (support) suppEl.value = support.toUpperCase();
-
-        [brandSelect, thickEl, suppEl].forEach(el => {
-            el.disabled = true;
-            el.style.opacity = '0.6';
-            el.style.cursor = 'not-allowed';
-        });
-
-        previewBox.innerHTML = `
-            <div class="selected-product-preview">
-                <img src="${img}" alt="${name}">
-                <div class="selected-product-info">
-                    <strong>${name}</strong>
-                    <span><i class="fas fa-shield-alt" style="color:var(--alvarez-red)"></i> CONFIGURACIÓN VALIDADA</span>
-                </div>
-                <button onclick="window.clearSelectedProduct()" style="background:none; border:none; color:var(--alvarez-red); cursor:pointer; font-weight:800;">CAMBIAR</button>
-            </div>
-        `;
-        previewBox.classList.remove('hidden');
-        document.getElementById('catalog-results').classList.add('hidden');
+    window.toggleManualMode = (isManual) => {
+        const select = document.getElementById('setup-design-select');
+        const input = document.getElementById('setup-design-manual');
+        const check = document.getElementById('check-manual');
         
-        designInput.dataset.selectedImg = img;
-        designInput.dataset.selectedBrand = brand;
-    };
-
-    window.clearSelectedProduct = () => {
-        const designInput = document.getElementById('setup-design');
-        const brandSelect = document.getElementById('plate-brand');
-        const thickEl = document.getElementById('plate-thickness');
-        const suppEl = document.getElementById('plate-support');
-
-        designInput.value = '';
-        delete designInput.dataset.selectedImg;
-        delete designInput.dataset.selectedBrand;
-        document.getElementById('selected-product-box').classList.add('hidden');
-
-        [brandSelect, thickEl, suppEl].forEach(el => {
-            el.disabled = false;
-            el.style.opacity = '1';
-            el.style.cursor = 'pointer';
-        });
-        applySupportRules();
+        if (isManual) {
+            select.classList.add('hidden');
+            input.classList.remove('hidden');
+            check.checked = true;
+        } else {
+            select.classList.remove('hidden');
+            input.classList.add('hidden');
+            check.checked = false;
+        }
     };
 
     window.applySupportRules = () => {
@@ -798,9 +802,7 @@ const { isLoggedIn = false } = Astro.props;
     window.showEditorSC = (i) => {
         session.currentIndex = i;
         const p = session.projects[i];
-        
         const designHeader = document.getElementById('display-proj-design');
-        // Usar imagen del catálogo o una genérica técnica si es manual
         const thumb = p.image || 'https://placehold.co/100x100/1a1a1c/white?text=PLACA';
         
         designHeader.innerHTML = `
@@ -820,43 +822,48 @@ const { isLoggedIn = false } = Astro.props;
     };
 
     window.createProjectSC = () => {
-        const designInput = document.getElementById('setup-design');
-        const b = document.getElementById('plate-brand').value;
-        const d = designInput.value || b;
-        const thickness = document.getElementById('plate-thickness').value;
-        const support = document.getElementById('plate-support').value;
+        const brand = document.getElementById('plate-brand').value;
+        const line = document.getElementById('setup-line').value;
+        const isManual = document.getElementById('check-manual').checked;
+        const designSelect = document.getElementById('setup-design-select');
+        const manualInput = document.getElementById('setup-design-manual');
         
-        // BLOQUEO DE INCONSISTENCIA DE MARCA (Manual vs Catálogo)
-        if (designInput.dataset.selectedBrand && designInput.dataset.selectedBrand.toUpperCase() !== b.toUpperCase()) {
-            alert(`⚠️ INCONSISTENCIA CRÍTICA: El diseño seleccionado "${d}" pertenece a ${designInput.dataset.selectedBrand}, pero has elegido ${b}. Corrija la marca para continuar.`);
+        let designName = isManual ? manualInput.value : designSelect.value;
+        let image = null;
+
+        if (!designName) {
+            alert("⚠️ Por favor ingresa el nombre del diseño o selecciónalo del catálogo.");
             return;
         }
 
-        // Evitar que el diseño sea igual a otra marca (ej. "NOVA" bajo "FAPLAC")
-        const brands = ['FAPLAC', 'EGGER', 'SADEPAN', 'NOVA'];
-        if (brands.includes(d.toUpperCase()) && d.toUpperCase() !== b.toUpperCase()) {
-            alert(`⚠️ ERROR DE CONFIGURACIÓN: Has ingresado "${d}" como diseño, pero esa es una MARCA. Selecciona la marca correcta en el menú desplegable.`);
-            return;
+        if (isManual) {
+            designName = `${designName} (DEF. CLIENTE)`;
+        } else {
+            const opt = designSelect.options[designSelect.selectedIndex];
+            image = opt.dataset.img;
         }
+
+        const thickness = document.getElementById('plate-thickness').value;
+        const support = document.getElementById('plate-support').value;
 
         if ((thickness === '3' || thickness === '5.5') && support === 'AGLOMERADO') {
             alert(`⚠️ ERROR INDUSTRIAL: 3mm/5.5mm solo existen en soporte MDF.`);
             return;
         }
 
-        let w = b === 'CUSTOM' ? parseInt(document.getElementById('setup-w').value) : BRANDS[b].w;
-        let h = b === 'CUSTOM' ? parseInt(document.getElementById('setup-h').value) : BRANDS[b].h;
+        let w = brand === 'CUSTOM' ? parseInt(document.getElementById('setup-w').value) : BRANDS[brand].w;
+        let h = brand === 'CUSTOM' ? parseInt(document.getElementById('setup-h').value) : BRANDS[brand].h;
         
-        const projectDesign = `${d} (${b} ${thickness}mm ${support})`;
+        const projectDesign = `${designName} (${brand} ${thickness}mm ${support})`;
         
         session.projects.push({ 
-            brand: b, 
+            brand, 
             design: projectDesign, 
-            designName: d,
+            designName: designName,
             thickness, 
             support, 
             w, h, 
-            image: designInput.dataset.selectedImg || null,
+            image: image || null,
             pieces: [], 
             result: null 
         });
