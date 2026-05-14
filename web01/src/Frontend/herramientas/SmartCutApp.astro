@@ -687,6 +687,14 @@ const { isLoggedIn = false } = Astro.props;
             return;
         }
 
+        // BLOQUEO DE SEGURIDAD: Evitar que el usuario escriba el nombre de otra marca como diseño
+        const forbiddenBrands = ['FAPLAC', 'EGGER', 'SADEPAN', 'NOVA'].filter(b => b !== brand);
+        if (forbiddenBrands.some(b => val.toUpperCase().includes(b))) {
+            resultsEl.innerHTML = `<div style="padding:15px; color:var(--alvarez-red); font-size:0.75rem; font-weight:800; background:rgba(255,0,0,0.1);">⚠️ ESTÁS USANDO UNA MARCA COMO DISEÑO. POR FAVOR, SELECCIONA LA MARCA CORRECTA ARRIBA.</div>`;
+            resultsEl.classList.remove('hidden');
+            return;
+        }
+
         try {
             const resp = await fetch(`/api/herramientas/catalog?search=${encodeURIComponent(val)}`);
             const items = await resp.json();
@@ -707,7 +715,8 @@ const { isLoggedIn = false } = Astro.props;
                 }).join('');
                 resultsEl.classList.remove('hidden');
             } else {
-                resultsEl.classList.add('hidden');
+                resultsEl.innerHTML = `<div style="padding:15px; color:#666; font-size:0.75rem;">No se encontraron resultados en el catálogo para "${brand}". Se usará como diseño manual.</div>`;
+                resultsEl.classList.remove('hidden');
             }
         } catch (e) { console.error(e); }
     };
@@ -719,26 +728,23 @@ const { isLoggedIn = false } = Astro.props;
         const thickEl = document.getElementById('plate-thickness');
         const suppEl = document.getElementById('plate-support');
 
-        // Sincronizar Campos
         designInput.value = name;
         brandSelect.value = brand.toUpperCase();
         if (thickness) thickEl.value = parseFloat(thickness).toString();
         if (support) suppEl.value = support.toUpperCase();
 
-        // BLOQUEO INDUSTRIAL: Si viene del catálogo, la configuración es incuestionable
         [brandSelect, thickEl, suppEl].forEach(el => {
             el.disabled = true;
             el.style.opacity = '0.6';
             el.style.cursor = 'not-allowed';
         });
 
-        // Mostrar Preview Visual
         previewBox.innerHTML = `
             <div class="selected-product-preview">
                 <img src="${img}" alt="${name}">
                 <div class="selected-product-info">
                     <strong>${name}</strong>
-                    <span><i class="fas fa-shield-alt" style="color:var(--alvarez-red)"></i> CONFIGURACIÓN VALIDADA POR CATÁLOGO</span>
+                    <span><i class="fas fa-shield-alt" style="color:var(--alvarez-red)"></i> CONFIGURACIÓN VALIDADA</span>
                 </div>
                 <button onclick="window.clearSelectedProduct()" style="background:none; border:none; color:var(--alvarez-red); cursor:pointer; font-weight:800;">CAMBIAR</button>
             </div>
@@ -761,7 +767,6 @@ const { isLoggedIn = false } = Astro.props;
         delete designInput.dataset.selectedBrand;
         document.getElementById('selected-product-box').classList.add('hidden');
 
-        // LIBERAR CAMPOS
         [brandSelect, thickEl, suppEl].forEach(el => {
             el.disabled = false;
             el.style.opacity = '1';
@@ -775,18 +780,15 @@ const { isLoggedIn = false } = Astro.props;
         const thickness = document.getElementById('plate-thickness').value;
         const supportEl = document.getElementById('plate-support');
         
-        // REGLA DE ORO: 3mm y 5.5mm (PLUS) SIEMPRE SON MDF
         const isThin = (thickness === '3' || thickness === '5.5');
         const isNova = (brand === 'NOVA');
 
         if (isThin || isNova) {
             supportEl.value = 'MDF';
-            // Deshabilitar la opción de Aglomerado para evitar el error industrial
             Array.from(supportEl.options).forEach(opt => {
                 if (opt.value === 'AGLOMERADO') opt.disabled = true;
             });
             supportEl.classList.add('locked');
-            if (isThin) console.log("⚙️ SmartCut: Forzando MDF para espesor fino (Plus).");
         } else {
             Array.from(supportEl.options).forEach(opt => opt.disabled = false);
             supportEl.classList.remove('locked');
@@ -798,11 +800,18 @@ const { isLoggedIn = false } = Astro.props;
         const p = session.projects[i];
         
         const designHeader = document.getElementById('display-proj-design');
-        if (p.image) {
-            designHeader.innerHTML = `<img src="${p.image}" style="width:30px; height:30px; border-radius:4px; vertical-align:middle; margin-right:10px; border:1px solid var(--sc-border);"> ${p.design}`;
-        } else {
-            designHeader.textContent = p.design;
-        }
+        // Usar imagen del catálogo o una genérica técnica si es manual
+        const thumb = p.image || 'https://placehold.co/100x100/1a1a1c/white?text=PLACA';
+        
+        designHeader.innerHTML = `
+            <div style="display:flex; align-items:center; gap:15px;">
+                <img src="${thumb}" style="width:40px; height:40px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); object-fit:cover;">
+                <div style="line-height:1.2">
+                    <div style="font-size:0.9rem; font-weight:800;">${p.designName}</div>
+                    <div style="font-size:0.65rem; color:var(--alvarez-red); font-weight:800; text-transform:uppercase;">${p.brand} ${p.thickness}mm ${p.support}</div>
+                </div>
+            </div>
+        `;
 
         document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         document.getElementById('view-editor').classList.remove('hidden');
@@ -817,15 +826,21 @@ const { isLoggedIn = false } = Astro.props;
         const thickness = document.getElementById('plate-thickness').value;
         const support = document.getElementById('plate-support').value;
         
-        // Validación de Consistencia Industrial
+        // BLOQUEO DE INCONSISTENCIA DE MARCA (Manual vs Catálogo)
         if (designInput.dataset.selectedBrand && designInput.dataset.selectedBrand.toUpperCase() !== b.toUpperCase()) {
-            alert(`⚠️ INCONSISTENCIA DE MARCA: El diseño seleccionado pertenece a ${designInput.dataset.selectedBrand}, pero has elegido ${b}. Por favor, corrige la marca para continuar.`);
+            alert(`⚠️ INCONSISTENCIA CRÍTICA: El diseño seleccionado "${d}" pertenece a ${designInput.dataset.selectedBrand}, pero has elegido ${b}. Corrija la marca para continuar.`);
             return;
         }
 
-        // Sanity Check: Espesores Plus (3/5.5) nunca pueden ser Aglomerado
+        // Evitar que el diseño sea igual a otra marca (ej. "NOVA" bajo "FAPLAC")
+        const brands = ['FAPLAC', 'EGGER', 'SADEPAN', 'NOVA'];
+        if (brands.includes(d.toUpperCase()) && d.toUpperCase() !== b.toUpperCase()) {
+            alert(`⚠️ ERROR DE CONFIGURACIÓN: Has ingresado "${d}" como diseño, pero esa es una MARCA. Selecciona la marca correcta en el menú desplegable.`);
+            return;
+        }
+
         if ((thickness === '3' || thickness === '5.5') && support === 'AGLOMERADO') {
-            alert(`⚠️ ERROR INDUSTRIAL: Los espesores de 3mm y 5.5mm (Plus) solo existen en soporte MDF. No se puede crear como Aglomerado.`);
+            alert(`⚠️ ERROR INDUSTRIAL: 3mm/5.5mm solo existen en soporte MDF.`);
             return;
         }
 
