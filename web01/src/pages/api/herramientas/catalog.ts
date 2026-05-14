@@ -9,18 +9,21 @@ export const GET: APIRoute = async ({ url }) => {
     
     try {
         if (type === 'lines') {
-            const products = await directus.request(readItems('Productos', {
+            const response = await directus.request(readItems('Productos', {
                 fields: ['modelo'],
                 filter: {
                     _and: [
                         { rubro: { letra: { _eq: 'M' } } },
                         { marca: { nombre: { _eq: brand } } },
+                        { modelo: { _nnull: true } },
                         { modelo: { _neq: '' } }
                     ]
                 },
                 limit: -1
             }));
-            const lines = [...new Set(products.map(p => p.modelo))].filter(Boolean).sort();
+            
+            const rawProducts = Array.isArray(response) ? response : (response as any).data || [];
+            const lines = [...new Set(rawProducts.map((p: any) => p.modelo))].filter(Boolean).sort();
             return new Response(JSON.stringify(lines), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
@@ -41,11 +44,13 @@ export const GET: APIRoute = async ({ url }) => {
             });
         }
 
-        const products = await directus.request(readItems('Productos', {
+        const response = await directus.request(readItems('Productos', {
             fields: ['id', 'nombre', 'sku', 'modelo', 'espesor', 'soporte', 'marca.nombre', 'foto_principal'],
             filter: { _and: filters },
             limit: 50
         }));
+
+        const products = Array.isArray(response) ? response : (response as any).data || [];
 
         return new Response(JSON.stringify(products), {
             status: 200,
@@ -53,6 +58,7 @@ export const GET: APIRoute = async ({ url }) => {
         });
 
     } catch (e: any) {
-        return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+        console.error("[Catalog API Error]:", e);
+        return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 };

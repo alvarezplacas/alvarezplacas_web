@@ -736,10 +736,17 @@ const { isLoggedIn = false } = Astro.props;
             try {
                 const res = await fetch(`/api/herramientas/catalog?type=lines&brand=${brand}`);
                 const lines = await res.json();
-                lineSelect.innerHTML = '<option value="">-- Seleccionar Línea --</option>' + 
-                    lines.map(l => `<option value="${l}">${l}</option>`).join('');
+                if (Array.isArray(lines) && lines.length > 0) {
+                    lineSelect.innerHTML = '<option value="">-- Seleccionar Línea --</option>' + 
+                        lines.map(l => `<option value="${l}">${l}</option>`).join('');
+                } else {
+                    lineSelect.innerHTML = '<option value="">-- Sin líneas disponibles --</option>';
+                }
                 toggleManualMode(false);
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error(e); 
+                lineSelect.innerHTML = '<option value="">-- Error al cargar --</option>';
+            }
         }
 
         if (step === 'line') {
@@ -748,9 +755,16 @@ const { isLoggedIn = false } = Astro.props;
             try {
                 const res = await fetch(`/api/herramientas/catalog?brand=${brand}&line=${line}`);
                 const products = await res.json();
-                designSelect.innerHTML = '<option value="">-- Seleccionar Color --</option>' + 
-                    products.map(p => `<option value="${p.nombre}" data-img="https://admin.alvarezplacas.com.ar/assets/${p.foto_principal}" data-thickness="${p.espesor}" data-support="${p.soporte}">${p.nombre}</option>`).join('');
-            } catch (e) { console.error(e); }
+                if (Array.isArray(products) && products.length > 0) {
+                    designSelect.innerHTML = '<option value="">-- Seleccionar Color --</option>' + 
+                        products.map(p => `<option value="${p.nombre}" data-img="https://admin.alvarezplacas.com.ar/assets/${p.foto_principal}" data-thickness="${p.espesor}" data-support="${p.soporte}">${p.nombre}</option>`).join('');
+                } else {
+                    designSelect.innerHTML = '<option value="">-- Sin diseños --</option>';
+                }
+            } catch (e) { 
+                console.error(e); 
+                designSelect.innerHTML = '<option value="">-- Error al cargar --</option>';
+            }
         }
 
         if (step === 'design') {
