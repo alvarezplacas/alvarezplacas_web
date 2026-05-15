@@ -12,6 +12,10 @@ export class SmartCutVisualizer {
         this.snapThreshold = 15; // Sensibilidad del imán
     }
 
+    setContainer(containerId) {
+        this.container = document.getElementById(containerId);
+    }
+
     render(result, plateW, plateH, onUpdate) {
         this.plates = result.plates;
         this.container.innerHTML = '';

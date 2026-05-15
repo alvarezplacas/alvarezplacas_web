@@ -284,6 +284,87 @@ const { isLoggedIn = false } = Astro.props;
     .selected-product-info { flex: 1; }
     .selected-product-info strong { display: block; font-size: 0.85rem; color: var(--sc-text); text-transform: uppercase; }
     .selected-product-info span { font-size: 0.65rem; color: var(--sc-text-dim); font-weight: 700; }
+    /* EXPERIENCE SELECTOR CARDS */
+    .mode-card { border: 2px solid #222; }
+    .mode-card.active { border-color: var(--alvarez-red) !important; background: rgba(255, 40, 0, 0.05) !important; }
+    .mode-card.active i { color: var(--alvarez-red) !important; }
+    .mode-card.active div { color: white !important; }
+
+    /* LEPTON INDUSTRIAL GRID */
+    .lepton-grid-container {
+        width: 100%;
+        overflow-x: auto;
+        background: #000;
+        border: 1px solid #1a1a1c;
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+    .lepton-grid {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--font-mono);
+    }
+    .lepton-grid th {
+        background: #0d0d0f;
+        color: #444;
+        font-size: 0.6rem;
+        font-weight: 900;
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #1a1a1c;
+        text-transform: uppercase;
+    }
+    .lepton-grid td {
+        padding: 0;
+        border-bottom: 1px solid #111;
+        border-right: 1px solid #111;
+    }
+    .lepton-grid input {
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: white;
+        padding: 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        outline: none;
+    }
+    .lepton-grid input:focus { background: rgba(255, 40, 0, 0.1); }
+    .lepton-grid tr:hover td { background: #050505; }
+    
+    /* EDGE CHECKBOXES LEPTON STYLE */
+    .lepton-edge-box {
+        display: flex;
+        gap: 2px;
+        padding: 5px;
+        justify-content: center;
+    }
+    .edge-check {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--alvarez-red);
+    }
+
+    .active-canto-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        background: #0d0d0f;
+        padding: 10px;
+        border-radius: 6px;
+        align-items: center;
+    }
+    .canto-opt {
+        padding: 5px 12px;
+        background: #151517;
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 900;
+        cursor: pointer;
+        color: #444;
+    }
+    .canto-opt.active { background: var(--alvarez-red); color: white; }
 </style>
 
 <div id="smartcut-bar" class="smart-bar" data-is-logged-in={isLoggedIn}>
@@ -488,6 +569,22 @@ const { isLoggedIn = false } = Astro.props;
                 <div><label style="font-size: 0.6rem; color: #666;">ANCHO</label><input type="number" id="setup-h" value="1830" style="width: 100%; padding: 10px; background: #000; border: 1px solid #333; color: white; border-radius: 8px;"></div>
             </div>
 
+            <div style="margin-bottom: 30px;">
+                <label style="font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 12px; display: block; text-align: center;">4. ELEGIR INTERFAZ DE CARGA</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div id="mode-compact" onclick="setModeSC('compact')" class="mode-card active" style="cursor: pointer; background: #000; border: 2px solid var(--alvarez-red); padding: 15px; border-radius: 12px; text-align: center; transition: 0.3s;">
+                        <i class="fas fa-mobile-alt" style="font-size: 1.2rem; color: var(--alvarez-red); margin-bottom: 8px;"></i>
+                        <div style="font-size: 0.7rem; font-weight: 900; color: white;">MODO COMPACTO</div>
+                        <div style="font-size: 0.5rem; color: #666; margin-top: 4px;">Moderno y táctil</div>
+                    </div>
+                    <div id="mode-grid" onclick="setModeSC('grid')" class="mode-card" style="cursor: pointer; background: #000; border: 2px solid #222; padding: 15px; border-radius: 12px; text-align: center; transition: 0.3s;">
+                        <i class="fas fa-table" style="font-size: 1.2rem; color: #444; margin-bottom: 8px;"></i>
+                        <div style="font-size: 0.7rem; font-weight: 900; color: #666;">MODO TRADICIONAL</div>
+                        <div style="font-size: 0.5rem; color: #444; margin-top: 4px;">Celdas tipo Lepton</div>
+                    </div>
+                </div>
+            </div>
+
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px;">
                 <button onclick="createProjectSC()" class="btn-main" style="background: var(--alvarez-red); color: white; border: none; font-weight: 900; padding: 20px; font-size: 0.9rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(255,40,0,0.3);">COMENZAR OPTIMIZACIÓN</button>
                 <button onclick="window.location.reload()" class="btn-main" style="background: rgba(255,255,255,0.05); color: #888; border: 1px solid #333; font-weight: 900; padding: 20px; font-size: 0.9rem; border-radius: 15px;">VOLVER</button>
@@ -502,77 +599,96 @@ const { isLoggedIn = false } = Astro.props;
             <div class="stat-item"><span>TAPACANTO TOTAL</span><strong id="stat-edges">0.0m</strong></div>
         </div>
 
-        <div class="lepton-form">
-            <div class="lepton-row">
-                <div><label>CANT</label><input type="number" id="p-qty" value="1" inputmode="numeric" maxlength="2"></div>
-                <div><label>LARGO</label><input type="number" id="p-len" inputmode="numeric"></div>
-                <div><label>ANCHO</label><input type="number" id="p-wid" inputmode="numeric"></div>
-                <div><label>PIEZA</label><input type="text" id="p-label" placeholder="Ej: Lateral"></div>
-                <div style="text-align: center;"><label>GIRAR</label><input type="checkbox" id="p-rot" checked style="width:30px;height:30px;cursor:pointer;"></div>
+        <!-- COMPACT MODE UI -->
+        <div id="editor-compact-zone">
+            <div class="lepton-form">
+                <div class="lepton-row">
+                    <div><label>CANT</label><input type="number" id="p-qty" value="1" inputmode="numeric" maxlength="2"></div>
+                    <div><label>LARGO</label><input type="number" id="p-len" inputmode="numeric"></div>
+                    <div><label>ANCHO</label><input type="number" id="p-wid" inputmode="numeric"></div>
+                    <div><label>PIEZA</label><input type="text" id="p-label" placeholder="Ej: Lateral"></div>
+                    <div style="text-align: center;"><label>GIRAR</label><input type="checkbox" id="p-rot" checked style="width:30px;height:30px;cursor:pointer;"></div>
+                </div>
+                <div class="tapacantos-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--alvarez-border); padding-top: 20px; margin-top: 20px; gap: 20px;">
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 0.6rem; font-weight: 900; color: #444; width: 100%;">TAPACANTOS:</span>
+                        <select id="pe-t" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                        <select id="pe-b" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                        <select id="pe-l" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                        <select id="pe-r" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px; margin-left: 10px; border-left: 1px solid #333; padding-left: 15px;">
+                            <input type="checkbox" id="p-edge-custom-check" onchange="document.getElementById('p-edge-color').classList.toggle('hidden', !this.checked)" style="width:18px;height:18px;cursor:pointer;">
+                            <label for="p-edge-custom-check" style="font-size: 0.55rem; font-weight: 800; color: #666; cursor: pointer;">CANTO DIFERENTE</label>
+                            <input type="text" id="p-edge-color" class="hidden" placeholder="Color del canto..." style="width: 140px; padding: 8px; background: #000; border: 1px solid var(--alvarez-red); color: white; border-radius: 8px; font-size: 0.7rem;">
+                        </div>
+                    </div>
+                    <button onclick="window.addPieceSC()" class="btn-shatter">AÑADIR PIEZA</button>
+                </div>
             </div>
-            <div class="tapacantos-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--alvarez-border); padding-top: 20px; margin-top: 20px; gap: 20px;">
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <span style="font-size: 0.6rem; font-weight: 900; color: #444; width: 100%;">TAPACANTOS:</span>
-                    <select id="pe-t" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
-                    <select id="pe-b" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
-                    <select id="pe-l" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
-                    <select id="pe-r" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
-                    
-                    <div style="display: flex; align-items: center; gap: 8px; margin-left: 10px; border-left: 1px solid #333; padding-left: 15px;">
-                        <input type="checkbox" id="p-edge-custom-check" onchange="document.getElementById('p-edge-color').classList.toggle('hidden', !this.checked)" style="width:18px;height:18px;cursor:pointer;">
-                        <label for="p-edge-custom-check" style="font-size: 0.55rem; font-weight: 800; color: #666; cursor: pointer;">CANTO DIFERENTE</label>
-                        <input type="text" id="p-edge-color" class="hidden" placeholder="Color del canto..." style="width: 140px; padding: 8px; background: #000; border: 1px solid var(--alvarez-red); color: white; border-radius: 8px; font-size: 0.7rem;">
+            
+            <div class="mobile-stack-grid" style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+                <aside>
+                    <div style="background: #0a0a0c; border: 1px solid #151517; padding: 25px; border-radius: 10px;">
+                        <div style="font-size: 0.7rem; font-weight: 900; color: #444; margin-bottom: 20px; letter-spacing: 1px;">LISTA DE PIEZAS (<span id="count-label">0</span>)</div>
+                        <div id="pieces-list" style="max-height: 600px; overflow-y: auto; padding-right: 10px;"></div>
                     </div>
-                </div>
-                <button onclick="window.addPieceSC()" class="btn-shatter">AÑADIR PIEZA</button>
-            </div>
-
-            <div id="strategy-selector-root" class="strategy-panel-industrial">
-                <div style="display: flex; gap: 10px;">
-                    <div id="btn-mode-MIXED" class="btn-strategy active" onclick="setStrategyMode('MIXED')" title="Cálculo Mixto">
-                        <i class="fas fa-microchip"></i>
-                        <span>MIX</span>
-                    </div>
-                    <div id="btn-mode-H" class="btn-strategy" onclick="setStrategyMode('H')" title="Cálculo Horizontal">
-                        <i class="fas fa-grip-lines"></i>
-                        <span>HOR</span>
-                    </div>
-                    <div id="btn-mode-V" class="btn-strategy" onclick="setStrategyMode('V')" title="Cálculo Vertical">
-                        <i class="fas fa-grip-lines-vertical"></i>
-                        <span>VER</span>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 10px; border-left: 1px solid var(--alvarez-border); padding-left: 10px; margin-left: 5px;">
-                    <div class="btn-action-glass" onclick="renderEditorSC()" title="Recalcular todo">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>CALC</span>
-                    </div>
-                    <div id="btn-view-plan" class="btn-action-glass hidden mobile-only" onclick="toggleMobilePlan()" title="Ver Plano de Corte">
-                        <i class="fas fa-th"></i>
-                        <span>PLANO</span>
-                    </div>
-                    <div class="btn-action-glass save" onclick="showDashboard()" title="Guardar y volver">
-                        <i class="fas fa-save"></i>
-                        <span>GUARDAR</span>
-                    </div>
-                </div>
-
-                <div class="strategy-info-text">
-                    <strong>Algoritmo Inteligente v5.7</strong>
-                    <span id="strategy-desc">Modo Mixto: Simulación triple que busca el máximo aprovechamiento del tablero combinando orientaciones.</span>
-                </div>
+                </aside>
+                <div id="plates-container-compact"></div>
             </div>
         </div>
 
-        <div class="mobile-stack-grid" style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
-            <aside>
-                <div style="background: #0a0a0c; border: 1px solid #151517; padding: 25px; border-radius: 10px;">
-                    <div style="font-size: 0.7rem; font-weight: 900; color: #444; margin-bottom: 20px; letter-spacing: 1px;">LISTA DE PIEZAS (<span id="count-label">0</span>)</div>
-                    <div id="pieces-list" style="max-height: 600px; overflow-y: auto; padding-right: 10px;"></div>
+        <!-- GRID MODE UI (LEPTON STYLE) -->
+        <div id="editor-grid-zone" class="hidden">
+            <div class="active-canto-bar">
+                <span style="font-size: 0.6rem; font-weight: 900; color: #444; margin-right: 10px;">ESPESOR DE CANTO ACTIVO:</span>
+                <div onclick="setActiveCantoSC(0.45)" class="canto-opt active" id="opt-canto-045">0.45 MM</div>
+                <div onclick="setActiveCantoSC(1)" class="canto-opt" id="opt-canto-1">1.0 MM</div>
+                <div onclick="setActiveCantoSC(2)" class="canto-opt" id="opt-canto-2">2.0 MM</div>
+                <div style="flex: 1"></div>
+                <button onclick="renderEditorSC()" class="btn-main" style="padding: 10px 20px; font-size: 0.7rem; background: #111;">RECALCULAR</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 400px; gap: 20px;">
+                <div class="lepton-grid-container" id="grid-root">
+                    <!-- La grilla se renderiza dinámicamente -->
                 </div>
-            </aside>
-            <main id="plates-container" class="mobile-hidden"></main>
+                <div id="plates-container-grid"></div>
+            </div>
+        </div>
+
+        <!-- SHARED STRATEGY PANEL -->
+        <div id="strategy-selector-root" class="strategy-panel-industrial">
+            <div style="display: flex; gap: 10px;">
+                <div id="btn-mode-MIXED" class="btn-strategy active" onclick="setStrategyMode('MIXED')" title="Cálculo Mixto">
+                    <i class="fas fa-microchip"></i>
+                    <span>MIX</span>
+                </div>
+                <div id="btn-mode-H" class="btn-strategy" onclick="setStrategyMode('H')" title="Cálculo Horizontal">
+                    <i class="fas fa-grip-lines"></i>
+                    <span>HOR</span>
+                </div>
+                <div id="btn-mode-V" class="btn-strategy" onclick="setStrategyMode('V')" title="Cálculo Vertical">
+                    <i class="fas fa-grip-lines-vertical"></i>
+                    <span>VER</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; border-left: 1px solid var(--alvarez-border); padding-left: 10px; margin-left: 5px;">
+                <div class="btn-action-glass" onclick="renderEditorSC()" title="Recalcular todo">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>CALC</span>
+                </div>
+                <div class="btn-action-glass save" onclick="showDashboard()" title="Guardar y volver">
+                    <i class="fas fa-save"></i>
+                    <span>GUARDAR</span>
+                </div>
+            </div>
+
+            <div class="strategy-info-text">
+                <strong>Algoritmo Inteligente v5.7</strong>
+                <span id="strategy-desc">Modo Mixto: Simulación triple que busca el máximo aprovechamiento del tablero combinando orientaciones.</span>
+            </div>
         </div>
     </section>
 
@@ -603,7 +719,24 @@ const { isLoggedIn = false } = Astro.props;
 
     const IS_LOGGED_IN = document.getElementById('smartcut-bar').dataset.isLoggedIn === 'true';
     let engine, visualizer;
-    let session = { projects: [], currentIndex: -1, config: { kerf: 4, trim: 5, edgeWaste: 18, philosophy: 'V', steps: 900 } };
+    let session = { 
+        projects: [], 
+        currentIndex: -1, 
+        viewMode: 'compact', // 'compact' o 'grid'
+        activeCanto: 0.45,
+        config: { kerf: 4, trim: 5, edgeWaste: 18, philosophy: 'V', steps: 900 } 
+    };
+
+    window.setModeSC = (mode) => {
+        session.viewMode = mode;
+        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+        document.getElementById(`mode-${mode}`).classList.add('active');
+    };
+
+    window.setActiveCantoSC = (val) => {
+        session.activeCanto = val;
+        renderEditorSC();
+    };
     const BRANDS = { 'FAPLAC': { w: 2750, h: 1820 }, 'EGGER': { w: 2600, h: 1820 }, 'SADEPAN': { w: 2820, h: 1830 }, 'NOVA': { w: 3660, h: 1830 }, 'OSB': { w: 2440, h: 1220 } };
 
     async function initSC() {
@@ -1075,28 +1208,120 @@ const { isLoggedIn = false } = Astro.props;
         renderEditorSC();
     };
 
+    window.updateGridPieceSC = (idx, field, val) => {
+        const p = session.projects[session.currentIndex];
+        if (!p.pieces[idx]) {
+            p.pieces[idx] = { id: Date.now() + idx, q: 0, l: 0, h: 0, label: '', canRotate: true, edges: { t: 0, b: 0, l: 0, r: 0 } };
+        }
+        if (field === 'q' || field === 'l' || field === 'h') {
+            p.pieces[idx][field] = parseInt(val) || 0;
+        } else {
+            p.pieces[idx][field] = val;
+        }
+        
+        // Auto-recalculate if valid
+        if (p.pieces[idx].q > 0 && p.pieces[idx].l > 0 && p.pieces[idx].h > 0) {
+            renderEditorSC();
+        }
+    };
+
+    window.toggleGridEdgeSC = (idx, side) => {
+        const p = session.projects[session.currentIndex];
+        if (!p.pieces[idx]) return;
+        p.pieces[idx].edges[side] = p.pieces[idx].edges[side] > 0 ? 0 : session.activeCanto;
+        renderEditorSC();
+    };
+
     function renderEditorSC() {
         const p = session.projects[session.currentIndex];
-        const list = document.getElementById('pieces-list');
-        list.innerHTML = p.pieces.slice().reverse().map(pc => `
-            <div style="background:#0d0d0f; border:1px solid #1a1a1c; padding:15px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.85rem; font-family:var(--font-mono)">
-                    <strong>${pc.q}x</strong> ${pc.l}x${pc.h} 
-                    <small style="color:#444; margin-left:10px;">${pc.label}</small>
-                    ${pc.edgeColor ? `<br><small style="color:var(--alvarez-red); font-weight:800; font-size:0.6rem;">CANTO: ${pc.edgeColor.toUpperCase()}</small>` : ''}
-                </span>
-                <div class="delete-actions">
-                    <i class="fas fa-trash-alt desktop-only" style="color:#222; cursor:pointer;" onmouseover="this.style.color='#ff2800'" onmouseout="this.style.color='#222'" onclick="removePieceSC(${pc.id})"></i>
-                    <i class="fas fa-times mobile-only" style="color:var(--alvarez-red); font-size:1.4rem; cursor:pointer;" onclick="removePieceSC(${pc.id})"></i>
-                </div>
-            </div>`).join('');
-        document.getElementById('count-label').textContent = p.pieces.length;
-        if (p.pieces.length > 0) {
-            p.result = engine.optimize(p.w, p.h, p.pieces);
-            if (p.result && p.result.plates.length > 0) visualizer.render(p.result, p.w, p.h, (u) => { p.result = u; updateStatsSC(); });
+        const compactZone = document.getElementById('editor-compact-zone');
+        const gridZone = document.getElementById('editor-grid-zone');
+
+        if (session.viewMode === 'compact') {
+            compactZone.classList.remove('hidden');
+            gridZone.classList.add('hidden');
+            
+            const list = document.getElementById('pieces-list');
+            list.innerHTML = p.pieces.filter(pc => pc.q > 0).slice().reverse().map(pc => `
+                <div style="background:#0d0d0f; border:1px solid #1a1a1c; padding:15px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.85rem; font-family:var(--font-mono)">
+                        <strong>${pc.q}x</strong> ${pc.l}x${pc.h} 
+                        <small style="color:#444; margin-left:10px;">${pc.label}</small>
+                    </span>
+                    <div class="delete-actions">
+                        <i class="fas fa-trash-alt" style="color:#222; cursor:pointer;" onclick="removePieceSC(${pc.id})"></i>
+                    </div>
+                </div>`).join('');
+            document.getElementById('count-label').textContent = p.pieces.filter(pc => pc.q > 0).length;
+        } else {
+            compactZone.classList.add('hidden');
+            gridZone.classList.remove('hidden');
+            
+            // Actualizar barra de cantos
+            document.querySelectorAll('.canto-opt').forEach(opt => opt.classList.remove('active'));
+            const activeId = session.activeCanto === 0.45 ? '045' : session.activeCanto.toString().replace('.','');
+            document.getElementById(`opt-canto-${activeId}`)?.classList.add('active');
+
+            const gridRoot = document.getElementById('grid-root');
+            let tableHtml = `
+                <table class="lepton-grid">
+                    <thead>
+                        <tr>
+                            <th style="width:40px">ID</th>
+                            <th style="width:60px">CANT</th>
+                            <th style="width:80px">LARGO</th>
+                            <th style="width:80px">ANCHO</th>
+                            <th>DETALLE</th>
+                            <th style="width:120px; text-align:center">TAPACANTOS (${session.activeCanto})</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            for (let i = 0; i < 20; i++) {
+                const pc = p.pieces[i] || { q:'', l:'', h:'', label:'', edges:{t:0,b:0,l:0,r:0} };
+                tableHtml += `
+                    <tr>
+                        <td style="text-align:center; color:#333; font-size:0.6rem; font-weight:900;">${i+1}</td>
+                        <td><input type="number" value="${pc.q}" oninput="updateGridPieceSC(${i}, 'q', this.value)" placeholder="0"></td>
+                        <td><input type="number" value="${pc.l}" oninput="updateGridPieceSC(${i}, 'l', this.value)" placeholder="0"></td>
+                        <td><input type="number" value="${pc.h}" oninput="updateGridPieceSC(${i}, 'h', this.value)" placeholder="0"></td>
+                        <td><input type="text" value="${pc.label}" oninput="updateGridPieceSC(${i}, 'label', this.value)" placeholder="..."></td>
+                        <td>
+                            <div class="lepton-edge-box">
+                                <input type="checkbox" class="edge-check" ${pc.edges.t > 0 ? 'checked' : ''} onclick="toggleGridEdgeSC(${i}, 't')" title="Superior">
+                                <input type="checkbox" class="edge-check" ${pc.edges.b > 0 ? 'checked' : ''} onclick="toggleGridEdgeSC(${i}, 'b')" title="Inferior">
+                                <input type="checkbox" class="edge-check" ${pc.edges.l > 0 ? 'checked' : ''} onclick="toggleGridEdgeSC(${i}, 'l')" title="Izquierdo">
+                                <input type="checkbox" class="edge-check" ${pc.edges.r > 0 ? 'checked' : ''} onclick="toggleGridEdgeSC(${i}, 'r')" title="Derecho">
+                                <div style="width:1px; background:#222; margin:0 5px;"></div>
+                                <input type="checkbox" class="edge-check" ${pc.canRotate ? 'checked' : ''} onclick="toggleGridRotateSC(${i})" title="Girar/Veta" style="opacity:0.6">
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+            tableHtml += `</tbody></table>`;
+            gridRoot.innerHTML = tableHtml;
+        }
+
+        // Shared optimization logic
+        const validPieces = p.pieces.filter(pc => pc.q > 0 && pc.l > 0 && pc.h > 0);
+        if (validPieces.length > 0) {
+            p.result = engine.optimize(p.w, p.h, validPieces);
+            const targetContainer = session.viewMode === 'compact' ? 'plates-container-compact' : 'plates-container-grid';
+            
+            // Limpiar otros contenedores
+            document.getElementById('plates-container-compact').innerHTML = '';
+            document.getElementById('plates-container-grid').innerHTML = '';
+            
+            visualizer.setContainer(targetContainer);
+            if (p.result && p.result.plates.length > 0) {
+                visualizer.render(p.result, p.w, p.h, (u) => { p.result = u; updateStatsSC(); });
+            }
             updateStatsSC();
         } else {
-            document.getElementById('plates-container').innerHTML = '';
+            document.getElementById('plates-container-compact').innerHTML = '';
+            document.getElementById('plates-container-grid').innerHTML = '';
             ['stat-sheets', 'stat-eff', 'stat-edges'].forEach(id => document.getElementById(id).textContent = '0');
         }
     }
@@ -1128,7 +1353,24 @@ const { isLoggedIn = false } = Astro.props;
         }
     }
 
-    window.removePieceSC = (id) => { session.projects[session.currentIndex].pieces = session.projects[session.currentIndex].pieces.filter(x => x.id !== id); renderEditorSC(); };
+    window.toggleGridRotateSC = (idx) => {
+        const p = session.projects[session.currentIndex];
+        if (!p.pieces[idx]) return;
+        p.pieces[idx].canRotate = !p.pieces[idx].canRotate;
+        renderEditorSC();
+    };
+
+    window.removePieceSC = (id) => {
+        const p = session.projects[session.currentIndex];
+        if (session.viewMode === 'grid') {
+            const idx = p.pieces.findIndex(pc => pc.id === id);
+            if (idx !== -1) p.pieces[idx] = { id: Date.now() + idx, q: 0, l: 0, h: 0, label: '', canRotate: true, edges: { t: 0, b: 0, l: 0, r: 0 } };
+        } else {
+            p.pieces = p.pieces.filter(pc => pc.id !== id);
+        }
+        renderEditorSC();
+    };
+
     window.removeProjectSC = (i, e) => { if (e) { e.preventDefault(); e.stopPropagation(); } if (confirm(`Eliminar ${session.projects[i].design}?`)) { session.projects.splice(i, 1); renderProjectsSC(); } };
     window.openLoginWall = () => document.getElementById('login-wall').classList.remove('hidden');
 
