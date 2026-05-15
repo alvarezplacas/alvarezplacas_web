@@ -97,8 +97,13 @@ Cada pieza generada por el algoritmo debe portar un identificador único que inc
 - Indicación de qué bordes llevan qué tipo de canto.
 - Código de barras o QR para integración con CNC posteriores.
 
-### 6.2 Optimización Multi-Proyecto (Batching)
-El sistema permitirá agrupar pedidos de distintos clientes que utilicen el mismo material (ej. Faplac Blanco) para procesarlos en un solo "Batch". Esto permite que el algoritmo trabaje sobre un área mayor, reduciendo el desperdicio del 15% al 5% en producciones masivas.
+### 6.2 Gestión de Sobrantes y Retazos (Política Alvarez)
+A diferencia de otros modelos industriales, en SmartCut PRO la optimización es **estrictamente individual por cliente**.
+- **Propiedad del Sobrante:** Todos los retazos generados pertenecen al cliente que adquirió el tablero. El plano de corte debe mostrar claramente estas áreas para su entrega.
+- **Regla de Custodia (15 Días):** Alvarez Placas se reserva el derecho de custodia de los sobrantes por un periodo máximo de 15 días corridos.
+- **Depósito de Cortes:** Pasados los 15 días, los sobrantes no retirados pasan a integrar el stock de "Cortes del Depósito", destinados exclusivamente a:
+    1. Reposición por errores de producción.
+    2. Pedidos menores que no justifiquen la compra de una placa entera.
 
 ---
 
