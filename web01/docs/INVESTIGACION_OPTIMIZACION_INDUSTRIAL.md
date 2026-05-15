@@ -77,22 +77,38 @@ El sistema debe impedir la carga de piezas que superen las dimensiones reales de
 
 El plano de corte es el mapa del operario. La legibilidad es fundamental para evitar desperdicios por errores de interpretación.
 
-### 5.1 Jerarquía de Información
-Para evitar que los números se pisen (overlapping), se establece la siguiente jerarquía:
-1. **Medida de la Pieza:** Texto central en negro, fuente Sans-Serif de alta legibilidad.
-2. **Espesor de Tapacanto:** 
-   - Se representará con un **Offset Visual** (fuera de la línea de cota).
-   - Simbología sugerida: Un número pequeño entre paréntesis o un color distintivo (ej. Rojo para 2mm, Gris para 0.4mm) ubicado en el centro del borde correspondiente.
-3. **Sentido de Veta:** Indicación visual mediante flechas o rayado de fondo para confirmar la orientación.
+### 5.2 Lógica de Pre-fresado (Pre-milling)
+En la producción automatizada, se debe definir si el corte es **Neto** o **Bruto**:
+- **Con Pre-fresado:** La seccionadora corta la pieza a su medida final nominal. La pegadora de cantos "come" 0.5mm a 2mm de material antes de aplicar el pegamento.
+- **Sin Pre-fresado:** El optimizador debe **descontar** el espesor del tapacanto de la medida de corte. Si la pieza final es de 500mm y el canto es de 2mm, el tablero se debe cortar a 498mm.
+*SmartCut PRO operará bajo lógica de Pre-fresado por defecto para maximizar la precisión.*
+
+### 5.3 Excedente de Tapacanto (Edge Overlap)
+Para el cálculo de costos y stock, no basta con medir el perímetro de la pieza. Se debe sumar un **excedente de seguridad** (retestado) de aproximadamente 50mm por cada punta de canto aplicada para permitir el corte de los sobrantes por la máquina.
 
 ---
 
-## 6. Próximos Pasos de Implementación CIENTÍFICA
+## 6. Trazabilidad y Logística de Planta
+
+### 6.1 Etiquetado Automático
+Cada pieza generada por el algoritmo debe portar un identificador único que incluya:
+- ID de Pedido / Cliente.
+- Dimensiones Finales.
+- Indicación de qué bordes llevan qué tipo de canto.
+- Código de barras o QR para integración con CNC posteriores.
+
+### 6.2 Optimización Multi-Proyecto (Batching)
+El sistema permitirá agrupar pedidos de distintos clientes que utilicen el mismo material (ej. Faplac Blanco) para procesarlos en un solo "Batch". Esto permite que el algoritmo trabaje sobre un área mayor, reduciendo el desperdicio del 15% al 5% en producciones masivas.
+
+---
+
+## 7. Próximos Pasos de Implementación CIENTÍFICA
 
 Para llegar al nivel *OptiCutter*, debemos:
 1. Implementar validadores de entrada que bloqueen medidas menores a 70x100mm o mayores al tablero.
 2. Refactorizar el motor de renderizado Canvas para posicionar las etiquetas de tapacanto de forma inteligente sin solaparse con las cotas principales.
-3. Integrar el motor Heurístico Guillotina 2D para calcular el *Yield* (Rendimiento %) y mostrar un gráfico de cortes instantáneo en SVG o HTML5 Canvas.
+3. Desarrollar el módulo de **Etiquetado PDF** para que el cliente reciba las etiquetas listas para imprimir.
+4. Integrar el motor Heurístico Guillotina 2D para calcular el *Yield* (Rendimiento %) y mostrar un gráfico de cortes instantáneo en SVG o HTML5 Canvas.
 
 ---
 *Este documento dicta la norma técnica obligatoria para el desarrollo del ecosistema Alvarez Placas v16.*

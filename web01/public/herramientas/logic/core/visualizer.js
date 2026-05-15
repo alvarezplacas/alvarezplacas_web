@@ -308,14 +308,15 @@ export class SmartCutVisualizer {
         const usedArea = plate.strips.reduce((acc, s) => acc + s.items.reduce((a, i) => a + (i.l * i.h), 0), 0);
         const eff = (usedArea / (pw * ph)) * 100;
 
-        // Recalcular metros de tapacanto por placa
+        // Recalcular metros de tapacanto por placa con excedente industrial
         let edges = { "0.45": 0, "1": 0, "2": 0 };
+        const calcEdge = (len) => Math.max(len * 1.18, len + 100) / 1000;
         plate.strips.forEach(s => s.items.forEach(i => {
             if (i.edges) {
-                if (i.edges.t) edges[i.edges.t] += i.nominalL / 1000;
-                if (i.edges.b) edges[i.edges.b] += i.nominalL / 1000;
-                if (i.edges.l) edges[i.edges.l] += i.nominalH / 1000;
-                if (i.edges.r) edges[i.edges.r] += i.nominalH / 1000;
+                if (i.edges.t) edges[i.edges.t] += calcEdge(i.nominalL);
+                if (i.edges.b) edges[i.edges.b] += calcEdge(i.nominalL);
+                if (i.edges.l) edges[i.edges.l] += calcEdge(i.nominalH);
+                if (i.edges.r) edges[i.edges.r] += calcEdge(i.nominalH);
             }
         }));
 
@@ -325,9 +326,9 @@ export class SmartCutVisualizer {
                 <div class="stat-main"><span>PIEZAS</span><strong>${plate.strips.reduce((a, s) => a + s.items.length, 0)}</strong></div>
             </div>
             <div class="stats-group" style="border-left: 1px solid oklch(100% 0 0 / 8%)">
-                <div class="edge-stat"><span>Canto 0.45mm</span><strong>${(edges["0.45"] * 1.18).toFixed(1)}m</strong></div>
-                <div class="edge-stat"><span>Canto 1.0mm</span><strong>${(edges["1"] * 1.18).toFixed(1)}m</strong></div>
-                <div class="edge-stat"><span>Canto 2.0mm</span><strong>${(edges["2"] * 1.18).toFixed(1)}m</strong></div>
+                <div class="edge-stat"><span>Canto 0.45mm</span><strong>${edges["0.45"].toFixed(1)}m</strong></div>
+                <div class="edge-stat"><span>Canto 1.0mm</span><strong>${edges["1"].toFixed(1)}m</strong></div>
+                <div class="edge-stat"><span>Canto 2.0mm</span><strong>${edges["2"].toFixed(1)}m</strong></div>
             </div>
         `;
     }
@@ -341,10 +342,12 @@ export class SmartCutVisualizer {
             usedArea += i.l * i.h;
             totalPieces++;
             if (i.edges) {
-                if (i.edges.t) edgeMeters[i.edges.t] += (i.nominalL / 1000) * 1.18;
-                if (i.edges.b) edgeMeters[i.edges.b] += (i.nominalL / 1000) * 1.18;
-                if (i.edges.l) edgeMeters[i.edges.l] += (i.nominalH / 1000) * 1.18;
-                if (i.edges.r) edgeMeters[i.edges.r] += (i.nominalH / 1000) * 1.18;
+                // Cálculo Industrial: 18% de desperdicio o 100mm fijos para retestado (el mayor)
+                const calcEdge = (len) => Math.max(len * 1.18, len + 100);
+                if (i.edges.t) edgeMeters[i.edges.t] += calcEdge(i.nominalL) / 1000;
+                if (i.edges.b) edgeMeters[i.edges.b] += calcEdge(i.nominalL) / 1000;
+                if (i.edges.l) edgeMeters[i.edges.l] += calcEdge(i.nominalH) / 1000;
+                if (i.edges.r) edgeMeters[i.edges.r] += calcEdge(i.nominalH) / 1000;
             }
         })));
         return { plates: this.plates, stats: { totalPlates: this.plates.length, totalPieces, efficiency: 0, edgeMeters } };
