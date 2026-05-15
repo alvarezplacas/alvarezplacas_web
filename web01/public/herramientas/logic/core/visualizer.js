@@ -334,10 +334,25 @@ export class SmartCutVisualizer {
                 <div class="stat-main"><span>EFICIENCIA PLACA</span><strong>${eff.toFixed(1)}%</strong></div>
                 <div class="stat-main"><span>PIEZAS</span><strong>${plate.strips.reduce((a, s) => a + s.items.length, 0)}</strong></div>
             </div>
-            <div class="stats-group" style="border-left: 1px solid oklch(100% 0 0 / 8%)">
-                <div class="edge-stat"><span>Canto 0.45mm</span><strong>${edges["0.45"].toFixed(1)}m</strong></div>
-                <div class="edge-stat"><span>Canto 1.0mm</span><strong>${edges["1"].toFixed(1)}m</strong></div>
-                <div class="edge-stat"><span>Canto 2.0mm</span><strong>${edges["2"].toFixed(1)}m</strong></div>
+            <div class="stats-group" style="border-left: 1px solid oklch(100% 0 0 / 8%); padding-left: 20px;">
+                <div class="edge-stat">
+                    <span style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:30px; border-bottom: 2px dotted #25d366;"></div> 0.45mm
+                    </span>
+                    <strong>${edges["0.45"].toFixed(1)}m</strong>
+                </div>
+                <div class="edge-stat">
+                    <span style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:30px; border-bottom: 2px dashed #007aff;"></div> 1.0mm
+                    </span>
+                    <strong>${edges["1"].toFixed(1)}m</strong>
+                </div>
+                <div class="edge-stat">
+                    <span style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:30px; border-bottom: 2px solid #ff2800;"></div> 2.0mm
+                    </span>
+                    <strong>${edges["2"].toFixed(1)}m</strong>
+                </div>
             </div>
         `;
     }
