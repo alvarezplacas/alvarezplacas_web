@@ -717,6 +717,9 @@ const { isLoggedIn = false } = Astro.props;
         updateCatalogFlow('brand'); // Cargar catálogo inicial (FAPLAC)
     };
 
+    // Controlador para cancelar peticiones obsoletas
+    window._scCatalogController = null;
+
     window.updateCatalogFlow = async (step) => {
         const brand = document.getElementById('plate-brand').value;
         const lineSelect = document.getElementById('setup-line');
@@ -726,6 +729,14 @@ const { isLoggedIn = false } = Astro.props;
 
         if (step === 'brand') {
             console.log(`[SmartCut] Reset total para marca: ${brand}`);
+            
+            // Cancelar peticiones previas en vuelo
+            if (window._scCatalogController) {
+                window._scCatalogController.abort();
+                console.log('[SmartCut] Petición anterior abortada para evitar mezcla de datos.');
+            }
+            window._scCatalogController = new AbortController();
+            const signal = window._scCatalogController.signal;
             
             // LIMPIEZA HARDCORE: Borrar todos los hijos uno por uno
             while (lineSelect.firstChild) lineSelect.removeChild(lineSelect.firstChild);
@@ -758,11 +769,11 @@ const { isLoggedIn = false } = Astro.props;
             }
 
             try {
-                const res = await fetch(`/api/herramientas/catalog?type=lines&brand=${encodeURIComponent(brand)}`);
+                const res = await fetch(`/api/herramientas/catalog?type=lines&brand=${encodeURIComponent(brand)}`, { signal });
                 const lines = await res.json();
                 
                 // SEGUNDA LIMPIEZA antes de insertar
-                lineSelect.innerHTML = '';
+                while (lineSelect.firstChild) lineSelect.removeChild(lineSelect.firstChild);
                 
                 if (Array.isArray(lines) && lines.length > 0) {
                     console.log(`[SmartCut] Líneas recibidas:`, lines);
@@ -791,9 +802,13 @@ const { isLoggedIn = false } = Astro.props;
                     lineSelect.innerHTML = '<option value="">-- Sin líneas disponibles --</option>';
                 }
                 toggleManualMode(false);
-            } catch (e) { 
-                console.error('[SmartCut] Error Fatal:', e); 
-                lineSelect.innerHTML = '<option value="">-- Error al cargar --</option>';
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    console.log('[SmartCut] Fetch abortado exitosamente.');
+                } else {
+                    console.error('[SmartCut] Error Fatal:', e); 
+                    lineSelect.innerHTML = '<option value="">-- Error al cargar --</option>';
+                }
             }
         }
 
@@ -801,6 +816,13 @@ const { isLoggedIn = false } = Astro.props;
             const line = lineSelect.value;
             if (!line) return;
             
+            // Cancelar peticiones previas en vuelo de colores
+            if (window._scColorController) {
+                window._scColorController.abort();
+            }
+            window._scColorController = new AbortController();
+            const signal = window._scColorController.signal;
+
             designSelect.disabled = true;
             designSelect.innerHTML = '<option value="">Cargando Colores...</option>';
             // Limpiar previsualización
@@ -808,26 +830,45 @@ const { isLoggedIn = false } = Astro.props;
             previewPlaceholder.classList.remove('hidden');
             try {
                 // MEJORA: usamos type=colors para obtener colores únicos con sus espesores disponibles
-                const res = await fetch(`/api/herramientas/catalog?type=colors&brand=${brand}&line=${line}`);
+                const res = await fetch(`/api/herramientas/catalog?type=colors&brand=${encodeURIComponent(brand)}&line=${encodeURIComponent(line)}`, { signal });
                 const colors = await res.json();
+                
+                // Limpieza total antes de insertar
+                while (designSelect.firstChild) designSelect.removeChild(designSelect.firstChild);
+
                 if (Array.isArray(colors) && colors.length > 0) {
-                    designSelect.innerHTML = '<option value="">-- Seleccionar Color --</option>' + 
-                        colors.map(c => {
-                            const imgUrl = c.foto_principal 
-                                ? `https://admin.alvarezplacas.com.ar/assets/${c.foto_principal}`
-                                : '';
-                            // Guardamos todos los espesores como JSON en el data attribute
-                            const espJson = JSON.stringify(c.espesores || []);
-                            return `<option value="${c.nombre_corto}" data-img="${imgUrl}" data-espesores='${espJson}'>${c.nombre_corto}</option>`;
-                        }).join('');
+                    const fragment = document.createDocumentFragment();
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = "";
+                    defaultOpt.textContent = "-- Seleccionar Color --";
+                    fragment.appendChild(defaultOpt);
+
+                    colors.forEach(c => {
+                        const imgUrl = c.foto_principal 
+                            ? `https://admin.alvarezplacas.com.ar/assets/${c.foto_principal}`
+                            : '';
+                        const espJson = JSON.stringify(c.espesores || []);
+                        const opt = document.createElement('option');
+                        opt.value = c.nombre_corto;
+                        opt.setAttribute('data-img', imgUrl);
+                        opt.setAttribute('data-espesores', espJson);
+                        opt.textContent = c.nombre_corto;
+                        fragment.appendChild(opt);
+                    });
+
+                    designSelect.appendChild(fragment);
                     designSelect.disabled = false;
                 } else {
                     designSelect.innerHTML = '<option value="">-- Sin diseños disponibles --</option>';
                 }
                 toggleManualMode(false);
-            } catch (e) { 
-                console.error('[SmartCut] Error cargando colores:', e); 
-                designSelect.innerHTML = '<option value="">-- Error al cargar --</option>';
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    // abortado silenciosamente
+                } else {
+                    console.error('[SmartCut] Error cargando colores:', e); 
+                    designSelect.innerHTML = '<option value="">-- Error al cargar --</option>';
+                }
             }
         }
 
