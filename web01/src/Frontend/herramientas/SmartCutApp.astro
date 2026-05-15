@@ -198,71 +198,6 @@ const { isLoggedIn = false } = Astro.props;
     .mobile-only { display: none; }
     .desktop-only { display: inline-block; }
 
-    /* INDUSTRIAL PIECE CARDS - GLASS EDITION */
-    .piece-card-industrial { 
-        background: oklch(100% 0 0 / 3%); 
-        backdrop-filter: blur(10px);
-        border: 1px solid oklch(100% 0 0 / 10%); 
-        padding: 18px; 
-        border-radius: 14px; 
-        margin-bottom: 12px; 
-        display: flex; 
-        align-items: center; 
-        justify-content: space-between;
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        gap: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    }
-    .piece-card-industrial:hover { 
-        border-color: var(--alvarez-red); 
-        transform: scale(1.01) translateX(5px); 
-        background: oklch(100% 0 0 / 5%);
-        box-shadow: 0 10px 40px rgba(255, 40, 0, 0.1); 
-    }
-    
-    .piece-info-main { display: flex; align-items: center; gap: 20px; flex: 1; }
-    .piece-qty-badge { background: var(--alvarez-red); color: #fff; padding: 6px 14px; border-radius: 25px; font-weight: 900; font-size: 0.85rem; font-family: var(--font-mono); box-shadow: 0 4px 10px rgba(255, 40, 0, 0.4); }
-    
-    .piece-dims-grid { display: flex; align-items: center; gap: 12px; background: oklch(0% 0 0 / 20%); padding: 10px 18px; border-radius: 10px; border: 1px solid oklch(100% 0 0 / 5%); }
-    .dim-item { display: flex; flex-direction: column; }
-    .dim-item span { font-size: 0.55rem; font-weight: 900; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
-    .dim-item strong { font-size: 1.2rem; color: #eee; font-family: 'JetBrains Mono', monospace; line-height: 1; }
-    .dim-item small { font-size: 0.65rem; color: #444; margin-left: 2px; }
-    .dim-icon { color: #333; font-size: 0.8rem; }
-
-    .piece-label-tag { font-size: 0.75rem; font-weight: 800; color: #555; text-transform: uppercase; letter-spacing: 1px; border-left: 1px solid oklch(100% 0 0 / 10%); padding-left: 20px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .piece-edges-preview { display: flex; gap: 6px; align-items: center; }
-    .edge-indicator { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 900; border-radius: 6px; background: oklch(100% 0 0 / 2%); border: 1px solid oklch(100% 0 0 / 10%); color: #444; transition: 0.3s; cursor: help; }
-    .edge-indicator.active { color: #fff; border-color: var(--alvarez-red); background: var(--alvarez-red); box-shadow: 0 0 15px rgba(255, 40, 0, 0.4); }
-    
-    .custom-edge-dot { width: 10px; height: 10px; background: #25d366; border-radius: 50%; margin-left: 8px; box-shadow: 0 0 15px #25d366; }
-
-    .btn-delete-piece { background: none; border: none; color: #333; cursor: pointer; font-size: 1.1rem; transition: 0.3s; padding: 12px; border-radius: 50%; }
-    .btn-delete-piece:hover { color: var(--alvarez-red); background: oklch(100% 0 0 / 5%); transform: rotate(90deg); }
-
-    /* MODO LEPTON - GRID INDUSTRIAL GLASS */
-    .lepton-grid-container { 
-        width: 100%; 
-        overflow: hidden; 
-        border-radius: 16px; 
-        border: 1px solid oklch(100% 0 0 / 10%); 
-        background: oklch(0% 0 0 / 20%); 
-        backdrop-filter: blur(20px);
-        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-    }
-    .lepton-grid { width: 100%; border-collapse: collapse; }
-    .lepton-grid th { background: oklch(100% 0 0 / 2%); padding: 15px; font-size: 0.7rem; font-weight: 900; color: #444; text-transform: uppercase; text-align: left; border-bottom: 2px solid oklch(100% 0 0 / 5%); letter-spacing: 1px; }
-    .lepton-grid td { padding: 8px 15px; border-bottom: 1px solid oklch(100% 0 0 / 5%); }
-    .lepton-grid input { width: 100%; background: none; border: 1px solid transparent; padding: 10px; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 1rem; border-radius: 6px; transition: 0.2s; }
-    .lepton-grid input:focus { background: oklch(100% 0 0 / 5%); border-color: var(--alvarez-red); outline: none; box-shadow: inset 0 0 10px rgba(255, 40, 0, 0.2); }
-    .btn-grid-del { background: none; border: none; color: #333; cursor: pointer; transition: 0.2s; padding: 10px; font-size: 1rem; }
-    .btn-grid-del:hover { color: var(--alvarez-red); transform: scale(1.2); }
-    
-    .mode-switch-industrial { display: flex; background: var(--sc-surface-alt); padding: 5px; border-radius: 10px; border: 1px solid var(--sc-border); margin-bottom: 20px; gap: 5px; }
-    .btn-mode-sc { flex: 1; padding: 12px; border: none; background: none; color: var(--sc-text-dim); font-size: 0.7rem; font-weight: 900; text-transform: uppercase; cursor: pointer; border-radius: 6px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .btn-mode-sc.active { background: var(--alvarez-red); color: #fff; box-shadow: 0 4px 15px rgba(255, 40, 0, 0.3); }
-
     /* GLASS SHATTER EFFECT */
     .btn-shatter {
         background: var(--alvarez-red);
@@ -349,40 +284,6 @@ const { isLoggedIn = false } = Astro.props;
     .selected-product-info { flex: 1; }
     .selected-product-info strong { display: block; font-size: 0.85rem; color: var(--sc-text); text-transform: uppercase; }
     .selected-product-info span { font-size: 0.65rem; color: var(--sc-text-dim); font-weight: 700; }
-
-    /* EXPERIENCE SELECTOR PREMIUM */
-    .experience-card-wrap {
-        background: oklch(0% 0 0 / 80%);
-        backdrop-filter: blur(40px);
-        border: 1px solid oklch(100% 0 0 / 15%);
-        padding: 60px;
-        border-radius: 30px;
-        max-width: 900px;
-        width: 90%;
-        text-align: center;
-        box-shadow: 0 50px 100px rgba(0,0,0,0.5);
-    }
-    .exp-option {
-        background: oklch(100% 0 0 / 5%);
-        border: 1px solid oklch(100% 0 0 / 10%);
-        padding: 45px 35px;
-        border-radius: 20px;
-        cursor: pointer;
-        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        position: relative;
-        overflow: hidden;
-        text-align: left;
-    }
-    .exp-option:hover {
-        background: oklch(100% 0 0 / 8%);
-        border-color: var(--alvarez-red);
-        transform: translateY(-10px) scale(1.02);
-        box-shadow: 0 20px 40px rgba(255, 40, 0, 0.15);
-    }
-    .exp-icon { font-size: 3rem; color: var(--alvarez-red); margin-bottom: 25px; opacity: 0.8; }
-    .exp-option h3 { font-size: 1.5rem; font-weight: 900; margin-bottom: 12px; letter-spacing: -0.5px; color: #fff; }
-    .exp-option p { font-size: 0.95rem; color: #888; line-height: 1.6; margin: 0; }
-    .exp-badge { position: absolute; top: 20px; right: 20px; background: var(--alvarez-red); color: white; font-size: 0.65rem; font-weight: 900; padding: 6px 14px; border-radius: 20px; letter-spacing: 1px; }
 </style>
 
 <div id="smartcut-bar" class="smart-bar" data-is-logged-in={isLoggedIn}>
@@ -601,11 +502,6 @@ const { isLoggedIn = false } = Astro.props;
             <div class="stat-item"><span>TAPACANTO TOTAL</span><strong id="stat-edges">0.0m</strong></div>
         </div>
 
-        <div class="mode-switch-industrial animate-in">
-            <button class="btn-mode-sc active" id="btn-mode-compact" onclick="setModeSC('compact')">MODO COMPACTO</button>
-            <button class="btn-mode-sc" id="btn-mode-grid" onclick="setModeSC('grid')">MODO LEPTON (GRILLA)</button>
-        </div>
-
         <div class="lepton-form">
             <div class="lepton-row">
                 <div><label>CANT</label><input type="number" id="p-qty" value="1" inputmode="numeric" maxlength="2"></div>
@@ -628,13 +524,7 @@ const { isLoggedIn = false } = Astro.props;
                         <input type="text" id="p-edge-color" class="hidden" placeholder="Color del canto..." style="width: 140px; padding: 8px; background: #000; border: 1px solid var(--alvarez-red); color: white; border-radius: 8px; font-size: 0.7rem;">
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="window.duplicateLastPiece()" class="btn-action-glass" style="height: 55px; border-radius: 12px; font-weight: 800; border-color: oklch(100% 0 0 / 10%);" title="Duplicar la última pieza cargada">
-                        <i class="fas fa-copy"></i>
-                        <span style="font-size: 0.6rem;">DUPLICAR ÚLTIMA</span>
-                    </button>
-                    <button onclick="window.addPieceSC()" class="btn-shatter" style="flex: 1;">AÑADIR PIEZA</button>
-                </div>
+                <button onclick="window.addPieceSC()" class="btn-shatter">AÑADIR PIEZA</button>
             </div>
 
             <div id="strategy-selector-root" class="strategy-panel-industrial">
@@ -695,28 +585,6 @@ const { isLoggedIn = false } = Astro.props;
                 <a href="/login" class="btn-main" style="width:100%; background: var(--alvarez-red);">INICIAR SESIÓN</a>
                 <a href="/registro" class="btn-main" style="width:100%; background: var(--glass-bg); border-color: var(--alvarez-border);">REGISTRARME AHORA</a>
                 <button onclick="document.getElementById('login-wall').classList.add('hidden')" style="background:transparent; border:none; color:#444; cursor:pointer; font-weight: 800; margin-top: 10px;">VOLVER</button>
-            </div>
-        </div>
-    </div>
-    <div id="experience-selector" class="modal-overlay hidden">
-        <div class="experience-card-wrap animate-in">
-            <h2 style="color:white; font-size: 2.8rem; margin-bottom: 10px; letter-spacing: -2px; font-weight: 900;">Elige tu interfaz de carga</h2>
-            <p style="color: #666; margin-bottom: 50px; font-size: 1.1rem;">Personaliza SmartCut PRO según tu flujo de trabajo preferido.</p>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 35px;">
-                <div class="exp-option" onclick="selectExperience('compact')">
-                    <div class="exp-icon"><i class="fas fa-mobile-alt"></i></div>
-                    <h3>MODO COMPACTO</h3>
-                    <p>Interfaz moderna y táctil. Ideal para cargar pocas piezas con agilidad y control visual.</p>
-                    <div class="exp-badge">RECOMENDADO</div>
-                </div>
-                
-                <div class="exp-option" onclick="selectExperience('grid')">
-                    <div class="exp-icon"><i class="fas fa-table"></i></div>
-                    <h3>MODO TRADICIONAL</h3>
-                    <p>Optimizado para carga masiva por teclado. Estructura de grilla profesional estilo Lepton/Excel.</p>
-                    <div class="exp-badge" style="background: #333;">PROFESIONAL</div>
-                </div>
             </div>
         </div>
     </div>
@@ -1090,9 +958,9 @@ const { isLoggedIn = false } = Astro.props;
         }
     };
 
-    window.showEditorSC = (idx) => {
-        session.currentIndex = idx;
-        const p = session.projects[idx];
+    window.showEditorSC = (i) => {
+        session.currentIndex = i;
+        const p = session.projects[i];
         const designHeader = document.getElementById('display-proj-design');
         const thumb = p.image || 'https://placehold.co/100x100/1a1a1c/white?text=PLACA';
         
@@ -1100,7 +968,7 @@ const { isLoggedIn = false } = Astro.props;
             <div style="display:flex; align-items:center; gap:15px;">
                 <img src="${thumb}" style="width:40px; height:40px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); object-fit:cover;">
                 <div style="line-height:1.2">
-                    <div style="font-size:0.9rem; font-weight:800; color:white;">${p.designName}</div>
+                    <div style="font-size:0.9rem; font-weight:800;">${p.designName}</div>
                     <div style="font-size:0.65rem; color:var(--alvarez-red); font-weight:800; text-transform:uppercase;">${p.brand} ${p.thickness}mm ${p.support}</div>
                 </div>
             </div>
@@ -1109,43 +977,6 @@ const { isLoggedIn = false } = Astro.props;
         document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         document.getElementById('view-editor').classList.remove('hidden');
         document.getElementById('btn-projects-sc').classList.remove('hidden');
-
-        // SELECTOR DE EXPERIENCIA: Si no hay preferencia guardada para este proyecto, mostrar el modal
-        if (!p.interfaceMode) {
-            document.getElementById('experience-selector').classList.remove('hidden');
-        } else {
-            setModeSC(p.interfaceMode);
-        }
-
-        renderEditorSC();
-    };
-
-    window.selectExperience = (mode) => {
-        const p = session.projects[session.currentIndex];
-        p.interfaceMode = mode;
-        document.getElementById('experience-selector').classList.add('hidden');
-        setModeSC(mode);
-    };
-
-    window.setModeSC = (m) => {
-        const p = session.projects[session.currentIndex];
-        p.interfaceMode = m; // Persistir elección
-        
-        document.querySelectorAll('.btn-mode-sc').forEach(b => b.classList.remove('active'));
-        if (m === 'compact') document.getElementById('btn-mode-compact').classList.add('active');
-        else if (document.getElementById('btn-mode-grid')) document.getElementById('btn-mode-grid').classList.add('active');
-        
-        renderEditorSC();
-    };
-
-    window.duplicateLastPiece = () => {
-        const p = session.projects[session.currentIndex];
-        if (p.pieces.length === 0) return;
-        const last = p.pieces[p.pieces.length - 1];
-        // Crear copia profunda con nuevo ID único
-        const copy = JSON.parse(JSON.stringify(last));
-        copy.id = Date.now();
-        p.pieces.push(copy);
         renderEditorSC();
     };
 
@@ -1244,77 +1075,21 @@ const { isLoggedIn = false } = Astro.props;
         renderEditorSC();
     };
 
-    window.setModeSC = (mode) => {
-        session.viewMode = mode;
-        document.querySelectorAll('.btn-mode-sc').forEach(b => b.classList.remove('active'));
-        document.getElementById(`btn-mode-${mode}`).classList.add('active');
-        renderEditorSC();
-    };
-
     function renderEditorSC() {
         const p = session.projects[session.currentIndex];
         const list = document.getElementById('pieces-list');
-        const viewMode = session.viewMode || 'compact';
-        
-        if (viewMode === 'grid') {
-            // RENDER MODO GRILLA (LEPTON STYLE)
-            list.innerHTML = `
-                <div class="lepton-grid-container animate-in">
-                    <table class="lepton-grid">
-                        <thead>
-                            <tr>
-                                <th>CANT</th>
-                                <th>LARGO</th>
-                                <th>ANCHO</th>
-                                <th>PIEZA</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${p.pieces.map(pc => `
-                                <tr>
-                                    <td><input type="number" value="${pc.q}" onchange="updatePieceField(${pc.id}, 'q', this.value)"></td>
-                                    <td><input type="number" value="${pc.l}" onchange="updatePieceField(${pc.id}, 'l', this.value)"></td>
-                                    <td><input type="number" value="${pc.h}" onchange="updatePieceField(${pc.id}, 'h', this.value)"></td>
-                                    <td><input type="text" value="${pc.label}" onchange="updatePieceField(${pc.id}, 'label', this.value)"></td>
-                                    <td><button onclick="removePieceSC(${pc.id})" class="btn-grid-del"><i class="fas fa-trash"></i></button></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+        list.innerHTML = p.pieces.slice().reverse().map(pc => `
+            <div style="background:#0d0d0f; border:1px solid #1a1a1c; padding:15px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.85rem; font-family:var(--font-mono)">
+                    <strong>${pc.q}x</strong> ${pc.l}x${pc.h} 
+                    <small style="color:#444; margin-left:10px;">${pc.label}</small>
+                    ${pc.edgeColor ? `<br><small style="color:var(--alvarez-red); font-weight:800; font-size:0.6rem;">CANTO: ${pc.edgeColor.toUpperCase()}</small>` : ''}
+                </span>
+                <div class="delete-actions">
+                    <i class="fas fa-trash-alt desktop-only" style="color:#222; cursor:pointer;" onmouseover="this.style.color='#ff2800'" onmouseout="this.style.color='#222'" onclick="removePieceSC(${pc.id})"></i>
+                    <i class="fas fa-times mobile-only" style="color:var(--alvarez-red); font-size:1.4rem; cursor:pointer;" onclick="removePieceSC(${pc.id})"></i>
                 </div>
-            `;
-        } else {
-            // RENDER MODO COMPACTO (CARDS)
-            list.innerHTML = p.pieces.slice().reverse().map(pc => `
-                <div class="piece-card-industrial animate-in">
-                    <div class="piece-info-main">
-                        <div class="piece-qty-badge">${pc.q}x</div>
-                        <div class="piece-dims-grid">
-                            <div class="dim-item"><span>LARGO</span><strong>${pc.l}</strong><small>mm</small></div>
-                            <div class="dim-icon"><i class="fas fa-times"></i></div>
-                            <div class="dim-item"><span>ANCHO</span><strong>${pc.h}</strong><small>mm</small></div>
-                        </div>
-                        <div class="piece-label-tag">${pc.label.toUpperCase()}</div>
-                        ${pc.edgeColor ? `<div class="custom-edge-dot" title="Canto: ${pc.edgeColor.toUpperCase()}"></div>` : ''}
-                    </div>
-                    
-                    <div class="piece-edges-preview">
-                        <div class="edge-indicator ${pc.edges.t ? 'active' : ''}" title="Arriba: ${pc.edges.t || 0}mm">T</div>
-                        <div class="edge-indicator ${pc.edges.b ? 'active' : ''}" title="Abajo: ${pc.edges.b || 0}mm">B</div>
-                        <div class="edge-indicator ${pc.edges.l ? 'active' : ''}" title="Izq: ${pc.edges.l || 0}mm">L</div>
-                        <div class="edge-indicator ${pc.edges.r ? 'active' : ''}" title="Der: ${pc.edges.r || 0}mm">R</div>
-                    </div>
-
-                    <div class="piece-actions-industrial">
-                        <button onclick="removePieceSC(${pc.id})" class="btn-delete-piece" title="Eliminar pieza">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
+            </div>`).join('');
         document.getElementById('count-label').textContent = p.pieces.length;
         if (p.pieces.length > 0) {
             p.result = engine.optimize(p.w, p.h, p.pieces);
@@ -1325,51 +1100,6 @@ const { isLoggedIn = false } = Astro.props;
             ['stat-sheets', 'stat-eff', 'stat-edges'].forEach(id => document.getElementById(id).textContent = '0');
         }
     }
-
-    window.updatePieceField = (id, field, value) => {
-        const p = session.projects[session.currentIndex];
-        const pc = p.pieces.find(x => x.id === id);
-        if (pc) {
-            pc[field] = (field === 'label') ? value : parseInt(value);
-            // No renderizar todo en cada tecla para no perder el foco
-            // Solo renderizamos el canvas si es necesario
-            clearTimeout(window._renderTimeout);
-            window._renderTimeout = setTimeout(() => {
-                p.result = engine.optimize(p.w, p.h, p.pieces);
-                if (p.result && p.result.plates.length > 0) visualizer.render(p.result, p.w, p.h, (u) => { p.result = u; updateStatsSC(); });
-                updateStatsSC();
-            }, 500);
-        }
-    };
-
-    // NAVEGACIÓN POR TECLADO EN LA GRILLA
-    document.addEventListener('keydown', (e) => {
-        if (!document.activeElement || document.activeElement.tagName !== 'INPUT') return;
-        const input = document.activeElement;
-        const cell = input.closest('td');
-        if (!cell) return;
-        const row = cell.closest('tr');
-        const colIdx = cell.cellIndex;
-        const rowIdx = row.rowIndex;
-
-        if (e.key === 'ArrowDown' || e.key === 'Enter') {
-            const nextRow = row.nextElementSibling;
-            if (nextRow) nextRow.cells[colIdx].querySelector('input').focus();
-            else if (e.key === 'Enter') addPieceSC(); // Si es Enter en la última fila, añadir nueva
-        }
-        if (e.key === 'ArrowUp') {
-            const prevRow = row.previousElementSibling;
-            if (prevRow) prevRow.cells[colIdx].querySelector('input').focus();
-        }
-        if (e.key === 'ArrowRight' && input.selectionEnd === input.value.length) {
-            const nextCell = cell.nextElementSibling;
-            if (nextCell && nextCell.querySelector('input')) nextCell.querySelector('input').focus();
-        }
-        if (e.key === 'ArrowLeft' && input.selectionStart === 0) {
-            const prevCell = cell.previousElementSibling;
-            if (prevCell && prevCell.querySelector('input')) prevCell.querySelector('input').focus();
-        }
-    });
 
     function updateStatsSC() {
         const p = session.projects[session.currentIndex];
