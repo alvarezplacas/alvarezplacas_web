@@ -230,44 +230,42 @@ export class SmartCutVisualizer {
             
             const renderLabel = (x1, y1, x2, y2, t, side) => {
                 ctx.fillStyle = isLightMode ? '#000' : this.getEdgeColor(t);
-                ctx.font = `bold ${9 / this.scale}px Inter`;
+                ctx.font = `800 ${10 / this.scale}px Inter`; // Más grueso y legible
                 ctx.textAlign = 'center';
                 
                 let tx = (x1 + x2) / 2;
                 let ty = (y1 + y2) / 2;
                 let val = t === "0.45" ? ".4" : t;
 
-                // OFFSET INDUSTRIAL: Mover etiquetas fuera de la zona de colisión con medidas centrales
-                if (side === 't') ty -= 5 / this.scale;
-                if (side === 'b') ty += 12 / this.scale;
-                if (side === 'l') tx -= 12 / this.scale;
-                if (side === 'r') tx += 12 / this.scale;
+                // POSICIONAMIENTO INDUSTRIAL: Evitar colisión con medidas centrales
+                // Siempre horizontal para máxima legibilidad
+                if (side === 't') ty -= 6 / this.scale;
+                if (side === 'b') ty += 14 / this.scale;
+                if (side === 'l') tx -= 14 / this.scale;
+                if (side === 'r') tx += 14 / this.scale;
                 
                 ctx.fillText(val, tx, ty);
             };
 
             const getDashPattern = (t) => {
                 const thick = parseFloat(t);
-                if (thick >= 2) return []; // Sólido para 2mm
-                if (thick >= 1) return [6 / this.scale, 3 / this.scale]; // Guiones para 1mm
-                if (thick > 0) return [2 / this.scale, 2 / this.scale]; // Puntos para 0.45mm
-                return [1 / this.scale, 5 / this.scale]; // Guía muy tenue si es 0
+                if (thick >= 2) return []; // Sólido: 2mm
+                if (thick >= 1) return [8 / this.scale, 4 / this.scale]; // Guiones largos: 1mm
+                if (thick > 0) return [2 / this.scale, 3 / this.scale]; // Puntos: 0.45mm
+                return [1 / this.scale, 8 / this.scale]; // Guía mínima
             };
 
             const drawE = (x1, y1, x2, y2, t, side) => {
                 ctx.save();
                 ctx.strokeStyle = isLightMode ? '#000000' : this.getEdgeColor(t);
-                ctx.lineWidth = (parseFloat(t) >= 2 ? 3 : 1.5) / this.scale;
+                ctx.lineWidth = (parseFloat(t) >= 2 ? 4 : 2) / this.scale; // Líneas más marcadas
                 
-                // Patrón de guiones según espesor (Clave para impresión B/N)
                 ctx.setLineDash(getDashPattern(t));
-                
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.stroke();
 
-                // Etiqueta de espesor
                 ctx.setLineDash([]);
                 renderLabel(x1, y1, x2, y2, t, side);
                 ctx.restore();
@@ -281,27 +279,33 @@ export class SmartCutVisualizer {
             ctx.restore();
         }
 
-        // Etiquetas (Medidas Nominales) - POSICIONAMIENTO CENTRAL PARA EVITAR COLISIÓN
-        const fontSize = 12 / this.scale;
+        // ETIQUETAS TÉCNICAS (Medidas y Referencia ID)
+        const fontSize = 13 / this.scale;
         const subFontSize = 9 / this.scale;
+        const idFontSize = 11 / this.scale;
         
         ctx.fillStyle = isLightMode ? '#000' : '#fff';
-        ctx.font = `bold ${fontSize}px Inter`;
         ctx.textAlign = 'center';
         
-        if (item.l > 40 / this.scale && item.h > 40 / this.scale) {
-            // Medida Horizontal (Largo) - Un poco más abajo del borde
-            ctx.fillText(`${Math.round(item.nominalL)}`, item.x + item.l/2, item.y + (item.h * 0.2) + fontSize);
+        if (item.l > 45 / this.scale && item.h > 45 / this.scale) {
+            // ID de Pieza - Estilo Lepton (ID)
+            ctx.font = `bold ${idFontSize}px "JetBrains Mono", monospace`;
+            ctx.fillText(`(${item.id % 100})`, item.x + 15 / this.scale, item.y + 15 / this.scale);
+
+            // Medida Horizontal (Largo)
+            ctx.font = `800 ${fontSize}px Inter`;
+            ctx.fillText(`${Math.round(item.nominalL)}`, item.x + item.l/2, item.y + (item.h * 0.25) + fontSize);
             
-            // Medida Vertical (Ancho) - Rotada y desplazada del borde
+            // Medida Vertical (Ancho) - Rotada pero desplazada para no pisar el centro
             ctx.save();
-            ctx.translate(item.x + (item.l * 0.15) + fontSize, item.y + item.h/2);
+            ctx.translate(item.x + (item.l * 0.2) + fontSize, item.y + item.h/2);
             ctx.rotate(-Math.PI/2);
             ctx.fillText(`${Math.round(item.nominalH)}`, 0, 0);
             ctx.restore();
             
+            // Etiqueta descriptiva
             ctx.font = `600 ${subFontSize}px Inter`;
-            ctx.fillStyle = isLightMode ? 'rgba(0,0,0,0.5)' : 'oklch(100% 0 0 / 50%)';
+            ctx.fillStyle = isLightMode ? 'rgba(0,0,0,0.6)' : 'oklch(100% 0 0 / 60%)';
             ctx.fillText(item.label.toUpperCase(), item.x + item.l/2, item.y + item.h/2 + (subFontSize/2));
         }
     }

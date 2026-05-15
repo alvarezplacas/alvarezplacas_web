@@ -112,14 +112,74 @@ A diferencia de otros modelos industriales, en SmartCut PRO la optimización es 
 
 ---
 
-## 7. Próximos Pasos de Implementación CIENTÍFICA
+---
 
-Para llegar al nivel *OptiCutter*, debemos:
-1. Implementar validadores de entrada que bloqueen medidas menores a 70x100mm o mayores al tablero.
-2. Refactorizar el motor de renderizado Canvas para posicionar las etiquetas de tapacanto de forma inteligente sin solaparse con las cotas principales.
-3. Desarrollar el módulo de **Etiquetado PDF** para que el cliente reciba las etiquetas listas para imprimir.
-4. Integrar el motor Heurístico Guillotina 2D para calcular el *Yield* (Rendimiento %) y mostrar un gráfico de cortes instantáneo en SVG o HTML5 Canvas.
+## 8. Paradigmas de Carga: Modo Compacto vs. Modo Lepton (Grilla)
+
+Tras auditar **Lepton Optimizer**, se identifican dos perfiles de usuario que SmartCut PRO debe satisfacer:
+
+### 8.1 El Usuario Móvil / Rápido (Modo Compacto)
+- **Interfaz:** Formulario vertical atómico (Actual).
+- **Ventaja:** Ideal para tablets o celulares en obra.
+- **Flujo:** Carga pieza por pieza con validaciones inmediatas.
+
+### 8.2 El Operario Industrial (Modo Lepton / Grilla)
+- **Interfaz:** Tabla de datos tipo hoja de cálculo (Excel/Lepton).
+- **Requisitos Científicos de Velocidad:**
+    1. **Navegación por Teclado:** Uso de `TAB` para saltar entre Largo, Ancho, Cantidad y Cantos. `ENTER` para crear una nueva fila automáticamente.
+    2. **Edición In-Place:** Poder corregir cualquier medida directamente en la grilla sin procesos de "Edición/Guardado".
+    3. **Visualización de Cantos Atómica:** Mini-selectores de posición (T, B, L, R) integrados en la misma fila de la pieza.
+    4. **Memoria de Fila:** El sistema debe recordar el último espesor de canto usado para la siguiente pieza (autocompletado inteligente).
+
+---
+
+## 9. Próximos Pasos de Implementación CIENTÍFICA
+
+Para llegar al nivel *OptiCutter/Lepton*, debemos:
+1. **Rediseñar la Lista de Piezas:** Pasar de un listado básico a un panel técnico legible con jerarquía visual de medidas.
+2. **Implementar el Switch de Modo:** Permitir al usuario alternar entre la carga actual y la nueva Grilla Industrial.
+3. **Exportación Lepton:** Crear un conversor de formato para que lo cargado en SmartCut pueda exportarse como archivo compatible con Lepton Optimizer.
+
+---
+
+## 10. Ingeniería de Reversa: El ADN de Lepton Optimizer
+
+Tras analizar los archivos de sistema (`PLANOS3.HTM`, `CECIL.ped`, `LEPTON.CFG`), se extraen los siguientes estándares industriales:
+
+### 10.1 Estructura de Datos de Corte
+Lepton fragmenta la optimización en dos vectores críticos:
+- **Vector de Geometría (V-Geo):** Coordenadas absolutas (X, Y) y dimensiones relativas. Usa el valor `-2` como delimitador de placa y `-1` como fin de archivo.
+- **Vector de Catálogo (V-Cat):** Relación de piezas por ID, cantidad y descripción.
+
+### 10.2 Reglas de Visualización Industrial
+1. **Umbral de Utilidad (`min_util`):** Fijado en 100mm. Todo sobrante por debajo de esta medida se etiqueta como "Scrap" y no se dimensiona en el plano para evitar ruido visual.
+2. **Sistema de Etiquetas:**
+    - Medida de Largo: Centrada en la base de la pieza.
+    - Medida de Ancho: Texto vertical (`textoutv`) en el margen derecho de la pieza.
+    - Identificador: El ID de pieza siempre se encierra entre paréntesis `(ID)`.
+3. **Paleta de Colores de Taller:** Uso de colores pasteles de alto contraste para diferenciar familias de piezas (Cyan, Magenta, Amarillo, Verde Lima).
+
+### 10.3 Decodificación del Archivo `.vid` (Geometría Binaria/Texto)
+El archivo `.vid` es el volcado directo del motor de optimización. Su estructura es una secuencia de bloques de 6 campos por pieza:
+
+| Línea | Parámetro | Unidad | Ejemplo (Pieza 1000x90, Sierra 4mm) |
+| :--- | :--- | :--- | :--- |
+| 1 | Largo Total | 0.1 mm | 10040 (1000.0 + 4.0) |
+| 2 | Ancho Total | 0.1 mm | 940 (90.0 + 4.0) |
+| 3 | Largo Neto | 0.1 mm | 10000 |
+| 4 | Ancho Neto | 0.1 mm | 900 |
+| 5 | Posición X | 0.1 mm | Variable según nesting |
+| 6 | Posición Y | 0.1 mm | Variable según nesting |
+
+---
+
+## 11. Hoja de Ruta de Compatibilidad PRO
+
+Para que SmartCut PRO sea el sucesor definitivo, implementaremos:
+1. **Lógica de Sobrantes Inteligente:** Replicar el umbral de 100mm para limpieza de planos.
+2. **Modo Grilla "Zero-Click":** Entrada de datos optimizada para teclado, emulando la velocidad de carga de Lepton.
+3. **Importador Universal (.ped/.vid):** Motor de lectura que multiplique por 0.1 los valores de Lepton para normalizar la base de datos de Alvarez Placas.
 
 ---
 *Este documento dicta la norma técnica obligatoria para el desarrollo del ecosistema Alvarez Placas v16.*
-*Actualizado: Mayo 2026 - Incorporación de Reglas Mecánicas.*
+*Actualizado: Mayo 2026 - Decodificación Matemática Lepton.*
