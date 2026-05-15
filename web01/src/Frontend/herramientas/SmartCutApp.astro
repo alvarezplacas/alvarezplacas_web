@@ -1165,7 +1165,5 @@ const { isLoggedIn = false } = Astro.props;
         if (!isHidden) container.scrollIntoView({ behavior: 'smooth' });
     };
 
-    document.getElementById('plate-brand').onchange = (e) => { document.getElementById('custom-dims').classList.toggle('hidden', e.target.value !== 'CUSTOM'); };
-
     initSC();
 </script>
