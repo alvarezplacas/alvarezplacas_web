@@ -16,17 +16,18 @@ function toArray<T>(response: unknown): T[] {
     return [];
 }
 
-// Resuelve los IDs numéricos de una marca por su nombre (soporta duplicados en DB).
-async function resolveBrandIds(brandName: string): Promise<number[]> {
-    const res = toArray<{ id: number }>(
-        await directus.request(readItems('marcas', {
-            fields: ['id'],
-            filter: { nombre: { _eq: brandName.trim() } },
-            limit: -1
-        }))
-    );
-    return res.map(r => r.id);
-}
+// Mapeo industrial de prefijos de SKU por Marca
+// Criterio: M (Melamina) - YY (Código Marca)
+const BRAND_PREFIXES: Record<string, string> = {
+    'FAPLAC': 'M-20-',
+    'EGGER':  'M-10-',
+    'SADEPAN': 'M-30-',
+    'NOVA':    'M-40-',
+    'SADEPAN (2820x1830)': 'M-30-', // Fallback para nombres largos
+    'EGGER (2600x1820)':  'M-10-',
+    'NOVA (3660x1830)':    'M-40-',
+    'FAPLAC (2820x1830)': 'M-20-'
+};
 
 export const GET: APIRoute = async ({ url }) => {
     const brand  = url.searchParams.get('brand')  ?? '';
@@ -42,28 +43,29 @@ export const GET: APIRoute = async ({ url }) => {
     }
 
     try {
-        // Resolvemos los IDs de la marca (pueden ser varios por duplicados en DB como EGGER 1 y 10)
-        const brandIds = await resolveBrandIds(brand);
+        // Resolvemos el prefijo industrial del SKU
+        // Limpiamos el nombre de la marca (ej: "EGGER (2600x1820)" -> "EGGER")
+        const brandKey = brand.split(' (')[0].toUpperCase();
+        const prefix = BRAND_PREFIXES[brandKey] || BRAND_PREFIXES[brand] || '';
 
-        if (brandIds.length === 0) {
-            console.warn(`[catalog.ts] Marca no encontrada: "${brand}"`);
-            return new Response(JSON.stringify([]), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' }
-            });
+        if (!prefix && brand !== 'CUSTOM') {
+            console.warn(`[catalog.ts] Prefijo industrial no encontrado para marca: "${brand}"`);
+            // Si no hay prefijo, devolvemos vacío para no mezclar datos
+            return new Response(JSON.stringify([]), { status: 200 });
         }
+
+        const baseFilter = {
+            _and: [
+                { sku: { _starts_with: prefix } }
+            ]
+        };
 
         // ── MODO LÍNEAS ──────────────────────────────────────────────────────────
         if (type === 'lines') {
             const raw = toArray<{ linea: string | null }>(
                 await directus.request(readItems('Productos', {
                     fields: ['linea'],
-                    filter: {
-                        _and: [
-                            { rubro: { letra: { _eq: 'M' } } },
-                            { marca: { _in: brandIds } }
-                        ]
-                    },
+                    filter: baseFilter,
                     limit: -1
                 }))
             );
@@ -78,7 +80,7 @@ export const GET: APIRoute = async ({ url }) => {
             });
         }
 
-        // ── FILTROS BASE ────────────────────────────────────────────────────────
+        // ── FILTROS ADICIONALES ─────────────────────────────────────────────────
         const lineFilter = !line
             ? []
             : line === 'GENERAL'
@@ -100,8 +102,7 @@ export const GET: APIRoute = async ({ url }) => {
                 fields: PRODUCT_FIELDS,
                 filter: {
                     _and: [
-                        { rubro: { letra: { _eq: 'M' } } },
-                        { marca: { _in: brandIds } },
+                        { sku: { _starts_with: prefix } },
                         ...lineFilter,
                         ...searchFilter
                     ]
