@@ -299,43 +299,57 @@ const { isLoggedIn = false } = Astro.props;
     }
     .btn-interface-selector {
         flex: 1;
-        max-width: 300px;
-        background: #f8f9fa;
-        border: 2px solid #dee2e6;
-        border-radius: 12px;
-        padding: 30px;
+        max-width: 350px;
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        text-align: center;
+        transition: all 0.2s;
         display: flex;
-        flex-direction: column;
         align-items: center;
-        gap: 15px;
+        gap: 20px;
+        text-align: left;
     }
     .btn-interface-selector i {
-        font-size: 2.5rem;
+        font-size: 2rem;
         color: #adb5bd;
+        min-width: 50px;
+        text-align: center;
     }
-    .btn-interface-selector span {
+    .btn-interface-selector .text-content {
+        display: flex;
+        flex-direction: column;
+    }
+    .btn-interface-selector .text-content span {
         font-weight: 900;
-        font-size: 1.1rem;
-        color: #495057;
+        font-size: 1rem;
+        color: #000;
         text-transform: uppercase;
+        line-height: 1.2;
+    }
+    .btn-interface-selector .text-content p {
+        font-size: 0.65rem;
+        color: #666;
+        margin: 0;
+        margin-top: 2px;
     }
     .btn-interface-selector:hover {
         border-color: #25d366;
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        background: #f9fffb;
     }
     .btn-interface-selector.active {
         background: #25d366 !important;
         border-color: #1eb956 !important;
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2);
     }
     .btn-interface-selector.active i, 
-    .btn-interface-selector.active span,
-    .btn-interface-selector.active p {
+    .btn-interface-selector.active .text-content span,
+    .btn-interface-selector.active .text-content p {
         color: white !important;
     }
+
+    /* GRILLA INDUSTRIAL HYBRID - LIGHT THEME */
 
     /* GRILLA INDUSTRIAL HYBRID - LIGHT THEME */
     .lepton-grid-container {
@@ -404,12 +418,21 @@ const { isLoggedIn = false } = Astro.props;
         font-size: 0.7rem;
         position: relative;
     }
-    .edge-check-btn.active {
-        background: #25d366 !important;
-        border-color: #1eb956 !important;
-        color: white !important;
+    .canto-opt {
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        padding: 8px 20px;
+        font-weight: 900;
+        cursor: pointer;
+        background: #fff;
+        color: #333;
+        transition: 0.2s;
     }
-    .edge-check-btn i { pointer-events: none; }
+    .canto-opt.active {
+        background: #25d366 !important;
+        color: #fff !important;
+        border-color: #1eb956 !important;
+    }
 
     /* BOTONES DE ACCIÓN INDUSTRIAL */
     .industrial-controls {
@@ -496,13 +519,17 @@ const { isLoggedIn = false } = Astro.props;
         <div class="mode-selector-container">
             <div id="btn-view-compact" class="btn-interface-selector" onclick="setModeSC('compact')">
                 <i class="fas fa-mobile-alt"></i>
-                <span>MODO COMPACTO</span>
-                <p style="font-size: 0.6rem; color: #666; margin: 0;">Moderno, táctil y rápido</p>
+                <div class="text-content">
+                    <span>MODO COMPACTO</span>
+                    <p>Moderno, táctil y rápido</p>
+                </div>
             </div>
             <div id="btn-view-grid" class="btn-interface-selector" onclick="setModeSC('grid')">
                 <i class="fas fa-table"></i>
-                <span>MODO TRADICIONAL</span>
-                <p style="font-size: 0.6rem; color: #666; margin: 0;">Grilla tipo Lepton / Arauco</p>
+                <div class="text-content">
+                    <span>MODO CLÁSICO</span>
+                    <p>Grilla profesional tipo Lepton</p>
+                </div>
             </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -731,9 +758,9 @@ const { isLoggedIn = false } = Astro.props;
             <div class="active-canto-bar" style="background:#fff; border:1px solid #ccc; border-radius:4px; padding:15px; margin-bottom:15px; display:flex; align-items:center; gap:20px;">
                 <span style="font-size: 0.7rem; font-weight: 900; color: #000;">ESPESOR DE CANTO ACTIVO:</span>
                 <div style="display:flex; gap:10px;">
-                    <div onclick="setActiveCantoSC(0.45)" class="canto-opt active" id="opt-canto-045" style="border-radius:4px; border:1px solid #ccc; padding:8px 20px; font-weight:900; cursor:pointer;">0.45 MM</div>
-                    <div onclick="setActiveCantoSC(1)" class="canto-opt" id="opt-canto-1" style="border-radius:4px; border:1px solid #ccc; padding:8px 20px; font-weight:900; cursor:pointer;">1.0 MM</div>
-                    <div onclick="setActiveCantoSC(2)" class="canto-opt" id="opt-canto-2" style="border-radius:4px; border:1px solid #ccc; padding:8px 20px; font-weight:900; cursor:pointer;">2.0 MM</div>
+                    <div onclick="setActiveCantoSC(0.45)" class="canto-opt" id="opt-canto-045">0.45 MM</div>
+                    <div onclick="setActiveCantoSC(1)" class="canto-opt" id="opt-canto-1">1.0 MM</div>
+                    <div onclick="setActiveCantoSC(2)" class="canto-opt" id="opt-canto-2">2.0 MM</div>
                 </div>
             </div>
 
@@ -1421,15 +1448,12 @@ const { isLoggedIn = false } = Astro.props;
             gridZone.classList.remove('hidden');
             
             // Actualizar barra de cantos
-            document.querySelectorAll('.canto-opt').forEach(opt => opt.classList.remove('active'));
+            document.querySelectorAll('.canto-opt').forEach(opt => {
+                opt.classList.remove('active');
+            });
             const activeId = session.activeCanto === 0.45 ? '045' : session.activeCanto.toString().replace('.','');
             const activeBtn = document.getElementById(`opt-canto-${activeId}`);
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-                activeBtn.style.background = '#25d366';
-                activeBtn.style.color = '#fff';
-                activeBtn.style.borderColor = '#1eb956';
-            }
+            if (activeBtn) activeBtn.classList.add('active');
 
             const gridRoot = document.getElementById('grid-root');
             let tableHtml = `
