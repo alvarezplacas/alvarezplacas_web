@@ -16,18 +16,16 @@ function toArray<T>(response: unknown): T[] {
     return [];
 }
 
-// Resuelve el ID numérico de una marca por su nombre.
-// CRÍTICO: Directus almacena 'marca' como FK numérica en Productos.
-// Filtrar por nombre via JOIN es poco fiable — usamos el ID directo.
-async function resolveBrandId(brandName: string): Promise<number | null> {
+// Resuelve los IDs numéricos de una marca por su nombre (soporta duplicados en DB).
+async function resolveBrandIds(brandName: string): Promise<number[]> {
     const res = toArray<{ id: number }>(
         await directus.request(readItems('marcas', {
             fields: ['id'],
-            filter: { nombre: { _eq: brandName } },
-            limit: 1
+            filter: { nombre: { _eq: brandName.trim() } },
+            limit: -1
         }))
     );
-    return res[0]?.id ?? null;
+    return res.map(r => r.id);
 }
 
 export const GET: APIRoute = async ({ url }) => {
@@ -44,11 +42,10 @@ export const GET: APIRoute = async ({ url }) => {
     }
 
     try {
-        // Resolvemos el ID de la marca UNA SOLA VEZ al inicio.
-        // Esto garantiza que el filtro sea exacto sin depender de JOINs en Directus.
-        const brandId = await resolveBrandId(brand);
+        // Resolvemos los IDs de la marca (pueden ser varios por duplicados en DB como EGGER 1 y 10)
+        const brandIds = await resolveBrandIds(brand);
 
-        if (!brandId) {
+        if (brandIds.length === 0) {
             console.warn(`[catalog.ts] Marca no encontrada: "${brand}"`);
             return new Response(JSON.stringify([]), {
                 status: 200,
@@ -57,8 +54,6 @@ export const GET: APIRoute = async ({ url }) => {
         }
 
         // ── MODO LÍNEAS ──────────────────────────────────────────────────────────
-        // Devuelve los valores únicos del campo 'linea' para la marca seleccionada.
-        // Si un producto tiene 'linea' vacía → aparece como "GENERAL".
         if (type === 'lines') {
             const raw = toArray<{ linea: string | null }>(
                 await directus.request(readItems('Productos', {
@@ -66,7 +61,7 @@ export const GET: APIRoute = async ({ url }) => {
                     filter: {
                         _and: [
                             { rubro: { letra: { _eq: 'M' } } },
-                            { marca: { _eq: brandId } }
+                            { marca: { _in: brandIds } }
                         ]
                     },
                     limit: -1
@@ -106,7 +101,7 @@ export const GET: APIRoute = async ({ url }) => {
                 filter: {
                     _and: [
                         { rubro: { letra: { _eq: 'M' } } },
-                        { marca: { _eq: brandId } },
+                        { marca: { _in: brandIds } },
                         ...lineFilter,
                         ...searchFilter
                     ]
