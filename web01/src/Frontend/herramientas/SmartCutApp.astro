@@ -769,7 +769,9 @@ const { isLoggedIn = false } = Astro.props;
             }
 
             try {
-                const res = await fetch(`/api/herramientas/catalog?type=lines&brand=${encodeURIComponent(brand)}`, { signal });
+                // CACHE BUSTER: Agregar timestamp para matar la caché del navegador/ServiceWorker
+                const cacheBuster = Date.now();
+                const res = await fetch(`/api/herramientas/catalog?type=lines&brand=${encodeURIComponent(brand)}&_t=${cacheBuster}`, { signal });
                 const lines = await res.json();
                 
                 // SEGUNDA LIMPIEZA antes de insertar
@@ -830,7 +832,9 @@ const { isLoggedIn = false } = Astro.props;
             previewPlaceholder.classList.remove('hidden');
             try {
                 // MEJORA: usamos type=colors para obtener colores únicos con sus espesores disponibles
-                const res = await fetch(`/api/herramientas/catalog?type=colors&brand=${encodeURIComponent(brand)}&line=${encodeURIComponent(line)}`, { signal });
+                // CACHE BUSTER: Prevenir caché en diseños
+                const cacheBuster = Date.now();
+                const res = await fetch(`/api/herramientas/catalog?type=colors&brand=${encodeURIComponent(brand)}&line=${encodeURIComponent(line)}&_t=${cacheBuster}`, { signal });
                 const colors = await res.json();
                 
                 // Limpieza total antes de insertar
