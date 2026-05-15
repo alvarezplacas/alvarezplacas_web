@@ -248,11 +248,19 @@ export class SmartCutVisualizer {
                 let ty = (y1 + y2) / 2;
                 let val = t === "0.45" ? ".4" : t;
 
-                if (side === 't') ty += 12 / this.scale;
-                if (side === 'b') ty -= 4 / this.scale;
-                if (side === 'l') { tx += 12 / this.scale; }
-                if (side === 'r') { tx -= 12 / this.scale; }
+                // OFFSET INDUSTRIAL: Mover etiquetas fuera de la zona de colisión con medidas centrales
+                if (side === 't') ty -= 5 / this.scale;
+                if (side === 'b') ty += 12 / this.scale;
+                if (side === 'l') tx -= 12 / this.scale;
+                if (side === 'r') tx += 12 / this.scale;
                 
+                // Dibujar un pequeño círculo de fondo para el espesor del canto (más legible)
+                ctx.beginPath();
+                ctx.fillStyle = isLightMode ? '#f0f0f0' : '#1a1a1c';
+                ctx.arc(tx, ty - (3/this.scale), 7/this.scale, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = isLightMode ? '#000' : this.getEdgeColor(t);
                 ctx.fillText(val, tx, ty);
             };
 
@@ -264,7 +272,7 @@ export class SmartCutVisualizer {
             ctx.restore();
         }
 
-        // Etiquetas (Medidas Nominales)
+        // Etiquetas (Medidas Nominales) - POSICIONAMIENTO CENTRAL PARA EVITAR COLISIÓN
         const fontSize = 12 / this.scale;
         const subFontSize = 9 / this.scale;
         
@@ -272,16 +280,19 @@ export class SmartCutVisualizer {
         ctx.font = `bold ${fontSize}px Inter`;
         ctx.textAlign = 'center';
         
-        if (item.l > 30 / this.scale && item.h > 30 / this.scale) {
-            ctx.fillText(`${Math.round(item.nominalL)}`, item.x + item.l/2, item.y + fontSize + 5);
+        if (item.l > 40 / this.scale && item.h > 40 / this.scale) {
+            // Medida Horizontal (Largo) - Un poco más abajo del borde
+            ctx.fillText(`${Math.round(item.nominalL)}`, item.x + item.l/2, item.y + (item.h * 0.2) + fontSize);
+            
+            // Medida Vertical (Ancho) - Rotada y desplazada del borde
             ctx.save();
-            ctx.translate(item.x + fontSize + 5, item.y + item.h/2);
+            ctx.translate(item.x + (item.l * 0.15) + fontSize, item.y + item.h/2);
             ctx.rotate(-Math.PI/2);
             ctx.fillText(`${Math.round(item.nominalH)}`, 0, 0);
             ctx.restore();
             
             ctx.font = `600 ${subFontSize}px Inter`;
-            ctx.fillStyle = isLightMode ? 'rgba(0,0,0,0.4)' : 'oklch(100% 0 0 / 40%)';
+            ctx.fillStyle = isLightMode ? 'rgba(0,0,0,0.5)' : 'oklch(100% 0 0 / 50%)';
             ctx.fillText(item.label.toUpperCase(), item.x + item.l/2, item.y + item.h/2 + (subFontSize/2));
         }
     }

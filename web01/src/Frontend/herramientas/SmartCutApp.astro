@@ -1033,14 +1033,25 @@ const { isLoggedIn = false } = Astro.props;
         const w = parseInt(document.getElementById('p-wid').value);
         if (!l || !w) return;
 
-        // VALIDACIÓN DE TAMAÑO INDUSTRIAL
-        const maxDim = Math.max(p.w, p.h);
-        const minDim = Math.min(p.w, p.h);
+        // VALIDACIÓN DE TAMAÑO INDUSTRIAL (Mínimos y Máximos)
         const pMax = Math.max(l, w);
         const pMin = Math.min(l, w);
+        const boardMax = Math.max(p.w, p.h);
+        const boardMin = Math.min(p.w, p.h);
 
-        if (pMax > maxDim || pMin > minDim) {
-            alert(`⚠️ ERROR DE MEDIDA: La pieza (${l}x${w}) es más grande que la placa (${p.w}x${p.h}). No se puede cortar.`);
+        // 1. Validar contra el tamaño de la placa
+        if (pMax > boardMax || pMin > boardMin) {
+            alert(`⚠️ ERROR DE MEDIDA: La pieza (${l}x${w}mm) supera las dimensiones de la placa (${p.w}x${p.h}mm).`);
+            return;
+        }
+
+        // 2. Validar mínimos industriales (Regla 70x100)
+        if (pMin < 70) {
+            alert(`⚠️ ERROR DE SEGURIDAD: La medida mínima de corte es 70mm. No se puede procesar una pieza con ${pMin}mm.`);
+            return;
+        }
+        if (pMin === 70 && pMax < 100) {
+            alert(`⚠️ REGLA INDUSTRIAL: Si un lado mide 70mm, el otro debe ser de al menos 100mm para garantizar el agarre de la máquina.`);
             return;
         }
 

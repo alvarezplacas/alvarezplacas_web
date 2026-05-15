@@ -58,12 +58,42 @@ Para Faplac, Egger, Sadepan y Nova, el flujo asistido definitivo será:
 
 ---
 
-## 4. Próximos Pasos de Implementación CIENTÍFICA
+## 4. Reglas de Seguridad y Limitaciones Mecánicas
+
+Para que el SmartCut PRO sea una herramienta de producción real, debe respetar las limitaciones físicas de las máquinas seccionadoras y la integridad de los datos.
+
+### 4.1 Restricciones de Tamaño de Pieza (Mínimos de Seguridad)
+Las máquinas industriales (Escuadradoras y Seccionadoras) requieren un área mínima de agarre para evitar accidentes y roturas de material.
+- **Límite Crítico Inferior:** La medida mínima de un lado es **70mm**.
+- **Regla de Proporción:** No se permiten piezas de **70mm x 70mm**. 
+- **Estándar Alvarez Placas:** Si un lado mide **70mm**, el lado adyacente debe medir como mínimo **100mm**. Esto garantiza la estabilidad de la pieza durante el corte y el posterior pegado de cantos.
+
+### 4.2 Restricciones de Tamaño de Placa (Máximos Físicos)
+El sistema debe impedir la carga de piezas que superen las dimensiones reales del tablero seleccionado (ej. 2750x1820 para Faplac), considerando además el **Trim (Refile)** perimetral de limpieza.
+
+---
+
+## 5. Estándares de Visualización en el Plano de Corte
+
+El plano de corte es el mapa del operario. La legibilidad es fundamental para evitar desperdicios por errores de interpretación.
+
+### 5.1 Jerarquía de Información
+Para evitar que los números se pisen (overlapping), se establece la siguiente jerarquía:
+1. **Medida de la Pieza:** Texto central en negro, fuente Sans-Serif de alta legibilidad.
+2. **Espesor de Tapacanto:** 
+   - Se representará con un **Offset Visual** (fuera de la línea de cota).
+   - Simbología sugerida: Un número pequeño entre paréntesis o un color distintivo (ej. Rojo para 2mm, Gris para 0.4mm) ubicado en el centro del borde correspondiente.
+3. **Sentido de Veta:** Indicación visual mediante flechas o rayado de fondo para confirmar la orientación.
+
+---
+
+## 6. Próximos Pasos de Implementación CIENTÍFICA
 
 Para llegar al nivel *OptiCutter*, debemos:
-1. Reemplazar la petición de Directus (`/api/herramientas/catalog`) por una consulta directa a la vista de PostgreSQL mediante el módulo nativo de Node `pg`.
-2. Integrar el motor Heurístico Guillotina 2D para calcular el *Yield* (Rendimiento %) y mostrar un gráfico de cortes instantáneo en SVG o HTML5 Canvas.
-3. Incorporar el motor de descuento de Tapacantos (0.4mm, 2mm) antes de que la lista llegue al optimizador.
+1. Implementar validadores de entrada que bloqueen medidas menores a 70x100mm o mayores al tablero.
+2. Refactorizar el motor de renderizado Canvas para posicionar las etiquetas de tapacanto de forma inteligente sin solaparse con las cotas principales.
+3. Integrar el motor Heurístico Guillotina 2D para calcular el *Yield* (Rendimiento %) y mostrar un gráfico de cortes instantáneo en SVG o HTML5 Canvas.
 
 ---
 *Este documento dicta la norma técnica obligatoria para el desarrollo del ecosistema Alvarez Placas v16.*
+*Actualizado: Mayo 2026 - Incorporación de Reglas Mecánicas.*
