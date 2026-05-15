@@ -517,6 +517,12 @@ const { isLoggedIn = false } = Astro.props;
                     <select id="pe-b" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
                     <select id="pe-l" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
                     <select id="pe-r" style="width:75px;"><option value="0">0</option><option value="0.45">.45</option><option value="1">1</option><option value="2">2</option></select>
+                    
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: 10px; border-left: 1px solid #333; padding-left: 15px;">
+                        <input type="checkbox" id="p-edge-custom-check" onchange="document.getElementById('p-edge-color').classList.toggle('hidden', !this.checked)" style="width:18px;height:18px;cursor:pointer;">
+                        <label for="p-edge-custom-check" style="font-size: 0.55rem; font-weight: 800; color: #666; cursor: pointer;">CANTO DIFERENTE</label>
+                        <input type="text" id="p-edge-color" class="hidden" placeholder="Color del canto..." style="width: 140px; padding: 8px; background: #000; border: 1px solid var(--alvarez-red); color: white; border-radius: 8px; font-size: 0.7rem;">
+                    </div>
                 </div>
                 <button onclick="window.addPieceSC()" class="btn-shatter">AÑADIR PIEZA</button>
             </div>
@@ -1058,9 +1064,13 @@ const { isLoggedIn = false } = Astro.props;
         p.pieces.push({
             id: Date.now(), q: parseInt(document.getElementById('p-qty').value) || 1, l, h: w, 
             label: document.getElementById('p-label').value || 'PIEZA', canRotate: document.getElementById('p-rot').checked,
+            edgeColor: document.getElementById('p-edge-custom-check').checked ? document.getElementById('p-edge-color').value : null,
             edges: { t: parseFloat(document.getElementById('pe-t').value), b: parseFloat(document.getElementById('pe-b').value), l: parseFloat(document.getElementById('pe-l').value), r: parseFloat(document.getElementById('pe-r').value) }
         });
         ['p-len', 'p-wid'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('p-edge-custom-check').checked = false;
+        document.getElementById('p-edge-color').classList.add('hidden');
+        document.getElementById('p-edge-color').value = '';
         document.getElementById('p-qty').value = '1'; document.getElementById('p-qty').focus(); document.getElementById('p-qty').select();
         renderEditorSC();
     };
@@ -1070,7 +1080,11 @@ const { isLoggedIn = false } = Astro.props;
         const list = document.getElementById('pieces-list');
         list.innerHTML = p.pieces.slice().reverse().map(pc => `
             <div style="background:#0d0d0f; border:1px solid #1a1a1c; padding:15px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.85rem; font-family:var(--font-mono)"><strong>${pc.q}x</strong> ${pc.l}x${pc.h} <small style="color:#444; margin-left:10px;">${pc.label}</small></span>
+                <span style="font-size:0.85rem; font-family:var(--font-mono)">
+                    <strong>${pc.q}x</strong> ${pc.l}x${pc.h} 
+                    <small style="color:#444; margin-left:10px;">${pc.label}</small>
+                    ${pc.edgeColor ? `<br><small style="color:var(--alvarez-red); font-weight:800; font-size:0.6rem;">CANTO: ${pc.edgeColor.toUpperCase()}</small>` : ''}
+                </span>
                 <div class="delete-actions">
                     <i class="fas fa-trash-alt desktop-only" style="color:#222; cursor:pointer;" onmouseover="this.style.color='#ff2800'" onmouseout="this.style.color='#222'" onclick="removePieceSC(${pc.id})"></i>
                     <i class="fas fa-times mobile-only" style="color:var(--alvarez-red); font-size:1.4rem; cursor:pointer;" onclick="removePieceSC(${pc.id})"></i>

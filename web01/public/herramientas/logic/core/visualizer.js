@@ -228,19 +228,8 @@ export class SmartCutVisualizer {
             const edgeWidth = 3 / this.scale;
             ctx.lineWidth = edgeWidth;
             
-            const drawE = (x1, y1, x2, y2, t, side) => {
-                ctx.strokeStyle = isLightMode ? '#000000' : this.getEdgeColor(t);
-                // Línea sólida para 2mm, punteada para el resto en B/N
-                ctx.setLineDash(isLightMode && t < 2 ? [5 / this.scale, 5 / this.scale] : []);
-                
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
-
-                // Etiqueta de espesor (Informativa)
-                ctx.setLineDash([]);
-                ctx.fillStyle = isLightMode ? '#000' : '#fff';
+            const renderLabel = (x1, y1, x2, y2, t, side) => {
+                ctx.fillStyle = isLightMode ? '#000' : this.getEdgeColor(t);
                 ctx.font = `bold ${9 / this.scale}px Inter`;
                 ctx.textAlign = 'center';
                 
@@ -254,14 +243,34 @@ export class SmartCutVisualizer {
                 if (side === 'l') tx -= 12 / this.scale;
                 if (side === 'r') tx += 12 / this.scale;
                 
-                // Dibujar un pequeño círculo de fondo para el espesor del canto (más legible)
-                ctx.beginPath();
-                ctx.fillStyle = isLightMode ? '#f0f0f0' : '#1a1a1c';
-                ctx.arc(tx, ty - (3/this.scale), 7/this.scale, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = isLightMode ? '#000' : this.getEdgeColor(t);
                 ctx.fillText(val, tx, ty);
+            };
+
+            const getDashPattern = (t) => {
+                const thick = parseFloat(t);
+                if (thick >= 2) return []; // Sólido para 2mm
+                if (thick >= 1) return [6 / this.scale, 3 / this.scale]; // Guiones para 1mm
+                if (thick > 0) return [2 / this.scale, 2 / this.scale]; // Puntos para 0.45mm
+                return [1 / this.scale, 5 / this.scale]; // Guía muy tenue si es 0
+            };
+
+            const drawE = (x1, y1, x2, y2, t, side) => {
+                ctx.save();
+                ctx.strokeStyle = isLightMode ? '#000000' : this.getEdgeColor(t);
+                ctx.lineWidth = (parseFloat(t) >= 2 ? 3 : 1.5) / this.scale;
+                
+                // Patrón de guiones según espesor (Clave para impresión B/N)
+                ctx.setLineDash(getDashPattern(t));
+                
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Etiqueta de espesor
+                ctx.setLineDash([]);
+                renderLabel(x1, y1, x2, y2, t, side);
+                ctx.restore();
             };
 
             if (item.edges.t) drawE(item.x, item.y, item.x + item.l, item.y, item.edges.t, 't');

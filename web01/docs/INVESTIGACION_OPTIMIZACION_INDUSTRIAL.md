@@ -77,11 +77,16 @@ El sistema debe impedir la carga de piezas que superen las dimensiones reales de
 
 El plano de corte es el mapa del operario. La legibilidad es fundamental para evitar desperdicios por errores de interpretación.
 
-### 5.2 Lógica de Pre-fresado (Pre-milling)
-En la producción automatizada, se debe definir si el corte es **Neto** o **Bruto**:
-- **Con Pre-fresado:** La seccionadora corta la pieza a su medida final nominal. La pegadora de cantos "come" 0.5mm a 2mm de material antes de aplicar el pegamento.
-- **Sin Pre-fresado:** El optimizador debe **descontar** el espesor del tapacanto de la medida de corte. Si la pieza final es de 500mm y el canto es de 2mm, el tablero se debe cortar a 498mm.
-*SmartCut PRO operará bajo lógica de Pre-fresado por defecto para maximizar la precisión.*
+### 5.1 Jerarquía y Código de Líneas (Impresión B/N)
+Para garantizar la legibilidad en impresiones de taller, se establece un código de líneas según el espesor:
+1. **Sólida Gruesa (2mm):** Línea continua, representa el canto de mayor espesor y protección.
+2. **Segmentada (1mm):** Guiones medios, para cantos intermedios.
+3. **Punteada (0.45mm):** Puntos cerrados, para cantos finos.
+4. **Guía Tenue:** Línea de referencia si el borde no lleva canto.
+*Se elimina cualquier fondo gris o sombreado para evitar empastes en la impresión.*
+
+### 5.2 Diseños Híbridos (Canto Diferente)
+El sistema permite especificar un color o diseño de tapacanto independiente de la placa. Esta información debe viajar en el objeto de la pieza y mostrarse resaltada en el listado técnico para evitar errores de pegado con el diseño base de la placa.
 
 ### 5.3 Excedente de Tapacanto (Edge Overlap)
 Para el cálculo de costos y stock, no basta con medir el perímetro de la pieza. Se debe sumar un **excedente de seguridad** (retestado) de aproximadamente 50mm por cada punta de canto aplicada para permitir el corte de los sobrantes por la máquina.
