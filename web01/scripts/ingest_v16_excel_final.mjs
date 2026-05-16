@@ -4,11 +4,10 @@ import { createDirectus, rest, authentication, readItems, createItem, updateItem
 
 // Configuración Industrial
 const DIRECTUS_URL = 'http://alvarezplacas_directus_v16:8055';
-const ADMIN_EMAIL = 'admin@alvarezplacas.com.ar';
-const ADMIN_PASS = 'JavierMix2026!';
+const STATIC_TOKEN = 'alvarez-api-token-v16-2026';
 const EXCEL_FILE = './database/Catalogo_de_productos.xlsx';
 
-const client = createDirectus(DIRECTUS_URL).with(authentication()).with(rest());
+const client = createDirectus(DIRECTUS_URL).with(staticToken(STATIC_TOKEN)).with(rest());
 
 async function upsertItem(collection, filter, data) {
     try {
@@ -26,14 +25,7 @@ async function upsertItem(collection, filter, data) {
 
 async function startIngestion() {
     console.log("--- 🔱 Iniciando Ingesta Maestra v16 (Excel) ---");
-    
-    try {
-        await client.login(ADMIN_EMAIL, ADMIN_PASS);
-        console.log("✅ Autenticado en Directus.");
-    } catch (e) {
-        console.error("❌ Error de Login:", e.message);
-        return;
-    }
+    console.log("🔑 Usando Token Maestro Industrial...");
     
     if (!fs.existsSync(EXCEL_FILE)) {
         console.error("❌ Archivo no encontrado:", EXCEL_FILE);
