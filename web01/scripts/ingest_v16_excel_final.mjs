@@ -3,7 +3,7 @@ import fs from 'fs';
 import { createDirectus, rest, authentication, readItems, createItem, updateItem, staticToken } from '@directus/sdk';
 
 // Configuración Industrial
-const DIRECTUS_URL = 'http://alvarezplacas_directus:8055';
+const DIRECTUS_URL = 'http://alvarezplacas_directus_v16:8055';
 const ADMIN_EMAIL = 'admin@alvarezplacas.com.ar';
 const ADMIN_PASS = 'JavierMix2026!';
 const EXCEL_FILE = './database/Catalogo_de_productos.xlsx';
