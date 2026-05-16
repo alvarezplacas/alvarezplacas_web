@@ -4,8 +4,7 @@ import { directus, readItems } from '@conexiones/directus.js';
 // Campos base que devolvemos para productos
 const PRODUCT_FIELDS = [
     'id', 'nombre', 'sku', 'modelo', 'linea',
-    'espesor', 'soporte', 'marca.nombre', 'foto_principal',
-    'precio_l1', 'precio_l2'
+    'espesor', 'soporte', 'marca.nombre', 'foto_principal'
 ] as const;
 
 // Helper: normaliza la respuesta del SDK (siempre devuelve array)
@@ -100,7 +99,7 @@ export const GET: APIRoute = async ({ url }) => {
 
         const raw = toArray<any>(
             await directus.request(readItems('Productos', {
-                fields: PRODUCT_FIELDS,
+                fields: ['*', 'marca.nombre'],
                 filter: {
                     _and: [
                         { sku: { _starts_with: prefix } },
@@ -142,8 +141,9 @@ export const GET: APIRoute = async ({ url }) => {
                         soporte, 
                         id: p.id, 
                         sku: p.sku,
-                        precio_l1: parseFloat(p.precio_l1 ?? 0),
-                        precio_l2: parseFloat(p.precio_l2 ?? 0)
+                        // Búsqueda inteligente de precios (L1/L2 o fallback a precio general)
+                        precio_l1: parseFloat(p.precio_l1 ?? p.Precio_L1 ?? p.precio ?? p.Precio ?? 0),
+                        precio_l2: parseFloat(p.precio_l2 ?? p.Precio_L2 ?? p.precio_l1 ?? p.Precio_L1 ?? p.precio ?? p.Precio ?? 0)
                     });
                     // Ordenar espesores de menor a mayor
                     entry.espesores.sort((a: any, b: any) => a.espesor - b.espesor);
