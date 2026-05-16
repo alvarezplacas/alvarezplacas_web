@@ -4,7 +4,8 @@ import { directus, readItems } from '@conexiones/directus.js';
 // Campos base que devolvemos para productos
 const PRODUCT_FIELDS = [
     'id', 'nombre', 'sku', 'modelo', 'linea',
-    'espesor', 'soporte', 'marca.nombre', 'foto_principal'
+    'espesor', 'soporte', 'marca.nombre', 'foto_principal',
+    'precio_l1', 'precio_l2'
 ] as const;
 
 // Helper: normaliza la respuesta del SDK (siempre devuelve array)
@@ -136,7 +137,14 @@ export const GET: APIRoute = async ({ url }) => {
                     (e: any) => e.espesor === espesor && e.soporte === soporte
                 );
                 if (!yaExiste) {
-                    entry.espesores.push({ espesor, soporte, id: p.id, sku: p.sku });
+                    entry.espesores.push({ 
+                        espesor, 
+                        soporte, 
+                        id: p.id, 
+                        sku: p.sku,
+                        precio_l1: parseFloat(p.precio_l1 ?? 0),
+                        precio_l2: parseFloat(p.precio_l2 ?? 0)
+                    });
                     // Ordenar espesores de menor a mayor
                     entry.espesores.sort((a: any, b: any) => a.espesor - b.espesor);
                 }

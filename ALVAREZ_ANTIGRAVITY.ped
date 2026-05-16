@@ -1,0 +1,105 @@
+METAV2
+ALVAREZ_ANTIGRAVITY.ppp
+LEPTON OPTIMIZER
+3
+5,5000,5000,0,,0,,,0,0,0,0,0,0,0,0,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+10,10000,6000,0,,0,,,0,0,0,0,0,0,0,0,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+----------TAPACANTOS
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+eof
+ALVAREZ_ANTIGRAVITY.stk
+eof
+ALVAREZ_ANTIGRAVITY.cfg
+_LEPTON_
+5
+ALVAREZ TEST                                                          
+1     
+1     
+168
+NO USADO
+25950
+18250
+ 40.0
+      1.00
+900
+2
+      1.00
+      1.00
+50
+5
+100
+1
+100
+1
+0
+2
+81
+99
+1
+0
+0
+0
+0
+0
+     0.000
+    18.000
+0
+0
+1
+0
+0
+0
+3
+0
+0
+10
+0
+2
+15
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+eof
+ALVAREZ_ANTIGRAVITY.vid
+0
+0
+eof
+ALVAREZ_ANTIGRAVITY.ph1
+-3
+eof
+ALVAREZ_ANTIGRAVITY.mat
+1     
+25950
+18250
+ALVAREZ PLACAS TEST
+1
+0
+0
+     0.000
+eof

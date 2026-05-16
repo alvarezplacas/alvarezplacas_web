@@ -41,10 +41,13 @@ export class SmartCutVisualizer {
         const ctx = canvas.getContext('2d');
         
         const availableW = this.container.clientWidth - (this.padding * 2);
-        this.scale = Math.min(availableW / pw, 600 / ph);
+        this.scale = Math.min(availableW / (pw + 100), 600 / (ph + 100)); // Espacio para cotas
         
-        canvas.width = pw * this.scale;
-        canvas.height = ph * this.scale;
+        canvas.width = (pw + 100) * this.scale;
+        canvas.height = (ph + 100) * this.scale;
+
+        // Centrar el tablero en el canvas con margen para cotas
+        ctx.translate(20 * this.scale, 20 * this.scale);
 
         this.drawPlate(ctx, plate, pw, ph);
         this.renderStats(idx, plate, pw, ph);
@@ -157,10 +160,14 @@ export class SmartCutVisualizer {
 
     refreshCanvas(canvas, plate) {
         const ctx = canvas.getContext('2d');
-        const pw = canvas.width / this.scale;
-        const ph = canvas.height / this.scale;
+        const pw = (canvas.width / this.scale) - 100;
+        const ph = (canvas.height / this.scale) - 100;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.save();
+        ctx.translate(20 * this.scale, 20 * this.scale);
         this.drawPlate(ctx, plate, pw, ph);
+        ctx.restore();
     }
 
     drawPlate(ctx, plate, pw, ph) {
@@ -174,17 +181,14 @@ export class SmartCutVisualizer {
         ctx.fillStyle = isLightMode ? '#ffffff' : '#0a0a0c';
         ctx.fillRect(0, 0, pw, ph);
         
+        // DIBUJAR COTAS EXTERNAS (Medidas generales del tablero)
+        this.drawExternalDimensions(ctx, pw, ph, isLightMode);
+
         // DIBUJAR DESPERDICIO (Hachurado Industrial)
         this.drawWastePattern(ctx, pw, ph, plate, isLightMode);
         
         // Dibujar piezas
         plate.strips.forEach((strip, sIdx) => {
-            // Líneas de corte Nivel 1
-            ctx.strokeStyle = isLightMode ? 'rgba(0,0,0,0.2)' : 'oklch(100% 0 0 / 10%)'; 
-            ctx.setLineDash([5, 5]);
-            ctx.strokeRect(strip.x, strip.y, strip.w, strip.h);
-            ctx.setLineDash([]);
-
             strip.items.forEach(item => {
                 this.drawItem(ctx, item, isLightMode);
             });
@@ -192,13 +196,50 @@ export class SmartCutVisualizer {
         ctx.restore();
     }
 
+    drawExternalDimensions(ctx, pw, ph, isLightMode) {
+        ctx.save();
+        const offset = 25 / this.scale;
+        ctx.strokeStyle = isLightMode ? '#666' : '#444';
+        ctx.lineWidth = 1 / this.scale;
+        ctx.font = `bold ${14 / this.scale}px Inter`;
+        ctx.fillStyle = isLightMode ? '#000' : '#888';
+        ctx.textAlign = 'center';
+
+        // Dimensión Horizontal (Inferior)
+        ctx.beginPath();
+        ctx.moveTo(0, ph + offset);
+        ctx.lineTo(pw, ph + offset);
+        ctx.stroke();
+        ctx.fillText(`${Math.round(pw)}`, pw / 2, ph + offset + (20 / this.scale));
+
+        // Dimensión Vertical (Derecha)
+        ctx.save();
+        ctx.translate(pw + offset, ph / 2);
+        ctx.rotate(Math.PI / 2);
+        ctx.fillText(`${Math.round(ph)}`, 0, 15 / this.scale);
+        ctx.restore();
+        ctx.beginPath();
+        ctx.moveTo(pw + offset, 0);
+        ctx.lineTo(pw + offset, ph);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
     drawWastePattern(ctx, pw, ph, plate, isLightMode) {
         ctx.save();
-        ctx.strokeStyle = isLightMode ? 'rgba(0,0,0,0.1)' : 'oklch(100% 0 0 / 5%)';
-        ctx.lineWidth = 0.5;
+        // Clipping: Solo pintar donde NO hay piezas
+        ctx.beginPath();
+        ctx.rect(0, 0, pw, ph);
+        plate.strips.forEach(s => s.items.forEach(i => {
+            ctx.rect(i.x + i.l, i.y, -i.l, i.h); // Dibujar en sentido inverso para restar del path
+        }));
+        ctx.clip();
+
+        ctx.strokeStyle = isLightMode ? '#ddd' : 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 0.5 / this.scale;
         
-        // Trama diagonal marcada
-        const step = 20;
+        const step = 15 / this.scale;
         for (let i = -ph; i < pw + ph; i += step) {
             ctx.beginPath();
             ctx.moveTo(i, 0);
@@ -293,20 +334,28 @@ export class SmartCutVisualizer {
         ctx.font = `bold ${fontSize}px Inter`;
         ctx.textAlign = 'center';
         
-        if (item.l > 40 / this.scale && item.h > 40 / this.scale) {
-            // Medida Horizontal (Largo) - Un poco más abajo del borde
-            ctx.fillText(`${Math.round(item.nominalL)}`, item.x + item.l/2, item.y + (item.h * 0.2) + fontSize);
-            
-            // Medida Vertical (Ancho) - Rotada y desplazada del borde
+        if (item.l > 30 / this.scale && item.h > 30 / this.scale) {
+            // Referencia Numérica (Ref ID)
+            ctx.font = `900 ${14 / this.scale}px Inter`;
+            ctx.fillStyle = isLightMode ? '#000' : '#fff';
+            ctx.textAlign = 'left';
+            ctx.fillText(`(${item.refId || '?'})`, item.x + (5 / this.scale), item.y + (15 / this.scale));
+
+            // Medida Horizontal (Largo)
+            ctx.font = `bold ${fontSize}px Inter`;
+            ctx.textAlign = 'center';
+            ctx.fillText(`${Math.round(item.nominalL)}`, item.x + item.l / 2, item.y + (item.h * 0.4) + fontSize);
+
+            // Medida Vertical (Ancho)
             ctx.save();
-            ctx.translate(item.x + (item.l * 0.15) + fontSize, item.y + item.h/2);
-            ctx.rotate(-Math.PI/2);
+            ctx.translate(item.x + (item.l * 0.8) + fontSize, item.y + item.h / 2);
+            ctx.rotate(-Math.PI / 2);
             ctx.fillText(`${Math.round(item.nominalH)}`, 0, 0);
             ctx.restore();
-            
+
             ctx.font = `600 ${subFontSize}px Inter`;
             ctx.fillStyle = isLightMode ? 'rgba(0,0,0,0.5)' : 'oklch(100% 0 0 / 50%)';
-            ctx.fillText(item.label.toUpperCase(), item.x + item.l/2, item.y + item.h/2 + (subFontSize/2));
+            ctx.fillText(item.label.toUpperCase(), item.x + item.l / 2, item.y + item.h * 0.8);
         }
     }
 

@@ -195,6 +195,26 @@ const { isLoggedIn = false } = Astro.props;
         #plates-container.mobile-hidden { display: none !important; }
     }
 
+    .canto-opt {
+        padding: 10px 15px;
+        background: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #666;
+        transition: 0.2s;
+    }
+    .canto-opt:hover { background: #e0e0e0; }
+    .canto-opt.active { background: var(--alvarez-red); color: #fff; border-color: var(--alvarez-red); }
+
+    @keyframes pulse-price {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); color: var(--alvarez-red); }
+        100% { transform: scale(1); }
+    }
+
     .mobile-only { display: none; }
     .desktop-only { display: inline-block; }
 
@@ -299,22 +319,24 @@ const { isLoggedIn = false } = Astro.props;
     }
     .btn-interface-selector {
         flex: 1;
-        max-width: 350px;
+        max-width: 450px;
         background: #ffffff;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 20px;
+        border: 2px solid #dee2e6;
+        border-radius: 12px;
+        padding: 25px 35px;
         cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        display: flex !important;
+        flex-direction: row !important; /* FORZAR HORIZONTAL */
         align-items: center;
-        gap: 20px;
+        gap: 25px;
         text-align: left;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
     .btn-interface-selector i {
-        font-size: 2rem;
+        font-size: 2.5rem !important; /* ICONO GRANDE */
         color: #adb5bd;
-        min-width: 50px;
+        min-width: 60px;
         text-align: center;
     }
     .btn-interface-selector .text-content {
@@ -323,18 +345,34 @@ const { isLoggedIn = false } = Astro.props;
     }
     .btn-interface-selector .text-content span {
         font-weight: 900;
-        font-size: 1rem;
+        font-size: 1.1rem;
         color: #000;
         text-transform: uppercase;
         line-height: 1.2;
+        letter-spacing: 0.5px;
     }
     .btn-interface-selector .text-content p {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         color: #666;
         margin: 0;
-        margin-top: 2px;
+        margin-top: 4px;
+        font-weight: 500;
     }
-    .btn-interface-selector:hover {
+
+    /* SELECCIONADO - VERDE ALVAREZ */
+    .btn-interface-selector.active {
+        border-color: #25d366 !important;
+        background: #f0fff4 !important;
+        box-shadow: 0 10px 20px rgba(37, 211, 102, 0.1);
+    }
+    .btn-interface-selector.active i {
+        color: #25d366 !important;
+    }
+    .btn-interface-selector.active span {
+        color: #25d366 !important;
+    }
+    
+    .btn-interface-selector:hover:not(.active) {
         border-color: #25d366;
         background: #f9fffb;
     }
@@ -472,7 +510,7 @@ const { isLoggedIn = false } = Astro.props;
             <i class="fas fa-home"></i> INICIO
         </a>
         <div class="smart-label">
-            SMARTCUT PRO <span style="background: var(--alvarez-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.5rem; margin-left: 10px;">v5.6.5 INDUSTRIAL</span>
+            SMARTCUT PRO <span style="background: #000; color: #00ff00; padding: 2px 8px; border-radius: 4px; font-size: 0.5rem; margin-left: 10px; border: 1px solid #00ff00;">v11.2 TREE LOOK-AHEAD</span>
         </div>
     </div>
     
@@ -509,34 +547,25 @@ const { isLoggedIn = false } = Astro.props;
                     <option value="V">VERTICAL (COLUMNAS)</option>
                 </select>
             </div>
+            <div>
+                <label>PERFIL DE CÁLCULO</label>
+                <select id="cfg-profile" onchange="updateEngineCfg()" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-weight: 800;">
+                    <option value="MAX_EFF">AHORRO MÁXIMO (BOLONIA+)</option>
+                    <option value="OPERATOR">VELOCIDAD OPERARIO (INDUSTRIAL)</option>
+                </select>
+            </div>
             <div><label>SIERRA (mm)</label><input type="number" id="cfg-kerf" value="4" onchange="updateEngineCfg()"></div>
         </div>
-        <p style="font-size: 0.6rem; color: #444; margin-top: 10px;">La opción MIXTA realiza 3 simulaciones simultáneas y elige la más eficiente.</p>
+        <p style="font-size: 0.6rem; color: #444; margin-top: 10px;">El modo AHORRO MÁXIMO realiza 1000 simulaciones para exprimir la placa al límite.</p>
     </div>
 
     <div class="config-section">
-        <div class="config-title">Insumos y Desperdicio</div>
-        <div class="mode-selector-container">
-            <div id="btn-view-compact" class="btn-interface-selector" onclick="setModeSC('compact')">
-                <i class="fas fa-mobile-alt"></i>
-                <div class="text-content">
-                    <span>MODO COMPACTO</span>
-                    <p>Moderno, táctil y rápido</p>
-                </div>
-            </div>
-            <div id="btn-view-grid" class="btn-interface-selector" onclick="setModeSC('grid')">
-                <i class="fas fa-table"></i>
-                <div class="text-content">
-                    <span>MODO CLÁSICO</span>
-                    <p>Grilla profesional tipo Lepton</p>
-                </div>
-            </div>
-        </div>
+        <div class="config-title">Configuración de Corte</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div><label>DESP. TAPACANTO %</label><input type="number" id="cfg-edge-waste" value="18" onchange="updateEngineCfg()"></div>
             <div><label>REFILADO (mm)</label><input type="number" id="cfg-trim" value="5" onchange="updateEngineCfg()"></div>
+            <div style="opacity: 0.5;"><label>DESP. CANTO %</label><input type="number" value="18" disabled></div>
         </div>
-        <p style="font-size: 0.6rem; color: #444; margin-top: 15px; line-height: 1.4;">El desperdicio se aplica sobre el cálculo lineal de cada espesor (0.45, 1, 2mm).</p>
+        <p style="font-size: 0.6rem; color: #444; margin-top: 15px; line-height: 1.4;">El refilado es el recorte perimetral de limpieza de la placa entera.</p>
     </div>
 
     <div class="config-section">
@@ -610,13 +639,35 @@ const { isLoggedIn = false } = Astro.props;
                     <i class="fas fa-save"></i>
                     <div><strong>GUARDAR</strong><span>Guarda el progreso del proyecto y vuelve al panel de administración.</span></div>
                 </div>
-                <div class="legend-item">
-                    <i class="fas fa-th"></i>
-                    <div><strong>PLANO</strong><span>(Móvil) Alterna la vista del diagrama de corte sobre el tablero.</span></div>
-                </div>
-            </div>
-        </div>
     </section>
+
+    <style is:global>
+        /* ESTILOS DE IMPRESIÓN INDUSTRIAL */
+        @media print {
+            body * { visibility: hidden; }
+            .print-only, .print-only * { visibility: visible; }
+            .print-only { position: absolute; left: 0; top: 0; width: 100%; }
+            .print-page { padding: 40px; page-break-after: always; background: white; color: #000; min-height: 297mm; }
+            .print-header { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+            .header-left .brand { font-size: 2.2rem; font-weight: 900; letter-spacing: -1.5px; text-transform: uppercase; line-height: 1; }
+            .header-left .info { font-size: 0.75rem; font-weight: 700; margin-top: 2px; }
+            .header-center { text-align: center; }
+            .header-center .vendedor { font-size: 1.1rem; font-weight: 900; margin-bottom: 5px; }
+            .header-center .date-time { font-size: 0.8rem; font-weight: 700; }
+            .header-right { text-align: right; }
+            .header-right .page-num { font-size: 0.9rem; font-weight: 900; }
+            .header-right .order-num { font-size: 0.9rem; font-weight: 900; margin-top: 5px; }
+            .print-summary-bar { background: #f0f0f0; padding: 12px; font-size: 1.2rem; font-weight: 900; text-align: center; border: 2px solid #000; margin-bottom: 20px; }
+            .print-layout-box { border: 2px solid #000; padding: 20px; margin-bottom: 25px; text-align: center; }
+            .layout-title { font-size: 1rem; font-weight: 900; margin-bottom: 15px; text-align: left; }
+            .print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .print-table th { background: #f0f0f0; border: 1px solid #000; padding: 8px; font-size: 0.8rem; font-weight: 900; text-align: left; }
+            .print-table td { border: 1px solid #000; padding: 8px; font-size: 0.9rem; font-weight: 700; }
+            .print-footer { border-top: 2px solid #000; margin-top: 40px; padding-top: 15px; display: flex; gap: 30px; font-size: 0.85rem; font-weight: 900; }
+        }
+        .print-only { display: none; }
+        @media print { .print-only { display: block; } }
+    </style>
 
     <section id="view-setup" class="hidden animate-in" style="max-width: 600px; margin: 40px auto;">
         <div style="text-align: center; margin-bottom: 20px; opacity: 0.5;">
@@ -685,17 +736,21 @@ const { isLoggedIn = false } = Astro.props;
             </div>
 
             <div style="margin-bottom: 30px;">
-                <label style="font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 12px; display: block; text-align: center;">4. ELEGIR INTERFAZ DE CARGA</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div id="mode-compact" onclick="setModeSC('compact')" class="mode-card active" style="cursor: pointer; background: #000; border: 2px solid var(--alvarez-red); padding: 15px; border-radius: 12px; text-align: center; transition: 0.3s;">
-                        <i class="fas fa-mobile-alt" style="font-size: 1.2rem; color: var(--alvarez-red); margin-bottom: 8px;"></i>
-                        <div style="font-size: 0.7rem; font-weight: 900; color: white;">MODO COMPACTO</div>
-                        <div style="font-size: 0.5rem; color: #666; margin-top: 4px;">Moderno y táctil</div>
+                <div class="config-title" style="margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:10px; text-align:center;">4. ELEGIR INTERFAZ DE CARGA</div>
+                <div class="mode-selector-container">
+                    <div id="btn-view-compact" class="btn-interface-selector" onclick="setModeSC('compact')">
+                        <i class="fas fa-mobile-alt"></i>
+                        <div class="text-content">
+                            <span>MODO COMPACTO</span>
+                            <p>Moderno, táctil y rápido</p>
+                        </div>
                     </div>
-                    <div id="mode-grid" onclick="setModeSC('grid')" class="mode-card" style="cursor: pointer; background: #000; border: 2px solid #222; padding: 15px; border-radius: 12px; text-align: center; transition: 0.3s;">
-                        <i class="fas fa-table" style="font-size: 1.2rem; color: #444; margin-bottom: 8px;"></i>
-                        <div style="font-size: 0.7rem; font-weight: 900; color: #666;">MODO TRADICIONAL</div>
-                        <div style="font-size: 0.5rem; color: #444; margin-top: 4px;">Celdas tipo Lepton</div>
+                    <div id="btn-view-grid" class="btn-interface-selector active" onclick="setModeSC('grid')">
+                        <i class="fas fa-table"></i>
+                        <div class="text-content">
+                            <span>MODO CLÁSICO</span>
+                            <p>Grilla profesional tipo Lepton</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -712,6 +767,19 @@ const { isLoggedIn = false } = Astro.props;
             <div class="stat-item"><span>PLACAS</span><strong id="stat-sheets">0</strong></div>
             <div class="stat-item"><span>EFICIENCIA</span><strong id="stat-eff" style="color:var(--alvarez-red)">0%</strong></div>
             <div class="stat-item"><span>TAPACANTO TOTAL</span><strong id="stat-edges">0.0m</strong></div>
+            <div class="stat-item price-selector-item" style="border-left: 2px solid var(--alvarez-border); padding-left: 20px; margin-left: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <span style="font-size: 0.6rem; color: #666;">LISTA DE PRECIOS</span>
+                    <select id="price-list-selector" onchange="setPriceListSC(this.value)" style="background: transparent; border: 1px solid var(--alvarez-red); color: white; border-radius: 4px; font-size: 0.75rem; font-weight: 800; cursor: pointer; outline: none; padding: 2px 5px;">
+                        <option value="precio_l1" style="background: #000;">LISTA 1 (PÚBLICO)</option>
+                        <option value="precio_l2" style="background: #000;">LISTA 2 (GREMIO)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="stat-item total-budget-item">
+                <span>TOTAL ESTIMADO</span>
+                <strong id="stat-total-money" style="color: #00ff00;">$0</strong>
+            </div>
         </div>
 
         <!-- COMPACT MODE UI -->
@@ -811,10 +879,18 @@ const { isLoggedIn = false } = Astro.props;
                 </div>
             </div>
 
-            <div class="strategy-info-text">
-                <strong>Algoritmo Inteligente v5.7</strong>
-                <span id="strategy-desc">Modo Mixto: Simulación triple que busca el máximo aprovechamiento del tablero combinando orientaciones.</span>
             </div>
+        </div>
+        
+        <!-- BOTÓN INDUSTRIAL DE IMPRESIÓN -->
+        <div id="print-actions-sc" class="hidden" style="margin-top: 30px; text-align: center; border-top: 1px solid var(--alvarez-border); padding-top: 30px;">
+            <button onclick="window.preparePrintSC()" class="btn-main" style="background:#000; color:#fff; border:2px solid #333; max-width: 400px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 15px;">
+                <i class="fas fa-print" style="font-size: 1.5rem;"></i>
+                <div style="text-align: left;">
+                    <div style="font-size: 0.9rem; font-weight: 900;">IMPRIMIR HOJA DE RUTA</div>
+                    <div style="font-size: 0.6rem; opacity: 0.6;">DOCUMENTO TÉCNICO PARA TALLER</div>
+                </div>
+            </button>
         </div>
     </section>
 
@@ -826,10 +902,10 @@ const { isLoggedIn = false } = Astro.props;
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 <a href="/login" class="btn-main" style="width:100%; background: var(--alvarez-red);">INICIAR SESIÓN</a>
                 <a href="/registro" class="btn-main" style="width:100%; background: var(--glass-bg); border-color: var(--alvarez-border);">REGISTRARME AHORA</a>
-                <button onclick="document.getElementById('login-wall').classList.add('hidden')" style="background:transparent; border:none; color:#444; cursor:pointer; font-weight: 800; margin-top: 10px;">VOLVER</button>
             </div>
         </div>
     </div>
+    <div id="print-report-container" class="print-only"></div>
 </div>
 
 <script is:inline>
@@ -848,15 +924,16 @@ const { isLoggedIn = false } = Astro.props;
     let session = { 
         projects: [], 
         currentIndex: -1, 
-        viewMode: 'compact', // 'compact' o 'grid'
+        viewMode: 'grid', // 'grid' por defecto (Modo Clásico)
         activeCanto: 0.45,
+        activePriceList: 'precio_l1',
         config: { kerf: 4, trim: 5, edgeWaste: 18, philosophy: 'V', steps: 900 } 
     };
 
     window.setModeSC = (mode) => {
         session.viewMode = mode;
-        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-        document.getElementById(`mode-${mode}`).classList.add('active');
+        document.querySelectorAll('.btn-interface-selector').forEach(c => c.classList.remove('active'));
+        document.getElementById(`btn-view-${mode}`).classList.add('active');
     };
 
     window.setActiveCantoSC = (val) => {
@@ -942,9 +1019,10 @@ const { isLoggedIn = false } = Astro.props;
         session.config = {
             kerf: parseInt(document.getElementById('cfg-kerf').value),
             trim: parseInt(document.getElementById('cfg-trim').value),
-            edgeWaste: parseInt(document.getElementById('cfg-edge-waste').value),
+            edgeWaste: 18,
+            profile: document.getElementById('cfg-profile').value,
             mode: document.getElementById('cfg-mode')?.value || session.config.mode,
-            steps: parseInt(document.getElementById('cfg-steps').value)
+            steps: 1000
         };
         engine = new engine.constructor(session.config);
         if (session.currentIndex !== -1) renderEditorSC();
@@ -963,9 +1041,12 @@ const { isLoggedIn = false } = Astro.props;
         };
         document.getElementById('strategy-desc').textContent = descs[m];
         
-        // Recalcular
+        // Recalcular inmediatamente
         engine = new engine.constructor(session.config);
-        renderEditorSC();
+        if (session.currentIndex !== -1) {
+            optimizeNowSC();
+            renderEditorSC();
+        }
     };
 
     window.showDashboard = () => {
@@ -1167,7 +1248,7 @@ const { isLoggedIn = false } = Astro.props;
                     if (espesores.length > 0) {
                         // Reemplazar opciones del selector de espesor
                         thicknessEl.innerHTML = espesores.map(e =>
-                            `<option value="${e.espesor}" data-soporte="${e.soporte}">${e.espesor} mm (${e.soporte})</option>`
+                            `<option value="${e.espesor}" data-soporte="${e.soporte}" data-precio-l1="${e.precio_l1}" data-precio-l2="${e.precio_l2}">${e.espesor} mm (${e.soporte})</option>`
                         ).join('');
                         // Seleccionar el primer espesor y su soporte automáticamente
                         thicknessEl.selectedIndex = 0;
@@ -1278,6 +1359,9 @@ const { isLoggedIn = false } = Astro.props;
         
         const projectDesign = `${designName} (${brand} ${thickness}mm ${support})`;
         
+        const precio_l1 = parseFloat(selectedThickOpt?.dataset?.precioL1 || 0);
+        const precio_l2 = parseFloat(selectedThickOpt?.dataset?.precioL2 || 0);
+
         session.projects.push({ 
             brand, 
             design: projectDesign, 
@@ -1287,7 +1371,9 @@ const { isLoggedIn = false } = Astro.props;
             w, h, 
             image: image || null,
             pieces: [], 
-            result: null 
+            result: null,
+            precio_l1,
+            precio_l2
         });
         window.showEditorSC(session.projects.length - 1);
     };
@@ -1395,10 +1481,118 @@ const { isLoggedIn = false } = Astro.props;
         visualizer.setContainer(targetContainer);
         
         if (p.result && p.result.plates.length > 0) {
+            // Asignar Ref ID a las piezas para el reporte
+            let refMap = new Map();
+            let refCount = 1;
+            p.pieces.forEach(pc => {
+                if (pc.q > 0) {
+                    pc.refId = refCount++;
+                    refMap.set(pc.id, pc.refId);
+                }
+            });
+            // Propagar Ref ID a los items optimizados
+            p.result.plates.forEach(plate => {
+                plate.strips.forEach(s => s.items.forEach(i => {
+                    i.refId = refMap.get(i.id);
+                }));
+            });
+
             visualizer.render(p.result, p.w, p.h, (u) => { p.result = u; updateStatsSC(); });
             updateStatsSC();
             document.getElementById(targetContainer).scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('print-actions-sc').classList.remove('hidden');
         }
+    };
+
+    window.preparePrintSC = () => {
+        const p = session.projects[session.currentIndex];
+        const container = document.getElementById('print-report-container');
+        const now = new Date();
+        const dateStr = now.toLocaleDateString();
+        const timeStr = now.toLocaleTimeString();
+        const orderId = Math.floor(Math.random() * 9000) + 1000; // Simular ID
+
+        let html = '';
+        p.result.plates.forEach((plate, idx) => {
+            html += `
+                <div class="print-page">
+                    <header class="print-header">
+                        <div class="header-left">
+                            <div class="brand">Alvarezplacas</div>
+                            <div class="info">AV VERGARA 1605 - 1161411842</div>
+                            <div class="info">Email: alvarezplacas@gmail.com</div>
+                        </div>
+                        <div class="header-center">
+                            <div class="vendedor">${document.getElementById('smartcut-bar').dataset.userName || 'OPERADOR'}</div>
+                            <div class="date-time">Fecha: ${dateStr}</div>
+                            <div class="date-time">Hora: ${timeStr}</div>
+                        </div>
+                        <div class="header-right">
+                            <div class="page-num">Hoja: ${idx + 1} / ${p.result.plates.length}</div>
+                            <div class="order-num">Nro.: ${orderId}</div>
+                        </div>
+                    </header>
+                    <div class="print-summary-bar">
+                        ${p.design.toUpperCase()}
+                    </div>
+                    
+                    <div class="print-layout-box">
+                        <div class="layout-title">${idx + 1} de ${p.w} x ${p.h} Placa Entera</div>
+                        <canvas id="print-canvas-${idx}" width="${p.w}" height="${p.h}"></canvas>
+                    </div>
+
+                    <div class="print-table-section">
+                        <div class="table-title">Piezas ubicadas</div>
+                        <table class="print-table">
+                            <thead>
+                                <tr>
+                                    <th>Ref.</th>
+                                    <th>Cant.</th>
+                                    <th>Base</th>
+                                    <th>Altura</th>
+                                    <th>Detalle</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${plate.strips.flatMap(s => s.items).map(i => `
+                                    <tr>
+                                        <td>(${i.refId})</td>
+                                        <td>1</td>
+                                        <td>${Math.round(i.nominalL)}</td>
+                                        <td>${Math.round(i.nominalH)}</td>
+                                        <td>${i.label}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <footer class="print-footer">
+                        <div>DESPERDICIO = ${plate.eff ? (100 - plate.eff).toFixed(3) : '0'} %</div>
+                        <div>CORTES = ${plate.strips.length * 2} aprox.</div>
+                    </footer>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        // Renderizar los canvas de impresión en alta resolución (B/N)
+        setTimeout(() => {
+            p.result.plates.forEach((plate, idx) => {
+                const canvas = document.getElementById(`print-canvas-${idx}`);
+                const ctx = canvas.getContext('2d');
+                // Escalar canvas para que ocupe el ancho de la hoja
+                const scale = 800 / p.w;
+                canvas.width = 800;
+                canvas.height = p.h * scale;
+                
+                // Usar el visualizador para dibujar en el canvas de impresión (forzando modo luz)
+                const tempVis = new visualizer.constructor('print-report-container');
+                tempVis.scale = scale;
+                tempVis.drawPlate(ctx, plate, p.w, p.h);
+            });
+            window.print();
+        }, 100);
     };
 
     window.resetProjectSC = () => {
@@ -1489,7 +1683,10 @@ const { isLoggedIn = false } = Astro.props;
                                 <button onclick="toggleGridEdgeSC(${i}, 'l')" class="edge-check-btn ${pc.edges?.l > 0 ? 'active' : ''}" title="Izquierda"><i class="fas fa-border-left"></i></button>
                                 <button onclick="toggleGridEdgeSC(${i}, 'r')" class="edge-check-btn ${pc.edges?.r > 0 ? 'active' : ''}" title="Derecha"><i class="fas fa-border-right"></i></button>
                                 <div style="width:1px; background:#ddd; margin:0 2px;"></div>
-                                <button onclick="toggleGridRotateSC(${i})" class="edge-check-btn ${pc.canRotate ? 'active' : ''}" title="Girar/Veta" style="color:#007aff;"><i class="fas fa-sync"></i></button>
+                                <button onclick="toggleGridRotateSC(${i})" class="edge-check-btn active" title="Girar/Veta" style="color:#007aff; position: relative;">
+                                    <i class="fas fa-sync"></i>
+                                    ${!pc.canRotate ? '<i class="fas fa-times" style="position:absolute; color:#ff2800; font-size:1.2rem; top: -2px; left: -2px;"></i>' : ''}
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -1500,6 +1697,11 @@ const { isLoggedIn = false } = Astro.props;
         }
     }
 
+    window.setPriceListSC = (val) => {
+        session.activePriceList = val;
+        updateStatsSC();
+    };
+
     function updateStatsSC() {
         const p = session.projects[session.currentIndex];
         if (!p || !p.result || !p.result.stats) return;
@@ -1508,6 +1710,32 @@ const { isLoggedIn = false } = Astro.props;
         document.getElementById('stat-eff').textContent = s.efficiency.toFixed(1) + '%';
         const totalEdges = Object.values(s.edgeMeters).reduce((a, b) => a + b, 0);
         document.getElementById('stat-edges').textContent = totalEdges.toFixed(1) + 'm';
+
+        // Cálculo de Presupuesto Estimado
+        const boardPrice = session.activePriceList === 'precio_l1' ? (p.precio_l1 || 0) : (p.precio_l2 || 0);
+        const totalBoards = s.totalPlates;
+        
+        // Estimación de costo de tapacantos (Valores industriales base)
+        const totalEdges045 = s.edgeMeters["0.45"] || 0;
+        const totalEdges1 = s.edgeMeters["1"] || 0;
+        const totalEdges2 = s.edgeMeters["2"] || 0;
+        const edgeCost = (totalEdges045 * 1200) + (totalEdges1 * 1800) + (totalEdges2 * 2800);
+
+        const totalMoney = (totalBoards * boardPrice) + edgeCost;
+        
+        const formatter = new Intl.NumberFormat('es-AR', { 
+            style: 'currency', 
+            currency: 'ARS', 
+            maximumFractionDigits: 0 
+        });
+        
+        const totalEl = document.getElementById('stat-total-money');
+        if (totalEl) {
+            totalEl.textContent = formatter.format(totalMoney);
+            // Efecto visual de actualización
+            totalEl.style.animation = 'none';
+            setTimeout(() => totalEl.style.animation = 'pulse-price 0.5s ease', 10);
+        }
     }
 
     function renderProjectsSC() {
@@ -1572,8 +1800,11 @@ const { isLoggedIn = false } = Astro.props;
                     brand: p.brand,
                     design: p.design,
                     pieces: p.pieces,
-                    stats: p.result?.stats
-                }))
+                    stats: p.result?.stats,
+                    precio_l1: p.precio_l1,
+                    precio_l2: p.precio_l2
+                })),
+                activePriceList: session.activePriceList
             };
 
             const response = await fetch('/api/herramientas/save-budget', {

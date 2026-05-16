@@ -1,211 +1,226 @@
 /**
- * SmartCut Engine v5.7.0 - MULTI-STRATEGY INDUSTRIAL ENGINE
- * Implementa 3 modos de cálculo: Horizontal, Vertical y Mixto (BSSF).
+ * SmartCut Engine v11.2.0 "TREE LOOK-AHEAD" - INDUSTRIAL ELITE
+ * Arquitectura BSP con Búsqueda Exhaustiva BSSF y Look-Ahead de 1 paso.
  */
+
+class GuillotineNode {
+    constructor(x, y, w, h) {
+        this.x = x; this.y = y; this.w = w; this.h = h;
+        this.used = false;
+        this.left = null; this.right = null;
+    }
+    clone() {
+        const n = new GuillotineNode(this.x, this.y, this.w, this.h);
+        n.used = this.used;
+        if (this.left) n.left = this.left.clone();
+        if (this.right) n.right = this.right.clone();
+        return n;
+    }
+}
+
 export class SmartCutEngine {
     constructor(config = {}) {
         this.kerf = Number(config.kerf) || 4;
         this.trim = Number(config.trim) || 5;
         this.edgeWaste = (Number(config.edgeWaste) || 18) / 100;
-        this.mode = config.mode || 'MIXED'; // 'V', 'H', 'MIXED'
+        this.profile = config.profile || 'MAX_EFF';
+        this.iterations = (this.profile === 'MAX_EFF') ? 15000 : 1500;
+        console.log(`%c TREE LOOK-AHEAD v11.2 %c Buscando Placa Única (95%+)`, "background: #000; color: #00ff00; font-weight: bold; border: 1px solid #00ff00;", "background: #00ff00; color: #000;");
     }
 
     optimize(w, h, pieces) {
-        if (this.mode === 'MIXED') {
-            // Ejecutamos las 3 estrategias y nos quedamos con la mejor (Mayor Eficiencia)
-            const results = [
-                this._optimizeStrip(w, h, pieces, 'H'),
-                this._optimizeStrip(w, h, pieces, 'V'),
-                this._optimizeRecursive(w, h, pieces) // El nuevo "Cálculo Mixto"
-            ];
-            
-            // Filtrar resultados válidos y buscar el de mejor eficiencia
-            return results.reduce((best, current) => {
-                if (!best || current.stats.efficiency > best.stats.efficiency) return current;
-                return best;
-            });
-        } else {
-            return this._optimizeStrip(w, h, pieces, this.mode);
-        }
-    }
-
-    // ESTRATEGIA 1 y 2: Basada en Tiras (Vertical u Horizontal)
-    _optimizeStrip(w, h, pieces, philosophy) {
+        console.time("Optimización");
+        const flatPieces = this._flatten(pieces);
         const usableW = Number(w) - (this.trim * 2);
         const usableH = Number(h) - (this.trim * 2);
-        
-        let flatPieces = this._flatten(pieces);
-        if (philosophy === 'H') flatPieces.sort((a, b) => b.h - a.h || b.l - a.l);
-        else flatPieces.sort((a, b) => b.l - a.l || b.h - a.h);
+        let bestResult = null, bestScore = -1, stagnated = 0;
 
+        let populations = [
+            [...flatPieces].sort((a, b) => (b.l * b.h) - (a.l * a.h)),
+            [...flatPieces].sort((a, b) => Math.max(b.l, b.h) - Math.max(a.l, a.h)),
+            [...flatPieces].sort((a, b) => b.h - a.h || b.l - a.l)
+        ];
+
+        for (let i = 0; i < this.iterations; i++) {
+            const intensity = (stagnated > 400) ? 0.5 : 0.02;
+            let currentPieces = (i < populations.length) ? populations[i] : this._thermalMutate([...(bestResult?.originalOrder || flatPieces)], intensity);
+
+            const result = this._packBinaryTree(usableW, usableH, currentPieces, w, h);
+            result.originalOrder = [...currentPieces];
+            const score = result.stats.efficiency + (result.stats.maxOffcutArea / (w * h) * 10);
+
+            if (score > bestScore) { bestScore = score; bestResult = result; stagnated = 0; }
+            else { stagnated++; }
+            if (bestScore > 99.8) break;
+        }
+        console.timeEnd("Optimización");
+        return bestResult;
+    }
+
+    _packBinaryTree(usableW, usableH, pieces, fullW, fullH) {
         const plates = [];
-        let remainingPieces = [...flatPieces];
+        let remaining = [...pieces];
 
-        while (remainingPieces.length > 0) {
-            const plate = { id: plates.length + 1, strips: [] };
-            let currentUsed = 0;
-            const maxDim = (philosophy === 'H') ? usableH : usableW;
-            const secDim = (philosophy === 'H') ? usableW : usableH;
+        while (remaining.length > 0) {
+            const root = new GuillotineNode(this.trim, this.trim, usableW, usableH);
+            const plate = { id: plates.length + 1, items: [], root: root };
+            let placedInPlate = 0;
 
-            while (currentUsed < maxDim && remainingPieces.length > 0) {
-                let bestIdx = -1;
-                for(let i=0; i<remainingPieces.length; i++) {
-                    const p = remainingPieces[i];
-                    const p1 = (philosophy === 'H') ? p.h : p.l;
-                    const p2 = (philosophy === 'H') ? p.l : p.h;
-                    if (p1 <= (maxDim - currentUsed) && p2 <= secDim) { bestIdx = i; break; }
+            while (remaining.length > 0) {
+                let bestFitInfo = { node: null, orient: null, score: Infinity, longScore: Infinity };
+                const p = remaining[0]; // Evaluar la primera pieza del orden actual
+                
+                const orients = [{ w: p.l, h: p.h, rot: false }];
+                if (p.canRotate) orients.push({ w: p.h, h: p.l, rot: true });
+
+                for (const o of orients) {
+                    this._findBestNode(root, o.w, o.h, o, bestFitInfo);
                 }
 
-                if (bestIdx === -1) break; 
-
-                const stripSize = (philosophy === 'H') ? remainingPieces[bestIdx].h : remainingPieces[bestIdx].l;
-                const strip = { 
-                    x: (philosophy === 'H') ? 0 : currentUsed, y: (philosophy === 'H') ? currentUsed : 0,
-                    w: (philosophy === 'H') ? usableW : stripSize, h: (philosophy === 'H') ? stripSize : usableH,
-                    items: [] 
-                };
-                
-                let currentPos = 0;
-                for (let i = 0; i < remainingPieces.length; i++) {
-                    const p = remainingPieces[i];
-                    const p1 = (philosophy === 'H') ? p.h : p.l;
-                    const p2 = (philosophy === 'H') ? p.l : p.h;
+                if (bestFitInfo.node) {
+                    const placedPiece = remaining.shift();
+                    const nextPiece = remaining[0] || null;
                     
-                    if (p1 <= stripSize && p2 <= (secDim - currentPos)) {
-                        strip.items.push({ ...p, x: (philosophy === 'H') ? currentPos : currentUsed, y: (philosophy === 'H') ? currentUsed : currentPos, rotated: false });
-                        currentPos += p2 + this.kerf;
-                        remainingPieces.splice(i, 1); i--;
-                    } else if (p.canRotate && p2 <= stripSize && p1 <= (secDim - currentPos)) {
-                        strip.items.push({ ...p, l: p.h, h: p.l, x: (philosophy === 'H') ? currentPos : currentUsed, y: (philosophy === 'H') ? currentUsed : currentPos, rotated: true });
-                        currentPos += (philosophy === 'H' ? p.h : p.l) + this.kerf;
-                        remainingPieces.splice(i, 1); i--;
-                    }
+                    // SPLIT CON LOOK-AHEAD
+                    this._splitNodeLookAhead(bestFitInfo.node, bestFitInfo.orient.w, bestFitInfo.orient.h, nextPiece);
+                    
+                    plate.items.push({
+                        ...placedPiece, x: bestFitInfo.node.x, y: bestFitInfo.node.y,
+                        l: bestFitInfo.orient.w, h: bestFitInfo.orient.h,
+                        rotated: bestFitInfo.orient.rot, nominalL: placedPiece.l, nominalH: placedPiece.h
+                    });
+                    placedInPlate++;
+                } else {
+                    break; 
                 }
-                if (strip.items.length > 0) { plate.strips.push(strip); currentUsed += stripSize + this.kerf; }
-                else break;
             }
-            if (plate.strips.length > 0) plates.push(plate);
-            else remainingPieces.shift(); 
+
+            if (placedInPlate === 0 && remaining.length > 0) break; 
+            plates.push(plate);
         }
-        return { plates, stats: this.calculateStats(plates, w, h) };
+
+        const compatiblePlates = plates.map(p => ({ id: p.id, eff: 0, strips: [{ items: p.items }] }));
+        return { plates: compatiblePlates, stats: this.calculateStats(compatiblePlates, fullW, fullH, plates) };
     }
 
-    // ESTRATEGIA 3: RECURSIVA MIXTA (BSSF - Best Short Side Fit)
-    // Esta estrategia permite que las tiras cambien de orientación según convenga (Cálculo Mixto)
-    _optimizeRecursive(w, h, pieces) {
-        const usableW = Number(w) - (this.trim * 2);
-        const usableH = Number(h) - (this.trim * 2);
-        let flatPieces = this._flatten(pieces).sort((a, b) => (b.l * b.h) - (a.l * a.h)); // Por área
-        
-        const plates = [];
-        let remainingPieces = [...flatPieces];
-
-        while (remainingPieces.length > 0) {
-            const plate = { id: plates.length + 1, strips: [] };
-            // En el modo recursivo, simulamos una "tira" gigante que es el tablero entero
-            // y usamos particionamiento binario (Guillotina Real)
-            const freeRects = [{ x: 0, y: 0, w: usableW, h: usableH }];
-
-            while (freeRects.length > 0 && remainingPieces.length > 0) {
-                let bestFit = null;
-                let bestRectIdx = -1;
-                let bestPieceIdx = -1;
-                let minShortSideFit = Infinity;
-
-                // Buscamos el "Mejor Encaje" (BSSF)
-                for (let i = 0; i < remainingPieces.length; i++) {
-                    const p = remainingPieces[i];
-                    for (let j = 0; j < freeRects.length; j++) {
-                        const r = freeRects[j];
-                        
-                        // Probar normal
-                        if (p.l <= r.w && p.h <= r.h) {
-                            const leftoverW = r.w - p.l;
-                            const leftoverH = r.h - p.h;
-                            const shortSide = Math.min(leftoverW, leftoverH);
-                            if (shortSide < minShortSideFit) {
-                                minShortSideFit = shortSide;
-                                bestRectIdx = j; bestPieceIdx = i;
-                                bestFit = { ...p, x: r.x, y: r.y, rotated: false };
-                            }
-                        }
-                        // Probar rotada
-                        if (p.canRotate && p.h <= r.w && p.l <= r.h) {
-                            const leftoverW = r.w - p.h;
-                            const leftoverH = r.h - p.l;
-                            const shortSide = Math.min(leftoverW, leftoverH);
-                            if (shortSide < minShortSideFit) {
-                                minShortSideFit = shortSide;
-                                bestRectIdx = j; bestPieceIdx = i;
-                                bestFit = { ...p, l: p.h, h: p.l, x: r.x, y: r.y, rotated: true };
-                            }
-                        }
-                    }
-                }
-
-                if (!bestFit) break;
-
-                const r = freeRects.splice(bestRectIdx, 1)[0];
-                const piece = remainingPieces.splice(bestPieceIdx, 1)[0];
-                
-                // Añadir al "strip" virtual (para compatibilidad con visualizador)
-                if (plate.strips.length === 0) plate.strips.push({ items: [] });
-                plate.strips[0].items.push(bestFit);
-
-                // Particionar el rectángulo sobrante (Guillotina)
-                // Decidimos el eje de corte según cuál deja el área más "limpia" (Symmetry)
-                if (r.w - bestFit.l > r.h - bestFit.h) {
-                    // Corte vertical primero
-                    if (r.w - bestFit.l > 0) freeRects.push({ x: r.x + bestFit.l + this.kerf, y: r.y, w: r.w - bestFit.l - this.kerf, h: r.h });
-                    if (r.h - bestFit.h > 0) freeRects.push({ x: r.x, y: r.y + bestFit.h + this.kerf, w: bestFit.l, h: r.h - bestFit.h - this.kerf });
-                } else {
-                    // Corte horizontal primero
-                    if (r.h - bestFit.h > 0) freeRects.push({ x: r.x, y: r.y + bestFit.h + this.kerf, w: r.w, h: r.h - bestFit.h - this.kerf });
-                    if (r.w - bestFit.l > 0) freeRects.push({ x: r.x + bestFit.l + this.kerf, y: r.y, w: r.w - bestFit.l - this.kerf, h: bestFit.h });
-                }
-            }
-            if (plate.strips[0].items.length > 0) plates.push(plate);
-            else remainingPieces.shift();
+    _findBestNode(node, w, h, orient, bestFitInfo) {
+        if (node.left || node.right) {
+            if (node.left) this._findBestNode(node.left, w, h, orient, bestFitInfo);
+            if (node.right) this._findBestNode(node.right, w, h, orient, bestFitInfo);
+            return;
         }
-        return { plates, stats: this.calculateStats(plates, w, h) };
+        if (!node.used && w <= node.w && h <= node.h) {
+            const ssFit = Math.min(node.w - w, node.h - h);
+            const lsFit = Math.max(node.w - w, node.h - h);
+            if (ssFit < bestFitInfo.score || (ssFit === bestFitInfo.score && lsFit < bestFitInfo.longScore)) {
+                bestFitInfo.node = node; bestFitInfo.orient = orient;
+                bestFitInfo.score = ssFit; bestFitInfo.longScore = lsFit;
+            }
+        }
+    }
+
+    _splitNodeLookAhead(node, pW, pH, nextPiece) {
+        node.used = true;
+        const fullW = pW + this.kerf;
+        const fullH = pH + this.kerf;
+
+        // Simular ambos cortes
+        const scoreV = this._evaluateSplit(node, fullW, fullH, pW, pH, true, nextPiece);
+        const scoreH = this._evaluateSplit(node, fullW, fullH, pW, pH, false, nextPiece);
+
+        // Elegir el mejor (menor score = mejor encaje BSSF para la siguiente pieza)
+        const verticalFirst = (scoreV <= scoreH);
+
+        if (verticalFirst) {
+            node.left = new GuillotineNode(node.x + fullW, node.y, node.w - fullW, node.h);
+            node.right = new GuillotineNode(node.x, node.y + fullH, pW, node.h - fullH);
+        } else {
+            node.left = new GuillotineNode(node.x, node.y + fullH, node.w, node.h - fullH);
+            node.right = new GuillotineNode(node.x + fullW, node.y, node.w - fullW, pH);
+        }
+    }
+
+    _evaluateSplit(node, fullW, fullH, pW, pH, verticalFirst, nextPiece) {
+        if (!nextPiece) return (node.w - pW) * (node.h - pH); // Si no hay siguiente, modo greedy simple
+
+        let tempLeft, tempRight;
+        if (verticalFirst) {
+            tempLeft = new GuillotineNode(node.x + fullW, node.y, node.w - fullW, node.h);
+            tempRight = new GuillotineNode(node.x, node.y + fullH, pW, node.h - fullH);
+        } else {
+            tempLeft = new GuillotineNode(node.x, node.y + fullH, node.w, node.h - fullH);
+            tempRight = new GuillotineNode(node.x + fullW, node.y, node.w - fullW, pH);
+        }
+
+        // ¿Qué tan bien entra la siguiente pieza en estos nuevos nodos?
+        let bestFit = { score: Infinity };
+        const orients = [{ w: nextPiece.l, h: nextPiece.h }];
+        if (nextPiece.canRotate) orients.push({ w: nextPiece.h, h: nextPiece.l });
+
+        for (const o of orients) {
+            [tempLeft, tempRight].forEach(n => {
+                if (o.w <= n.w && o.h <= n.h) {
+                    const score = Math.min(n.w - o.w, n.h - o.h);
+                    if (score < bestFit.score) bestFit.score = score;
+                }
+            });
+        }
+        return bestFit.score;
+    }
+
+    _thermalMutate(pieces, intensity) {
+        const mutated = [...pieces];
+        const swaps = Math.max(1, Math.floor(mutated.length * intensity));
+        for (let i = 0; i < swaps; i++) {
+            const idx1 = Math.floor(Math.random() * mutated.length);
+            const idx2 = Math.floor(Math.random() * mutated.length);
+            [mutated[idx1], mutated[idx2]] = [mutated[idx2], mutated[idx1]];
+        }
+        return mutated;
     }
 
     _flatten(pieces) {
         let flat = [];
         pieces.forEach(p => {
-            for (let i = 0; i < (Number(p.q) || 1); i++) {
-                flat.push({ ...p, l: Number(p.l), h: Number(p.h), nominalL: Number(p.l), nominalH: Number(p.h), q: 1, originalId: p.id });
+            const qty = Number(p.q) || 0;
+            for (let i = 0; i < qty; i++) {
+                flat.push({ 
+                    id: p.id, l: Number(p.l), h: Number(p.h), 
+                    nominalL: Number(p.l), nominalH: Number(p.h), 
+                    label: p.label || 'Pieza',
+                    canRotate: p.canRotate !== false,
+                    edges: p.edges || null, refId: p.refId || '?'
+                });
             }
         });
         return flat;
     }
 
-    calculateStats(plates, w, h) {
-        let usedArea = 0;
-        let totalPieces = 0;
+    calculateStats(compatiblePlates, w, h, originalPlates) {
+        let usedArea = 0, totalPieces = 0, maxOffcutArea = 0;
         let edgeMeters = { "0.45": 0, "1": 0, "2": 0 };
-
-        plates.forEach(plate => {
-            plate.strips.forEach(strip => {
-                strip.items.forEach(item => {
-                    usedArea += item.l * item.h;
-                    totalPieces++;
-                    if (item.edges) {
-                        const factor = 1 + this.edgeWaste;
-                        if (item.edges.t > 0) edgeMeters[item.edges.t] += (item.nominalL / 1000) * factor;
-                        if (item.edges.b > 0) edgeMeters[item.edges.b] += (item.nominalL / 1000) * factor;
-                        if (item.edges.l > 0) edgeMeters[item.edges.l] += (item.nominalH / 1000) * factor;
-                        if (item.edges.r > 0) edgeMeters[item.edges.r] += (item.nominalH / 1000) * factor;
-                    }
-                });
+        compatiblePlates.forEach((plate, idx) => {
+            let plateUsed = 0;
+            plate.strips[0].items.forEach(item => {
+                usedArea += item.l * item.h; plateUsed += item.l * item.h; totalPieces++;
+                if (item.edges) {
+                    const factor = 1.18;
+                    const calc = (len) => (len / 1000) * factor;
+                    if (item.edges.t) edgeMeters[item.edges.t] += calc(item.nominalL);
+                    if (item.edges.b) edgeMeters[item.edges.b] += calc(item.nominalL);
+                    if (item.edges.l) edgeMeters[item.edges.l] += calc(item.nominalH);
+                    if (item.edges.r) edgeMeters[item.edges.r] += calc(item.nominalH);
+                }
             });
+            plate.eff = (plateUsed / (w * h)) * 100;
+            const getMaxFree = (node) => {
+                if (!node) return 0;
+                if (!node.left && !node.right && !node.used) return node.w * node.h;
+                return Math.max(getMaxFree(node.left), getMaxFree(node.right));
+            };
+            maxOffcutArea = Math.max(maxOffcutArea, getMaxFree(originalPlates[idx].root));
         });
-
-        return {
-            totalPlates: plates.length, totalPieces: totalPieces,
-            totalM2: usedArea / 1000000,
-            efficiency: (plates.length * w * h) > 0 ? (usedArea / (plates.length * w * h)) * 100 : 0,
-            edgeMeters
-        };
+        const totalArea = compatiblePlates.length * w * h;
+        return { totalPlates: compatiblePlates.length, totalPieces: totalPieces, totalM2: usedArea / 1000000, efficiency: totalArea > 0 ? (usedArea / totalArea) * 100 : 0, edgeMeters, maxOffcutArea };
     }
 }
