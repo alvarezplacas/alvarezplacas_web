@@ -74,15 +74,30 @@ async function startIngestion() {
                 const espesor = row['ESPESOR'] || '';
                 const precio_l1 = parseFloat(row['L1'] || row['Precio'] || 0);
                 const precio_l2 = parseFloat(row['L2'] || 0);
+
+                // 3. Generar SKU Industrial (Flujo: Letra-Codigo-XXXX)
+                const rubroData = await client.request(readItems('Rubros', { fields: ['letra'], filter: { id: { _eq: cache.rubros['Placas'] } } }));
+                const marcaData = await client.request(readItems('marcas', { fields: ['codigo'], filter: { id: { _eq: cache.marcas[marcaName] } } }));
                 
-                // Generar SKU si falta
-                let sku = row['SKU'] || '';
-                if (!sku) {
-                    const brandRef = marcaName.substring(0,3).toUpperCase();
-                    const thickRef = espesor.toString().replace(/\D/g,'');
-                    const cleanName = nombre.substring(0,5).toUpperCase().replace(/ /g,'');
-                    sku = `M-${brandRef}-${cleanName}-${thickRef}`;
+                const letra = rubroData[0]?.letra || 'X';
+                const codigo = marcaData[0]?.codigo || '00';
+                const prefix = `${letra}-${codigo}-`;
+
+                // Buscar el último número para esta combinación
+                const lastProducts = await client.request(readItems('Productos', {
+                    fields: ['sku'],
+                    filter: { sku: { _starts_with: prefix } },
+                    sort: ['-sku'],
+                    limit: 1
+                }));
+
+                let nextNumber = 1;
+                if (lastProducts.length > 0) {
+                    const lastNum = parseInt(lastProducts[0].sku.split('-').pop());
+                    if (!isNaN(lastNum)) nextNumber = lastNum + 1;
                 }
+
+                const sku = `${prefix}${nextNumber.toString().padStart(4, '0')}`;
 
                 await upsertItem('Productos', { sku: { _eq: sku } }, {
                     status: 'published',
