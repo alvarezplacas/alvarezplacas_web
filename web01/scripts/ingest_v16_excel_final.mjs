@@ -43,7 +43,24 @@ async function startIngestion() {
         
         console.log(`\n📦 Procesando Hoja: ${sheetName}...`);
         const sheet = workbook.Sheets[sheetName];
-        const data = xlsx.utils.sheet_to_json(sheet);
+        
+        // --- ESCANEO INTELIGENTE DE ENCABEZADOS ---
+        // Obtenemos las filas como arrays para buscar los nombres de las columnas
+        const rowsRaw = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+        let headerRowIndex = 0;
+        let headers = [];
+
+        for (let i = 0; i < Math.min(rowsRaw.length, 10); i++) {
+            const row = rowsRaw[i];
+            if (row.includes('MARCA') || row.includes('ARTICULO/COLOR REAL') || row.includes('Nombre')) {
+                headerRowIndex = i;
+                headers = row;
+                break;
+            }
+        }
+
+        console.log(`📌 Hoja ${sheetName}: Encabezados encontrados en fila ${headerRowIndex + 1}`);
+        const data = xlsx.utils.sheet_to_json(sheet, { range: headerRowIndex });
         
         if (data.length > 0) {
             console.log(`🔍 Columnas detectadas: ${Object.keys(data[0]).join(', ')}`);
@@ -63,7 +80,7 @@ async function startIngestion() {
 
                 const brandName = (row['MARCA'] || row['Marca'] || sheetName).toString().toUpperCase().trim();
                 const lineGroup = (row['LINEA/GRUPO'] || row['LINEA'] || '').toString().trim();
-                const codigo = (row['codigo'] || row['CODIGO'] || '').toString().trim();
+                const codigo = (row['codigo'] || row['CODIGO'] || row['Código'] || '').toString().trim();
                 const support = (row['SOPORTE'] || 'AGLOMERADO').toUpperCase();
                 
                 // Limpiador de Espesor: "18 MM" -> 18
