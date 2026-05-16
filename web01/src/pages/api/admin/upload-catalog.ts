@@ -31,7 +31,6 @@ async function upsertItem(collection: string, filter: any, data: any, token: str
         return await res.json();
     }
 }
-
 export const POST: APIRoute = async ({ request }) => {
     try {
         const formData = await request.formData();
@@ -51,75 +50,79 @@ export const POST: APIRoute = async ({ request }) => {
 
         const buffer = await file.arrayBuffer();
         const workbook = xlsx.read(buffer, { type: 'buffer' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rawData = xlsx.utils.sheet_to_json(sheet);
         
-        // Obtener IDs pre-seleccionados del body
+        // Obtener IDs pre-seleccionados del body (opcional)
         const overrideCategoryId = formData.get('category_id');
         const overrideBrandId = formData.get('brand_id');
 
-        let processedCount = 0;
+        let totalProcessed = 0;
 
-        // Procesamiento por Lotes (Chunks de 10)
-        for (let i = 0; i < rawData.length; i += 10) {
-            const chunk = rawData.slice(i, i + 10);
+        // Iterar por todas las hojas (EGGER, FAPLAC, SADEPAN, etc.)
+        for (const sheetName of workbook.SheetNames) {
+            console.log(`[Upload] Procesando hoja: ${sheetName}`);
+            const sheet = workbook.Sheets[sheetName];
+            const rawData = xlsx.utils.sheet_to_json(sheet);
             
-            await Promise.all(chunk.map(async (row: any) => {
-                const nombre = row['Nombre'] || '';
-                const descripcion = row['Descripción'] || '';
-                let sku = row['SKU'] || '';
-                const categoria = row['Categoría'] || row['Rubro'] || 'General';
-                const marca = row['Marca'] || 'Varios';
-                const espesor = row['Espesor'] || '';
-                const precio = parseFloat(row['Precio'] || 0);
+            // Procesamiento por Lotes
+            for (let i = 0; i < rawData.length; i += 10) {
+                const chunk = rawData.slice(i, i + 10);
+                
+                await Promise.all(chunk.map(async (row: any) => {
+                    // Mapeo Dinámico (Soporta formato viejo y nuevo v16)
+                    const nombre = row['ARTICULO/COLOR REAL'] || row['Nombre'] || row['nombre'] || '';
+                    const linea  = row['LINEA/GRUPO'] || row['linea'] || row['linea/grupo'] || '';
+                    const marcaName = row['MARCA'] || row['Marca'] || sheetName;
+                    const espesor = row['ESPESOR'] || row['Espesor'] || '';
+                    const soporte = row['SOPORTE'] || row['soporte'] || 'AGLOMERADO';
+                    const precio_l1 = parseFloat(row['L1'] || row['Precio'] || 0);
+                    const precio_l2 = parseFloat(row['L2'] || 0);
 
-                if (!nombre) return;
+                    if (!nombre) return;
 
-                // 2. Resolución de Entidades Relacionales (Priorizando Overrides)
-                let finalCategoryId = overrideCategoryId;
-                let finalBrandId = overrideBrandId;
+                    // 2. Resolución de Entidades
+                    let finalCategoryId = overrideCategoryId;
+                    let finalBrandId = overrideBrandId;
 
-                if (!finalCategoryId) {
-                    const catRes = await upsertItem('Rubros', { nombre: { _eq: categoria } }, { nombre: categoria }, token);
-                    finalCategoryId = catRes.data.id;
-                }
-
-                if (!finalBrandId) {
-                    const marcaRes = await upsertItem('marcas', { nombre: { _eq: marca } }, { nombre: marca, rubro: finalCategoryId }, token);
-                    finalBrandId = marcaRes.data.id;
-                }
-
-                // 3. Generación Automática de SKU si falta
-                if (!sku) {
-                    try {
-                        const skuReq = await fetch(`${request.url.split('/api')[0]}/api/admin/generate-sku?rubro=${finalCategoryId}&marca=${finalBrandId}`);
-                        const skuData = await skuReq.json();
-                        sku = skuData.sku;
-                    } catch (e) {
-                        sku = `GEN-${Math.random().toString(36).substring(7).toUpperCase()}`;
+                    if (!finalCategoryId) {
+                        const catRes = await upsertItem('Rubros', { nombre: { _eq: 'Placas' } }, { nombre: 'Placas' }, token);
+                        finalCategoryId = catRes.data.id;
                     }
-                }
 
-                // 4. UPSERT de Producto
-                await upsertItem('Productos', { sku: { _eq: sku } }, {
-                    status: 'published',
-                    nombre,
-                    descripcion,
-                    sku,
-                    precio_L1: precio,
-                    rubro: finalCategoryId,
-                    marca: finalBrandId,
-                    espesor: espesor
-                }, token);
+                    if (!finalBrandId) {
+                        const marcaRes = await upsertItem('marcas', { nombre: { _eq: marcaName } }, { nombre: marcaName, rubro: finalCategoryId }, token);
+                        finalBrandId = marcaRes.data.id;
+                    }
 
-                processedCount++;
-            }));
+                    // 3. Generar SKU Industrial (Si no existe)
+                    let sku = row['SKU'] || row['sku'] || '';
+                    if (!sku) {
+                        const brandRef = marcaName.substring(0,3).toUpperCase();
+                        const thickRef = espesor.toString().replace(/\D/g,'');
+                        const cleanName = nombre.substring(0,5).toUpperCase().replace(/ /g,'');
+                        sku = `M-${brandRef}-${cleanName}-${thickRef}`;
+                    }
 
-            // Pequeño delay para Rate Limiting
-            await new Promise(r => setTimeout(r, 100));
+                    // 4. UPSERT de Producto en 'Productos'
+                    await upsertItem('Productos', { sku: { _eq: sku } }, {
+                        status: 'published',
+                        nombre,
+                        sku,
+                        linea,
+                        espesor,
+                        soporte,
+                        marca: finalBrandId,
+                        rubro: finalCategoryId,
+                        precio_l1,
+                        precio_l2,
+                        activo: true
+                    }, token);
+
+                    totalProcessed++;
+                }));
+            }
         }
 
-        return new Response(JSON.stringify({ success: true, processed: processedCount }), {
+        return new Response(JSON.stringify({ success: true, processed: totalProcessed }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
@@ -128,4 +131,4 @@ export const POST: APIRoute = async ({ request }) => {
         console.error('Error Directus Upload:', error);
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });
     }
-}
+};
