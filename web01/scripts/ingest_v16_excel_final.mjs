@@ -45,12 +45,25 @@ async function startIngestion() {
         const sheet = workbook.Sheets[sheetName];
         const data = xlsx.utils.sheet_to_json(sheet);
         
+        if (data.length > 0) {
+            console.log(`🔍 Columnas detectadas: ${Object.keys(data[0]).join(', ')}`);
+        }
+
         for (const row of data) {
             try {
-                // 1. Extraer y Normalizar Datos
-                const rawColor = (row['ARTICULO/COLOR REAL'] || row['Nombre'] || '').toString().trim();
+                // 1. Extraer y Normalizar Datos (Búsqueda flexible de columnas)
+                const rawColor = (
+                    row['ARTICULO/COLOR REAL'] || 
+                    row['COLOR/DISEÑO'] || 
+                    row['Nombre'] || 
+                    row['DISEÑO'] || 
+                    row['Articulo'] || 
+                    ''
+                ).toString().trim();
+
                 const brandName = (row['MARCA'] || row['Marca'] || sheetName).toString().toUpperCase().trim();
-                const lineGroup = (row['LINEA/GRUPO'] || '').toString().trim();
+                const lineGroup = (row['LINEA/GRUPO'] || row['LINEA'] || '').toString().trim();
+                const codigo = (row['codigo'] || row['CODIGO'] || '').toString().trim();
                 const support = (row['SOPORTE'] || 'AGLOMERADO').toUpperCase();
                 
                 // Limpiador de Espesor: "18 MM" -> 18
@@ -81,11 +94,11 @@ async function startIngestion() {
                 const precio_l2 = parseFloat(row['L2'] || 0);
 
                 // 5. BUSCAR EXISTENCIA PARA EVITAR DUPLICADOS
-                // Buscamos por Modelo + Marca + Espesor + Soporte
+                // Buscamos por Color Real + Marca + Espesor + Soporte
                 const existing = await client.request(readItems('Productos', {
                     filter: {
                         _and: [
-                            { modelo: { _eq: modelo } },
+                            { color_real: { _eq: modelo } },
                             { marca: { _eq: cache.marcas[brandName] } },
                             { espesor: { _eq: thickness } },
                             { soporte: { _eq: support } }
@@ -97,7 +110,7 @@ async function startIngestion() {
                 let sku;
                 if (existing.length > 0) {
                     sku = existing[0].sku;
-                    console.log(`\n♻️ Actualizando: ${sku} - ${modelo}`);
+                    console.log(`♻️  [${sku}] Actualizando: ${modelo}`);
                 } else {
                     // Generar SKU Industrial Nuevo
                     const rubroData = await client.request(readItems('Rubros', { fields: ['letra'], filter: { id: { _eq: cache.rubros['Placas'] } } }));
@@ -121,24 +134,24 @@ async function startIngestion() {
                         if (!isNaN(lastNum)) nextNumber = lastNum + 1;
                     }
                     sku = `${prefix}${nextNumber.toString().padStart(4, '0')}`;
-                    console.log(`\n🆕 Creando: ${sku} - ${modelo}`);
+                    console.log(`🆕  [${sku}] Creando: ${modelo} (${lineGroup})`);
                 }
 
-                // 6. UPSERT FINAL (Mapeo técnico v16.8)
+                // 6. UPSERT FINAL (Mapeo técnico v16.9)
                 await upsertItem('Productos', { sku: { _eq: sku } }, {
                     status: 'published',
                     nombre: fullNombre,
-                    descripcion: fullNombre,      // Campo extra de Directus
-                    color_real: modelo,           // El nombre del color (ej: Helsinki)
-                    modelo: modelo,               // Compatibilidad con frontend
+                    descripcion: fullNombre,
+                    color_real: modelo,
+                    modelo: modelo,
                     sku: sku,
                     linea: lineGroup,
                     espesor: thickness,
                     soporte: support,
                     marca: cache.marcas[brandName],
                     rubro: cache.rubros['Placas'],
-                    precio_L1: precio_l1,         // ¡Con L mayúscula!
-                    precio_L2: precio_l2,         // ¡Con L mayúscula!
+                    precio_L1: precio_l1,
+                    precio_L2: precio_l2,
                     activo: true
                 });
 
