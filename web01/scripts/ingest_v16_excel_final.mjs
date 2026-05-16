@@ -124,19 +124,21 @@ async function startIngestion() {
                     console.log(`\n🆕 Creando: ${sku} - ${modelo}`);
                 }
 
-                // 6. UPSERT FINAL
+                // 6. UPSERT FINAL (Mapeo técnico v16.8)
                 await upsertItem('Productos', { sku: { _eq: sku } }, {
                     status: 'published',
                     nombre: fullNombre,
-                    modelo: modelo,
+                    descripcion: fullNombre,      // Campo extra de Directus
+                    color_real: modelo,           // El nombre del color (ej: Helsinki)
+                    modelo: modelo,               // Compatibilidad con frontend
                     sku: sku,
                     linea: lineGroup,
                     espesor: thickness,
                     soporte: support,
                     marca: cache.marcas[brandName],
                     rubro: cache.rubros['Placas'],
-                    precio_l1: precio_l1,
-                    precio_l2: precio_l2,
+                    precio_L1: precio_l1,         // ¡Con L mayúscula!
+                    precio_L2: precio_l2,         // ¡Con L mayúscula!
                     activo: true
                 });
 
