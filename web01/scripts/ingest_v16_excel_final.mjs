@@ -47,61 +47,93 @@ async function startIngestion() {
         
         for (const row of data) {
             try {
-                const nombre = row['ARTICULO/COLOR REAL'] || row['Nombre'] || '';
-                const marcaName = row['MARCA'] || row['Marca'] || sheetName;
-                if (!nombre) continue;
+                // 1. Extraer y Normalizar Datos
+                const rawColor = (row['ARTICULO/COLOR REAL'] || row['Nombre'] || '').toString().trim();
+                const brandName = (row['MARCA'] || row['Marca'] || sheetName).toString().toUpperCase().trim();
+                const lineGroup = (row['LINEA/GRUPO'] || '').toString().trim();
+                const support = (row['SOPORTE'] || 'AGLOMERADO').toUpperCase();
+                
+                // Limpiador de Espesor: "18 MM" -> 18
+                const espesorRaw = row['ESPESOR'] || '';
+                const thickness = parseFloat(espesorRaw.toString().replace(/[^0-9.]/g, '')) || 0;
 
-                // 1. Resolver Rubro
+                if (!rawColor) continue;
+
+                // 2. Resolver Rubro (Placas)
                 if (!cache.rubros['Placas']) {
-                    const res = await upsertItem('Rubros', { nombre: { _eq: 'Placas' } }, { nombre: 'Placas' });
+                    const res = await upsertItem('Rubros', { nombre: { _eq: 'Placas' } }, { nombre: 'Placas', letra: 'M' });
                     cache.rubros['Placas'] = res.id;
                 }
 
-                // 2. Resolver Marca
-                if (!cache.marcas[marcaName]) {
-                    const res = await upsertItem('marcas', { nombre: { _eq: marcaName } }, { nombre: marcaName, rubro: cache.rubros['Placas'] });
-                    cache.marcas[marcaName] = res.id;
+                // 3. Resolver Marca
+                if (!cache.marcas[brandName]) {
+                    const res = await upsertItem('marcas', { nombre: { _eq: brandName } }, { nombre: brandName, rubro: cache.rubros['Placas'] });
+                    cache.marcas[brandName] = res.id;
                 }
 
-                // Limpiador de Espesor: "18 MM" -> 18
-                const espesorRaw = row['ESPESOR'] || '';
-                const espesor = parseFloat(espesorRaw.toString().replace(/[^0-9.]/g, '')) || 0;
+                // 4. Construir Identidad Industrial
+                // El 'modelo' es el nombre del diseño/color (ej: Helsinki)
+                const modelo = rawColor;
+                // El 'nombre' es descriptivo completo
+                const fullNombre = `Placa ${brandName} ${modelo} ${lineGroup ? '('+lineGroup+')' : ''} ${thickness}mm ${support.toLowerCase()}`;
 
                 const precio_l1 = parseFloat(row['L1'] || row['Precio'] || 0);
                 const precio_l2 = parseFloat(row['L2'] || 0);
 
-                // 3. Generar SKU Industrial (Flujo: Letra-Codigo-XXXX)
-                const rubroData = await client.request(readItems('Rubros', { fields: ['letra'], filter: { id: { _eq: cache.rubros['Placas'] } } }));
-                const marcaData = await client.request(readItems('marcas', { fields: ['codigo'], filter: { id: { _eq: cache.marcas[marcaName] } } }));
-                
-                const letra = rubroData[0]?.letra || 'X';
-                const codigo = marcaData[0]?.codigo || '00';
-                const prefix = `${letra}-${codigo}-`;
-
-                // Buscar el último número para esta combinación
-                const lastProducts = await client.request(readItems('Productos', {
-                    fields: ['sku'],
-                    filter: { sku: { _starts_with: prefix } },
-                    sort: ['-sku'],
+                // 5. BUSCAR EXISTENCIA PARA EVITAR DUPLICADOS
+                // Buscamos por Modelo + Marca + Espesor + Soporte
+                const existing = await client.request(readItems('Productos', {
+                    filter: {
+                        _and: [
+                            { modelo: { _eq: modelo } },
+                            { marca: { _eq: cache.marcas[brandName] } },
+                            { espesor: { _eq: thickness } },
+                            { soporte: { _eq: support } }
+                        ]
+                    },
                     limit: 1
                 }));
 
-                let nextNumber = 1;
-                if (lastProducts.length > 0) {
-                    const lastNum = parseInt(lastProducts[0].sku.split('-').pop());
-                    if (!isNaN(lastNum)) nextNumber = lastNum + 1;
+                let sku;
+                if (existing.length > 0) {
+                    sku = existing[0].sku;
+                    console.log(`\n♻️ Actualizando: ${sku} - ${modelo}`);
+                } else {
+                    // Generar SKU Industrial Nuevo
+                    const rubroData = await client.request(readItems('Rubros', { fields: ['letra'], filter: { id: { _eq: cache.rubros['Placas'] } } }));
+                    const marcaData = await client.request(readItems('marcas', { fields: ['codigo'], filter: { id: { _eq: cache.marcas[brandName] } } }));
+                    
+                    const letra = rubroData[0]?.letra || 'M';
+                    const codigo = marcaData[0]?.codigo || '00';
+                    const prefix = `${letra}-${codigo}-`;
+
+                    const lastProducts = await client.request(readItems('Productos', {
+                        fields: ['sku'],
+                        filter: { sku: { _starts_with: prefix } },
+                        sort: ['-sku'],
+                        limit: 1
+                    }));
+
+                    let nextNumber = 1;
+                    if (lastProducts.length > 0) {
+                        const parts = lastProducts[0].sku.split('-');
+                        const lastNum = parseInt(parts[parts.length - 1]);
+                        if (!isNaN(lastNum)) nextNumber = lastNum + 1;
+                    }
+                    sku = `${prefix}${nextNumber.toString().padStart(4, '0')}`;
+                    console.log(`\n🆕 Creando: ${sku} - ${modelo}`);
                 }
 
-                const sku = `${prefix}${nextNumber.toString().padStart(4, '0')}`;
-
+                // 6. UPSERT FINAL
                 await upsertItem('Productos', { sku: { _eq: sku } }, {
                     status: 'published',
-                    nombre: nombre,
+                    nombre: fullNombre,
+                    modelo: modelo,
                     sku: sku,
-                    linea: row['LINEA/GRUPO'] || '',
-                    espesor: espesor,
-                    soporte: row['SOPORTE'] || 'AGLOMERADO',
-                    marca: cache.marcas[marcaName],
+                    linea: lineGroup,
+                    espesor: thickness,
+                    soporte: support,
+                    marca: cache.marcas[brandName],
                     rubro: cache.rubros['Placas'],
                     precio_l1: precio_l1,
                     precio_l2: precio_l2,
@@ -109,7 +141,6 @@ async function startIngestion() {
                 });
 
                 totalCount++;
-                if (totalCount % 20 === 0) process.stdout.write('.');
             } catch (e) {
                 console.error(`\n❌ Error procesando fila:`, e.message);
             }
