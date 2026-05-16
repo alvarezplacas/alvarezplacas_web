@@ -63,7 +63,10 @@ async function startIngestion() {
                     cache.marcas[marcaName] = res.id;
                 }
 
-                const espesor = row['ESPESOR'] || '';
+                // Limpiador de Espesor: "18 MM" -> 18
+                const espesorRaw = row['ESPESOR'] || '';
+                const espesor = parseFloat(espesorRaw.toString().replace(/[^0-9.]/g, '')) || 0;
+
                 const precio_l1 = parseFloat(row['L1'] || row['Precio'] || 0);
                 const precio_l2 = parseFloat(row['L2'] || 0);
 
