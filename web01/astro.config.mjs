@@ -27,8 +27,8 @@ export default defineConfig({
   // 🚀 Rendimiento y Armonía
   compressHTML: true,
   prefetch: {
-    prefetchAll: true,
-    defaultStrategy: 'viewport'
+    prefetchAll: false,
+    defaultStrategy: 'hover'
   },
   server: {
     host: '0.0.0.0',

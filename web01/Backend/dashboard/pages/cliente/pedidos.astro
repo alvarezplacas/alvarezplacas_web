@@ -5,7 +5,24 @@
 import ClienteLayout from '../../layouts/ClienteLayout.astro';
 import { directus, readItems } from '@conexiones/directus.js';
 
-const clientId = Astro.cookies.get('client_session')?.value;
+// 1. Obtención de Identidad (Soporta Cliente, Vendedor y Admin de forma polimórfica)
+let clientId = Astro.cookies.get('client_session')?.value;
+const isSeller = Astro.cookies.has('seller_session');
+const isAdmin = Astro.cookies.has('admin_session');
+
+if (!clientId) {
+    if (isSeller || isAdmin) {
+        try {
+            const tempClients = await directus.request(readItems('clientes', { limit: 1, fields: ['id'] }));
+            if (tempClients && tempClients.length > 0) {
+                clientId = tempClients[0].id.toString();
+            }
+        } catch (e) {
+            console.error("Error al buscar cliente temporal de soporte:", e);
+        }
+    }
+}
+
 if (!clientId) return Astro.redirect('/login');
 
 let pedidos = [];

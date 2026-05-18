@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { directus } from '@conexiones/directus.js';
 import { readItems } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
+import { registerSession } from '../../../session_store';
 
 export const GET: APIRoute = ({ redirect }) => {
     return redirect('/login');
@@ -103,19 +104,29 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             }), { status: 401, headers: { 'Content-Type': 'application/json' } });
         }
 
+        // Extraer IP y User-Agent para respaldo de sesión
+        const ip = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+        const userAgent = request.headers.get('user-agent') || 'unknown';
+
         // Set appropriate cookie
         const rememberMe = formData.get('remember-me') === 'on';
         
         if (userType === 'seller') {
             cookies.set('seller_session', user.id.toString(), {
                 path: '/',
-                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24
+                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 * 30,
+                httpOnly: true,
+                sameSite: 'lax'
             });
+            registerSession(ip, userAgent, user.id.toString(), 'seller');
         } else {
             cookies.set('client_session', user.id.toString(), {
                 path: '/',
-                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 * 30
+                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 * 30,
+                httpOnly: true,
+                sameSite: 'lax'
             });
+            registerSession(ip, userAgent, user.id.toString(), 'client');
         }
 
         const role = user.role || (userType === 'seller' ? 'seller' : 'client');

@@ -9,7 +9,7 @@ const isLoggedIn = !!clientId;
 
 <div id="cubical-app-root" class="cubical-container mx-auto max-w-[1600px] px-4 py-8" data-is-logged-in={isLoggedIn}>
     <!-- BARRA SUPERIOR -->
-    <header class="flex justify-between items-center mb-12 bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-2xl shadow-sm">
+    <header class="flex justify-between items-center mb-12 bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-lg shadow-sm">
         <div class="flex items-center gap-6">
              <a href="/" class="nav-link-sc">
                 <i class="fas fa-home"></i> INICIO
@@ -25,8 +25,8 @@ const isLoggedIn = !!clientId;
                 <i id="theme-icon" class="fas fa-moon"></i> <span id="theme-text">MODO OSCURO</span>
             </div>
             <div style="width: 1px; height: 20px; background: var(--sc-border);"></div>
-            <button id="btn-save-project" class="hidden px-6 py-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded-lg text-xs font-black uppercase text-[var(--sc-text)] hover:bg-[var(--sc-border)] transition-all">Guardar Proyecto</button>
-            <button id="btn-goto-dashboard" onclick="window.cubical.showDashboard()" class="px-6 py-2 bg-[var(--alvarez-red)] text-white rounded-lg text-xs font-black uppercase hover:scale-105 transition-all shadow-lg">Mis Proyectos</button>
+            <button id="btn-save-project" class="hidden px-6 py-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase text-[var(--sc-text)] hover:bg-[var(--sc-border)] transition-all">Guardar Proyecto</button>
+            <button id="btn-goto-dashboard" onclick="window.cubical.showDashboard()" class="px-6 py-2 bg-[var(--alvarez-red)] text-white rounded text-xs font-black uppercase hover:scale-105 transition-all shadow-lg">Mis Proyectos</button>
         </div>
     </header>
 
@@ -40,36 +40,36 @@ const isLoggedIn = !!clientId;
                 
                 <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <!-- Dinámico -->
-                    <div class="bg-[var(--sc-surface-alt)] h-40 rounded-2xl animate-pulse"></div>
-                    <div class="bg-[var(--sc-surface-alt)] h-40 rounded-2xl animate-pulse"></div>
+                    <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
+                    <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
                 </div>
             </div>
             
-            <div class="bg-[var(--sc-surface)] border-2 border-dashed border-[var(--sc-border)] p-12 rounded-[2rem] flex flex-col items-center justify-center text-center">
-                <div class="w-24 h-24 bg-[var(--alvarez-red)] text-white rounded-3xl flex items-center justify-center mb-8 rotate-3 shadow-xl">
+            <div class="bg-[var(--sc-surface)] border-2 border-dashed border-[var(--sc-border)] p-12 rounded-xl flex flex-col items-center justify-center text-center">
+                <div class="w-24 h-24 bg-[var(--alvarez-red)] text-white rounded-xl flex items-center justify-center mb-8 rotate-3 shadow-xl">
                     <i class="fas fa-plus text-4xl"></i>
                 </div>
                 <h3 class="text-2xl font-black mb-4 text-[var(--sc-text)] uppercase tracking-tighter">¿Nuevo Mueble?</h3>
                 <p class="text-[var(--sc-text-dim)] text-sm mb-10 font-medium">Calcula materiales y herrajes en segundos para tu próximo cliente.</p>
-                <button onclick="window.cubical.showSetup()" class="w-full py-5 bg-[var(--alvarez-red)] text-white font-black rounded-2xl hover:scale-105 transition-all uppercase tracking-widest shadow-xl">NUEVO CÁLCULO</button>
+                <button onclick="window.cubical.showSetup()" class="w-full py-5 bg-[var(--alvarez-red)] text-white font-black rounded-lg hover:scale-105 transition-all uppercase tracking-widest shadow-xl">NUEVO CÁLCULO</button>
             </div>
         </div>
     </section>
 
     <!-- PANTALLA 2: SETUP -->
     <section id="screen-setup" class="hidden max-w-2xl mx-auto animate-fade-in">
-        <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-12 rounded-[3rem] shadow-2xl">
+        <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-12 rounded-xl shadow-2xl">
             <h2 class="text-3xl font-black mb-10 tracking-tight text-center uppercase text-[var(--sc-text)]">Configuración del Proyecto</h2>
             
             <div class="space-y-8">
                 <div>
                     <label class="block text-[0.65rem] font-black text-[var(--sc-text-dim)] uppercase tracking-[0.2em] mb-3">Nombre del Proyecto o Cliente</label>
-                    <input type="text" id="setup-name" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-5 rounded-2xl text-[var(--sc-text)] focus:border-[var(--alvarez-red)] outline-none font-bold text-lg" placeholder="Ej: Cocina Moderna - Juan Pérez">
+                    <input type="text" id="setup-name" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-5 rounded text-[var(--sc-text)] focus:border-[var(--alvarez-red)] outline-none font-bold text-lg" placeholder="Ej: Cocina Moderna - Juan Pérez">
                 </div>
                 
                 <div>
                     <label class="block text-[0.65rem] font-black text-[var(--sc-text-dim)] uppercase tracking-[0.2em] mb-3">Tipo de Ambiente</label>
-                    <select id="setup-env" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-5 rounded-2xl text-[var(--sc-text)] focus:border-[var(--alvarez-red)] outline-none font-bold">
+                    <select id="setup-env" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-5 rounded text-[var(--sc-text)] focus:border-[var(--alvarez-red)] outline-none font-bold">
                         <option value="cocina">🍳 Cocina / Bajo Mesada</option>
                         <option value="dormitorio">🛏️ Dormitorio / Vestidor</option>
                         <option value="oficina">🖥️ Oficina / Estudio</option>
@@ -79,8 +79,8 @@ const isLoggedIn = !!clientId;
                 </div>
 
                 <div class="pt-8 grid grid-cols-2 gap-4">
-                    <button onclick="window.cubical.startConstructor()" class="py-5 bg-[var(--alvarez-red)] text-white font-black rounded-2xl hover:scale-105 transition-all uppercase tracking-widest shadow-lg">CONTINUAR</button>
-                    <button onclick="window.cubical.showDashboard()" class="py-5 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[var(--sc-text-dim)] font-black rounded-2xl hover:text-[var(--sc-text)] transition-all uppercase tracking-widest">CANCELAR</button>
+                    <button onclick="window.cubical.startConstructor()" class="py-5 bg-[var(--alvarez-red)] text-white font-black rounded-lg hover:scale-105 transition-all uppercase tracking-widest shadow-lg">CONTINUAR</button>
+                    <button onclick="window.cubical.showDashboard()" class="py-5 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[var(--sc-text-dim)] font-black rounded-lg hover:text-[var(--sc-text)] transition-all uppercase tracking-widest">CANCELAR</button>
                 </div>
             </div>
         </div>
@@ -91,7 +91,7 @@ const isLoggedIn = !!clientId;
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <!-- PANEL IZQUIERDO: FORMULARIO -->
             <div class="lg:col-span-4 space-y-6">
-                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-8 rounded-3xl shadow-sm">
+                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-8 rounded-xl shadow-sm">
                     <h3 class="text-xs font-black text-[var(--alvarez-red)] uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
                         <i class="fas fa-cubes"></i> AÑADIR MÓDULO AL PLANO
                     </h3>
@@ -99,7 +99,7 @@ const isLoggedIn = !!clientId;
                     <div class="grid grid-cols-2 gap-5">
                         <div class="col-span-2">
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Tipo de Módulo</label>
-                            <select id="mod-type" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded-xl text-sm font-bold">
+                            <select id="mod-type" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-bold">
                                 <option value="CAJONERA">🗄️ Cajonera Estándar</option>
                                 <option value="PLACARD">🚪 Placard / Ropero</option>
                                 <option value="ALACENA">🪜 Alacena Superior</option>
@@ -109,26 +109,26 @@ const isLoggedIn = !!clientId;
                         </div>
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Alto (mm)</label>
-                            <input type="number" id="mod-h" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded-xl text-sm font-mono font-bold">
+                            <input type="number" id="mod-h" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Ancho (mm)</label>
-                            <input type="number" id="mod-w" value="600" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded-xl text-sm font-mono font-bold">
+                            <input type="number" id="mod-w" value="600" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Prof. (mm)</label>
-                            <input type="number" id="mod-p" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded-xl text-sm font-mono font-bold">
+                            <input type="number" id="mod-p" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Cajones/Puertas</label>
-                            <input type="number" id="mod-n" value="3" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded-xl text-sm font-mono font-bold">
+                            <input type="number" id="mod-n" value="3" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
                         </div>
                     </div>
                     
-                    <button onclick="window.cubical.addModule()" class="w-full mt-10 py-5 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded-2xl text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR A LA LISTA</button>
+                    <button onclick="window.cubical.addModule()" class="w-full mt-10 py-5 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR A LA LISTA</button>
                 </div>
 
-                <div class="bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] p-6 rounded-3xl">
+                <div class="bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] p-6 rounded-xl">
                     <h3 class="text-xs font-black text-[var(--sc-text-dim)] uppercase tracking-widest mb-6">Módulos del Proyecto</h3>
                     <div id="module-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                         <!-- Dinámico -->
@@ -138,19 +138,19 @@ const isLoggedIn = !!clientId;
 
             <!-- PANEL CENTRAL: VISUALIZADOR SVG -->
             <div class="lg:col-span-8 flex flex-col gap-6">
-                <div class="bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded-[2.5rem] min-h-[500px] flex items-center justify-center relative overflow-hidden shadow-inner">
+                <div class="bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded-xl min-h-[500px] flex items-center justify-center relative overflow-hidden shadow-inner">
                     <div class="absolute top-8 left-10 text-[0.65rem] font-black text-[var(--sc-text-dim)] uppercase tracking-[0.5em] opacity-30">PROYECCIÓN TÉCNICA 2D (FRENTE)</div>
                     <svg id="svg-preview" class="w-full h-full max-h-[600px] p-20" viewBox="0 0 1000 600"></svg>
                 </div>
                 
-                <div class="flex justify-between items-center bg-[var(--sc-surface)] p-6 rounded-3xl border border-[var(--sc-border)]">
+                <div class="flex justify-between items-center bg-[var(--sc-surface)] p-6 rounded-xl border border-[var(--sc-border)]">
                     <div class="flex gap-4">
-                        <div class="bg-[var(--sc-surface-alt)] px-8 py-4 rounded-2xl border border-[var(--sc-border)]">
+                        <div class="bg-[var(--sc-surface-alt)] px-8 py-4 rounded-lg border border-[var(--sc-border)]">
                             <div class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase mb-1">Módulos Totales</div>
                             <div id="stat-total-mods" class="text-3xl font-black text-[var(--alvarez-red)]">0</div>
                         </div>
                     </div>
-                    <button onclick="window.cubical.generateResults()" class="px-16 py-6 bg-[var(--alvarez-red)] text-white font-black rounded-[1.5rem] shadow-2xl hover:scale-105 transition-all uppercase tracking-[0.2em] flex items-center gap-4">
+                    <button onclick="window.cubical.generateResults()" class="px-16 py-6 bg-[var(--alvarez-red)] text-white font-black rounded hover:scale-105 transition-all uppercase tracking-[0.2em] flex items-center gap-4">
                         OPTIMIZAR CÁLCULO <i class="fas fa-microchip"></i>
                     </button>
                 </div>
@@ -163,7 +163,7 @@ const isLoggedIn = !!clientId;
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- COLUMNA PLACAS -->
             <div class="space-y-6">
-                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-10 rounded-[2.5rem] shadow-sm">
+                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-10 rounded-xl shadow-sm">
                     <h3 class="text-2xl font-black mb-8 uppercase italic text-[var(--alvarez-red)]">REPORTE DE MATERIALES</h3>
                     <div id="res-boards-stats" class="grid grid-cols-3 gap-5 mb-10">
                         <!-- Dinámico -->
@@ -176,7 +176,7 @@ const isLoggedIn = !!clientId;
             
             <!-- COLUMNA HERRAJES -->
             <div class="space-y-6">
-                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-10 rounded-[2.5rem] shadow-sm">
+                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-10 rounded-xl shadow-sm">
                     <h3 class="text-2xl font-black mb-8 uppercase italic text-[var(--sc-text)]">LISTA DE HERRAJES</h3>
                     <table class="w-full text-sm text-left">
                         <thead class="text-[0.65rem] font-black text-[var(--sc-text-dim)] uppercase border-bottom border-[var(--sc-border)]">
@@ -192,9 +192,9 @@ const isLoggedIn = !!clientId;
                     </table>
                 </div>
                 
-                <div class="flex gap-4 p-4 bg-[var(--sc-surface-alt)] rounded-3xl border border-[var(--sc-border)]">
-                    <button onclick="window.cubical.saveProject(true)" class="flex-1 py-6 bg-[var(--alvarez-red)] text-white font-black rounded-2xl hover:scale-105 transition-all uppercase tracking-widest shadow-xl">ENVIAR A PRODUCCIÓN</button>
-                    <button onclick="window.cubical.showConstructor()" class="px-10 py-6 bg-[var(--sc-surface)] border border-[var(--sc-border)] text-[var(--sc-text)] rounded-2xl font-black hover:bg-[var(--sc-surface-alt)] transition-all uppercase text-xs">RE-EDITAR PLANO</button>
+                <div class="flex gap-4 p-4 bg-[var(--sc-surface-alt)] rounded-xl border border-[var(--sc-border)]">
+                    <button onclick="window.cubical.saveProject(true)" class="flex-1 py-6 bg-[var(--alvarez-red)] text-white font-black rounded hover:scale-105 transition-all uppercase tracking-widest shadow-xl">ENVIAR A PRODUCCIÓN</button>
+                    <button onclick="window.cubical.showConstructor()" class="px-10 py-6 bg-[var(--sc-surface)] border border-[var(--sc-border)] text-[var(--sc-text)] rounded border-none font-black hover:bg-[var(--sc-surface-alt)] transition-all uppercase text-xs">RE-EDITAR PLANO</button>
                 </div>
             </div>
         </div>
@@ -214,7 +214,9 @@ const isLoggedIn = !!clientId;
         --sc-input-bg: oklch(100% 0 0);
     }
     
-    [data-theme="dark"] {
+    [data-theme="dark"],
+    .body-theme-dark,
+    body.body-theme-dark {
         --sc-text: oklch(95% 0 0);
         --sc-text-dim: oklch(70% 0 0);
         --sc-surface: oklch(12% 0.01 260);
@@ -222,6 +224,25 @@ const isLoggedIn = !!clientId;
         --sc-border: oklch(100% 0 0 / 10%);
         --sc-input-bg: oklch(5% 0 0);
         --alvarez-border: oklch(100% 0 0 / 15%);
+    }
+
+    /* 📐 AutoCAD Precisión Industrial para todos los Inputs/Selects y Colores Explícitos */
+    .cubical-container input,
+    .cubical-container select,
+    .cubical-container textarea {
+        color: var(--sc-text) !important;
+        background-color: var(--sc-input-bg) !important;
+        border-color: var(--sc-border) !important;
+        border-radius: 4px !important;
+    }
+    .cubical-container input:focus,
+    .cubical-container select:focus {
+        border-color: var(--alvarez-red) !important;
+        box-shadow: 0 0 0 3px oklch(62.8% 0.25 29.23 / 15%) !important;
+    }
+    .cubical-container input::placeholder {
+        color: var(--sc-text-dim) !important;
+        opacity: 0.6;
     }
 
     .nav-link-sc {
@@ -244,19 +265,20 @@ const isLoggedIn = !!clientId;
     .hidden { display: none !important; }
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--sc-border); border-radius: 10px; }
-
-    input, select { transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    input:focus, select:focus { border-color: var(--alvarez-red); box-shadow: 0 0 0 4px oklch(62.8% 0.25 29.23 / 10%); }
 </style>
 
 <script is:inline>
-    // 🛡️ Inicialización inmediata del tema
+    // 🛡️ Inicialización inmediata del tema sincronizada con el Layout principal de Alvarez Placas
     (function() {
-        const savedTheme = localStorage.getItem('sc-theme') || 'light';
+        const savedTheme = localStorage.getItem('client-theme') || localStorage.getItem('sc-theme') || 'light';
         if (savedTheme === 'dark') {
             document.body.setAttribute('data-theme', 'dark');
+            document.body.classList.add('body-theme-dark');
+            document.body.classList.remove('body-theme-light');
         } else {
             document.body.removeAttribute('data-theme');
+            document.body.classList.add('body-theme-light');
+            document.body.classList.remove('body-theme-dark');
         }
     })();
 
@@ -280,19 +302,25 @@ const isLoggedIn = !!clientId;
 
         toggleTheme: function() {
             const body = document.body;
-            const isDark = body.getAttribute('data-theme') === 'dark';
+            const isDark = body.getAttribute('data-theme') === 'dark' || body.classList.contains('body-theme-dark');
             if (isDark) {
                 body.removeAttribute('data-theme');
+                body.classList.add('body-theme-light');
+                body.classList.remove('body-theme-dark');
+                localStorage.setItem('client-theme', 'light');
                 localStorage.setItem('sc-theme', 'light');
             } else {
                 body.setAttribute('data-theme', 'dark');
+                body.classList.add('body-theme-dark');
+                body.classList.remove('body-theme-light');
+                localStorage.setItem('client-theme', 'dark');
                 localStorage.setItem('sc-theme', 'dark');
             }
             this.updateThemeUI();
         },
 
         updateThemeUI: function() {
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const isDark = document.body.getAttribute('data-theme') === 'dark' || document.body.classList.contains('body-theme-dark');
             const text = document.getElementById('theme-text');
             const icon = document.getElementById('theme-icon');
             if (text && icon) {
@@ -360,12 +388,12 @@ const isLoggedIn = !!clientId;
             list.innerHTML = this.state.modules.length === 0 
                 ? '<div class="text-center py-8 text-[var(--sc-text-dim)] font-bold text-[0.6rem] uppercase opacity-40">Sin módulos añadidos</div>'
                 : this.state.modules.map(m => `
-                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-5 rounded-2xl flex justify-between items-center group hover:border-[var(--alvarez-red)] transition-all">
+                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-5 rounded-lg flex justify-between items-center group hover:border-[var(--alvarez-red)] transition-all">
                     <div>
                         <div class="text-[0.6rem] font-black text-[var(--alvarez-red)] uppercase">${m.type.replace('_',' ')}</div>
                         <div class="text-sm font-black text-[var(--sc-text)]">${m.dims.alto}x${m.dims.ancho}x${m.dims.prof} <span class="text-[0.6rem] font-normal text-[var(--sc-text-dim)]">mm</span></div>
                     </div>
-                    <button onclick="window.cubical.removeModule(${m.id})" class="w-10 h-10 bg-[var(--sc-surface-alt)] rounded-xl flex items-center justify-center text-[var(--sc-text-dim)] hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">
+                    <button onclick="window.cubical.removeModule(${m.id})" class="w-10 h-10 bg-[var(--sc-surface-alt)] rounded flex items-center justify-center text-[var(--sc-text-dim)] hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </div>
@@ -388,7 +416,7 @@ const isLoggedIn = !!clientId;
                 
                 html += `
                     <g transform="translate(${currentX}, ${y})" class="animate-fade-in">
-                        <rect width="${w}" height="${h}" fill="var(--sc-surface)" stroke="var(--sc-border)" stroke-width="8" rx="4" />
+                        <rect width="${w}" height="${h}" fill="var(--sc-surface)" stroke="var(--sc-border)" stroke-width="8" rx="2" />
                         <rect x="10" y="10" width="${w-20}" height="${h-20}" fill="none" stroke="var(--alvarez-red)" stroke-width="2" stroke-dasharray="4" opacity="0.3" />
                         <text x="${w/2}" y="${h+30}" text-anchor="middle" fill="var(--sc-text-dim)" font-size="14" font-weight="900" font-family="monospace">${m.dims.ancho}</text>
                         <text x="${-30}" y="${h/2}" text-anchor="middle" fill="var(--sc-text-dim)" font-size="14" font-weight="900" font-family="monospace" transform="rotate(-90, -30, ${h/2})">${m.dims.alto}</text>
@@ -422,15 +450,15 @@ const isLoggedIn = !!clientId;
         renderResults: function() {
             const { opt, hw } = this.state.results;
             document.getElementById('res-boards-stats').innerHTML = `
-                <div class="bg-[var(--sc-surface-alt)] p-6 rounded-2xl border border-[var(--sc-border)] shadow-inner">
+                <div class="bg-[var(--sc-surface-alt)] p-6 rounded-lg border border-[var(--sc-border)] shadow-inner">
                     <div class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase mb-2">PLACAS (18mm)</div>
                     <div class="text-3xl font-black text-[var(--alvarez-red)]">${opt.stats.count}</div>
                 </div>
-                <div class="bg-[var(--sc-surface-alt)] p-6 rounded-2xl border border-[var(--sc-border)] shadow-inner">
+                <div class="bg-[var(--sc-surface-alt)] p-6 rounded-lg border border-[var(--sc-border)] shadow-inner">
                     <div class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase mb-2">EFICIENCIA</div>
                     <div class="text-3xl font-black text-[var(--sc-text)]">${opt.stats.efficiency}%</div>
                 </div>
-                <div class="bg-[var(--sc-surface-alt)] p-6 rounded-2xl border border-[var(--sc-border)] shadow-inner">
+                <div class="bg-[var(--sc-surface-alt)] p-6 rounded-lg border border-[var(--sc-border)] shadow-inner">
                     <div class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase mb-2">M2 TOTAL</div>
                     <div class="text-3xl font-black text-[var(--alvarez-blue)]">${opt.stats.totalM2}</div>
                 </div>
@@ -447,16 +475,16 @@ const isLoggedIn = !!clientId;
         renderDashboard: function() {
             const grid = document.getElementById('projects-grid');
             if (this.state.projects.length === 0) {
-                grid.innerHTML = '<div class="col-span-2 py-20 text-center border-2 border-dashed border-[var(--sc-border)] rounded-[2.5rem] text-[var(--sc-text-dim)] font-black uppercase tracking-[0.3em] opacity-30">No hay registros previos</div>';
+                grid.innerHTML = '<div class="col-span-2 py-20 text-center border-2 border-dashed border-[var(--sc-border)] rounded-xl text-[var(--sc-text-dim)] font-black uppercase tracking-[0.3em] opacity-30">No hay registros previos</div>';
                 return;
             }
             grid.innerHTML = this.state.projects.map(p => `
-                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-8 rounded-3xl hover:border-[var(--alvarez-red)] transition-all cursor-pointer group shadow-sm">
+                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-8 rounded-xl hover:border-[var(--alvarez-red)] transition-all cursor-pointer group shadow-sm">
                     <div class="flex justify-between mb-6">
-                        <div class="w-12 h-12 bg-[var(--sc-surface-alt)] rounded-2xl flex items-center justify-center text-[var(--alvarez-red)] group-hover:bg-[var(--alvarez-red)] group-hover:text-white transition-all shadow-sm">
+                        <div class="w-12 h-12 bg-[var(--sc-surface-alt)] rounded-lg flex items-center justify-center text-[var(--alvarez-red)] group-hover:bg-[var(--alvarez-red)] group-hover:text-white transition-all shadow-sm">
                             <i class="fas fa-folder-open text-xl"></i>
                         </div>
-                        <span class="text-[0.55rem] font-black bg-[var(--sc-surface-alt)] px-3 py-1.5 rounded-lg text-[var(--sc-text-dim)] uppercase tracking-widest border border-[var(--sc-border)]">${p.status || 'FINALIZADO'}</span>
+                        <span class="text-[0.55rem] font-black bg-[var(--sc-surface-alt)] px-3 py-1.5 rounded text-[var(--sc-text-dim)] uppercase tracking-widest border border-[var(--sc-border)]">${p.status || 'FINALIZADO'}</span>
                     </div>
                     <h4 class="text-xl font-black text-[var(--sc-text)] uppercase tracking-tighter mb-2">${p.nombre_proyecto}</h4>
                     <div class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase tracking-widest">${p.tipo_ambiente || 'PERSONALIZADO'} • ${p.total_m2_placa || '0.0'} M2</div>

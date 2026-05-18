@@ -78,6 +78,11 @@ async function startIngestion() {
                     ''
                 ).toString().trim();
 
+                if (!rawColor || rawColor.toUpperCase() === 'PLACA' || rawColor.length < 2) {
+                    // Si el color es "PLACA" o está vacío, es una fila de relleno
+                    continue;
+                }
+
                 const brandName = (row['MARCA'] || row['Marca'] || sheetName).toString().toUpperCase().trim();
                 const lineGroup = (row['LINEA/GRUPO'] || row['LINEA'] || '').toString().trim();
                 const codigo = (row['codigo'] || row['CODIGO'] || row['Código'] || '').toString().trim();

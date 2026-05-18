@@ -1,7 +1,10 @@
 ---
 import Layout from '@layouts/Layout.astro';
 import SmartCutApp from '../../Frontend/herramientas/SmartCutApp.astro';
-const isLoggedIn = Astro.cookies.has('client_session');
+const hasClient = Astro.cookies.has('client_session');
+const hasSeller = Astro.cookies.has('seller_session');
+const hasAdmin = Astro.cookies.has('admin_session');
+const isLoggedIn = hasClient || hasSeller || hasAdmin;
 ---
 
 <Layout title="SmartCut PRO v5.5.4 | Alvarez Placas">

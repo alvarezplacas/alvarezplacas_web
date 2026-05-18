@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { directus } from '@conexiones/directus.js';
 import { readItems } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
+import { registerSession } from '../../../session_store';
 
 export const GET: APIRoute = ({ redirect }) => {
     return redirect('/login');
@@ -55,15 +56,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         if (isPasswordValid) {
+            // Extraer IP y User-Agent para respaldo de sesión
+            const ip = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+            const userAgent = request.headers.get('user-agent') || 'unknown';
+
             // Set session cookie
             const rememberMe = formData.get('remember-me') === 'on';
             cookies.set('admin_session', 'authenticated_javier', {
                 path: '/',
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production', 
                 sameSite: 'lax',
-                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 // 1 año o 24 horas
+                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 * 30 // 1 año o 30 días
             });
+
+            // Registrar sesión
+            registerSession(ip, userAgent, 'authenticated_javier', 'admin');
 
             return new Response(JSON.stringify({ 
                 success: true, 

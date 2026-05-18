@@ -22,6 +22,17 @@ const { title, userName = "Cliente Alvarez" } = Astro.props;
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 	</head>
 	<body class="bg-black text-gray-200 font-sans antialiased flex flex-col min-h-screen overflow-x-hidden">
+        <!-- 🛡️ Inicialización inmediata del tema para evitar parpadeos (FOUC) -->
+        <script is:inline>
+            (function() {
+                const savedTheme = localStorage.getItem('client-theme') || 'light';
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('body-theme-dark');
+                } else {
+                    document.body.classList.add('body-theme-light');
+                }
+            })();
+        </script>
         
         <!-- Luxury Navigation -->
         <header class="h-24 bg-[#111111]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-8 sticky top-0 z-50">

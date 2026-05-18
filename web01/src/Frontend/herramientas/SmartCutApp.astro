@@ -504,7 +504,7 @@ const { isLoggedIn = false } = Astro.props;
     .btn-industrial:hover { filter: brightness(1.1); }
 </style>
 
-<div id="smartcut-bar" class="smart-bar" data-is-logged-in={isLoggedIn}>
+<div id="smartcut-bar" class="smart-bar" data-is-logged-in={isLoggedIn ? "true" : "false"}>
     <div style="display: flex; align-items: center; gap: 20px;">
         <a href="/" class="nav-link-sc">
             <i class="fas fa-home"></i> INICIO
@@ -1777,10 +1777,9 @@ const { isLoggedIn = false } = Astro.props;
     window.openLoginWall = () => document.getElementById('login-wall').classList.remove('hidden');
 
     window.handleBudgetClick = () => {
-        // REGLA CRÍTICA: Verificar cookie además de variable de servidor para evitar login redundante
-        const hasSession = document.cookie.includes('client_session=') || document.cookie.includes('seller_session=') || document.cookie.includes('admin_session=');
-        
-        if (!hasSession && !IS_LOGGED_IN) {
+        // En producción las cookies son HttpOnly, por lo que document.cookie no puede leerlas.
+        // Confiamos plenamente en IS_LOGGED_IN el cual se renderiza de forma estricta desde el servidor.
+        if (!IS_LOGGED_IN) {
             openLoginWall();
             return;
         }

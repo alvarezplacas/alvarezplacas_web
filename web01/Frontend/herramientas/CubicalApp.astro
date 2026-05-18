@@ -1,0 +1,1155 @@
+---
+/**
+ * CubiCal PRO - Componente Principal (Ecosistema v16)
+ * Estética técnica inspirada en AutoCAD.
+ */
+interface Props {
+    clientId: number;
+}
+
+const { clientId } = Astro.props;
+---
+
+<div class="cubical-app-container w-full max-w-7xl mx-auto px-4 pb-12 font-sans text-slate-100 select-none">
+    
+    <!-- 📐 PC DESKTOP BANNER ADVICE -->
+    <div id="desktop-advice-banner" class="advice-banner flex items-center justify-between p-4 mb-6 rounded-lg border border-[var(--alvarez-blue)] bg-slate-900/60 backdrop-blur-md text-slate-200 transition-all duration-300">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">📐</span>
+            <p class="text-sm font-medium">
+                <strong>CubiCal PRO está optimizado para computadoras de escritorio.</strong> 
+                Recomendamos utilizar una pantalla de PC con ratón para un diseño técnico de alta precisión y visualización interactiva del lienzo CAD.
+            </p>
+        </div>
+        <button id="close-advice-btn" class="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer transition-colors">×</button>
+    </div>
+
+    <!-- 🖥️ MAIN SHELL SPA -->
+    <div class="app-shell relative bg-slate-950/40 border border-slate-800 rounded-xl overflow-hidden backdrop-blur-lg shadow-2xl">
+        
+        <!-- HEADER INTERFACE -->
+        <header class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/40">
+            <div class="flex items-center gap-3">
+                <div class="logo-cad flex items-center justify-center w-8 h-8 rounded bg-gradient-to-tr from-[var(--alvarez-blue)] to-cyan-500 shadow-md">
+                    <span class="text-xs font-black text-slate-950">CAD</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white">CubiCal PRO <span class="text-xs font-semibold text-[var(--alvarez-blue)] tracking-widest px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">V1.0</span></h1>
+                    <p class="text-xs text-slate-400">De la idea al presupuesto en minutos</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- Status Badge -->
+                <div id="current-project-title" class="hidden text-xs font-semibold px-3 py-1 rounded bg-slate-900/80 border border-cyan-800/40 text-cyan-400 font-mono">
+                    PROYECTO: SIN NOMBRE
+                </div>
+                <div class="text-xs text-slate-400 font-mono">CLIENTE ID: {clientId}</div>
+            </div>
+        </header>
+
+        <!-- 🚪 PANTALLA 1: DASHBOARD -->
+        <div id="screen-dashboard" class="screen p-6 min-h-[500px]">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Mis Proyectos de Diseño</h2>
+                    <p class="text-sm text-slate-400">Revisa tus despieces anteriores o crea una nueva calculadora.</p>
+                </div>
+                <button id="new-project-btn" class="btn-cad flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--alvarez-blue)] text-slate-950 hover:bg-cyan-400 font-bold transition-all shadow-lg hover:shadow-cyan-500/20 cursor-pointer text-sm">
+                    <span>📐</span> NUEVO PROYECTO
+                </button>
+            </div>
+
+            <!-- Loader -->
+            <div id="dashboard-loader" class="flex flex-col items-center justify-center py-20 gap-3">
+                <div class="w-8 h-8 rounded-full border-2 border-t-[var(--alvarez-blue)] border-slate-700 animate-spin"></div>
+                <p class="text-xs font-mono text-slate-500">Cargando base de datos...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="dashboard-empty" class="hidden flex flex-col items-center justify-center py-16 text-center border border-dashed border-slate-800 rounded-xl bg-slate-900/20">
+                <span class="text-4xl mb-3">🗂️</span>
+                <h3 class="text-sm font-semibold text-white">No tienes proyectos creados</h3>
+                <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Calcula cajoneras, alacenas o placards a medida y genera cotizaciones industriales automáticas.</p>
+            </div>
+
+            <!-- Grid de proyectos -->
+            <div id="projects-grid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dinámico -->
+            </div>
+        </div>
+
+        <!-- 🚪 PANTALLA 2: SETUP -->
+        <div id="screen-setup" class="screen hidden p-6 min-h-[500px]">
+            <div class="max-w-md mx-auto py-8">
+                <h2 class="text-xl font-bold text-white mb-2">Configura tu Nuevo Proyecto</h2>
+                <p class="text-sm text-slate-400 mb-6">Especifica el nombre y material primario para el cálculo de despieces.</p>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 font-mono">Nombre del Proyecto</label>
+                        <input type="text" id="input-project-name" placeholder="Ej: Amoblamiento Cocina Perez" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-[var(--alvarez-blue)] focus:ring-1 focus:ring-[var(--alvarez-blue)] font-medium transition-all" />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 font-mono">Tipo de Ambiente</label>
+                        <select id="select-environment" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-[var(--alvarez-blue)] font-medium transition-all">
+                            <option value="cocina">Cocina / Bajo Mesada / Alacena</option>
+                            <option value="dormitorio">Dormitorio / Placard</option>
+                            <option value="living">Living / Rack de TV</option>
+                            <option value="oficina">Oficina / Biblioteca</option>
+                            <option value="comercial">Comercial / Exhibidores</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 font-mono">Tablero Predeterminado</label>
+                            <select id="select-board" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-3 text-white text-xs outline-none focus:border-[var(--alvarez-blue)] font-medium transition-all">
+                                <option value="faplac">FAPLAC (2750 x 1820 mm)</option>
+                                <option value="egger">EGGER (2600 x 1820 mm)</option>
+                                <option value="sadepan">SADEPAN (2820 x 1830 mm)</option>
+                                <option value="nova">NOVA (3660 x 1830 mm)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 font-mono">Espesor de Placa</label>
+                            <select id="select-thickness" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-3 text-white text-xs outline-none focus:border-[var(--alvarez-blue)] font-medium transition-all">
+                                <option value="18">18 mm (Estándar)</option>
+                                <option value="15">15 mm</option>
+                                <option value="25">25 mm</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 flex gap-3">
+                        <button id="cancel-setup-btn" class="w-1/2 py-2.5 rounded-lg border border-slate-800 hover:bg-slate-900 font-bold transition-all text-xs cursor-pointer">CANCELAR</button>
+                        <button id="start-project-btn" class="w-1/2 py-2.5 rounded-lg bg-[var(--alvarez-blue)] text-slate-950 font-bold hover:bg-cyan-400 transition-all text-xs cursor-pointer">COMENZAR DISEÑO</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🚪 PANTALLA 3: CONSTRUCTOR (ESTILO AUTOCAD 📐) -->
+        <div id="screen-constructor" class="screen hidden min-h-[500px]">
+            <div class="grid grid-cols-1 lg:grid-cols-12">
+                
+                <!-- ⚙️ PANEL DE CONTROLES (IZQUIERDA - 4 COLUMNAS) -->
+                <div class="lg:col-span-4 p-5 border-r border-slate-800 bg-slate-900/20">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 font-mono mb-4 border-b border-slate-800 pb-2">CONSTRUCTOR DE MÓDULOS</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 font-mono mb-1.5">1. Tipo de Módulo</label>
+                            <select id="constructor-module-type" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white text-xs outline-none focus:border-cyan-500 font-mono">
+                                <option value="CAJONERA">🗄️ CAJONERA</option>
+                                <option value="ALACENA">🚪 ALACENA</option>
+                                <option value="BAJO_MESADA">🍽️ BAJO MESADA</option>
+                                <option value="PLACARD">👔 PLACARD</option>
+                                <option value="BIBLIOTECA">📚 BIBLIOTECA</option>
+                            </select>
+                        </div>
+
+                        <!-- DYNAMIC DIMENSIONS SELECTORS -->
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 font-mono mb-1">ANCHO (mm)</label>
+                                <input type="number" id="dim-width" value="600" min="250" max="1200" step="10" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white text-xs font-mono text-center outline-none focus:border-cyan-500" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 font-mono mb-1">ALTO (mm)</label>
+                                <input type="number" id="dim-height" value="800" min="300" max="2400" step="10" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white text-xs font-mono text-center outline-none focus:border-cyan-500" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 font-mono mb-1">PROF (mm)</label>
+                                <input type="number" id="dim-depth" value="500" min="200" max="800" step="10" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white text-xs font-mono text-center outline-none focus:border-cyan-500" />
+                            </div>
+                        </div>
+
+                        <!-- PARAMETERS SLIDERS ACCORDING TO TYPE -->
+                        <div id="param-cajones-block" class="space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-xs font-semibold text-slate-400 font-mono">Cantidad de Cajones</label>
+                                <span id="val-cajones" class="text-xs font-mono font-bold text-cyan-400">3</span>
+                            </div>
+                            <input type="range" id="param-cajones" min="1" max="6" value="3" class="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
+                        </div>
+
+                        <div id="param-puertas-block" class="hidden space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-xs font-semibold text-slate-400 font-mono">Cantidad de Puertas</label>
+                                <span id="val-puertas" class="text-xs font-mono font-bold text-cyan-400">2</span>
+                            </div>
+                            <input type="range" id="param-puertas" min="1" max="4" value="2" class="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
+                        </div>
+
+                        <div id="param-estantes-block" class="hidden space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-xs font-semibold text-slate-400 font-mono">Estantes Internos</label>
+                                <span id="val-estantes" class="text-xs font-mono font-bold text-cyan-400">2</span>
+                            </div>
+                            <input type="range" id="param-estantes" min="0" max="6" value="2" class="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
+                        </div>
+
+                        <button id="add-module-btn" class="w-full py-2.5 rounded bg-slate-950 hover:bg-slate-900 border border-cyan-500/40 text-cyan-400 font-bold font-mono transition-all text-xs tracking-wider cursor-pointer">
+                            ➕ AÑADIR MÓDULO AL LIENZO
+                        </button>
+
+                        <!-- LISTA DE MÓDULOS DE DISEÑO -->
+                        <div class="pt-4 border-t border-slate-800/80">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-xs font-bold font-mono text-slate-400">FILA DE MÓDULOS AGREGADOS</h4>
+                                <span id="modules-count" class="text-[10px] px-2 py-0.5 rounded bg-slate-950 font-mono border border-slate-800 text-slate-300">0 Módulos</span>
+                            </div>
+                            
+                            <div id="designer-modules-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                <!-- Dinámico -->
+                            </div>
+                        </div>
+
+                        <!-- OPERACIONES FINALES -->
+                        <div class="pt-4 border-t border-slate-800 flex gap-2">
+                            <button id="reset-cad-btn" class="w-1/3 py-2 border border-red-900/30 text-red-500 hover:bg-red-950/20 font-mono text-[11px] rounded transition-all cursor-pointer">RESETEAR</button>
+                            <button id="calculate-despiece-btn" class="w-2/3 py-2 bg-[var(--alvarez-green)] text-slate-950 hover:bg-emerald-400 font-bold font-mono text-[11px] rounded transition-all cursor-pointer flex items-center justify-center gap-1">
+                                📊 CALCULAR PLANO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 📐 LIENZO DIBUJO CAD (DERECHA - 8 COLUMNAS) -->
+                <div class="lg:col-span-8 bg-[#070709] relative flex flex-col justify-between">
+                    
+                    <!-- CAD Top Toolbar -->
+                    <div class="flex justify-between items-center px-4 py-2 border-b border-slate-900 bg-slate-950/90 font-mono text-[10px]">
+                        <span class="text-slate-400 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span> LIENZO AutoCAD INTERACTIVO v1.0
+                        </span>
+                        <span id="canvas-dimensions-scale" class="text-slate-500">GRID: 50x50 mm | ESCALA: AUTO</span>
+                    </div>
+
+                    <!-- Canvas Rejilla CAD -->
+                    <div class="cad-viewport relative w-full h-[450px] overflow-hidden flex items-center justify-center">
+                        <!-- Rejilla AutoCAD CSS -->
+                        <div class="cad-grid-lines absolute inset-0"></div>
+
+                        <!-- Canvas SVG -->
+                        <svg id="cad-canvas" class="w-full h-full relative z-10 transition-transform duration-300" viewBox="0 0 1000 500">
+                            <!-- Los elementos SVG se inyectarán de forma dinámica desde el script cliente -->
+                        </svg>
+
+                        <!-- Instrucción de lienzo vacío -->
+                        <div id="cad-empty-advice" class="absolute z-20 flex flex-col items-center justify-center text-center font-mono pointer-events-none transition-opacity duration-300">
+                            <span class="text-3xl text-cyan-600 mb-2">📐</span>
+                            <h3 class="text-xs font-bold text-slate-400">LIENZO CAD VACÍO</h3>
+                            <p class="text-[10px] text-slate-600 mt-1">Configura las dimensiones del primer módulo y haz clic en "AÑADIR MÓDULO".</p>
+                        </div>
+                    </div>
+
+                    <!-- CAD Bottom Legend / Controls -->
+                    <div class="flex justify-between items-center px-4 py-2.5 border-t border-slate-900 bg-slate-950/90 font-mono text-[9px] text-slate-500">
+                        <div class="flex gap-4">
+                            <span class="flex items-center gap-1"><span class="w-2 h-0.5 bg-white"></span> Estructura</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-0.5 bg-cyan-400"></span> Cotas</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-0.5 bg-yellow-500"></span> Interiores</span>
+                        </div>
+                        <div>BOTÓN DER: BORRAR | ARR: REORDENAR</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 🚪 PANTALLA 4: RESULTADOS Y DESPIECE -->
+        <div id="screen-results" class="screen hidden p-6 min-h-[500px]">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        📊 Reporte de Optimización & Materiales
+                    </h2>
+                    <p class="text-xs text-slate-400 font-mono mt-0.5">ESTADÍSTICAS OBTENIDAS USANDO LA HEURÍSTICA GREEDY SHELF DE CORTE</p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="edit-again-btn" class="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold font-mono text-xs cursor-pointer">VOLVER AL CONSTRUCTOR</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- ESTADÍSTICAS E INDICADORES (IZQUIERDA - 4 COLUMNAS) -->
+                <div class="lg:col-span-4 space-y-4">
+                    
+                    <!-- Tarjeta Dibuja Eficiencia -->
+                    <div class="bg-slate-900/40 border border-slate-800 rounded-lg p-5 flex flex-col items-center justify-center text-center">
+                        <span class="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest mb-4">Aprovechamiento de Placa</span>
+                        
+                        <!-- Círculo de Carga Técnico SVG -->
+                        <div class="relative w-36 h-36 flex items-center justify-center">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" fill="transparent" stroke="oklch(100% 0 0 / 4%)" stroke-width="8"></circle>
+                                <circle id="results-efficiency-circle" cx="50" cy="50" r="40" fill="transparent" stroke="oklch(70% 0.15 140)" stroke-width="8" stroke-dasharray="251.2" stroke-dashoffset="60" class="transition-all duration-1000"></circle>
+                            </svg>
+                            <div class="absolute flex flex-col items-center justify-center">
+                                <span id="results-efficiency-pct" class="text-2xl font-black font-mono text-white">76.4%</span>
+                                <span class="text-[9px] font-mono text-slate-500">EFICIENCIA</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 w-full mt-6 border-t border-slate-800/60 pt-4">
+                            <div class="text-center">
+                                <span class="block text-[10px] font-mono text-slate-500 uppercase">M2 Reales</span>
+                                <span id="results-total-m2" class="text-sm font-mono font-bold text-white">4.95 m²</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="block text-[10px] font-mono text-slate-500 uppercase">Desperdicio</span>
+                                <span id="results-waste-pct" class="text-sm font-mono font-bold text-orange-400">23.6%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos Adicionales -->
+                    <div class="bg-slate-900/40 border border-slate-800 rounded-lg p-4 space-y-3 font-mono text-xs">
+                        <div class="flex justify-between py-1 border-b border-slate-800/40">
+                            <span class="text-slate-400">Placas Requeridas:</span>
+                            <span id="results-board-count" class="font-bold text-white">1 Placa</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-800/40">
+                            <span class="text-slate-400">Material de base:</span>
+                            <span id="results-board-material" class="font-bold text-white">FAPLAC 18mm</span>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <span class="text-slate-400">Tapacanto Estimado:</span>
+                            <span id="results-tapacanto-qty" class="font-bold text-cyan-400">24.5 metros</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- DESGLOSE DE MATERIALES E INVENTARIO (DERECHA - 8 COLUMNAS) -->
+                <div class="lg:col-span-8 space-y-4">
+                    
+                    <!-- Detalle de Placas -->
+                    <div class="bg-slate-900/20 border border-slate-800 rounded-lg p-5">
+                        <h3 class="text-xs font-bold font-mono text-slate-300 uppercase tracking-wider mb-3">Placas Seleccionadas</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between p-3 rounded bg-slate-950 border border-slate-800/60">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xl">🗃️</span>
+                                    <div>
+                                        <h4 id="results-board-spec" class="text-xs font-bold text-white">Melamina 18mm Faplac (2750 x 1820 mm)</h4>
+                                        <p class="text-[9px] text-slate-500 font-mono">Corte mínimo pasante (sierra 4mm)</p>
+                                    </div>
+                                </div>
+                                <span id="results-board-qty-badge" class="px-3 py-1 bg-cyan-950 text-cyan-400 border border-cyan-800/40 font-mono font-bold text-xs rounded">X 1 UNIDAD</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detalle de Herrajes -->
+                    <div class="bg-slate-900/20 border border-slate-800 rounded-lg p-5">
+                        <h3 class="text-xs font-bold font-mono text-slate-300 uppercase tracking-wider mb-3">Inventario Completo de Herrajes Requeridos</h3>
+                        
+                        <div class="overflow-x-auto rounded border border-slate-800/80">
+                            <table class="w-full font-mono text-xs text-left">
+                                <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 text-[10px]">
+                                    <tr>
+                                        <th class="px-4 py-3">ÍTEM / HERRAJE</th>
+                                        <th class="px-4 py-3 text-center">CANTIDAD</th>
+                                        <th class="px-4 py-3 text-center">UNIDAD</th>
+                                        <th class="px-4 py-3 text-right">TIPO ACCIÓN</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-hardware-tbody" class="divide-y divide-slate-800/40 bg-slate-900/10">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Acciones del Reporte -->
+                    <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                        <button id="save-borrador-btn" class="w-full sm:w-1/2 py-3 rounded-lg border border-slate-800 hover:bg-slate-900 font-mono text-xs font-bold transition-all cursor-pointer">
+                            💾 GUARDAR BORRADOR
+                        </button>
+                        <button id="request-quote-btn" class="w-full sm:w-1/2 py-3 rounded-lg bg-[var(--alvarez-green)] text-slate-950 font-bold hover:bg-emerald-400 transition-all text-xs font-mono tracking-wider cursor-pointer shadow-lg hover:shadow-emerald-500/15 flex items-center justify-center gap-1.5">
+                            📊 GENERAR PRESUPUESTO & ENVIAR A VENDEDOR
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 📐 CSS ADICIONAL PARA LA REJILLA Y ESTILOS CAD -->
+<style>
+    /* AutoCAD Grid */
+    .cad-grid-lines {
+        background-image: 
+            radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        background-size: 50px 50px, 50px 50px, 50px 50px;
+        background-position: center;
+    }
+
+    .btn-cad {
+        box-shadow: 0 4px 14px 0 rgba(0, 240, 255, 0.1);
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: oklch(100% 0 0 / 8%);
+        border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: oklch(100% 0 0 / 15%);
+    }
+</style>
+
+<!-- 🧠 JAVASCRIPT DE LOGICA CLIENTE (SPA) -->
+<script>
+    import { calculateModulePieces, optimizeBoards, MODULE_TYPES } from './logic/cubical/engine.js';
+    import { calculateTotalHardware } from './logic/cubical/hardware.js';
+
+    // 1. STATE DE LA APLICACIÓN
+    const state = {
+        clientId: {clientId},
+        projectId: null,
+        projectName: '',
+        environment: 'cocina',
+        boardBrand: 'faplac',
+        thickness: 18,
+        modules: [] // Listado de modulos en el proyecto {id, type, dims: {alto, ancho, prof, n_cajones, n_puertas, n_estantes}}
+    };
+
+    // Tablas de dimensiones de placas comerciales
+    const BOARDS_SPECS = {
+        faplac: { name: 'FAPLAC Standard', h: 2750, w: 1820 },
+        egger: { name: 'EGGER Premium', h: 2600, w: 1820 },
+        sadepan: { name: 'SADEPAN Profesional', h: 2820, w: 1830 },
+        nova: { name: 'NOVA Industrial', h: 3660, w: 1830 }
+    };
+
+    // 2. ELEMENTOS DEL DOM
+    const screens = {
+        dashboard: document.getElementById('screen-dashboard'),
+        setup: document.getElementById('screen-setup'),
+        constructor: document.getElementById('screen-constructor'),
+        results: document.getElementById('screen-results')
+    };
+
+    // 3. NAVIGATION Y LOGICA DE CARGA DE PROYECTOS
+    function showScreen(screenId) {
+        Object.keys(screens).forEach(key => {
+            if (key === screenId) {
+                screens[key].classList.remove('hidden');
+            } else {
+                screens[key].classList.add('hidden');
+            }
+        });
+    }
+
+    // Cerrar banner de advertencia
+    document.getElementById('close-advice-btn')?.addEventListener('click', () => {
+        document.getElementById('desktop-advice-banner')?.classList.add('hidden');
+    });
+
+    // Cargar proyectos desde Directus
+    async function loadDashboard() {
+        const loader = document.getElementById('dashboard-loader');
+        const emptyState = document.getElementById('dashboard-empty');
+        const grid = document.getElementById('projects-grid');
+        
+        loader.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        grid.classList.add('hidden');
+
+        try {
+            const r = await fetch(`/api/herramientas/get-cubical?clientId=${state.clientId}`);
+            const data = await r.json();
+
+            loader.classList.add('hidden');
+
+            if (data.success && data.projects && data.projects.length > 0) {
+                grid.innerHTML = '';
+                data.projects.forEach(p => {
+                    const totalModules = Array.isArray(p.modulos) ? p.modulos.length : 0;
+                    const card = document.createElement('div');
+                    card.className = "p-4 bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 rounded-xl transition-all duration-300 relative group";
+                    card.innerHTML = `
+                        <div class="flex items-start justify-between mb-3">
+                            <span class="text-2xl">${p.tipo_ambiente === 'cocina' ? '🍽️' : p.tipo_ambiente === 'dormitorio' ? '👔' : '📐'}</span>
+                            <span class="text-[9px] px-2 py-0.5 rounded font-mono border ${p.status === 'presupuestado' ? 'border-emerald-500/20 text-emerald-400 bg-emerald-950/20' : 'border-slate-800 text-slate-400 bg-slate-950'} uppercase">${p.status}</span>
+                        </div>
+                        <h4 class="text-sm font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">${p.nombre_proyecto}</h4>
+                        <p class="text-[10px] font-mono text-slate-500 uppercase">${p.tipo_ambiente} | ${totalModules} Módulos</p>
+                        
+                        <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-800/60 text-[10px] font-mono">
+                            <div>
+                                <span class="block text-slate-600">EFICIENCIA</span>
+                                <span class="font-bold text-slate-300">${p.resultado_placas?.stats?.efficiency || '0.0'}%</span>
+                            </div>
+                            <div>
+                                <span class="block text-slate-600">PLACAS</span>
+                                <span class="font-bold text-white">X ${p.resultado_placas?.stats?.count || 1}</span>
+                            </div>
+                        </div>
+                        
+                        <button class="absolute inset-0 w-full h-full opacity-0 cursor-pointer load-project-trigger" data-id="${p.id}"></button>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                // Registrar clicks para cargar proyecto
+                grid.querySelectorAll('.load-project-trigger').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const id = btn.getAttribute('data-id');
+                        const proj = data.projects.find(p => p.id == id);
+                        if (proj) {
+                            loadSavedProject(proj);
+                        }
+                    });
+                });
+
+                grid.classList.remove('hidden');
+            } else {
+                emptyState.classList.remove('hidden');
+            }
+
+        } catch (e) {
+            console.error("Error loading dashboard:", e);
+            emptyState.classList.remove('hidden');
+            loader.classList.add('hidden');
+        }
+    }
+
+    // Nuevo Proyecto
+    document.getElementById('new-project-btn')?.addEventListener('click', () => {
+        state.projectId = null;
+        state.modules = [];
+        document.getElementById('input-project-name').value = '';
+        showScreen('setup');
+    });
+
+    document.getElementById('cancel-setup-btn')?.addEventListener('click', () => {
+        showScreen('dashboard');
+    });
+
+    document.getElementById('start-project-btn')?.addEventListener('click', () => {
+        const nameInput = document.getElementById('input-project-name').value.trim();
+        if (!nameInput) {
+            alert("Por favor introduce un nombre para tu proyecto.");
+            return;
+        }
+
+        state.projectName = nameInput;
+        state.environment = document.getElementById('select-environment').value;
+        state.boardBrand = document.getElementById('select-board').value;
+        state.thickness = parseInt(document.getElementById('select-thickness').value);
+
+        // Actualizar título
+        const titleBadge = document.getElementById('current-project-title');
+        titleBadge.innerText = `PROYECTO: ${state.projectName.toUpperCase()}`;
+        titleBadge.classList.remove('hidden');
+
+        // Reset constructor inputs
+        updateConstructorParamsBlock();
+        renderCADCanvas();
+        renderModulesList();
+
+        showScreen('constructor');
+    });
+
+    // 4. LOGICA DEL CONSTRUCTOR DE MÓDULOS
+    const moduleTypeSelect = document.getElementById('constructor-module-type');
+    moduleTypeSelect?.addEventListener('change', updateConstructorParamsBlock);
+
+    function updateConstructorParamsBlock() {
+        const type = moduleTypeSelect.value;
+        
+        const cajonesBlock = document.getElementById('param-cajones-block');
+        const puertasBlock = document.getElementById('param-puertas-block');
+        const estantesBlock = document.getElementById('param-estantes-block');
+
+        // Valores por defecto sugeridos según el tipo de módulo
+        const widthInput = document.getElementById('dim-width');
+        const heightInput = document.getElementById('dim-height');
+        const depthInput = document.getElementById('dim-depth');
+
+        cajonesBlock.classList.add('hidden');
+        puertasBlock.classList.add('hidden');
+        estantesBlock.classList.add('hidden');
+
+        if (type === 'CAJONERA') {
+            cajonesBlock.classList.remove('hidden');
+            widthInput.value = 600;
+            heightInput.value = 800;
+            depthInput.value = 500;
+        } else if (type === 'ALACENA') {
+            puertasBlock.classList.remove('hidden');
+            estantesBlock.classList.remove('hidden');
+            widthInput.value = 800;
+            heightInput.value = 600;
+            depthInput.value = 300;
+        } else if (type === 'BAJO_MESADA') {
+            puertasBlock.classList.remove('hidden');
+            widthInput.value = 800;
+            heightInput.value = 850;
+            depthInput.value = 560;
+        } else if (type === 'PLACARD') {
+            puertasBlock.classList.remove('hidden');
+            estantesBlock.classList.remove('hidden');
+            widthInput.value = 1000;
+            heightInput.value = 2100;
+            depthInput.value = 600;
+        } else if (type === 'BIBLIOTECA') {
+            estantesBlock.classList.remove('hidden');
+            widthInput.value = 800;
+            heightInput.value = 1800;
+            depthInput.value = 300;
+        }
+    }
+
+    // Sync sliders values
+    document.getElementById('param-cajones')?.addEventListener('input', (e) => {
+        document.getElementById('val-cajones').innerText = e.target.value;
+    });
+    document.getElementById('param-puertas')?.addEventListener('input', (e) => {
+        document.getElementById('val-puertas').innerText = e.target.value;
+    });
+    document.getElementById('param-estantes')?.addEventListener('input', (e) => {
+        document.getElementById('val-estantes').innerText = e.target.value;
+    });
+
+    // Agregar modulo a la lista
+    document.getElementById('add-module-btn')?.addEventListener('click', () => {
+        const type = moduleTypeSelect.value;
+        const w = parseInt(document.getElementById('dim-width').value);
+        const h = parseInt(document.getElementById('dim-height').value);
+        const d = parseInt(document.getElementById('dim-depth').value);
+
+        const nCajones = parseInt(document.getElementById('param-cajones').value);
+        const nPuertas = parseInt(document.getElementById('param-puertas').value);
+        const nEstantes = parseInt(document.getElementById('param-estantes').value);
+
+        const newModule = {
+            id: Date.now().toString(),
+            type: type,
+            dims: {
+                ancho: w,
+                alto: h,
+                prof: d,
+                n_cajones: type === 'CAJONERA' ? nCajones : 0,
+                n_puertas: ['ALACENA', 'BAJO_MESADA', 'PLACARD'].includes(type) ? nPuertas : 0,
+                n_estantes: ['ALACENA', 'PLACARD', 'BIBLIOTECA'].includes(type) ? nEstantes : 0
+            }
+        };
+
+        state.modules.push(newModule);
+        
+        renderModulesList();
+        renderCADCanvas();
+    });
+
+    // Render listado de modulos en panel
+    function renderModulesList() {
+        const container = document.getElementById('designer-modules-list');
+        const countBadge = document.getElementById('modules-count');
+        
+        container.innerHTML = '';
+        countBadge.innerText = `${state.modules.length} Módulos`;
+
+        state.modules.forEach((m, idx) => {
+            const card = document.createElement('div');
+            card.className = "flex items-center justify-between p-2.5 bg-slate-950 border border-slate-800 rounded font-mono text-[11px]";
+            
+            let details = `${m.dims.ancho}x${m.dims.alto}x${m.dims.prof}`;
+            if (m.type === 'CAJONERA') details += ` (${m.dims.n_cajones} Cajones)`;
+            if (m.dims.n_puertas) details += ` (${m.dims.n_puertas} Puertas)`;
+            if (m.dims.n_estantes) details += ` (${m.dims.n_estantes} Est.)`;
+
+            card.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-cyan-400 font-bold">#${idx+1}</span>
+                    <div>
+                        <span class="block font-bold text-white uppercase text-[10px]">${m.type}</span>
+                        <span class="text-[9px] text-slate-500">${details}</span>
+                    </div>
+                </div>
+                <button class="remove-module-btn text-red-500 hover:text-red-400 p-1 cursor-pointer font-bold" data-id="${m.id}">×</button>
+            `;
+            container.appendChild(card);
+        });
+
+        // Registrar clicks para eliminar
+        container.querySelectorAll('.remove-module-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                state.modules = state.modules.filter(m => m.id !== id);
+                renderModulesList();
+                renderCADCanvas();
+            });
+        });
+    }
+
+    // Resetear lienzo
+    document.getElementById('reset-cad-btn')?.addEventListener('click', () => {
+        if (state.modules.length > 0 && confirm("¿Seguro que deseas reiniciar el lienzo y vaciar todos los módulos?")) {
+            state.modules = [];
+            renderModulesList();
+            renderCADCanvas();
+        }
+    });
+
+    // 📐 MOTOR DIBUJO CAD SVG EN TIEMPO REAL
+    function renderCADCanvas() {
+        const canvas = document.getElementById('cad-canvas');
+        const advice = document.getElementById('cad-empty-advice');
+        
+        if (state.modules.length === 0) {
+            canvas.innerHTML = '';
+            advice.classList.remove('hidden');
+            return;
+        }
+        
+        advice.classList.add('hidden');
+        canvas.innerHTML = '';
+
+        // Calcular limites y tamaños de escala
+        const gap = 30; // Distancia entre modulos en SVG
+        let totalWidth = state.modules.reduce((sum, m) => sum + m.dims.ancho, 0) + (gap * (state.modules.length - 1));
+        let maxHeight = Math.max(...state.modules.map(m => m.dims.alto));
+
+        // Margenes del plano CAD para las lineas de cotas Cyan
+        const paddingLeft = 60;
+        const paddingRight = 60;
+        const paddingTop = 60;
+        const paddingBottom = 80;
+
+        const viewW = totalWidth + paddingLeft + paddingRight;
+        const viewH = maxHeight + paddingTop + paddingBottom;
+
+        canvas.setAttribute('viewBox', `0 0 ${viewW} ${viewH}`);
+
+        // 1. DIBUJAR COTAS GENERALES (Línea de cota horizontal inferior)
+        const totalDimensionY = viewH - 30;
+        const cotaG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        cotaG.setAttribute('stroke', '#00f0ff');
+        cotaG.setAttribute('stroke-width', '1');
+        
+        // Línea principal
+        cotaG.innerHTML = `
+            <line x1="${paddingLeft}" y1="${totalDimensionY}" x2="${viewW - paddingRight}" y2="${totalDimensionY}" stroke="#00f0ff" stroke-width="1.5" />
+            <!-- Limitadores en los extremos -->
+            <line x1="${paddingLeft}" y1="${totalDimensionY - 6}" x2="${paddingLeft}" y2="${totalDimensionY + 6}" />
+            <line x1="${viewW - paddingRight}" y1="${totalDimensionY - 6}" x2="${viewW - paddingRight}" y2="${totalDimensionY + 6}" />
+            
+            <!-- Flechas CAD de precisión -->
+            <polygon points="${paddingLeft},${totalDimensionY} ${paddingLeft + 10},${totalDimensionY - 3} ${paddingLeft + 10},${totalDimensionY + 3}" fill="#00f0ff" />
+            <polygon points="${viewW - paddingRight},${totalDimensionY} ${viewW - paddingRight - 10},${totalDimensionY - 3} ${viewW - paddingRight - 10},${totalDimensionY + 3}" fill="#00f0ff" />
+            
+            <!-- Texto -->
+            <text x="${viewW / 2}" y="${totalDimensionY - 6}" font-family="monospace" font-size="12" fill="#00f0ff" text-anchor="middle" font-weight="bold">Largo Total: ${totalWidth} mm</text>
+        `;
+        canvas.appendChild(cotaG);
+
+        // 2. DIBUJAR CADA MÓDULO EN LA FILA
+        let currentX = paddingLeft;
+
+        state.modules.forEach((m, idx) => {
+            const modW = m.dims.ancho;
+            const modH = m.dims.alto;
+            const y = viewH - paddingBottom - modH;
+
+            const modG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            // Rejilla de Fondo translúcida para dar aspecto AutoCAD premium
+            const rectBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rectBg.setAttribute('x', currentX.toString());
+            rectBg.setAttribute('y', y.toString());
+            rectBg.setAttribute('width', modW.toString());
+            rectBg.setAttribute('height', modH.toString());
+            rectBg.setAttribute('fill', 'rgba(0, 240, 255, 0.02)');
+            rectBg.setAttribute('stroke', '#272c35');
+            rectBg.setAttribute('stroke-width', '1');
+            rectBg.setAttribute('stroke-dasharray', '2 2');
+            modG.appendChild(rectBg);
+
+            // Carcasa exterior (Laterales y techo/base)
+            const carcasa = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            carcasa.setAttribute('x', currentX.toString());
+            carcasa.setAttribute('y', y.toString());
+            carcasa.setAttribute('width', modW.toString());
+            carcasa.setAttribute('height', modH.toString());
+            carcasa.setAttribute('fill', 'none');
+            carcasa.setAttribute('stroke', '#ffffff');
+            carcasa.setAttribute('stroke-width', '2');
+            modG.appendChild(carcasa);
+
+            // Espesor de laterales representado en dibujo CAD (líneas interiores del mueble)
+            const thicknessOffset = 18;
+            const innerLeft = currentX + thicknessOffset;
+            const innerRight = currentX + modW - thicknessOffset;
+            const innerTop = y + thicknessOffset;
+            const innerBottom = y + modH - thicknessOffset;
+
+            // Dibujar divisor de placa lateral interno
+            const innerCarcasa = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            innerCarcasa.setAttribute('x', innerLeft.toString());
+            innerCarcasa.setAttribute('y', innerTop.toString());
+            innerCarcasa.setAttribute('width', (modW - (thicknessOffset * 2)).toString());
+            innerCarcasa.setAttribute('height', (modH - (thicknessOffset * 2)).toString());
+            innerCarcasa.setAttribute('fill', 'none');
+            innerCarcasa.setAttribute('stroke', 'rgba(255,255,255,0.15)');
+            innerCarcasa.setAttribute('stroke-width', '1');
+            modG.appendChild(innerCarcasa);
+
+            // 3. DIBUJAR DETALLES ESPECÍFICOS DE MÓDULOS
+            if (m.type === 'CAJONERA') {
+                // Dibujar cajones horizontales
+                const nCajones = m.dims.n_cajones || 3;
+                const hCajon = modH / nCajones;
+
+                for (let i = 0; i < nCajones; i++) {
+                    const cajonY = y + (hCajon * i);
+                    
+                    // Frente de Cajón
+                    const cajonFrente = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    cajonFrente.setAttribute('x', (currentX + 2).toString());
+                    cajonFrente.setAttribute('y', (cajonY + 2).toString());
+                    cajonFrente.setAttribute('width', (modW - 4).toString());
+                    cajonFrente.setAttribute('height', (hCajon - 4).toString());
+                    cajonFrente.setAttribute('fill', 'none');
+                    cajonFrente.setAttribute('stroke', '#ffffff');
+                    cajonFrente.setAttribute('stroke-width', '1.5');
+                    modG.appendChild(cajonFrente);
+
+                    // Tirador de Cajón en Cyan
+                    const handleW = Math.min(200, modW * 0.4);
+                    const handleX = currentX + (modW / 2) - (handleW / 2);
+                    const handleY = cajonY + (hCajon / 2) - 3;
+                    
+                    const handle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    handle.setAttribute('x', handleX.toString());
+                    handle.setAttribute('y', handleY.toString());
+                    handle.setAttribute('width', handleW.toString());
+                    handle.setAttribute('height', '6');
+                    handle.setAttribute('fill', '#00f0ff');
+                    handle.setAttribute('rx', '2');
+                    modG.appendChild(handle);
+                }
+            }
+
+            if (['ALACENA', 'BAJO_MESADA', 'PLACARD'].includes(m.type)) {
+                // Puertas
+                const nPuertas = m.dims.n_puertas || 2;
+                const wPuerta = modW / nPuertas;
+
+                for (let i = 0; i < nPuertas; i++) {
+                    const puertaX = currentX + (wPuerta * i);
+                    
+                    const puerta = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    puerta.setAttribute('x', (puertaX + 2).toString());
+                    puerta.setAttribute('y', (y + 2).toString());
+                    puerta.setAttribute('width', (wPuerta - 4).toString());
+                    puerta.setAttribute('height', (modH - 4).toString());
+                    puerta.setAttribute('fill', 'none');
+                    puerta.setAttribute('stroke', '#ffffff');
+                    puerta.setAttribute('stroke-width', '1.5');
+                    modG.appendChild(puerta);
+
+                    // Bisagras (líneas de apertura AutoCAD transparentes)
+                    const openLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    let pathData = '';
+                    if (i % 2 === 0) { // abre a la izquierda
+                        pathData = `M ${puertaX + wPuerta - 6} ${y + 10} L ${puertaX + 6} ${y + (modH / 2)} L ${puertaX + wPuerta - 6} ${y + modH - 10}`;
+                    } else { // abre a la derecha
+                        pathData = `M ${puertaX + 6} ${y + 10} L ${puertaX + wPuerta - 6} ${y + (modH / 2)} L ${puertaX + 6} ${y + modH - 10}`;
+                    }
+                    openLine.setAttribute('d', pathData);
+                    openLine.setAttribute('fill', 'none');
+                    openLine.setAttribute('stroke', 'rgba(0, 240, 255, 0.2)');
+                    openLine.setAttribute('stroke-width', '1');
+                    openLine.setAttribute('stroke-dasharray', '3 3');
+                    modG.appendChild(openLine);
+
+                    // Tirador vertical
+                    const handleH = Math.min(150, modH * 0.25);
+                    const handleX = (i % 2 === 0) ? (puertaX + wPuerta - 15) : (puertaX + 10);
+                    const handleY = y + (modH / 2) - (handleH / 2);
+
+                    const handle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    handle.setAttribute('x', handleX.toString());
+                    handle.setAttribute('y', handleY.toString());
+                    handle.setAttribute('width', '5');
+                    handle.setAttribute('height', handleH.toString());
+                    handle.setAttribute('fill', '#00f0ff');
+                    handle.setAttribute('rx', '1.5');
+                    modG.appendChild(handle);
+                }
+
+                // Estantes internos representados en color de estante
+                const nEstantes = m.dims.n_estantes || 0;
+                if (nEstantes > 0) {
+                    const hDist = (modH - (thicknessOffset * 2)) / (nEstantes + 1);
+                    for (let i = 1; i <= nEstantes; i++) {
+                        const estanteY = innerTop + (hDist * i);
+                        const estante = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        estante.setAttribute('x1', (innerLeft + 2).toString());
+                        estante.setAttribute('y1', estanteY.toString());
+                        estante.setAttribute('x2', (innerRight - 2).toString());
+                        estante.setAttribute('y2', estanteY.toString());
+                        estante.setAttribute('stroke', 'rgba(234, 179, 8, 0.4)'); // Color amarillo CAD translúcido para estantes
+                        estante.setAttribute('stroke-width', '2');
+                        estante.setAttribute('stroke-dasharray', '4 2');
+                        modG.appendChild(estante);
+                    }
+                }
+            }
+
+            if (m.type === 'BIBLIOTECA') {
+                // Estantes para la biblioteca
+                const nEstantes = m.dims.n_estantes || 3;
+                const hDist = (modH - (thicknessOffset * 2)) / (nEstantes + 1);
+
+                for (let i = 1; i <= nEstantes; i++) {
+                    const estanteY = innerTop + (hDist * i);
+                    const estante = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    estante.setAttribute('x1', innerLeft.toString());
+                    estante.setAttribute('y1', estanteY.toString());
+                    estante.setAttribute('x2', innerRight.toString());
+                    estante.setAttribute('y2', estanteY.toString());
+                    estante.setAttribute('stroke', 'rgba(234, 179, 8, 0.6)');
+                    estante.setAttribute('stroke-width', '4');
+                    modG.appendChild(estante);
+                }
+            }
+
+            // 4. COTAS PROPIAS DE CADA MÓDULO (Arriba: ancho | Costados: alto)
+            const cotaM = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            cotaM.setAttribute('stroke', '#00f0ff');
+            cotaM.setAttribute('stroke-width', '0.75');
+            
+            // Cota superior de ancho
+            const cotaY = y - 15;
+            cotaM.innerHTML = `
+                <line x1="${currentX}" y1="${cotaY}" x2="${currentX + modW}" y2="${cotaY}" />
+                <line x1="${currentX}" y1="${cotaY - 4}" x2="${currentX}" y2="${cotaY + 4}" />
+                <line x1="${currentX + modW}" y1="${cotaY - 4}" x2="${currentX + modW}" y2="${cotaY + 4}" />
+                
+                <polygon points="${currentX},${cotaY} ${currentX + 6},${cotaY - 2} ${currentX + 6},${cotaY + 2}" fill="#00f0ff" stroke="none" />
+                <polygon points="${currentX + modW},${cotaY} ${currentX + modW - 6},${cotaY - 2} ${currentX + modW - 6},${cotaY + 2}" fill="#00f0ff" stroke="none" />
+                
+                <text x="${currentX + (modW / 2)}" y="${cotaY - 5}" font-family="monospace" font-size="9" fill="#00f0ff" text-anchor="middle">${modW}</text>
+            `;
+
+            // Cota vertical lateral (solo para el primer módulo o si el alto varía)
+            if (idx === 0 || state.modules[idx-1].dims.alto !== modH) {
+                const cotaX = currentX - 15;
+                cotaM.innerHTML += `
+                    <line x1="${cotaX}" y1="${y}" x2="${cotaX}" y2="${y + modH}" />
+                    <line x1="${cotaX - 4}" y1="${y}" x2="${cotaX + 4}" y2="${y}" />
+                    <line x1="${cotaX - 4}" y1="${y + modH}" x2="${cotaX + 4}" y2="${y + modH}" />
+                    
+                    <polygon points="${cotaX},${y} ${cotaX - 2},${y + 6} ${cotaX + 2},${y + 6}" fill="#00f0ff" stroke="none" />
+                    <polygon points="${cotaX},${y + modH} ${cotaX - 2},${y + modH - 6} ${cotaX + 2},${y + modH - 6}" fill="#00f0ff" stroke="none" />
+                    
+                    <text x="${cotaX - 5}" y="${y + (modH / 2)}" font-family="monospace" font-size="9" fill="#00f0ff" text-anchor="end" dominant-baseline="middle">${modH}</text>
+                `;
+            }
+
+            // Etiqueta del módulo
+            cotaM.innerHTML += `
+                <text x="${currentX + (modW / 2)}" y="${y + modH + 18}" font-family="monospace" font-size="10" fill="#a1a1aa" text-anchor="middle" font-weight="bold">#${idx+1} - ${m.type}</text>
+                <text x="${currentX + (modW / 2)}" y="${y + modH + 30}" font-family="monospace" font-size="8" fill="#52525b" text-anchor="middle">Prof: ${m.dims.prof}mm</text>
+            `;
+
+            modG.appendChild(cotaM);
+            canvas.appendChild(modG);
+
+            currentX += modW + gap;
+        });
+    }
+
+    // 5. CALCULAR RESULTADOS (MOTOR DE OPTIMIZACIÓN Y HERRAJES)
+    document.getElementById('calculate-despiece-btn')?.addEventListener('click', () => {
+        if (state.modules.length === 0) {
+            alert("Agrega al menos un módulo al lienzo para calcular despieces.");
+            return;
+        }
+
+        // 1. Expandir todas las piezas necesarias
+        let allPieces = [];
+        state.modules.forEach(m => {
+            const pieces = calculateModulePieces(m.type, m.dims, state.thickness);
+            allPieces = allPieces.concat(pieces);
+        });
+
+        // Dimensiones de la placa seleccionada
+        const boardInfo = BOARDS_SPECS[state.boardBrand] || BOARDS_SPECS.faplac;
+        
+        // 2. Ejecutar motor Greedy Shelf
+        const optResult = optimizeBoards(allPieces, boardInfo);
+        
+        // 3. Calcular herrajes totales
+        const hardwareResult = calculateTotalHardware(state.modules);
+
+        // 4. Renderizar resultados
+        renderResultsPage(optResult, hardwareResult, boardInfo);
+        
+        showScreen('results');
+    });
+
+    // Dibujar resultados
+    function renderResultsPage(opt, hw, board) {
+        // Eficiencia gráfica
+        const pctCircle = document.getElementById('results-efficiency-circle');
+        const pctText = document.getElementById('results-efficiency-pct');
+        const m2Text = document.getElementById('results-total-m2');
+        const wasteText = document.getElementById('results-waste-pct');
+        const countText = document.getElementById('results-board-count');
+        const matText = document.getElementById('results-board-material');
+        const specText = document.getElementById('results-board-spec');
+        const qtyBadge = document.getElementById('results-board-qty-badge');
+        const tapacantoText = document.getElementById('results-tapacanto-qty');
+
+        const efficiency = parseFloat(opt.stats.efficiency);
+        pctText.innerText = `${efficiency.toFixed(1)}%`;
+        m2Text.innerText = `${opt.stats.totalM2} m²`;
+        wasteText.innerText = `${opt.stats.waste}%`;
+        countText.innerText = `${opt.stats.count} ${opt.stats.count > 1 ? 'Placas' : 'Placa'}`;
+        matText.innerText = `${board.name}`;
+        specText.innerText = `Melamina ${state.thickness}mm ${board.name} (${board.h} x ${board.w} mm)`;
+        qtyBadge.innerText = `X ${opt.stats.count} ${opt.stats.count > 1 ? 'UNIDADES' : 'UNIDAD'}`;
+
+        // Calcular perímetro estimado para metros de tapacantos aproximados
+        let totalPerimeter = 0;
+        state.modules.forEach(m => {
+            // Laterales + techo/base
+            totalPerimeter += (m.dims.alto * 2) + (m.dims.ancho * 2);
+            // Puertas o cajones expuestos
+            if (m.type === 'CAJONERA') totalPerimeter += (m.dims.alto * 2) + (m.dims.ancho * 2);
+            if (m.dims.n_puertas) totalPerimeter += (m.dims.alto * 2) + (m.dims.ancho * 2);
+        });
+        const tapacantoMeters = (totalPerimeter / 1000) * 1.15; // +15% de merma
+        tapacantoText.innerText = `${tapacantoMeters.toFixed(1)} metros`;
+
+        // SVG circle dashoffset
+        // Stroke-dasharray: 251.2 (2 * pi * r [40])
+        const offset = 251.2 - (251.2 * efficiency) / 100;
+        pctCircle.setAttribute('stroke-dashoffset', offset.toString());
+
+        // Inyectar tabla de herrajes
+        const tbody = document.getElementById('results-hardware-tbody');
+        tbody.innerHTML = '';
+
+        hw.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-slate-800/40 hover:bg-slate-900/10";
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-white font-bold">${item.name}</td>
+                <td class="px-4 py-3 text-center text-cyan-400 font-bold">${item.qty}</td>
+                <td class="px-4 py-3 text-center text-slate-400">${item.unit}</td>
+                <td class="px-4 py-3 text-right">
+                    <span class="px-2 py-0.5 rounded text-[8px] border border-cyan-800/20 bg-cyan-950/20 text-cyan-400">INSTALACIÓN</span>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Guardar variables globales en resultados para guardado final en BD
+        state.optResult = opt;
+        state.hwResult = hw;
+    }
+
+    document.getElementById('edit-again-btn')?.addEventListener('click', () => {
+        showScreen('constructor');
+    });
+
+    // 6. PERSISTENCIA EN DIRECTUS (GUARDAR BORRADOR & GENERAR PRESUPUESTO)
+    async function saveProjectToDirectus(isQuote) {
+        const payload = {
+            clientId: state.clientId,
+            name: state.projectName,
+            env: state.environment,
+            modules: state.modules,
+            results: {
+                opt: state.optResult,
+                hw: state.hwResult
+            },
+            isQuote: isQuote
+        };
+
+        const saveBtn = isQuote ? document.getElementById('request-quote-btn') : document.getElementById('save-borrador-btn');
+        const originalText = saveBtn.innerText;
+        saveBtn.innerText = "PROCESANDO...";
+        saveBtn.disabled = true;
+
+        try {
+            const r = await fetch('/api/herramientas/save-cubical', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            const res = await r.json();
+
+            if (res.success) {
+                state.projectId = res.id;
+                
+                if (isQuote) {
+                    alert("¡Presupuesto y Lead enviado exitosamente! Un vendedor se pondrá en contacto a la brevedad. Redirigiendo a tus pedidos...");
+                    window.location.href = '/cliente/pedidos';
+                } else {
+                    alert("Proyecto guardado exitosamente como borrador en tu perfil.");
+                    showScreen('dashboard');
+                    loadDashboard();
+                }
+            } else {
+                alert(`Error al guardar: ${res.message}`);
+            }
+        } catch (e) {
+            console.error("Save error:", e);
+            alert("Error al conectar con el servidor.");
+        } finally {
+            saveBtn.innerText = originalText;
+            saveBtn.disabled = false;
+        }
+    }
+
+    document.getElementById('save-borrador-btn')?.addEventListener('click', () => saveProjectToDirectus(false));
+    document.getElementById('request-quote-btn')?.addEventListener('click', () => saveProjectToDirectus(true));
+
+    // Cargar proyecto existente
+    function loadSavedProject(p) {
+        state.projectId = p.id;
+        state.projectName = p.nombre_proyecto;
+        state.environment = p.tipo_ambiente;
+        state.boardBrand = 'faplac'; // fallback o recuperado
+        state.thickness = 18;
+        state.modules = Array.isArray(p.modulos) ? p.modulos : [];
+
+        const titleBadge = document.getElementById('current-project-title');
+        titleBadge.innerText = `PROYECTO: ${state.projectName.toUpperCase()}`;
+        titleBadge.classList.remove('hidden');
+
+        renderModulesList();
+        renderCADCanvas();
+        showScreen('constructor');
+    }
+
+    // CARGAR DASHBOARD AL INICIAR
+    loadDashboard();
+</script>

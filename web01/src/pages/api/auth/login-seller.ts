@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { directus } from '@conexiones/directus.js';
 import { readItems } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
+import { registerSession } from '../../../session_store';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
     try {
@@ -38,11 +39,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         if (isPasswordValid) {
             console.log(`[Seller Login Success] ID: ${user.id}`);
+            
+            // Extraer IP y User-Agent para respaldo de sesión
+            const ip = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+            const userAgent = request.headers.get('user-agent') || 'unknown';
+
             const rememberMe = formData.get('remember-me') === 'on';
             cookies.set('seller_session', user.id.toString(), {
                 path: '/',
-                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 // 1 año o 24 horas
+                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 * 30, // 1 año o 30 días
+                httpOnly: true,
+                sameSite: 'lax'
             });
+
+            // Registrar sesión
+            registerSession(ip, userAgent, user.id.toString(), 'seller');
+
             return new Response(JSON.stringify({ 
                 success: true, 
                 message: 'Bienvenido al Portal de Ventas',
