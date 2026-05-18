@@ -3,7 +3,7 @@
  * Guarda proyectos de CubiCal PRO y genera leads de venta.
  */
 import { directus } from '@conexiones/directus.js';
-import { createItem } from '@directus/sdk';
+import { createItem, readItem } from '@directus/sdk';
 
 export const POST = async ({ request }) => {
     try {
@@ -14,9 +14,23 @@ export const POST = async ({ request }) => {
             return new Response(JSON.stringify({ success: false, message: 'No session' }), { status: 401 });
         }
 
+        // Obtener vendedor asignado al cliente
+        let sellerId = null;
+        try {
+            const clientData = await directus.request(readItem('clientes', parseInt(clientId), {
+                fields: ['id', 'vendedor_id']
+            })) as any;
+            if (clientData?.vendedor_id) {
+                sellerId = typeof clientData.vendedor_id === 'object' ? clientData.vendedor_id.id : clientData.vendedor_id;
+            }
+        } catch (err) {
+            console.error('[CubiCal] Error fetching client assigned seller:', err);
+        }
+
         // 1. Guardar Proyecto en CubiCal
         const proyecto = await directus.request(createItem('cubical_proyectos', {
             cliente_id: clientId,
+            vendedor_id: sellerId,
             nombre_proyecto: name,
             tipo_ambiente: env,
             modulos: modules,
@@ -30,6 +44,7 @@ export const POST = async ({ request }) => {
         if (isQuote) {
             await directus.request(createItem('pedidos', {
                 cliente_id: clientId,
+                vendedor_id: sellerId,
                 status: 'pendiente',
                 datos_optimizacion: {
                     tipo: 'cubical',

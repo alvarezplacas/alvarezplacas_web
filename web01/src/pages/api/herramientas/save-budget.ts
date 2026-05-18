@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { directus } from '@conexiones/directus.js';
-import { createItem } from '@directus/sdk';
+import { createItem, readItem } from '@directus/sdk';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
     try {
@@ -25,10 +25,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             }), { status: 400 });
         }
 
+        // Obtener vendedor asignado al cliente
+        let sellerId = null;
+        try {
+            const clientData = await directus.request(readItem('clientes', cliente_id, {
+                fields: ['id', 'vendedor_id']
+            })) as any;
+            if (clientData?.vendedor_id) {
+                sellerId = typeof clientData.vendedor_id === 'object' ? clientData.vendedor_id.id : clientData.vendedor_id;
+            }
+        } catch (err) {
+            console.error('[SmartCut] Error fetching client assigned seller:', err);
+        }
+
         // Crear el pedido/presupuesto en Directus
         // Usamos la colección 'pedidos' que ya tiene los campos necesarios
         const result = await directus.request(createItem('pedidos', {
             cliente_id: cliente_id,
+            vendedor_id: sellerId,
             status: 'pendiente', 
             datos_optimizacion: data, // JSON con los proyectos y piezas
             fecha_pedido: new Date().toISOString(),
@@ -36,7 +50,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             total_m2: data.projects.reduce((acc, p) => acc + (p.stats?.totalM2 || 0), 0)
         }));
 
-        console.log(`[SmartCut] Presupuesto generado ID: ${result.id} para cliente: ${cliente_id}`);
+        console.log(`[SmartCut] Presupuesto generado ID: ${result.id} para cliente: ${cliente_id}, vendedor asignado: ${sellerId}`);
 
         return new Response(JSON.stringify({ 
             success: true, 
