@@ -26,7 +26,7 @@ export const POST: APIRoute = async ({ request }) => {
             body = Object.fromEntries(formData);
         }
 
-        const { name, email, phone, address, password, vendedor_id } = body;
+        const { name, email, phone, address, password, vendedor_id, cuit_dni } = body;
 
         if (!name || !email || !password) {
             return new Response(JSON.stringify({ 
@@ -114,6 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
                 email: email.toLowerCase().trim(),
                 phone: phone ? phone.replace(/\D/g, '') : '',
                 address: address || '',
+                cuit_dni: cuit_dni || '',
                 password_hash,
                 client_number,
                 status: 'active',

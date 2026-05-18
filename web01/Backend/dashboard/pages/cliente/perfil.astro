@@ -1,0 +1,350 @@
+---
+/**
+ * Perfil de Cliente - Gestión de Datos y Seguridad.
+ * Diseñado bajo estándares de Vanguardia Web 2026:
+ * - Semántica HTML5 estricta.
+ * - Modo Claro (Papel Hueso) y Oscuro (AutoCAD) alineados al ClienteLayout.
+ * - Integración con Directus.
+ */
+import ClienteLayout from '../../layouts/ClienteLayout.astro';
+import { directus, readItems, readItem } from '@conexiones/directus.js';
+
+// 1. Obtención de Identidad (Soporta Cliente, Vendedor y Admin de forma polimórfica)
+let clientId = Astro.cookies.get('client_session')?.value;
+const isSeller = Astro.cookies.has('seller_session');
+const isAdmin = Astro.cookies.has('admin_session');
+
+if (!clientId) {
+    if (isSeller || isAdmin) {
+        try {
+            const tempClients = await directus.request(readItems('clientes', { limit: 1, fields: ['id'] }));
+            if (tempClients && tempClients.length > 0) {
+                clientId = tempClients[0].id.toString();
+            }
+        } catch (e) {
+            console.error("Error al buscar cliente temporal de soporte:", e);
+        }
+    }
+}
+
+if (!clientId) return Astro.redirect('/login');
+
+let clientData = { name: '', email: '', phone: '', address: '', cuit_dni: '', client_number: '...' };
+
+try {
+    clientData = await directus.request(readItem('clientes', clientId, {
+        fields: ['id', 'name', 'email', 'phone', 'address', 'cuit_dni', 'client_number']
+    })) as any;
+} catch (e) {
+    console.error("[Client Profile Error]:", e);
+}
+---
+
+<ClienteLayout title="Mi Perfil | Club Alvarez Placas" userName={clientData.name}>
+    
+    <!-- CONTENEDOR TEMA -->
+    <div id="theme-wrapper" class="theme-light transition-colors duration-300 w-full min-h-screen text-[var(--text-main)]" aria-live="polite">
+        
+        <!-- HEADER -->
+        <header class="flex justify-between items-center mb-6 px-6 py-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-card)] shadow-sm transition-colors duration-300">
+            <div class="flex items-center gap-2 text-xs font-mono text-[var(--text-muted)]">
+                <span class="w-2.5 h-2.5 rounded-full bg-[oklch(0.7_0.2_140)] animate-pulse" aria-hidden="true"></span>
+                PERFIL DEL CLIENTE: {clientData.client_number}
+            </div>
+            
+            <button 
+                id="theme-toggle-btn" 
+                class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border-card)] bg-[var(--bg-main)] hover:opacity-85 text-xs font-mono font-bold cursor-pointer transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--alvarez-blue)]"
+            >
+                <span id="theme-icon">☀️</span>
+                <span id="theme-text">MODO CLARO (PAPEL HUESO)</span>
+            </button>
+        </header>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
+            
+            <!-- COLUMNA DE DATOS PERSONALES -->
+            <section class="lg:col-span-2 bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] shadow-sm transition-all duration-300">
+                <h2 class="text-xl font-bold uppercase tracking-tight mb-2 text-[var(--text-main)] flex items-center gap-3">
+                    <i class="fas fa-id-card text-blue-500"></i> Datos del Profesional
+                </h2>
+                <p class="text-xs text-[var(--text-muted)] mb-6">Mantené tu información actualizada para la facturación y optimización de planos de corte.</p>
+                
+                <form id="profile-form" class="space-y-6">
+                    <input type="hidden" name="id" value={clientId} />
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-wider text-[var(--text-muted)] mb-2" for="name">Nombre / Razón Social *</label>
+                            <input type="text" id="name" name="name" required value={clientData.name} class="w-full bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-wider text-[var(--text-muted)] mb-2" for="cuit_dni">CUIT o DNI *</label>
+                            <input type="text" id="cuit_dni" name="cuit_dni" required value={clientData.cuit_dni} class="w-full bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Ej. 20-12345678-9 o 12345678" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-wider text-[var(--text-muted)] mb-2" for="email">Correo Electrónico *</label>
+                            <input type="email" id="email" name="email" required value={clientData.email} class="w-full bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-wider text-[var(--text-muted)] mb-2" for="phone">Celular / WhatsApp *</label>
+                            <input type="tel" id="phone" name="phone" required value={clientData.phone} class="w-full bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-black uppercase tracking-wider text-[var(--text-muted)] mb-2" for="address">Dirección Física *</label>
+                        <input type="text" id="address" name="address" required value={clientData.address} class="w-full bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                    </div>
+
+                    <div class="flex justify-end pt-4 border-t border-[var(--border-card)]">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-widest px-6 py-3.5 rounded-xl transition-all flex items-center gap-2">
+                            <i class="fas fa-save"></i> Guardar Datos
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- SEGURIDAD / ELIMINAR CUENTA -->
+            <div class="space-y-8 lg:col-span-1">
+                
+                <!-- CAMBIAR CONTRASEÑA -->
+                <section class="bg-[var(--bg-card)] border border-[var(--border-card)] p-6 rounded-[2rem] shadow-sm transition-all duration-300">
+                    <h2 class="text-sm font-bold uppercase tracking-tight mb-1 text-[var(--text-main)] flex items-center gap-2">
+                        <i class="fas fa-key text-yellow-500"></i> Credenciales
+                    </h2>
+                    <p class="text-[10px] text-[var(--text-muted)] mb-4">Actualizá tu contraseña del Club para mayor seguridad.</p>
+                    
+                    <form id="password-form" class="space-y-4">
+                        <input type="hidden" name="id" value={clientId} />
+                        
+                        <div>
+                            <label class="block text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)] mb-1" for="password">Nueva Contraseña</label>
+                            <input type="password" id="password" name="password" required class="w-full bg-[var(--bg-main)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-xs text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Mínimo 8 caracteres" />
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)] mb-1" for="confirmPassword">Confirmar Nueva</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" required class="w-full bg-[var(--bg-main)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-xs text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Repetí contraseña" />
+                        </div>
+
+                        <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded-lg transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-lock"></i> Cambiar Contraseña
+                        </button>
+                    </form>
+                </section>
+
+                <!-- ZONA PELIGRO: ELIMINAR CUENTA -->
+                <section class="bg-[oklch(0.2_0.04_20_/_0.2)] border border-red-500/20 p-6 rounded-[2rem] shadow-sm transition-all duration-300">
+                    <h2 class="text-sm font-bold uppercase tracking-tight mb-2 text-red-500 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle"></i> Zona de Peligro
+                    </h2>
+                    <p class="text-[10px] text-gray-500 mb-4 leading-normal">Al eliminar tu cuenta del Club se perderán tus estadísticas de nivel y todo el historial de planos e integración con vendedores.</p>
+                    
+                    <button 
+                        id="delete-account-btn" 
+                        class="w-full bg-red-600/10 hover:bg-red-600 border border-red-500/30 hover:border-red-600 text-red-500 hover:text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded-lg transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-red-600"
+                    >
+                        <i class="fas fa-trash-alt"></i> Eliminar Cuenta
+                    </button>
+                </section>
+            </div>
+        </main>
+        
+        <!-- MODAL DE CONFIRMACIÓN DE BORRADO -->
+        <dialog id="delete-modal" class="backdrop:bg-black/80 bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] max-w-md w-full text-[var(--text-main)] focus:outline-none shadow-2xl">
+            <h3 class="text-lg font-bold text-red-500 uppercase mb-2 flex items-center gap-2">
+                <i class="fas fa-exclamation-circle"></i> ¿Confirmar Eliminación?
+            </h3>
+            <p class="text-xs text-[var(--text-muted)] mb-4 leading-normal">
+                Esta acción es <strong>permanente</strong> y destruirá tu usuario. Para confirmar, por favor escribe la palabra <strong class="text-[var(--text-main)]">ELIMINAR</strong> a continuación:
+            </p>
+            <input type="text" id="delete-confirm-input" class="w-full bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl px-4 py-3 text-sm mb-6 text-center font-bold tracking-widest text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-red-600" placeholder="..." />
+            
+            <div class="flex items-center gap-4">
+                <button id="delete-cancel-btn" class="flex-1 bg-[var(--bg-main)] border border-[var(--border-card)] hover:opacity-85 text-xs font-bold uppercase tracking-wider py-3 rounded-xl transition-all">Cancelar</button>
+                <button id="delete-confirm-btn" disabled class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed">Eliminar Permanentemente</button>
+            </div>
+        </dialog>
+
+        <!-- TOAST CONTAINER -->
+        <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3"></div>
+
+    </div>
+
+</ClienteLayout>
+
+<script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 1. GESTIÓN DEL TEMA (LIGHT/DARK) ---
+        const themeWrapper = document.getElementById('theme-wrapper');
+        const themeToggle = document.getElementById('theme-toggle-btn');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+
+        function updateThemeElements(isDark) {
+            if (isDark) {
+                document.body.className = 'bg-black text-gray-200 font-sans antialiased flex flex-col min-h-screen overflow-x-hidden body-theme-dark';
+                themeWrapper.className = 'theme-dark transition-colors duration-300 w-full min-h-screen text-[var(--text-main)]';
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'MODO OSCURO (AUTOCAD)';
+            } else {
+                document.body.className = 'bg-black text-gray-200 font-sans antialiased flex flex-col min-h-screen overflow-x-hidden body-theme-light';
+                themeWrapper.className = 'theme-light transition-colors duration-300 w-full min-h-screen text-[var(--text-main)]';
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'MODO CLARO (PAPEL HUESO)';
+            }
+        }
+
+        const initialIsDark = document.body.classList.contains('body-theme-dark');
+        updateThemeElements(initialIsDark);
+
+        themeToggle?.addEventListener('click', () => {
+            const isDark = document.body.classList.contains('body-theme-dark');
+            if (isDark) {
+                document.body.classList.remove('body-theme-dark');
+                document.body.classList.add('body-theme-light');
+                localStorage.setItem('client-theme', 'light');
+                updateThemeElements(false);
+            } else {
+                document.body.classList.remove('body-theme-light');
+                document.body.classList.add('body-theme-dark');
+                localStorage.setItem('client-theme', 'dark');
+                updateThemeElements(true);
+            }
+        });
+
+        // --- 2. TOAST SYSTEM ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl border text-xs font-bold shadow-lg transition-all translate-y-4 opacity-0`;
+            if (type === 'success') {
+                toast.className += ' bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+            } else {
+                toast.className += ' bg-rose-500/10 text-rose-400 border-rose-500/20';
+            }
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- 3. SUBMIT FORM DATOS ---
+        const profileForm = document.getElementById('profile-form');
+        profileForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(profileForm);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const res = await fetch('/api/cliente/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const resData = await res.json();
+                if (resData.success) {
+                    showToast('Datos de perfil actualizados con éxito.');
+                } else {
+                    showToast(resData.error || 'Error al guardar.', 'error');
+                }
+            } catch (err) {
+                showToast('Error de conexión.', 'error');
+            }
+        });
+
+        // --- 4. SUBMIT CAMBIO CONTRASEÑA ---
+        const passwordForm = document.getElementById('password-form');
+        passwordForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pass = document.getElementById('password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+
+            if (pass.length < 8) {
+                showToast('La contraseña debe tener mínimo 8 caracteres.', 'error');
+                return;
+            }
+            if (pass !== confirm) {
+                showToast('Las contraseñas nuevas no coinciden.', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/cliente/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: passwordForm.querySelector('[name="id"]').value,
+                        password: pass
+                    })
+                });
+                const resData = await res.json();
+                if (resData.success) {
+                    showToast('Contraseña actualizada de forma segura.');
+                    passwordForm.reset();
+                } else {
+                    showToast(resData.error || 'Error al actualizar contraseña.', 'error');
+                }
+            } catch (err) {
+                showToast('Error de red al actualizar credenciales.', 'error');
+            }
+        });
+
+        // --- 5. ELIMINAR CUENTA (MODAL FLOW) ---
+        const deleteBtn = document.getElementById('delete-account-btn');
+        const modal = document.getElementById('delete-modal');
+        const cancelBtn = document.getElementById('delete-cancel-btn');
+        const confirmInput = document.getElementById('delete-confirm-input');
+        const confirmBtn = document.getElementById('delete-confirm-btn');
+
+        deleteBtn?.addEventListener('click', () => {
+            modal?.showModal();
+        });
+
+        cancelBtn?.addEventListener('click', () => {
+            modal?.close();
+            confirmInput.value = '';
+            confirmBtn.disabled = true;
+        });
+
+        confirmInput?.addEventListener('input', () => {
+            confirmBtn.disabled = confirmInput.value !== 'ELIMINAR';
+        });
+
+        confirmBtn?.addEventListener('click', async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Procesando...';
+            try {
+                const res = await fetch('/api/cliente/delete-account', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Tu cuenta ha sido eliminada. Redirigiendo...');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1500);
+                } else {
+                    showToast(data.error || 'Error al eliminar cuenta.', 'error');
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Eliminar Permanentemente';
+                }
+            } catch (err) {
+                showToast('Error al intentar eliminar la cuenta.', 'error');
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Eliminar Permanentemente';
+            }
+        });
+    });
+</script>

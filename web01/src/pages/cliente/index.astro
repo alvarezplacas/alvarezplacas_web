@@ -1,4 +1,12 @@
 ---
+const clientId = Astro.cookies.get('client_session')?.value;
+const isSeller = Astro.cookies.has('seller_session');
+const isAdmin = Astro.cookies.has('admin_session');
+
+if (!clientId && !isSeller && !isAdmin) {
+    return Astro.redirect('/login');
+}
+
 import Page from '@dashboard/pages/cliente/index.astro';
 ---
 <Page />
