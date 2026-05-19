@@ -83,21 +83,21 @@ export function calculateTotalHardware(modules) {
         add({ name: HARDWARE_RULES.SCREWS.CONFIRMAT.name, qty: 16, unit: 'Unidad' });
         add({ name: HARDWARE_RULES.SCREWS.AGLOMERADO.name, qty: 24, unit: 'Unidad' });
 
-        if (type === 'CAJONERA') {
+        if (dims.n_cajones > 0) {
             const slides = HARDWARE_RULES.getSlides(dims.prof, dims.n_cajones);
             add(slides);
             const pulls = HARDWARE_RULES.getPulls(dims.ancho, dims.n_cajones);
             add(pulls);
         }
 
-        if (['PLACARD', 'BAJO_MESADA', 'ALACENA'].includes(type)) {
+        if (dims.n_puertas > 0) {
             const hinges = HARDWARE_RULES.getHinges(dims.alto, dims.n_puertas);
             add(hinges);
             const pulls = HARDWARE_RULES.getPulls(dims.ancho, dims.n_puertas);
             add(pulls);
         }
 
-        if (dims.n_estantes) {
+        if (dims.n_estantes > 0) {
             add({ name: 'Soporte Estante Ø5mm (Taco)', qty: dims.n_estantes * 4, unit: 'Unidad' });
         }
     });

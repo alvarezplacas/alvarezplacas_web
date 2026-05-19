@@ -88,6 +88,22 @@ const isLoggedIn = !!clientId;
 
     <!-- PANTALLA 3: CONSTRUCTOR -->
     <section id="screen-constructor" class="hidden animate-fade-in">
+        <!-- CARTEL INFORMATIVO BETA DE ALVAREZ PLACAS -->
+        <div class="w-full mb-6 bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 flex items-start gap-4 shadow-sm backdrop-blur-md">
+            <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500 flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-lg"></i>
+            </div>
+            <div class="flex-grow space-y-1">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <span class="text-[0.6rem] font-black uppercase bg-amber-500 text-black px-2 py-0.5 rounded tracking-widest">CUBICAL 3D PRO — v1.2 BETA</span>
+                    <span class="text-[0.55rem] font-black text-amber-500/90 tracking-widest uppercase">Desarrollo Exclusivo de Alvarez Placas</span>
+                </div>
+                <p class="text-xs text-[var(--sc-text-dim)] font-medium leading-relaxed">
+                    Este software se encuentra en fase de <strong>Prueba y Desarrollo</strong>. Las comprobaciones de despieces, optimizaciones de placas y cómputos de herrajes aún pueden tener variaciones o ser estimativos. Se aconseja revisar físicamente antes del corte industrial.
+                </p>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <!-- PANEL IZQUIERDO: FORMULARIO -->
             <div class="lg:col-span-4 space-y-6">
@@ -96,15 +112,16 @@ const isLoggedIn = !!clientId;
                         <i class="fas fa-cubes"></i> AÑADIR MÓDULO AL PLANO
                     </h3>
                     
-                    <div class="grid grid-cols-2 gap-5">
-                        <div class="col-span-2">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="col-span-3">
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Tipo de Módulo</label>
-                            <select id="mod-type" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-bold">
+                            <select id="mod-type" onchange="window.cubical.autoSetPresets()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-bold">
                                 <option value="CAJONERA">🗄️ Cajonera Estándar</option>
                                 <option value="PLACARD">🚪 Placard / Ropero</option>
                                 <option value="ALACENA">🪜 Alacena Superior</option>
                                 <option value="BAJO_MESADA">🍽️ Bajo Mesada</option>
                                 <option value="BIBLIOTECA">📚 Biblioteca / Estantería</option>
+                                <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
                             </select>
                         </div>
                         <div>
@@ -120,12 +137,20 @@ const isLoggedIn = !!clientId;
                             <input type="number" id="mod-p" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
                         </div>
                         <div>
-                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Cajones/Puertas</label>
-                            <input type="number" id="mod-n" value="3" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Estantes</label>
+                            <input type="number" id="mod-shelves" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Cajones</label>
+                            <input type="number" id="mod-drawers" value="3" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Puertas</label>
+                            <input type="number" id="mod-doors" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
                         </div>
                     </div>
                     
-                    <button onclick="window.cubical.addModule()" class="w-full mt-10 py-5 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR A LA LISTA</button>
+                    <button onclick="window.cubical.addModule()" class="w-full mt-8 py-5 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR A LA LISTA</button>
                 </div>
 
                 <div class="bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] p-6 rounded-xl">
@@ -136,11 +161,68 @@ const isLoggedIn = !!clientId;
                 </div>
             </div>
 
-            <!-- PANEL CENTRAL: VISUALIZADOR SVG -->
+            <!-- PANEL CENTRAL: VISUALIZADOR 3D INTERACTIVO -->
             <div class="lg:col-span-8 flex flex-col gap-6">
                 <div class="bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded-xl min-h-[500px] flex items-center justify-center relative overflow-hidden shadow-inner">
-                    <div class="absolute top-8 left-10 text-[0.65rem] font-black text-[var(--sc-text-dim)] uppercase tracking-[0.5em] opacity-30">PROYECCIÓN TÉCNICA 2D (FRENTE)</div>
-                    <svg id="svg-preview" class="w-full h-full max-h-[600px] p-20" viewBox="0 0 1000 600"></svg>
+                    <div class="absolute top-8 left-10 text-[0.65rem] font-black text-[var(--sc-text-dim)] uppercase tracking-[0.5em] opacity-30">PROYECCIÓN TÉCNICA 3D (CAD BLUEPRINT)</div>
+                    
+                    <!-- TOOLBAR 3D INTERACTIVA CON TOOLTIPS -->
+                    <div class="absolute top-6 right-6 flex items-center gap-2 bg-[var(--sc-surface)]/85 border border-[var(--sc-border)] px-3 py-2 rounded-lg shadow-lg backdrop-blur-md z-10">
+                        <!-- Vista Perspectiva (Reset) -->
+                        <div class="relative group">
+                            <button onclick="window.cubical.reset3DView()" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                                <i class="fas fa-sync-alt text-xs"></i>
+                            </button>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
+                                Restaurar Vista 3D
+                            </div>
+                        </div>
+                        
+                        <!-- Vista Frontal -->
+                        <div class="relative group">
+                            <button onclick="window.cubical.set3DView('front')" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                                <i class="fas fa-square text-xs"></i>
+                            </button>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
+                                Vista Frontal
+                            </div>
+                        </div>
+
+                        <!-- Vista Superior -->
+                        <div class="relative group">
+                            <button onclick="window.cubical.set3DView('top')" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                                <i class="fas fa-border-all text-xs"></i>
+                            </button>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
+                                Vista Superior
+                            </div>
+                        </div>
+
+                        <!-- Separador -->
+                        <div class="w-[1px] h-6 bg-[var(--sc-border)] mx-1"></div>
+
+                        <!-- Zoom In -->
+                        <div class="relative group">
+                            <button onclick="window.cubical.zoom3D(1.15)" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                                <i class="fas fa-search-plus text-xs"></i>
+                            </button>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
+                                Acercar (+)
+                            </div>
+                        </div>
+
+                        <!-- Zoom Out -->
+                        <div class="relative group">
+                            <button onclick="window.cubical.zoom3D(0.85)" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                                <i class="fas fa-search-minus text-xs"></i>
+                            </button>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
+                                Alejar (-)
+                            </div>
+                        </div>
+                    </div>
+
+                    <canvas id="canvas-preview" class="w-full h-full max-h-[600px] cursor-grab active:cursor-grabbing" style="min-height:500px; display:block;"></canvas>
                 </div>
                 
                 <div class="flex justify-between items-center bg-[var(--sc-surface)] p-6 rounded-xl border border-[var(--sc-border)]">
@@ -284,6 +366,290 @@ const isLoggedIn = !!clientId;
 
     const CLIENT_ID = "{clientId}";
 
+    class Cabinet3DRenderer {
+        constructor(canvasId) {
+            this.canvas = document.getElementById(canvasId);
+            this.ctx = this.canvas.getContext('2d');
+            this.angleY = -0.6; // Ángulo de rotación por defecto
+            this.angleX = 0.3;  // Ángulo de inclinación por defecto
+            this.scale = 0.35;
+            this.setupInteraction();
+        }
+        
+        setupInteraction() {
+            let isDragging = false;
+            let lastX = 0, lastY = 0;
+            
+            const startDrag = (x, y) => {
+                isDragging = true;
+                lastX = x;
+                lastY = y;
+            };
+            
+            const dragMove = (x, y) => {
+                if (!isDragging) return;
+                const dx = x - lastX;
+                const dy = y - lastY;
+                this.angleY += dx * 0.007;
+                this.angleX += dy * 0.007;
+                this.angleX = Math.max(-Math.PI/3, Math.min(Math.PI/3, this.angleX)); // Evitar dar la vuelta
+                lastX = x;
+                lastY = y;
+                if (window.cubical && typeof window.cubical.renderPreview === 'function') {
+                    window.cubical.renderPreview();
+                }
+            };
+            
+            const stopDrag = () => { isDragging = false; };
+            
+            this.canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+            this.canvas.addEventListener('mousemove', (e) => dragMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', stopDrag);
+            
+            this.canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    startDrag(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            });
+            this.canvas.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1) {
+                    dragMove(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            });
+            window.addEventListener('touchend', stopDrag);
+        }
+        
+        project(X, Y, Z, width, height, depth, screenWidth, screenHeight) {
+            const cx = width / 2;
+            const cy = height / 2;
+            const cz = depth / 2;
+            
+            let px = X - cx;
+            let py = Y - cy;
+            let pz = Z - cz;
+            
+            const cosY = Math.cos(this.angleY);
+            const sinY = Math.sin(this.angleY);
+            const rx1 = px * cosY - pz * sinY;
+            const rz1 = px * sinY + pz * cosY;
+            
+            const cosX = Math.cos(this.angleX);
+            const sinX = Math.sin(this.angleX);
+            const ry2 = py * cosX - rz1 * sinX;
+            const rz2 = py * sinX + rz1 * cosX;
+            
+            const sx = screenWidth / 2 + rx1 * this.scale;
+            const sy = screenHeight / 2 - ry2 * this.scale;
+            
+            return { x: sx, y: sy, z: rz2 };
+        }
+        
+        drawBox(width, height, depth, opts = {}) {
+            const {
+                offsetX = 0,
+                color = '#ff4d4d',
+                fillColor = 'rgba(255, 77, 77, 0.05)',
+                lineWidth = 2,
+                drawPanelThickness = true,
+                shelves = 0,
+                drawers = 0,
+                doors = 0
+            } = opts;
+            
+            const sw = this.canvas.width;
+            const sh = this.canvas.height;
+            const ctx = this.ctx;
+            const t = 18; // 18mm espesor madera
+            
+            const vertices = [
+                {x: 0,     y: 0,      z: 0},
+                {x: width, y: 0,      z: 0},
+                {x: width, y: height, z: 0},
+                {x: 0,     y: height, z: 0},
+                {x: 0,     y: 0,      z: depth},
+                {x: width, y: 0,      z: depth},
+                {x: width, y: height, z: depth},
+                {x: 0,     y: height, z: depth}
+            ];
+            
+            const proj = vertices.map(v => this.project(v.x + offsetX, v.y, v.z, width, height, depth, sw, sh));
+            
+            const line = (p1, p2, dotted = false) => {
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                if (dotted) {
+                    ctx.setLineDash([4, 4]);
+                } else {
+                    ctx.setLineDash([]);
+                }
+                ctx.stroke();
+            };
+            
+            const fillFace = (indices, fill) => {
+                ctx.beginPath();
+                ctx.moveTo(proj[indices[0]].x, proj[indices[0]].y);
+                for(let i = 1; i < indices.length; i++) {
+                    ctx.lineTo(proj[indices[i]].x, proj[indices[i]].y);
+                }
+                ctx.closePath();
+                ctx.fillStyle = fill;
+                ctx.fill();
+            };
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            
+            // Relleno semi-transparente de las caras exteriores
+            fillFace([4, 5, 6, 7], fillColor);
+            fillFace([0, 1, 5, 4], fillColor);
+            fillFace([2, 3, 7, 6], fillColor);
+            fillFace([0, 3, 7, 4], fillColor);
+            fillFace([1, 2, 6, 5], fillColor);
+            
+            // Dibujar estructura trasera en líneas de proyección técnica
+            line(proj[4], proj[5], true);
+            line(proj[5], proj[6], true);
+            line(proj[6], proj[7], true);
+            line(proj[7], proj[4], true);
+            
+            // Diagonales de profundidad
+            line(proj[0], proj[4], true);
+            line(proj[1], proj[5], true);
+            line(proj[2], proj[6], true);
+            line(proj[3], proj[7], true);
+            
+            // Dibujar marco frontal sólido
+            fillFace([0, 1, 2, 3], 'rgba(255,255,255,0.01)');
+            line(proj[0], proj[1]);
+            line(proj[1], proj[2]);
+            line(proj[2], proj[3]);
+            line(proj[3], proj[0]);
+            
+            // Espesores de Carcasa 3D (CAD Style)
+            if (drawPanelThickness) {
+                ctx.strokeStyle = document.body.getAttribute('data-theme') === 'dark' || document.body.classList.contains('body-theme-dark')
+                    ? 'rgba(255,255,255,0.15)'
+                    : 'rgba(0,0,0,0.15)';
+                ctx.lineWidth = 1;
+                
+                // Lateral izquierdo
+                const lLeft = this.project(t + offsetX, 0, 0, width, height, depth, sw, sh);
+                const rLeft = this.project(t + offsetX, height, 0, width, height, depth, sw, sh);
+                const lLeftBack = this.project(t + offsetX, 0, depth, width, height, depth, sw, sh);
+                const rLeftBack = this.project(t + offsetX, height, depth, width, height, depth, sw, sh);
+                line(lLeft, rLeft, true);
+                line(lLeft, lLeftBack, true);
+                line(rLeft, rLeftBack, true);
+                
+                // Lateral derecho
+                const lRight = this.project(width - t + offsetX, 0, 0, width, height, depth, sw, sh);
+                const rRight = this.project(width - t + offsetX, height, 0, width, height, depth, sw, sh);
+                const lRightBack = this.project(width - t + offsetX, 0, depth, width, height, depth, sw, sh);
+                const rRightBack = this.project(width - t + offsetX, height, depth, width, height, depth, sw, sh);
+                line(lRight, rRight, true);
+                line(lRight, lRightBack, true);
+                line(rRight, rRightBack, true);
+            }
+            
+            // Estantes Regulables (Si posee contenido)
+            if (shelves > 0) {
+                ctx.strokeStyle = 'oklch(70% 0.15 80)'; // Color madera/estante cálido
+                ctx.lineWidth = 2.5;
+                
+                const hSpace = (height - 36) / (shelves + 1);
+                for (let i = 1; i <= shelves; i++) {
+                    const currY = t + i * hSpace;
+                    
+                    const sfL = this.project(t + offsetX, currY, 0, width, height, depth, sw, sh);
+                    const sfR = this.project(width - t + offsetX, currY, 0, width, height, depth, sw, sh);
+                    const sbL = this.project(t + offsetX, currY, depth - 20, width, height, depth, sw, sh);
+                    const sbR = this.project(width - t + offsetX, currY, depth - 20, width, height, depth, sw, sh);
+                    
+                    line(sfL, sfR);
+                    line(sfL, sbL, true);
+                    line(sfR, sbR, true);
+                    line(sbL, sbR, true);
+                }
+            }
+            
+            // Cajoneras (Si posee contenido)
+            if (drawers > 0) {
+                ctx.strokeStyle = 'oklch(65% 0.18 220)'; // Color cian de cajoneras
+                ctx.lineWidth = 2.5;
+                
+                const hSpace = height / drawers;
+                for (let i = 0; i < drawers; i++) {
+                    const yBottom = i * hSpace;
+                    const yTop = (i + 1) * hSpace;
+                    
+                    // Frente de cajón
+                    const fBL = this.project(3 + offsetX, yBottom + 3, 0, width, height, depth, sw, sh);
+                    const fBR = this.project(width - 3 + offsetX, yBottom + 3, 0, width, height, depth, sw, sh);
+                    const fTL = this.project(3 + offsetX, yTop - 3, 0, width, height, depth, sw, sh);
+                    const fTR = this.project(width - 3 + offsetX, yTop - 3, 0, width, height, depth, sw, sh);
+                    
+                    line(fBL, fBR);
+                    line(fBR, fTR);
+                    line(fTR, fTL);
+                    line(fTL, fBL);
+                    
+                    // Cuerpo de cajón interno (en proyección discontinua hacia el fondo)
+                    const bBL = this.project(t + 13 + offsetX, yBottom + t, depth - 50, width, height, depth, sw, sh);
+                    const bBR = this.project(width - t - 13 + offsetX, yBottom + t, depth - 50, width, height, depth, sw, sh);
+                    
+                    line(fBL, bBL, true);
+                    line(fBR, bBR, true);
+                    line(bBL, bBR, true);
+                    
+                    // Tirador metálico en el centro
+                    const tcX = width / 2 + offsetX;
+                    const tcY = yBottom + hSpace / 2;
+                    const hL = this.project(tcX - 45, tcY, 0, width, height, depth, sw, sh);
+                    const hR = this.project(tcX + 45, tcY, 0, width, height, depth, sw, sh);
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 3.5;
+                    line(hL, hR);
+                    ctx.strokeStyle = 'oklch(65% 0.18 220)';
+                    ctx.lineWidth = 2.5;
+                }
+            }
+            
+            // Puertas (Si posee contenido)
+            if (doors > 0) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.lineWidth = 2.5;
+                
+                const wSpace = width / doors;
+                for (let i = 0; i < doors; i++) {
+                    const xLeft = i * wSpace;
+                    const xRight = (i + 1) * wSpace;
+                    
+                    const dBL = this.project(xLeft + 3 + offsetX, 3, 0, width, height, depth, sw, sh);
+                    const dBR = this.project(xRight - 3 + offsetX, 3, 0, width, height, depth, sw, sh);
+                    const dTL = this.project(xLeft + 3 + offsetX, height - 3, 0, width, height, depth, sw, sh);
+                    const dTR = this.project(xRight - 3 + offsetX, height - 3, 0, width, height, depth, sw, sh);
+                    
+                    line(dBL, dBR);
+                    line(dBR, dTR);
+                    line(dTR, dTL);
+                    line(dTL, dBL);
+                    
+                    // Tiradores de perilla
+                    const knobX = i === 0 ? xRight - 20 : xLeft + 20;
+                    const knobY = height / 2;
+                    const kp = this.project(knobX + offsetX, knobY, 0, width, height, depth, sw, sh);
+                    ctx.beginPath();
+                    ctx.arc(kp.x, kp.y, 4.5, 0, 2*Math.PI);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                }
+            }
+        }
+    }
+
+    const CLIENT_ID = "{clientId}";
+
     window.cubical = {
         state: {
             currentScreen: 'dashboard',
@@ -294,9 +660,22 @@ const isLoggedIn = !!clientId;
             results: null
         },
 
+        renderer: null,
+
         init: async function() {
             this.updateThemeUI();
             await this.loadProjects();
+            
+            // Inicializar renderizador 3D
+            try {
+                this.renderer = new Cabinet3DRenderer('canvas-preview');
+            } catch (e) {
+                console.error("[CubiCal] Falló inicialización del Canvas 3D:", e);
+            }
+            
+            // Aplicar primer set de presets
+            this.autoSetPresets();
+            
             this.showScreen('dashboard');
         },
 
@@ -317,6 +696,7 @@ const isLoggedIn = !!clientId;
                 localStorage.setItem('sc-theme', 'dark');
             }
             this.updateThemeUI();
+            this.renderPreview();
         },
 
         updateThemeUI: function() {
@@ -342,6 +722,33 @@ const isLoggedIn = !!clientId;
             }
         },
 
+        reset3DView: function() {
+            if (!this.renderer) return;
+            this.renderer.angleY = -0.6;
+            this.renderer.angleX = 0.3;
+            this.renderer.scale = 0.35;
+            this.renderPreview();
+        },
+
+        set3DView: function(type) {
+            if (!this.renderer) return;
+            if (type === 'front') {
+                this.renderer.angleY = 0;
+                this.renderer.angleX = 0;
+            } else if (type === 'top') {
+                this.renderer.angleY = 0;
+                this.renderer.angleX = Math.PI / 2;
+            }
+            this.renderPreview();
+        },
+
+        zoom3D: function(factor) {
+            if (!this.renderer) return;
+            this.renderer.scale *= factor;
+            this.renderer.scale = Math.max(0.1, Math.min(1.5, this.renderer.scale));
+            this.renderPreview();
+        },
+
         showScreen: function(name) {
             document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
             document.getElementById(`screen-${name}`).classList.remove('hidden');
@@ -353,7 +760,10 @@ const isLoggedIn = !!clientId;
 
         showSetup: function() { this.showScreen('setup'); },
         showDashboard: function() { this.showScreen('dashboard'); },
-        showConstructor: function() { this.showScreen('constructor'); },
+        showConstructor: function() { 
+            this.showScreen('constructor'); 
+            setTimeout(() => this.renderPreview(), 100);
+        },
 
         startConstructor: function() {
             const name = document.getElementById('setup-name').value;
@@ -362,17 +772,54 @@ const isLoggedIn = !!clientId;
             this.state.environment = document.getElementById('setup-env').value;
             this.showScreen('constructor');
             this.renderConstructor();
+            setTimeout(() => this.renderPreview(), 100);
+        },
+
+        autoSetPresets: function() {
+            const type = document.getElementById('mod-type').value;
+            const shelvesInput = document.getElementById('mod-shelves');
+            const drawersInput = document.getElementById('mod-drawers');
+            const doorsInput = document.getElementById('mod-doors');
+            
+            if (!shelvesInput || !drawersInput || !doorsInput) return;
+            
+            if (type === 'CAJONERA') {
+                shelvesInput.value = 0;
+                drawersInput.value = 3;
+                doorsInput.value = 0;
+            } else if (type === 'PLACARD') {
+                shelvesInput.value = 2;
+                drawersInput.value = 0;
+                doorsInput.value = 2;
+            } else if (type === 'ALACENA') {
+                shelvesInput.value = 2;
+                drawersInput.value = 0;
+                doorsInput.value = 2;
+            } else if (type === 'BAJO_MESADA') {
+                shelvesInput.value = 0;
+                drawersInput.value = 0;
+                doorsInput.value = 2;
+            } else if (type === 'BIBLIOTECA') {
+                shelvesInput.value = 4;
+                drawersInput.value = 0;
+                doorsInput.value = 0;
+            } else {
+                // Módulo a Medida Libre
+                shelvesInput.value = 0;
+                drawersInput.value = 0;
+                doorsInput.value = 0;
+            }
         },
 
         addModule: function() {
             const type = document.getElementById('mod-type').value;
             const dims = {
-                alto: parseInt(document.getElementById('mod-h').value),
-                ancho: parseInt(document.getElementById('mod-w').value),
-                prof: parseInt(document.getElementById('mod-p').value),
-                n_cajones: parseInt(document.getElementById('mod-n').value),
-                n_puertas: parseInt(document.getElementById('mod-n').value),
-                n_estantes: 2
+                alto: parseInt(document.getElementById('mod-h').value) || 800,
+                ancho: parseInt(document.getElementById('mod-w').value) || 600,
+                prof: parseInt(document.getElementById('mod-p').value) || 500,
+                n_cajones: parseInt(document.getElementById('mod-drawers').value) || 0,
+                n_puertas: parseInt(document.getElementById('mod-doors').value) || 0,
+                n_estantes: parseInt(document.getElementById('mod-shelves').value) || 0
             };
             this.state.modules.push({ id: Date.now(), type, dims });
             this.renderConstructor();
@@ -392,6 +839,12 @@ const isLoggedIn = !!clientId;
                     <div>
                         <div class="text-[0.6rem] font-black text-[var(--alvarez-red)] uppercase">${m.type.replace('_',' ')}</div>
                         <div class="text-sm font-black text-[var(--sc-text)]">${m.dims.alto}x${m.dims.ancho}x${m.dims.prof} <span class="text-[0.6rem] font-normal text-[var(--sc-text-dim)]">mm</span></div>
+                        <div class="text-[0.6rem] text-[var(--sc-text-dim)] font-bold mt-1">
+                            ${m.dims.n_estantes > 0 ? `Estantes: ${m.dims.n_estantes} ` : ''}
+                            ${m.dims.n_cajones > 0 ? `Cajones: ${m.dims.n_cajones} ` : ''}
+                            ${m.dims.n_puertas > 0 ? `Puertas: ${m.dims.n_puertas} ` : ''}
+                            ${(m.dims.n_estantes == 0 && m.dims.n_cajones == 0 && m.dims.n_puertas == 0) ? 'Módulo Vacío (Sin contenido)' : ''}
+                        </div>
                     </div>
                     <button onclick="window.cubical.removeModule(${m.id})" class="w-10 h-10 bg-[var(--sc-surface-alt)] rounded flex items-center justify-center text-[var(--sc-text-dim)] hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">
                         <i class="fas fa-trash-alt"></i>
@@ -404,51 +857,129 @@ const isLoggedIn = !!clientId;
         },
 
         renderPreview: function() {
-            const svg = document.getElementById('svg-preview');
-            let html = '';
-            let currentX = 100;
-            const scale = 0.35;
+            if (!this.renderer) return;
+            const canvas = document.getElementById('canvas-preview');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentNode.getBoundingClientRect();
+            
+            canvas.width = rect.width || 800;
+            canvas.height = 500;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const isDark = document.body.getAttribute('data-theme') === 'dark' || document.body.classList.contains('body-theme-dark');
+            
+            // Grilla de plano CAD en background
+            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+            ctx.lineWidth = 1;
+            const step = 20;
+            for (let x = 0; x < canvas.width; x += step) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += step) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+            
+            const count = this.state.modules.length;
+            if (count === 0) {
+                this.renderer.scale = 0.22;
+                this.renderer.drawBox(600, 800, 500, {
+                    color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.1)',
+                    fillColor: 'rgba(0, 0, 0, 0)',
+                    lineWidth: 1.5,
+                    drawPanelThickness: false
+                });
+                
+                ctx.fillStyle = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+                ctx.font = 'bold 11px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText("VISTA 3D EN TIEMPO REAL — ARRASTRA CON EL MOUSE PARA ROTAR", canvas.width/2, canvas.height/2 + 250);
+                return;
+            }
+            
+            const spacing = 120;
+            const totalWidth = this.state.modules.reduce((sum, m) => sum + m.dims.ancho, 0) + (count - 1) * spacing;
+            const maxHeight = this.state.modules.reduce((max, m) => Math.max(max, m.dims.alto), 0);
+            
+            const scaleX = (canvas.width * 0.7) / totalWidth;
+            const scaleY = (canvas.height * 0.6) / maxHeight;
+            this.renderer.scale = Math.min(0.28, Math.min(scaleX, scaleY));
+            
+            let currentX = -totalWidth / 2;
             
             this.state.modules.forEach((m) => {
-                const h = m.dims.alto * scale;
-                const w = m.dims.ancho * scale;
-                const y = 500 - h;
+                const boxColor = isDark ? 'oklch(62.8% 0.25 29.23)' : '#000000';
+                const boxFill = isDark ? 'rgba(215, 40, 40, 0.03)' : 'rgba(0, 0, 0, 0.01)';
                 
-                html += `
-                    <g transform="translate(${currentX}, ${y})" class="animate-fade-in">
-                        <rect width="${w}" height="${h}" fill="var(--sc-surface)" stroke="var(--sc-border)" stroke-width="8" rx="2" />
-                        <rect x="10" y="10" width="${w-20}" height="${h-20}" fill="none" stroke="var(--alvarez-red)" stroke-width="2" stroke-dasharray="4" opacity="0.3" />
-                        <text x="${w/2}" y="${h+30}" text-anchor="middle" fill="var(--sc-text-dim)" font-size="14" font-weight="900" font-family="monospace">${m.dims.ancho}</text>
-                        <text x="${-30}" y="${h/2}" text-anchor="middle" fill="var(--sc-text-dim)" font-size="14" font-weight="900" font-family="monospace" transform="rotate(-90, -30, ${h/2})">${m.dims.alto}</text>
-                    </g>
-                `;
-                currentX += w + 40;
+                this.renderer.drawBox(m.dims.ancho, m.dims.alto, m.dims.prof, {
+                    offsetX: currentX,
+                    color: boxColor,
+                    fillColor: boxFill,
+                    lineWidth: 2,
+                    drawPanelThickness: true,
+                    shelves: m.dims.n_estantes || 0,
+                    drawers: m.dims.n_cajones || 0,
+                    doors: m.dims.n_puertas || 0
+                });
+                
+                // Etiquetas de medidas en 3D
+                const labelPos = this.renderer.project(currentX + m.dims.ancho/2, -45, 0, m.dims.ancho, m.dims.alto, m.dims.prof, canvas.width, canvas.height);
+                ctx.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.6)';
+                ctx.font = 'bold 9px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${m.dims.ancho}x${m.dims.alto}x${m.dims.prof} mm`, labelPos.x, labelPos.y);
+                
+                currentX += m.dims.ancho + spacing;
             });
-            svg.innerHTML = html;
         },
 
         generateResults: async function() {
             if (this.state.modules.length === 0) { alert("⚠️ Añade al menos un módulo al plano."); return; }
             this.showScreen('results');
             
-            // Simulación de cálculo industrial
-            const totalM2 = (this.state.modules.reduce((acc, m) => acc + (m.dims.alto * m.dims.ancho), 0) / 1000000 * 2.2).toFixed(2);
-            const boardsCount = Math.ceil(totalM2 / 5);
-            
-            this.state.results = {
-                opt: { stats: { count: boardsCount, efficiency: 88, totalM2: totalM2 } },
-                hw: [
-                    { name: 'Tornillo Fix 4x50mm', qty: this.state.modules.length * 24, unit: 'un' },
-                    { name: 'Corredera Telescópica 500mm', qty: this.state.modules.reduce((a,m) => a + (m.dims.n_cajones || 0), 0), unit: 'par' },
-                    { name: 'Bisagra Cazoleta 35mm', qty: this.state.modules.reduce((a,m) => a + (m.dims.n_puertas || 0), 0) * 2, unit: 'un' },
-                    { name: 'Tapacanto ABS 0.45mm', qty: Math.round(totalM2 * 12), unit: 'm' }
-                ]
-            };
-            this.renderResults();
+            try {
+                // Importación dinámica de motores puros
+                const optEngine = await import('/herramientas/logic/cubical/engine.js?v=' + Date.now());
+                const hwEngine = await import('/herramientas/logic/cubical/hardware.js?v=' + Date.now());
+                
+                let allPieces = [];
+                this.state.modules.forEach(m => {
+                    const pieces = optEngine.calculateModulePieces(m.type, m.dims, 18);
+                    allPieces = allPieces.concat(pieces);
+                });
+                
+                // Filtrar fondos de MDF para la optimización de placas de melamina de 18mm
+                const melaminaPieces = allPieces.filter(p => !p.isBackground).map(p => ({
+                    name: p.name,
+                    h: p.h,
+                    w: p.w,
+                    qty: p.qty
+                }));
+                
+                // Faplac estándar 18mm 2750x1820
+                const board = { w: 2750, h: 1820 };
+                const optResults = optEngine.optimizeBoards(melaminaPieces, board, 4);
+                
+                // Calcular herrajes e insumos
+                const realHardware = hwEngine.calculateTotalHardware(this.state.modules);
+                
+                this.state.results = {
+                    opt: optResults,
+                    hw: realHardware
+                };
+                
+                this.renderResults();
+            } catch (e) {
+                console.error("[CubiCal] Error ejecutando optimización industrial:", e);
+                alert("⚠️ Error al optimizar el despiece. Asegúrate de que las medidas ingresadas sean válidas.");
+            }
         },
 
         renderResults: function() {
             const { opt, hw } = this.state.results;
+            
+            // Stats principales
             document.getElementById('res-boards-stats').innerHTML = `
                 <div class="bg-[var(--sc-surface-alt)] p-6 rounded-lg border border-[var(--sc-border)] shadow-inner">
                     <div class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase mb-2">PLACAS (18mm)</div>
@@ -463,6 +994,23 @@ const isLoggedIn = !!clientId;
                     <div class="text-3xl font-black text-[var(--alvarez-blue)]">${opt.stats.totalM2}</div>
                 </div>
             `;
+            
+            // Lista desglosada de placas optimizadas
+            document.getElementById('res-boards-list').innerHTML = opt.boards.map(b => {
+                return `
+                    <div class="bg-[var(--sc-surface-alt)] p-5 rounded-lg border border-[var(--sc-border)] flex justify-between items-center group">
+                        <div>
+                            <div class="text-xs font-black text-[var(--sc-text)] uppercase">Placa Entera Faplac #${b.id}</div>
+                            <div class="text-[0.65rem] text-[var(--sc-text-dim)] font-bold mt-1">Dimensión: 2750 x 1820 mm • ${b.shelves.length} Fila(s) de corte agrupado</div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[0.55rem] font-black bg-[var(--sc-surface)] border border-[var(--sc-border)] text-[var(--sc-text-dim)] px-2.5 py-1.5 rounded uppercase tracking-wider">Optimizado</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Listado de herrajes comerciales
             document.getElementById('res-hardware-list').innerHTML = hw.map(h => `
                 <tr class="group hover:bg-[var(--sc-surface-alt)] transition-all">
                     <td class="py-5 font-bold text-[var(--sc-text)] uppercase text-xs tracking-tight">${h.name}</td>
