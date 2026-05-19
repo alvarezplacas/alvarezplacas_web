@@ -323,8 +323,7 @@ export const GET: APIRoute = async () => {
   .pdf-modal-body { flex: 1; background: #2e2e2e; }
   .pdf-iframe { width: 100%; height: 100%; border: none; }
 </style>
-
-<script>
+` + '<script>' + `
   (function() {
     const input = document.getElementById('doc-search-input');
     const btn = document.getElementById('doc-search-btn');
@@ -349,55 +348,55 @@ export const GET: APIRoute = async () => {
         badge.textContent = data.count + (queryVal ? ' encontrados' : ' recientes');
 
         if (data.count === 0) {
-          tableBody.innerHTML = `
+          tableBody.innerHTML = \`
             <tr>
               <td colspan="7" class="empty-table-row">
                 <i class="fas fa-search-minus empty-row-icon"></i>
                 <p>No se encontraron documentos para tu búsqueda.</p>
                 <span style="font-size:10px;color:#444;">Intenta buscar por palabras clave diferentes.</span>
               </td>
-            </tr>`;
+            </tr>\`;
         } else {
           tableBody.innerHTML = data.results.map(doc => {
             const formatTotal = doc.total_amount > 0 
                 ? '$' + parseFloat(doc.total_amount).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 : '—';
             const formatDate = doc.doc_date ? new Date(doc.doc_date).toLocaleDateString('es-AR') : '—';
-            return `
+            return \`
               <tr class="doc-row">
-                <td><span class="doc-badge badge-\${(doc.doc_type || 'X').toLowerCase()}">\${doc.doc_type || 'X'}</span></td>
-                <td><span class="doc-number">\${doc.pos_number || '0000'} - \${doc.doc_number || '00000000'}</span></td>
-                <td class="doc-date">\${formatDate}</td>
+                <td><span class="doc-badge badge-\\\${(doc.doc_type || 'X').toLowerCase()}">\\\${doc.doc_type || 'X'}</span></td>
+                <td><span class="doc-number">\\\${doc.pos_number || '0000'} - \\\${doc.doc_number || '00000000'}</span></td>
+                <td class="doc-date">\\\${formatDate}</td>
                 <td>
                   <div class="client-info">
-                    <span class="client-name">\${doc.client_name || 'Consumidor Final'}</span>
-                    <span class="client-cta">Cta #\${doc.client_cta || '00000'} | CUIT \${doc.client_cuit || '—'}</span>
+                    <span class="client-name">\\\${doc.client_name || 'Consumidor Final'}</span>
+                    <span class="client-cta">Cta #\\\${doc.client_cta || '00000'} | CUIT \\\${doc.client_cuit || '—'}</span>
                   </div>
                 </td>
-                <td class="doc-total">\${formatTotal}</td>
-                <td class="doc-seller"><i class="fas fa-user-tag text-muted"></i> \${doc.seller_code || '—'}</td>
+                <td class="doc-total">\\\${formatTotal}</td>
+                <td class="doc-seller"><i class="fas fa-user-tag text-muted"></i> \\\${doc.seller_code || '—'}</td>
                 <td style="text-align:right;">
                   <div class="action-buttons-container">
-                    <button class="action-btn preview-btn" onclick="previewDoc('\${doc.id}', '\${doc.filename}')" title="Previsualizar PDF">
+                    <button class="action-btn preview-btn" onclick="previewDoc('\\\\\\\${doc.id}', '\\\\\\\${doc.filename}')" title="Previsualizar PDF">
                       <i class="fas fa-eye"></i>
                     </button>
-                    <a href="/api/documentos/download?id=\${doc.id}" class="action-btn download-btn" download="\${doc.filename}" title="Descargar PDF">
+                    <a href="/api/documentos/download?id=\\\${doc.id}" class="action-btn download-btn" download="\\\${doc.filename}" title="Descargar PDF">
                       <i class="fas fa-download"></i>
                     </a>
                   </div>
                 </td>
-              </tr>`;
+              </tr>\`;
           }).join('');
         }
       } catch (err) {
         console.error('Error during search:', err);
-        tableBody.innerHTML = `
+        tableBody.innerHTML = \`
           <tr>
             <td colspan="7" class="empty-table-row">
               <i class="fas fa-exclamation-circle empty-row-icon" style="color:#ef4444;"></i>
               <p style="color:#ef4444;">Error al conectar con la base de datos.</p>
             </td>
-          </tr>`;
+          </tr>\`;
       } finally {
         loader.classList.add('hidden');
         tableWrap.classList.remove('hidden');
@@ -437,11 +436,4 @@ export const GET: APIRoute = async () => {
     };
 
   })();
-</script>
-`;
-
-    return new Response(html, {
-        status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' }
-    });
-};
+` + '</script>';
