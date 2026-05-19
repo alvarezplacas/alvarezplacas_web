@@ -437,3 +437,9 @@ export const GET: APIRoute = async () => {
 
   })();
 ` + '</script>';
+
+    return new Response(html, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    });
+};
