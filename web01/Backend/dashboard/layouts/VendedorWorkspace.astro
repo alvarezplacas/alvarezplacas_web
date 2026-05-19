@@ -62,7 +62,20 @@ try {
                 <span class="brand-sep">|</span>
             </div>
             <nav class="top-bar-nav">
-                <span class="nav-item">Archivo</span>
+                <div class="nav-item-dropdown">
+                    <span class="nav-item" id="nav-item-archivo">Archivo</span>
+                    <div class="dropdown-menu" id="dropdown-archivo">
+                        <a href="javascript:void(0)" class="dropdown-item" id="btn-imprimir">
+                            <i class="fas fa-print dropdown-icon"></i>
+                            <span>Imprimir Informe (.pdf)</span>
+                        </a>
+                        <div class="dropdown-sep"></div>
+                        <a href="/api/auth/logout" class="dropdown-item">
+                            <i class="fas fa-power-off dropdown-icon" style="color: #f43f5e;"></i>
+                            <span>Cerrar Sesión</span>
+                        </a>
+                    </div>
+                </div>
                 <span class="nav-item active">Vista</span>
                 <span class="nav-item">Ventana</span>
                 <span class="nav-item">Ayuda</span>
@@ -276,56 +289,105 @@ try {
 
     /* TOP BAR */
     .top-bar {
-        height: 30px;
+        height: 38px;
         background: #2d2d2d;
         border-bottom: 1px solid #111;
         display: flex;
         align-items: center;
-        padding: 0 12px;
-        gap: 16px;
+        padding: 0 16px;
+        gap: 20px;
         flex-shrink: 0;
         z-index: 50;
     }
-    .top-bar-brand { display: flex; align-items: center; gap: 6px; font-weight: 900; font-size: 11px; color: #fff; text-transform: uppercase; letter-spacing: -.5px; }
+    .top-bar-brand { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 13px; color: #fff; text-transform: uppercase; letter-spacing: -.5px; }
     .brand-accent { color: #e02020; }
     .brand-sep { opacity: .2; }
-    .top-bar-nav { display: flex; gap: 16px; }
-    .nav-item { font-size: 11px; cursor: pointer; color: #aaa; transition: color .15s; }
+    .top-bar-nav { display: flex; gap: 20px; align-items: center; }
+    .nav-item { font-size: 13px; cursor: pointer; color: #aaa; transition: color .15s; padding: 4px 6px; }
     .nav-item:hover { color: #fff; }
-    .nav-item.active { color: #fff; font-weight: 700; border-bottom: 2px solid rgba(224,32,32,.5); padding-bottom: 1px; }
-    .top-bar-status { margin-left: auto; display: flex; align-items: center; gap: 12px; }
-    .live-badge { display: flex; align-items: center; gap: 6px; color: #e02020; font-weight: 700; font-size: 11px; }
-    .live-dot { font-size: 6px; animation: blink 1.5s infinite; }
+    .nav-item.active { color: #fff; font-weight: 700; border-bottom: 2px solid rgba(224,32,32,.7); padding-bottom: 2px; }
+    .top-bar-status { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+    .live-badge { display: flex; align-items: center; gap: 8px; color: #e02020; font-weight: 700; font-size: 12px; }
+    .live-dot { font-size: 7px; animation: blink 1.5s infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-    .top-bar-divider { width: 1px; height: 14px; background: rgba(255,255,255,.1); }
-    .top-bar-icon { font-size: 13px; cursor: pointer; color: #888; transition: color .15s; }
+    .top-bar-divider { width: 1px; height: 16px; background: rgba(255,255,255,.1); }
+    .top-bar-icon { font-size: 15px; cursor: pointer; color: #888; transition: color .15s; }
     .top-bar-icon:hover { color: #fff; }
+
+    /* dropdown menu de archivo */
+    .nav-item-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: #252525;
+        border: 1px solid #111;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        min-width: 200px;
+        z-index: 100;
+        margin-top: 8px;
+        padding: 6px 0;
+    }
+    .dropdown-menu.show {
+        display: block;
+    }
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        color: #ccc;
+        text-decoration: none;
+        font-size: 13px;
+        transition: background .15s, color .15s;
+        cursor: pointer;
+    }
+    .dropdown-item:hover {
+        background: #e02020;
+        color: #fff;
+    }
+    .dropdown-icon {
+        width: 16px;
+        text-align: center;
+        font-size: 13px;
+        opacity: .8;
+    }
+    .dropdown-sep {
+        height: 1px;
+        background: rgba(255,255,255,0.06);
+        margin: 6px 0;
+    }
 
     /* WORKSPACE BODY */
     .workspace-body { flex: 1; display: flex; overflow: hidden; }
 
     /* TOOLBAR */
     .toolbar {
-        width: 44px;
+        width: 54px;
         background: #2d2d2d;
         border-right: 1px solid #111;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 6px 0;
+        padding: 8px 0;
         z-index: 40;
         flex-shrink: 0;
     }
-    .toolbar-top { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
-    .toolbar-bottom { display: flex; flex-direction: column; align-items: center; padding-bottom: 6px; }
+    .toolbar-top { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+    .toolbar-bottom { display: flex; flex-direction: column; align-items: center; padding-bottom: 8px; }
     .tool-btn {
-        width: 36px; height: 36px;
+        width: 44px; height: 44px;
         display: flex; align-items: center; justify-content: center;
-        border-radius: 6px;
+        border-radius: 8px;
         color: #888;
         cursor: pointer;
         transition: all .15s;
-        font-size: 13px;
+        font-size: 17px;
         position: relative;
         border: none; background: transparent;
         text-decoration: none;
@@ -336,14 +398,48 @@ try {
     .tool-btn--admin:hover { background: rgba(224,32,32,.15); color: #e02020; }
     .tool-btn--danger:hover { background: rgba(239,68,68,.1); color: #ef4444; }
     .tool-badge {
-        position: absolute; top: 2px; right: 2px;
-        min-width: 14px; height: 14px;
+        position: absolute; top: 4px; right: 4px;
+        min-width: 16px; height: 16px;
         background: #ef4444; color: #fff;
-        font-size: 8px; font-weight: 900;
-        border-radius: 7px; padding: 0 3px;
+        font-size: 9px; font-weight: 900;
+        border-radius: 8px; padding: 0 4px;
         display: flex; align-items: center; justify-content: center;
     }
-    .toolbar-sep { width: 24px; height: 1px; background: rgba(255,255,255,.06); margin: 4px 0; }
+    .toolbar-sep { width: 32px; height: 1px; background: rgba(255,255,255,.06); margin: 6px 0; }
+
+    /* ESTILOS DE IMPRESION PROFESIONALES */
+    @media print {
+        body.vendedor-workspace-body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            height: auto !important;
+            overflow: visible !important;
+        }
+        .top-bar, .toolbar, .tabs-bar, .status-bar, #tooltip, .right-panel, .suggested-actions, .right-panel-section {
+            display: none !important;
+        }
+        .workspace-body {
+            display: block !important;
+            overflow: visible !important;
+        }
+        .canvas-area {
+            background: #ffffff !important;
+            color: #000000 !important;
+            width: 100% !important;
+            height: auto !important;
+            display: block !important;
+            overflow: visible !important;
+        }
+        #workspace-canvas, #view-dashboard-static, #view-dynamic {
+            background: #ffffff !important;
+            color: #000000 !important;
+            width: 100% !important;
+            display: block !important;
+        }
+        h1, h2, h3, p, span, td, th, div {
+            color: #000000 !important;
+        }
+    }
     .msg-tool-btn { position: relative; }
 
     /* CANVAS AREA */
@@ -628,6 +724,27 @@ try {
             trigger.addEventListener('mouseleave', () => {
                 if (tooltip) tooltip.style.opacity = '0';
             });
+        });
+
+        // ---- Archivo Dropdown ----
+        const btnArchivo = document.getElementById('nav-item-archivo');
+        const dropdownArchivo = document.getElementById('dropdown-archivo');
+
+        if (btnArchivo && dropdownArchivo) {
+            btnArchivo.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownArchivo.classList.toggle('show');
+            });
+        }
+
+        document.addEventListener('click', () => {
+            if (dropdownArchivo) dropdownArchivo.classList.remove('show');
+        });
+
+        // ---- Imprimir ----
+        document.getElementById('btn-imprimir')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.print();
         });
 
         // ---- Logout ----
