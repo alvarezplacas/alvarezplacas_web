@@ -50,9 +50,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (user.password_hash) {
             isPasswordValid = await bcrypt.compare(password, user.password_hash);
         } else {
-            // Fallback para contraseñas en texto plano si existen (migración)
-            console.warn('[Admin Login] Usando fallback de contraseña para admin');
-            isPasswordValid = (password === 'JavierMix2026!');
+            // Fallback para contraseñas en texto plano si existen (migración) usando hash seguro
+            console.warn('[Admin Login] Usando fallback de contraseña seguro para admin');
+            const MASTER_PASSWORD_HASH = '$2b$10$Yzy08bw4Rrb.Mg24W/gjbeYCgFomIsIV5pjRczfOClkSYL4QTit9y';
+            isPasswordValid = await bcrypt.compare(password, MASTER_PASSWORD_HASH);
         }
 
         if (isPasswordValid) {

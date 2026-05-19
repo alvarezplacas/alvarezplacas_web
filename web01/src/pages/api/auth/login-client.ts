@@ -21,10 +21,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         // 1. SUPERUSUARIO: admin@alvarezplacas.com.ar — verificación directa, sin DB
-        //    Javier Alvarez es el administrador del sitio web. Sus credenciales son independientes.
+        //    Javier Alvarez es el administrador del sitio web. Sus credenciales son independientes y seguras.
         if (email === 'admin@alvarezplacas.com.ar') {
-            const MASTER_PASSWORD = 'JavierMix2026!';
-            if (password === MASTER_PASSWORD) {
+            const MASTER_PASSWORD_HASH = '$2b$10$Yzy08bw4Rrb.Mg24W/gjbeYCgFomIsIV5pjRczfOClkSYL4QTit9y';
+            const isPasswordValid = await bcrypt.compare(password, MASTER_PASSWORD_HASH);
+            if (isPasswordValid) {
                 const rememberMe = formData.get('remember-me') === 'on';
                 cookies.set('admin_session', 'authenticated_javier', { 
                     path: '/', 
