@@ -15,14 +15,33 @@ interface Props {
 
 const { title, vendedor_id, role, activeView = 'dashboard' } = Astro.props;
 
-const JEFE_ROLE_ID = "75e0f734-0913-4a3c-ae0b-4f5135710b97";
-const isJefe = role === JEFE_ROLE_ID;
-const sellerName = isJefe ? "Facundo (Jefe)" : "Vendedor Pro";
+const resolvedSellerId = vendedor_id || Astro.cookies.get('seller_session')?.value || '1';
+
+let sellerRole = role;
+let sellerName = "Vendedor Pro";
+
+if (resolvedSellerId) {
+    try {
+        const sellerResults = await directus.request(readItems('vendedores', {
+            filter: { id: { _eq: parseInt(resolvedSellerId) } },
+            limit: 1
+        })) as any[];
+        if (sellerResults?.[0]) {
+            const sellerObj = sellerResults[0];
+            sellerRole = sellerObj.role || '';
+            sellerName = sellerObj.name || (sellerRole === 'admin' ? "Facundo (Jefe)" : "Vendedor Pro");
+        }
+    } catch(e) {
+        console.error("[Workspace] Error fetching seller info:", e);
+    }
+}
+
+const isJefe = sellerRole === 'admin' || sellerRole === '75e0f734-0913-4a3c-ae0b-4f5135710b97';
 
 // Unread messages count para el badge del toolbar
 let unreadCount = 0;
 try {
-    unreadCount = await CommunicationService.getUnreadCount(vendedor_id || '1');
+    unreadCount = await CommunicationService.getUnreadCount(resolvedSellerId);
 } catch(e) {}
 ---
 
@@ -108,9 +127,17 @@ try {
                     {isJefe && (
                         <>
                             <div class="toolbar-sep"></div>
+                            <a href="/vendedor/monitoreo"
+                               class="tool-btn tooltip-trigger"
+                               data-tooltip="Estado de Planta"
+                               style="color: #3b82f6;"
+                               id="tool-monitoreo">
+                                <i class="fas fa-industry"></i>
+                            </a>
                             <a href="/admin/dashboard"
                                class="tool-btn tool-btn--admin tooltip-trigger"
-                               data-tooltip="Panel de Administración">
+                               data-tooltip="Panel de Administración"
+                               id="tool-admin-panel">
                                 <i class="fas fa-user-shield"></i>
                             </a>
                         </>
@@ -559,13 +586,31 @@ try {
         document.querySelectorAll('.tool-btn[data-view]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const view = btn.getAttribute('data-view');
-                if (view) loadView(view);
+                if (view) {
+                    if (window.location.pathname !== '/vendedor') {
+                        window.location.href = '/vendedor?view=' + view;
+                    } else {
+                        loadView(view);
+                    }
+                }
             });
         });
 
-        // Set initial active state
-        const initialBtn = document.querySelector('.tool-btn[data-view="dashboard"]');
-        if (initialBtn) initialBtn.classList.add('active');
+        // Set initial active state based on URL
+        if (window.location.pathname === '/vendedor/monitoreo') {
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('tool-monitoreo')?.classList.add('active');
+        } else {
+            // Check for view in URL query params on load
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            if (viewParam && window.location.pathname === '/vendedor') {
+                loadView(viewParam);
+            } else {
+                const initialBtn = document.querySelector('.tool-btn[data-view="dashboard"]');
+                if (initialBtn) initialBtn.classList.add('active');
+            }
+        }
 
         // ---- Tooltip ----
         const tooltip = document.getElementById('tooltip');
