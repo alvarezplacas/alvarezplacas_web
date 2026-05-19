@@ -4,7 +4,7 @@
  * GET /api/vendedor/views/buscador
  */
 import type { APIRoute } from 'astro';
-import { query } from '../../../../Backend/conexiones/lib/db.js';
+import { query } from '../../../../../Backend/conexiones/lib/db.js';
 
 export const GET: APIRoute = async () => {
     let recentDocs: any[] = [];
