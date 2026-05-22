@@ -24,7 +24,7 @@ if (!sellerId) {
             <i class="fas fa-spinner fa-spin"></i> Estableciendo conexión con los mercados...
         </div>
 
-        <div x-show="!loading" style="display: none;" class="radar-grid">
+        <div x-show="!loading" class="radar-grid" x-cloak>
             
             <!-- Semáforo de Riesgo General -->
             <div class="radar-card risk-card" :class="getRiskClass()">
@@ -104,6 +104,8 @@ if (!sellerId) {
 </CajeroWorkspace>
 
 <style>
+    [x-cloak] { display: none !important; }
+    
     .radar-header {
         margin-bottom: 25px;
         position: relative;
