@@ -5,7 +5,7 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     const path = context.url.pathname;
 
     // Rutas públicas que no requieren verificación
-    const isPublic = path.startsWith('/_astro') || path.startsWith('/favicon') || path === '/mantenimiento';
+    const isPublic = path.startsWith('/_astro') || path.startsWith('/favicon') || path === '/mantenimiento' || path === '/cliente/registro';
     const isLoginPage = path === '/login' || path === '/admin/login' || path === '/vendedor/login';
     const isApiRoute = path.startsWith('/api');
 
@@ -18,7 +18,8 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     let sellerSession = context.cookies.get('seller_session');
     let clientSession = context.cookies.get('client_session');
 
-    // 🔄 MOTOR DE AUTO-RECUPERACIÓN: Si no hay cookies de sesión, probar con la caché por IP + User Agent
+    // Desactivamos el motor de auto-recuperación por IP + User Agent para evitar conflicto de IPs duplicadas (ej. misma oficina)
+    /*
     if (!adminSession && !sellerSession && !clientSession) {
         const cachedSession = getSession(ip, userAgent);
         if (cachedSession) {
@@ -47,6 +48,7 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
         else if (sellerSession) registerSession(ip, userAgent, sellerSession.value, 'seller');
         else if (clientSession) registerSession(ip, userAgent, clientSession.value, 'client');
     }
+    */
 
     if (adminSession) context.locals.admin_id = adminSession.value;
     if (sellerSession) context.locals.vendedor_id = sellerSession.value;
@@ -73,6 +75,13 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     // Proteger rutas /cliente/*
     if (path.startsWith('/cliente')) {
         if (!clientSession && !sellerSession && !adminSession) {
+            return context.redirect('/login');
+        }
+    }
+
+    // Proteger rutas /ceo/*
+    if (path.startsWith('/ceo')) {
+        if (!sellerSession && !adminSession) {
             return context.redirect('/login');
         }
     }
