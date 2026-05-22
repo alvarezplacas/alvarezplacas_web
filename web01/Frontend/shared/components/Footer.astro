@@ -1,57 +1,76 @@
 ---
 // Footer.astro
-// Discreto — créditos y acceso rápido al webmail interno
+// Discreto — créditos, calidad y acceso rápido al webmail interno
 ---
 
-<footer class="w-full bg-[#050505] py-16 px-6 border-t border-white/5 mt-auto">
-  <div class="max-w-7xl mx-auto">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+<footer class="w-full bg-[#030303] relative overflow-hidden py-16 px-6 border-t border-white/5 mt-auto">
+  <!-- Subtle Glow Effect -->
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-primary/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+  <div class="max-w-7xl mx-auto relative z-10">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
       
       <!-- Brand & Info -->
-      <div class="col-span-1 md:col-span-2">
-        <a href="/" class="text-2xl font-bold tracking-tight text-white mb-6 block">
+      <div class="col-span-1 md:col-span-5 pr-8">
+        <a href="/" class="text-3xl font-black tracking-tighter text-white mb-6 block drop-shadow-lg">
           ALVAREZ<span class="text-primary">PLACAS</span>
         </a>
-        <p class="text-gray-500 text-sm leading-relaxed max-w-sm">
+        <p class="text-gray-400 text-sm leading-relaxed max-w-sm font-medium">
           Líderes en la industria del mueble desde 2018. 
           Tecnología industrial y soluciones integrales para profesionales de la carpintería.
         </p>
         <div class="flex gap-4 mt-8">
-          <a href="https://www.instagram.com/alvarezplacas/" target="_blank" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-primary hover:text-white hover:border-primary transition-all">
+          <a href="https://www.instagram.com/alvarezplacas/" target="_blank" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-300 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-lg">
             <i class="fa-brands fa-instagram"></i>
           </a>
-          <a href="https://wa.me/541161411842" target="_blank" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-green-500 hover:text-white hover:border-green-500 transition-all">
+          <a href="https://wa.me/541161411842" target="_blank" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-300 hover:bg-green-500 hover:text-white hover:border-green-500 transition-all shadow-lg">
             <i class="fa-brands fa-whatsapp"></i>
           </a>
+        </div>
+        
+        <!-- Certificación de Calidad -->
+        <div class="mt-10 inline-flex items-center gap-4 bg-white/[0.02] border border-white/5 p-3 pr-6 rounded-2xl opacity-60 hover:opacity-100 transition-opacity">
+            <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center p-2 border border-white/10">
+                <img src="https://admin.alvarezplacas.com.ar/assets/209a486b-8623-4c3e-8f8e-2a3288f1f0fd" alt="Logo Alvarez Placas" class="w-full h-full object-contain drop-shadow-md grayscale opacity-80" />
+            </div>
+            <div class="flex flex-col">
+                <span class="text-[9px] uppercase tracking-[0.2em] text-primary font-black mb-0.5">Calidad Certificada</span>
+                <span class="text-xs text-white font-bold tracking-widest">RESPALDO OFICIAL</span>
+            </div>
         </div>
       </div>
 
       <!-- Navigation -->
-      <div>
-        <h4 class="text-white font-bold text-xs uppercase tracking-widest mb-6">Navegación</h4>
+      <div class="col-span-1 md:col-span-2">
+        <h4 class="text-white font-black text-xs uppercase tracking-[0.15em] mb-6 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-primary/50"></span> Navegación
+        </h4>
         <ul class="space-y-4">
-          <li><a href="/quienes-somos" class="text-gray-500 hover:text-primary text-sm transition-colors">Quienes Somos</a></li>
-          <li><a href="/catalogo" class="text-gray-500 hover:text-primary text-sm transition-colors">Catálogo</a></li>
-          <li><a href="/herramientas" class="text-gray-500 hover:text-primary text-sm transition-colors">Herramientas</a></li>
-          <li><a href="/presupuestador" class="text-gray-500 hover:text-primary text-sm transition-colors">Presupuestador</a></li>
+          <li><a href="/quienes-somos" class="text-gray-400 hover:text-primary text-sm font-medium transition-colors flex items-center gap-2 group"><i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i> Quienes Somos</a></li>
+          <li><a href="/catalogo" class="text-gray-400 hover:text-primary text-sm font-medium transition-colors flex items-center gap-2 group"><i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i> Catálogo</a></li>
+          <li><a href="/herramientas" class="text-gray-400 hover:text-primary text-sm font-medium transition-colors flex items-center gap-2 group"><i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i> Herramientas</a></li>
+          <li><a href="/presupuestador" class="text-gray-400 hover:text-primary text-sm font-medium transition-colors flex items-center gap-2 group"><i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"></i> Presupuestador</a></li>
         </ul>
       </div>
 
       <!-- Contact -->
-      <div>
-        <h4 class="text-white font-bold text-xs uppercase tracking-widest mb-6">Contacto</h4>
-        <ul class="space-y-4 text-sm text-gray-500">
-          <li class="flex items-start gap-3">
-            <i class="fa-solid fa-location-dot mt-1 text-primary"></i>
-            <span>Mariano Bradley y Av. Vergara,<br/>Ciudad Tesei, Hurlingham.</span>
+      <div class="col-span-1 md:col-span-3">
+        <h4 class="text-white font-black text-xs uppercase tracking-[0.15em] mb-6 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-primary/50"></span> Contacto
+        </h4>
+        <ul class="space-y-5 text-sm text-gray-400 font-medium">
+          <li class="flex items-start gap-4">
+            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20"><i class="fa-solid fa-location-dot text-primary text-xs"></i></div>
+            <span class="mt-1 leading-relaxed">Mariano Bradley y Av. Vergara,<br/>Ciudad Tesei, Hurlingham.</span>
           </li>
-          <li class="flex items-center gap-3">
-            <i class="fa-solid fa-phone text-primary"></i>
+          <li class="flex items-center gap-4">
+            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20"><i class="fa-solid fa-phone text-primary text-xs"></i></div>
             <span>11 6141-11842</span>
           </li>
           <li>
-            <a href="https://mail.alvarezplacas.com.ar/" target="_blank" class="flex items-center gap-3 hover:text-white transition-colors">
-              <i class="fa-solid fa-envelope text-primary"></i>
+            <a href="https://mail.alvarezplacas.com.ar/" target="_blank" class="flex items-center gap-4 hover:text-white transition-colors group">
+              <div class="w-8 h-8 rounded-full bg-white/5 group-hover:bg-primary/20 flex items-center justify-center flex-shrink-0 border border-white/10 group-hover:border-primary/30 transition-colors"><i class="fa-solid fa-envelope text-gray-400 group-hover:text-primary transition-colors text-xs"></i></div>
               <span>Webmail Interno</span>
             </a>
           </li>
@@ -59,13 +78,15 @@
       </div>
 
       <!-- Suppliers -->
-      <div>
-        <h4 class="text-white font-bold text-xs uppercase tracking-widest mb-6">Socios</h4>
-        <div class="bg-white/5 border border-white/10 rounded-xl p-5">
-            <p class="text-gray-400 text-xs leading-relaxed mb-4">
+      <div class="col-span-1 md:col-span-2">
+        <h4 class="text-white font-black text-xs uppercase tracking-[0.15em] mb-6 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-primary/50"></span> Socios
+        </h4>
+        <div class="bg-gradient-to-b from-white/5 to-transparent border border-white/10 rounded-2xl p-5 shadow-xl hover:border-primary/30 transition-colors group">
+            <p class="text-gray-400 text-xs leading-relaxed mb-4 font-medium">
                 <strong>Atención a proveedores:</strong> envíanos tu propuesta hoy mismo.
             </p>
-            <a href="/proveedores" class="inline-flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider hover:gap-3 transition-all">
+            <a href="/proveedores" class="inline-flex items-center gap-2 text-primary font-bold text-[11px] uppercase tracking-wider hover:gap-3 transition-all bg-primary/10 px-4 py-2 rounded-lg group-hover:bg-primary group-hover:text-white">
                 Ingresa aquí <i class="fa-solid fa-arrow-right"></i>
             </a>
         </div>
@@ -75,20 +96,13 @@
 
     <!-- Bottom Bar -->
     <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-      <p class="text-[10px] text-gray-600 uppercase tracking-widest font-medium">
-        &copy; 2026 <span class="text-gray-500">Alvarez Placas</span> — Todos los derechos reservados.
+      <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+        &copy; 2026 <span class="text-white">Alvarez Placas</span> — Todos los derechos reservados.
       </p>
-      <div class="text-[9px] text-gray-700 opacity-50 hover:opacity-100 transition-opacity flex items-center gap-2">
+      <div class="text-[10px] text-gray-600 opacity-60 hover:opacity-100 transition-opacity flex items-center gap-2 font-medium tracking-wide">
         <span>Diseño & Desarrollo por</span>
-        <span class="text-gray-400">Javier Mix</span>
+        <span class="text-gray-300 font-bold">Javier Mix</span>
       </div>
     </div>
   </div>
 </footer>
-
-<style>
-  footer {
-    position: relative;
-    z-index: 10;
-  }
-</style>
