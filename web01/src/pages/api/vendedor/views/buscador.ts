@@ -8,6 +8,7 @@ import { query } from '../../../../../Backend/conexiones/lib/db.js';
 
 export const GET: APIRoute = async () => {
     let recentDocs: any[] = [];
+    let statsToday = { count: 0, total: 0 };
     try {
         // Fetch 15 most recent documents to display on initial view load
         const dbResult = await query(`
@@ -15,11 +16,26 @@ export const GET: APIRoute = async () => {
                    client_cta, client_name, client_cuit, total_amount, seller_code
             FROM documentos_facturacion
             ORDER BY created_at DESC, doc_date DESC
-            LIMIT 15;
+            LIMIT 10;
         `, []);
         recentDocs = dbResult.rows;
+
+        // Fetch today's stats for invoices (FA-%)
+        const todayStr = new Date().toISOString().split('T')[0];
+        const statsResult = await query(`
+            SELECT COUNT(*) as count, SUM(total_amount) as total
+            FROM documentos_facturacion
+            WHERE doc_type LIKE 'FA-%'
+              AND DATE(doc_date) = $1
+        `, [todayStr]);
+        if (statsResult.rows.length > 0) {
+            statsToday = {
+                count: parseInt(statsResult.rows[0].count) || 0,
+                total: parseFloat(statsResult.rows[0].total) || 0
+            };
+        }
     } catch (e: any) {
-        console.error('Error fetching recent docs:', e.message);
+        console.error('Error fetching docs or stats:', e.message);
     }
 
     const html = `
@@ -29,18 +45,27 @@ export const GET: APIRoute = async () => {
       <h2 class="view-title">Buscador Inteligente de <span class="text-accent-red">Documentos</span></h2>
       <p class="view-subtitle">Full-Text Search impulsado por PostgreSQL v16. Busca al instante por cliente, CUIT, número o contenido interno del PDF.</p>
     </div>
-    <div class="view-count" id="docs-count-badge">${recentDocs.length} recientes</div>
+    <div class="view-stats-header" style="display:flex; gap:16px; align-items:center;">
+      <div class="view-count" id="docs-count-badge">${recentDocs.length} recientes</div>
+      <div class="view-count stats-today" style="background:#10b98122; border-color:#10b981; color:#10b981;">
+        <i class="fas fa-chart-line" style="margin-right:4px;"></i>
+        Hoy: ${statsToday.count} facturas emitidas ($${statsToday.total.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits:2})})
+      </div>
+    </div>
   </div>
 
   <!-- SEARCH INTERFACE -->
-  <div class="search-box-wrap">
-    <div class="search-input-container">
+  <div class="search-box-wrap" style="display:flex; gap:12px;">
+    <div class="search-input-container" style="flex:1;">
       <i class="fas fa-search search-field-icon"></i>
       <input type="text" id="doc-search-input" class="search-input" placeholder="Buscar por cliente, CUIT, número de factura o texto del cuerpo del PDF (ej: Faplac Sahara)..." autocomplete="off"/>
       <button id="doc-search-btn" class="search-btn">
         <i class="fas fa-arrow-right"></i>
       </button>
     </div>
+    <button id="doc-search-order-btn" class="search-btn" style="width:auto; padding:0 16px; position:static;">
+      <i class="fas fa-sort-amount-down" style="margin-right:6px;"></i> Más nuevos
+    </button>
   </div>
 
   <!-- LOADER SPINNER -->
@@ -102,6 +127,13 @@ export const GET: APIRoute = async () => {
         }).join('')}
       </tbody>
     </table>
+  </div>
+
+  <!-- PAGINATION CONTROLS -->
+  <div id="pagination-controls" style="display:flex; justify-content:center; align-items:center; margin-top:20px; gap:16px;" class="hidden">
+    <button id="page-prev-btn" class="search-btn" style="width:auto; padding:0 16px; position:static;">Anterior</button>
+    <span id="page-info" style="color:#aaa; font-size:13px; font-weight:600;">Página 1</span>
+    <button id="page-next-btn" class="search-btn" style="width:auto; padding:0 16px; position:static;">Siguiente</button>
   </div>
 
   <!-- PDF PREVIEW LIGHTBOX MODAL -->
@@ -325,27 +357,39 @@ export const GET: APIRoute = async () => {
 </style>
 ` + '<script>' + `
   (function() {
+    let currentPage = 1;
+    const currentLimit = 10;
+    let currentOrder = 'desc';
+
     const input = document.getElementById('doc-search-input');
     const btn = document.getElementById('doc-search-btn');
+    const orderBtn = document.getElementById('doc-search-order-btn');
     const loader = document.getElementById('doc-search-loader');
     const tableWrap = document.getElementById('search-results-table-wrap');
     const tableBody = document.getElementById('docs-table-body');
     const badge = document.getElementById('docs-count-badge');
+    
+    const pagControls = document.getElementById('pagination-controls');
+    const prevBtn = document.getElementById('page-prev-btn');
+    const nextBtn = document.getElementById('page-next-btn');
+    const pageInfo = document.getElementById('page-info');
 
     // Trigger search
-    async function executeSearch() {
+    async function executeSearch(resetPage = true) {
+      if (resetPage) currentPage = 1;
       const queryVal = input.value.trim();
       
       loader.classList.remove('hidden');
       tableWrap.classList.add('hidden');
+      pagControls.classList.add('hidden');
 
       try {
-        const res = await fetch('/api/documentos/search?q=' + encodeURIComponent(queryVal));
+        const res = await fetch('/api/documentos/search?q=' + encodeURIComponent(queryVal) + '&page=' + currentPage + '&limit=' + currentLimit + '&order=' + currentOrder);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         
         // Update badge
-        badge.textContent = data.count + (queryVal ? ' encontrados' : ' recientes');
+        badge.textContent = data.count + (queryVal ? ' encontrados' : ' documentos');
 
         if (data.count === 0) {
           tableBody.innerHTML = \`
@@ -364,29 +408,43 @@ export const GET: APIRoute = async () => {
             const formatDate = doc.doc_date ? new Date(doc.doc_date).toLocaleDateString('es-AR') : '—';
             return \`
               <tr class="doc-row">
-                <td><span class="doc-badge badge-\\\${(doc.doc_type || 'X').toLowerCase()}">\\\${doc.doc_type || 'X'}</span></td>
-                <td><span class="doc-number">\\\${doc.pos_number || '0000'} - \\\${doc.doc_number || '00000000'}</span></td>
-                <td class="doc-date">\\\${formatDate}</td>
+                <td><span class="doc-badge badge-\${(doc.doc_type || 'X').toLowerCase()}">\${doc.doc_type || 'X'}</span></td>
+                <td><span class="doc-number">\${doc.pos_number || '0000'} - \${doc.doc_number || '00000000'}</span></td>
+                <td class="doc-date">\${formatDate}</td>
                 <td>
                   <div class="client-info">
-                    <span class="client-name">\\\${doc.client_name || 'Consumidor Final'}</span>
-                    <span class="client-cta">Cta #\\\${doc.client_cta || '00000'} | CUIT \\\${doc.client_cuit || '—'}</span>
+                    <span class="client-name">\${doc.client_name || 'Consumidor Final'}</span>
+                    <span class="client-cta">Cta #\${doc.client_cta || '00000'} | CUIT \${doc.client_cuit || '—'}</span>
                   </div>
                 </td>
-                <td class="doc-total">\\\${formatTotal}</td>
-                <td class="doc-seller"><i class="fas fa-user-tag text-muted"></i> \\\${doc.seller_code || '—'}</td>
+                <td class="doc-total">\${formatTotal}</td>
+                <td class="doc-seller"><i class="fas fa-user-tag text-muted"></i> \${doc.seller_code || '—'}</td>
                 <td style="text-align:right;">
                   <div class="action-buttons-container">
-                    <button class="action-btn preview-btn" onclick="previewDoc('\\\\\\\${doc.id}', '\\\\\\\${doc.filename}')" title="Previsualizar PDF">
+                    <button class="action-btn preview-btn" onclick="previewDoc('\${doc.id}', '\${doc.filename}')" title="Previsualizar PDF">
                       <i class="fas fa-eye"></i>
                     </button>
-                    <a href="/api/documentos/download?id=\\\${doc.id}" class="action-btn download-btn" download="\\\${doc.filename}" title="Descargar PDF">
+                    <a href="/api/documentos/download?id=\${doc.id}" class="action-btn download-btn" download="\${doc.filename}" title="Descargar PDF">
                       <i class="fas fa-download"></i>
                     </a>
                   </div>
                 </td>
               </tr>\`;
           }).join('');
+          
+          // Setup pagination UI
+          const totalPages = data.totalPages || 1;
+          if (totalPages > 1 || currentPage > 1) {
+            pageInfo.textContent = 'Página ' + currentPage + ' de ' + totalPages;
+            prevBtn.disabled = currentPage <= 1;
+            prevBtn.style.opacity = currentPage <= 1 ? '0.5' : '1';
+            prevBtn.style.pointerEvents = currentPage <= 1 ? 'none' : 'auto';
+            
+            nextBtn.disabled = currentPage >= totalPages;
+            nextBtn.style.opacity = currentPage >= totalPages ? '0.5' : '1';
+            nextBtn.style.pointerEvents = currentPage >= totalPages ? 'none' : 'auto';
+            pagControls.classList.remove('hidden');
+          }
         }
       } catch (err) {
         console.error('Error during search:', err);
@@ -404,12 +462,38 @@ export const GET: APIRoute = async () => {
     }
 
     // Input event handlers
-    btn.addEventListener('click', executeSearch);
+    btn.addEventListener('click', () => executeSearch(true));
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        executeSearch();
+        executeSearch(true);
       }
     });
+    
+    orderBtn.addEventListener('click', () => {
+      currentOrder = currentOrder === 'desc' ? 'asc' : 'desc';
+      orderBtn.innerHTML = currentOrder === 'desc' 
+        ? '<i class="fas fa-sort-amount-down" style="margin-right:6px;"></i> Más nuevos'
+        : '<i class="fas fa-sort-amount-up" style="margin-right:6px;"></i> Más viejos';
+      executeSearch(true);
+    });
+    
+    // Pagination event handlers
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        executeSearch(false);
+      }
+    });
+    nextBtn.addEventListener('click', () => {
+      currentPage++;
+      executeSearch(false);
+    });
+
+    // Run initial search to show pagination if there are more than 10 total docs
+    // (We wrap it in setTimeout to allow initial fade-in animation)
+    setTimeout(() => {
+       executeSearch(true);
+    }, 100);
 
     // Close preview modal handlers
     const modal = document.getElementById('pdf-preview-modal');
@@ -429,7 +513,7 @@ export const GET: APIRoute = async () => {
     });
 
     // Expose PDF preview function globally
-    (window as any).previewDoc = function(id, filename) {
+    window.previewDoc = function(id, filename) {
       document.getElementById('pdf-modal-filename').textContent = filename;
       iframe.src = '/api/documentos/download?id=' + id;
       modal.classList.add('show');

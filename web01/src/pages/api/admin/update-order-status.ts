@@ -11,7 +11,7 @@ export const POST = async ({ request, cookies }) => {
     }
 
     try {
-        const { pedidoId, status } = await request.json();
+        const { pedidoId, status, vendedorId } = await request.json();
 
         if (!pedidoId || !status) {
             return new Response(JSON.stringify({ error: 'Faltan datos' }), { status: 400 });
@@ -24,8 +24,12 @@ export const POST = async ({ request, cookies }) => {
 
         const oldStatus = order.status;
 
-        // 2. Actualizar estado del pedido
-        const result = await directus.request(updateItem('pedidos', pedidoId, { status }));
+        // 2. Actualizar estado del pedido (y vendedor opcionalmente)
+        const updatePayload: any = { status };
+        if (vendedorId !== undefined) {
+            updatePayload.vendedor_id = vendedorId === "" || vendedorId === "null" ? null : vendedorId;
+        }
+        const result = await directus.request(updateItem('pedidos', pedidoId, updatePayload));
 
         // 3. Lógica de PUNTOS: Si pasa a 'entregado' y no lo estaba antes
         if (status === 'entregado' && oldStatus !== 'entregado' && order.cliente_id) {

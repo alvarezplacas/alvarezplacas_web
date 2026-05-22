@@ -262,6 +262,9 @@ try {
                         const result = await response.json();
                         if (response.ok && result.success) {
                             showToast(result.message, 'success');
+                            if (result.whatsappUrl) {
+                                window.open(result.whatsappUrl, '_blank');
+                            }
                             setTimeout(() => { 
                                 window.location.href = result.redirectUrl || '/cliente'; 
                             }, 2000);

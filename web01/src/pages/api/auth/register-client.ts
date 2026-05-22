@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { createDirectus, rest, readItems, createItem, staticToken, updateItem } from '@directus/sdk';
+import { createDirectus, rest, readItems, readItem, createItem, staticToken, updateItem } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
 import { registerSession } from '../../../session_store';
 import { directus } from '@conexiones/directus.js';
@@ -132,10 +132,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 registerSession(ip, userAgent, clientId, 'client');
             }
 
+            // Notificación en el Dashboard
+            let sellerName = 'Asesor';
+            try {
+                if (assignedSellerId && assignedSellerId !== 'auto') {
+                    const sellerObj = await directus.request(readItem('vendedores', assignedSellerId, { fields: ['name'] }));
+                    if (sellerObj && sellerObj.name) sellerName = sellerObj.name;
+                }
+                await directus.request(createItem('mensajes', {
+                    mensaje: `¡Tienes un nuevo cliente registrado! Nombre: ${name} | Teléfono: ${phone}`,
+                    fecha_envio: new Date().toISOString(),
+                    visto: false,
+                    remitente_id: 'sistema',
+                    destinatario_id: assignedSellerId.toString(),
+                    prioridad: 'alta'
+                }));
+            } catch (e) {
+                console.error("Error creating dashboard notification:", e);
+            }
+
+            const whatsappMessage = encodeURIComponent(`Mensaje para ${sellerName} desde el sitio web:\nHola, soy ${name} y me acabo de registrar como nuevo cliente en el Club.`);
+            const whatsappUrl = `https://wa.me/5491161411842?text=${whatsappMessage}`;
+
             return new Response(JSON.stringify({ 
                 success: true, 
                 message: 'Registro exitoso. ¡Bienvenido al Club!',
-                redirectUrl: '/cliente'
+                redirectUrl: '/cliente',
+                whatsappUrl: whatsappUrl
             }), { status: 201, headers: { 'Content-Type': 'application/json' } });
 
         } catch (directusError: any) {

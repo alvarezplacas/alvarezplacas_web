@@ -3,6 +3,7 @@ import { directus } from '@conexiones/directus.js';
 import { readItems } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
 import { registerSession } from '../../../session_store';
+import { getConfig } from '../vendedor/config-horario';
 
 export const GET: APIRoute = ({ redirect }) => {
     return redirect('/login');
@@ -53,6 +54,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             console.log(`[SmartRedirect] Detectado dominio corporativo para: ${email}`);
             const sellerResults = await directus.request(readItems('vendedores', {
                 filter: { email: { _eq: email } },
+                fields: ['id', 'name', 'email', 'role', 'password_hash', 'status'],
                 limit: 1
             }));
             if (sellerResults?.[0]) {
@@ -113,12 +115,43 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const rememberMe = formData.get('remember-me') === 'on';
         
         if (userType === 'seller') {
-            cookies.set('seller_session', user.id.toString(), {
+            const isFacundo = email === 'facundo@alvarezplacas.com.ar';
+            let maxAge: number | undefined = rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 * 30;
+            let expires: Date | undefined = undefined;
+
+            // Facundo (admin) y Fernando (cajero) no tienen restricción de horario
+            const isExemptFromHours = isFacundo || email === 'fernando@alvarezplacas.com.ar' || user.role === 'cajero';
+
+            if (!isExemptFromHours) {
+                const config = getConfig();
+                const [cierreHoras, cierreMinutos] = (config.horaCierre || '18:00').split(':').map(Number);
+                
+                const now = new Date();
+                const closingTime = new Date(now);
+                closingTime.setHours(cierreHoras, cierreMinutos, 0, 0);
+
+                if (now.getTime() >= closingTime.getTime()) {
+                    return new Response(JSON.stringify({ 
+                        success: false, 
+                        message: `Fuera de horario de atención (cierra a las ${config.horaCierre}hs)`,
+                        requiresWhatsApp: true,
+                        sellerName: user.nombre || 'Vendedor'
+                    }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+                }
+
+                expires = closingTime;
+                maxAge = undefined;
+            }
+
+            const cookieOptions: any = {
                 path: '/',
-                maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 * 30,
                 httpOnly: true,
                 sameSite: 'lax'
-            });
+            };
+            if (expires) cookieOptions.expires = expires;
+            else if (maxAge) cookieOptions.maxAge = maxAge;
+
+            cookies.set('seller_session', user.id.toString(), cookieOptions);
             registerSession(ip, userAgent, user.id.toString(), 'seller');
         } else {
             cookies.set('client_session', user.id.toString(), {
@@ -133,6 +166,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const role = user.role || (userType === 'seller' ? 'seller' : 'client');
         let redirectUrl = '/cliente';
         if (role === 'admin' || email === 'admin@alvarezplacas.com.ar') redirectUrl = '/admin';
+        else if (role === 'ceo' || email === 'guillermo@alvarezplacas.com.ar') redirectUrl = '/ceo';
+        else if (role === 'cajero' || email === 'fernando@alvarezplacas.com.ar') redirectUrl = '/vendedor/caja';
         else if (role === 'seller' || userType === 'seller') redirectUrl = '/vendedor';
 
         return new Response(JSON.stringify({ 

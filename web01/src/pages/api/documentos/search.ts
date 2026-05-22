@@ -4,21 +4,27 @@ import { query } from '../../../../Backend/conexiones/lib/db.js';
 export const GET: APIRoute = async ({ url }) => {
     try {
         const searchQuery = url.searchParams.get('q')?.trim() || '';
+        const page = parseInt(url.searchParams.get('page') || '1') || 1;
+        const limit = parseInt(url.searchParams.get('limit') || '10') || 10;
+        const offset = (page - 1) * limit;
+        const order = url.searchParams.get('order') === 'asc' ? 'ASC' : 'DESC';
         
         let dbResult;
+        let totalCount = 0;
         
         if (!searchQuery) {
-            // No query: Return the last 50 documents
+            // No query: Return the recent documents paginated
             const queryText = `
                 SELECT 
                     id, filename, doc_type, pos_number, doc_number, doc_date,
                     client_cta, client_name, client_cuit, total_amount, seller_code,
-                    created_at
+                    created_at,
+                    count(*) OVER() AS full_count
                 FROM documentos_facturacion
-                ORDER BY created_at DESC, doc_date DESC
-                LIMIT 50;
+                ORDER BY doc_date ${order}, created_at ${order}
+                LIMIT $1 OFFSET $2;
             `;
-            dbResult = await query(queryText, []);
+            dbResult = await query(queryText, [limit, offset]);
         } else {
             // Intelligent full-text and field-based search
             const sqlQuery = `
@@ -26,6 +32,7 @@ export const GET: APIRoute = async ({ url }) => {
                     id, filename, doc_type, pos_number, doc_number, doc_date,
                     client_cta, client_name, client_cuit, total_amount, seller_code,
                     created_at,
+                    count(*) OVER() AS full_count,
                     ts_rank(fts_doc, websearch_to_tsquery('spanish', $1)) as rank
                 FROM documentos_facturacion
                 WHERE 
@@ -38,18 +45,28 @@ export const GET: APIRoute = async ({ url }) => {
                     (CASE WHEN doc_number ILIKE $2 THEN 2.0 ELSE 0.0 END) + 
                     (CASE WHEN client_name ILIKE $2 THEN 1.5 ELSE 0.0 END) +
                     ts_rank(fts_doc, websearch_to_tsquery('spanish', $1)) DESC,
-                    doc_date DESC
-                LIMIT 50;
+                    doc_date ${order}
+                LIMIT $3 OFFSET $4;
             `;
             
             const likeParam = `%${searchQuery}%`;
-            dbResult = await query(sqlQuery, [searchQuery, likeParam]);
+            dbResult = await query(sqlQuery, [searchQuery, likeParam, limit, offset]);
+        }
+
+        if (dbResult.rows.length > 0) {
+            totalCount = parseInt(dbResult.rows[0].full_count) || dbResult.rows.length;
         }
 
         return new Response(JSON.stringify({
             status: 'success',
-            count: dbResult.rows.length,
-            results: dbResult.rows
+            count: totalCount,
+            page: page,
+            limit: limit,
+            totalPages: Math.ceil(totalCount / limit),
+            results: dbResult.rows.map((r: any) => {
+                const { full_count, ...cleanRow } = r;
+                return cleanRow;
+            })
         }), {
             status: 200,
             headers: {

@@ -85,27 +85,85 @@ export const POST: APIRoute = async ({ request }) => {
         let docType = 'X';
         let posNumber = '0000';
         let docNumber = '00000000';
+
+        // Pattern 1: Standard internal format: FA-B-1901-00010451.pdf
         const nameParts = filename.match(/^([A-Z0-9-]+)-([0-9]+)-([0-9]+)/i);
+        // Pattern 2: AFIP official format: 23142843099_011_00002_00000144 ALVAREZ.pdf
+        const namePartsAfip = filename.match(/^([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)/i);
+        // Pattern 3: Standard generic invoice name containing "Factura", "NC", "ND", "Recibo" or "Certif"
+        const namePartsGeneric = filename.match(/(Factura|NC|ND|Recibo|Certif|Ret)[^\d]*(\d+)[^\d]*(\d+)?/i);
+
         if (nameParts) {
             docType = nameParts[1].toUpperCase();
             posNumber = nameParts[2];
             docNumber = nameParts[3];
+        } else if (namePartsAfip) {
+            const typeCode = namePartsAfip[2];
+            posNumber = namePartsAfip[3];
+            docNumber = namePartsAfip[4];
+            
+            const typeMap: Record<string, string> = {
+                '001': 'FA-A', '002': 'ND-A', '003': 'NC-A',
+                '006': 'FA-B', '007': 'ND-B', '008': 'NC-B',
+                '011': 'FA-C', '012': 'ND-C', '013': 'NC-C',
+                '015': 'RE-A', '051': 'FA-M'
+            };
+            docType = typeMap[typeCode] || ('FA-' + typeCode);
+        } else if (namePartsGeneric) {
+            const typeWord = namePartsGeneric[1].toLowerCase();
+            if (typeWord.includes('factura')) docType = 'FA-B';
+            else if (typeWord.includes('nc')) docType = 'NC-B';
+            else if (typeWord.includes('nd')) docType = 'ND-B';
+            else if (typeWord.includes('recibo')) docType = 'RE-B';
+            else if (typeWord.includes('certif') || typeWord.includes('ret')) docType = 'CERT';
+            
+            posNumber = namePartsGeneric[2].padStart(4, '0');
+            docNumber = namePartsGeneric[3] ? namePartsGeneric[3].padStart(8, '0') : '00000000';
         }
 
-        // Extract Date: e.g. FECHA: 03/01/26
+        // If after filename parsing we still don't have a valid doc number, try to extract it from text body
+        if (docNumber === '00000000' || posNumber === '0000') {
+            // Search for AFIP style Point of Sale and Comp Number in text
+            // e.g. "Punto de Venta: Comp. Nro:      00002 00000144"
+            const bodyPosCompMatch = textContent.match(/Punto\s+de\s+Venta\s*:\s*(?:Comp\.\s*Nro\s*:\s*)?(\d+)\s+(\d+)/i) 
+                || textContent.match(/P\.V\.\s*:\s*(\d+)\s*-\s*Comp\.\s*Nº\s*:\s*(\d+)/i)
+                || textContent.match(/PUNTO\s+DE\s+VENTA\s*(\d+)/i);
+            
+            if (bodyPosCompMatch) {
+                posNumber = bodyPosCompMatch[1].padStart(4, '0');
+                if (bodyPosCompMatch[2]) {
+                    docNumber = bodyPosCompMatch[2].padStart(8, '0');
+                }
+            }
+        }
+
+        // 6.2 Extract Date: e.g. FECHA: 03/01/26 or standard DD/MM/YYYY dates
         let docDate = new Date().toISOString().split('T')[0];
         const dateMatch = textContent.match(/FECHA:\s*([0-9\/]+)/i);
+        const dateMatchEmission = textContent.match(/Fecha\s+de\s+Emisión\s*:\s*([0-9\/]+)/i)
+            || textContent.match(/Fecha\s*:\s*([0-9\/]+)/i);
+        
+        // Find any standard DD/MM/YYYY date in the text as a backup
+        const genericDateMatch = textContent.match(/\b\d{2}\/\d{2}\/\d{2,4}\b/);
+
         if (dateMatch) {
             docDate = parseSpanishDate(dateMatch[1]);
+        } else if (dateMatchEmission) {
+            docDate = parseSpanishDate(dateMatchEmission[1]);
+        } else if (genericDateMatch) {
+            docDate = parseSpanishDate(genericDateMatch[0]);
         }
 
-        // Extract Customer Account and Name: e.g. Señor/es: Cta Nº:	GUILLERMO PAREDES 11616
+        // 6.3 Extract Customer Account and Name
         let clientCta = '00000';
         let clientName = 'Consumidor Final';
-        const clientMatch = textContent.match(/Señor\/es:\s*Cta\s*Nº:\s*([^\n]+)/i);
+        
+        // Try original style "Señor/es: Cta Nº:	GUILLERMO PAREDES 11616"
+        const clientMatch = textContent.match(/Señor\/es:\s*Cta\s*Nº:\s*([^\n]+)/i)
+            || textContent.match(/Señor\/es\s*:\s*([^\n]+)/i);
+            
         if (clientMatch) {
             const rawClient = clientMatch[1].trim();
-            // Try to split name and account code (usually the last word or code)
             const parts = rawClient.split(/\s+/);
             if (parts.length > 1) {
                 const possibleCta = parts[parts.length - 1];
@@ -118,25 +176,83 @@ export const POST: APIRoute = async ({ request }) => {
             } else {
                 clientName = rawClient;
             }
+        } else {
+            // AFIP style "Apellido y Nombre / Razón Social: ..."
+            // Look for this label and extract text following it
+            const afipClientMatch = textContent.match(/(?:Apellido\s+y\s+Nombre\s*\/\s*)?Razón\s+Social\s*:\s*([^\n]*)/i)
+                || textContent.match(/Cliente\s*:\s*([^\n]*)/i)
+                || textContent.match(/Señor\s*\(es\)\s*:\s*([^\n]*)/i);
+                
+            if (afipClientMatch && afipClientMatch[1].trim().length > 0) {
+                const tempName = afipClientMatch[1].trim();
+                // Filter out ALVAREZ PLACAS S.R.L. if it matched Alvarez as the client in purchase invoices
+                if (tempName.toUpperCase().includes('ALVAREZ PLACAS')) {
+                    // Try to find the other party! In purchase invoices, the seller is the issuer.
+                    // "Razón Social: GABELLONI SERGIO GUSTAVO"
+                    const sellerNameMatch = textContent.match(/Razón\s+Social\s*:\s*([^\n]+)/i);
+                    if (sellerNameMatch && !sellerNameMatch[1].toUpperCase().includes('ALVAREZ PLACAS')) {
+                        clientName = sellerNameMatch[1].trim();
+                    } else {
+                        clientName = tempName;
+                    }
+                } else {
+                    clientName = tempName;
+                }
+            } else {
+                // If it is an AFIP invoice, look at lines around the top
+                // Search for GABELLONI or other uppercase lines
+                const lines = textContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                for (const line of lines) {
+                    if (line.includes('ALVAREZ PLACAS S.R.L.')) {
+                        continue;
+                    }
+                    if (line.toUpperCase() === line && line.length > 4 && !line.includes(':') && !/^\d+$/.test(line) && !line.includes('PÁG') && !line.includes('ORIGINAL') && !line.includes('TRIPLICADO') && !line.includes('DUPLICADO')) {
+                        clientName = line;
+                        break;
+                    }
+                }
+            }
         }
 
-        // Extract CUIT/DNI: e.g. C.U.I.T:	CONSUMIDOR FINAL DNI 39097797
+        // 6.4 Extract CUIT/DNI
         let clientCuit = '';
-        const cuitMatch = textContent.match(/C\.U\.I\.T:\s*([^\n]+)/i);
+        const cuitMatch = textContent.match(/(?:C\.U\.I\.T|CUIT|Documento)\s*:\s*([^\n]+)/i)
+            || textContent.match(/CUIT\s*(\d{2}-\d{8}-\d|\d{11})/i);
+            
         if (cuitMatch) {
             clientCuit = cuitMatch[1].trim();
+        } else {
+            // Find any CUIT in the text (format XX-XXXXXXXX-X or 11 digits)
+            const cuits = textContent.match(/\b\d{2}-\d{8}-\d\b|\b\d{11}\b/g) || [];
+            // Skip Alvarez Placas own CUIT if possible
+            for (const cuit of cuits) {
+                const cleanCuit = cuit.replace(/-/g, '');
+                if (cleanCuit !== '23142843099') {
+                    clientCuit = cuit;
+                    break;
+                }
+            }
         }
 
-        // Extract Total Amount: e.g. TOTAL $ 305.700,00
+        // 6.5 Extract Total Amount
         let totalAmount = 0;
         const totalMatch = textContent.match(/TOTAL\s*\$\s*([\d\.,]+)/i);
+        const afipTotalMatch = textContent.match(/Importe\s+Total\s*:\s*\$\s*([\d\.,]+)/i)
+            || textContent.match(/Total\s*:\s*\$\s*([\d\.,]+)/i);
+        const genericTotalMatch = textContent.match(/(?:Total|Importe\s+Total|Subtotal)\D*([\d\.,]+)/i);
+        
         if (totalMatch) {
             totalAmount = parseArgentineAmount(totalMatch[1]);
+        } else if (afipTotalMatch) {
+            totalAmount = parseArgentineAmount(afipTotalMatch[1]);
+        } else if (genericTotalMatch) {
+            totalAmount = parseArgentineAmount(genericTotalMatch[1]);
         }
 
-        // Extract Seller Code: e.g. VENDEDOR 30005
+        // 6.6 Extract Seller Code
         let sellerCode = '';
-        const sellerMatch = textContent.match(/VENDEDOR\s*(\d+)/i);
+        const sellerMatch = textContent.match(/VENDEDOR\s*(\d+)/i)
+            || textContent.match(/Vendedor\s*:\s*(\d+)/i);
         if (sellerMatch) {
             sellerCode = sellerMatch[1];
         }

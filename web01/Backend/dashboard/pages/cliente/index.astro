@@ -9,11 +9,18 @@
  */
 import ClienteLayout from '../../layouts/ClienteLayout.astro';
 import { directus, readItems, readItem } from '@conexiones/directus.js';
+import { query } from '@conexiones/lib/db.js';
 
 // 1. Obtención de Identidad (Soporta Cliente, Vendedor y Admin de forma polimórfica)
 let clientId = Astro.cookies.get('client_session')?.value;
 const isSeller = Astro.cookies.has('seller_session');
 const isAdmin = Astro.cookies.has('admin_session');
+
+const url = new URL(Astro.request.url);
+const queryClientId = url.searchParams.get('id') || url.searchParams.get('clientId');
+if (queryClientId && (isSeller || isAdmin)) {
+    clientId = queryClientId;
+}
 
 if (!clientId) {
     if (isSeller || isAdmin) {
@@ -31,8 +38,9 @@ if (!clientId) {
 if (!clientId) return Astro.redirect('/login');
 
 let clientData = { name: '...', scoring: 0, client_number: '...', vendedor_id: null };
-let assignedSeller = { name: 'Asignando...', whatsapp: '' };
+let assignedSeller = { id: null, name: 'Asignando...', whatsapp: '' };
 let recentOrders = [];
+let sellerProfile = null;
 
 try {
     // 2. Cargar Datos del Cliente
@@ -42,6 +50,32 @@ try {
 
     if (clientData.vendedor_id) {
         assignedSeller = clientData.vendedor_id;
+        
+        // Cargar datos del perfil de vendedor personalizado desde PostgreSQL
+        if (assignedSeller.id) {
+            try {
+                await query(`
+                    CREATE TABLE IF NOT EXISTS vendedor_perfiles (
+                        vendedor_id INTEGER PRIMARY KEY,
+                        name VARCHAR(255),
+                        foto_personal TEXT,
+                        foto_oferta TEXT,
+                        nombre_oferta VARCHAR(255),
+                        mensaje_oferta TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                `);
+                const profileRes = await query('SELECT * FROM vendedor_perfiles WHERE vendedor_id = $1 LIMIT 1', [parseInt(assignedSeller.id)]);
+                if (profileRes?.rows?.[0]) {
+                    sellerProfile = profileRes.rows[0];
+                    if (sellerProfile.name) {
+                        assignedSeller.name = sellerProfile.name;
+                    }
+                }
+            } catch (pgErr) {
+                console.error("[Client Dashboard] Error loading seller profile from postgres:", pgErr);
+            }
+        }
     }
 
     // 3. Cargar Pedidos Recientes
@@ -165,7 +199,7 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
             </section>
 
             <!-- GRID PRINCIPAL DE HERRAMIENTAS - SOPORTE DE COMPONENTES FLEXIBLES -->
-            <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12" aria-label="Herramientas y servicios profesionales">
+            <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12" aria-label="Herramientas y servicios profesionales">
                 
                 <!-- SmartCut PRO -->
                 <a href="/herramientas/presupuestador" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] hover:bg-[oklch(0.65_0.2_40_/_0.06)] hover:border-[oklch(0.65_0.2_40_/_0.3)] transition-all flex flex-col justify-between min-h-[220px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.65_0.2_40)]" aria-label="Abrir SmartCut PRO, Optimizador de placas">
@@ -208,6 +242,17 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                     <div>
                         <h3 class="text-sm font-black text-[var(--text-main)] uppercase tracking-widest mb-2">Mis Pedidos</h3>
                         <p class="text-[10px] text-[var(--text-muted)] font-bold uppercase">Historial y Tracking</p>
+                    </div>
+                </a>
+
+                <!-- Academia de Materiales -->
+                <a href="/cliente/academia" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] hover:bg-[oklch(0.55_0.15_140_/_0.06)] hover:border-[oklch(0.55_0.15_140_/_0.3)] transition-all flex flex-col justify-between min-h-[220px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.55_0.15_140)]" aria-label="Abrir Academia de Materiales, guía interactiva de tableros">
+                    <div class="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform" aria-hidden="true">
+                        <i class="fas fa-graduation-cap text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black text-[var(--text-main)] uppercase tracking-widest mb-2">Academia</h3>
+                        <p class="text-[10px] text-[var(--text-muted)] font-bold uppercase">Manual de Materiales</p>
                     </div>
                 </a>
             </section>
@@ -276,8 +321,12 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                         
                         <p class="text-[10px] font-black uppercase tracking-widest mb-8">Asesoría Técnica</p>
                         <div class="flex items-center gap-4 mb-8">
-                            <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shadow-xl" aria-hidden="true">
-                                <i class="fas fa-user-tie text-2xl"></i>
+                            <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shadow-xl overflow-hidden" aria-hidden="true">
+                                {sellerProfile?.foto_personal ? (
+                                    <img src={sellerProfile.foto_personal} alt={assignedSeller.name} class="w-full h-full object-cover" />
+                                ) : (
+                                    <i class="fas fa-user-tie text-2xl"></i>
+                                )}
                             </div>
                             <div>
                                 <p class="text-[9px] font-black opacity-60 uppercase">Tu Vendedor</p>
@@ -289,6 +338,90 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                             <i class="fab fa-whatsapp text-lg" aria-hidden="true"></i> Iniciar Chat
                         </a>
                     </section>
+
+                    <!-- Promociones Especiales de tu Vendedor -->
+                    {sellerProfile && (
+                        (sellerProfile.promo1_titulo && sellerProfile.promo1_imagen) || 
+                        (sellerProfile.promo2_titulo && sellerProfile.promo2_imagen)
+                    ) && (
+                        <div class="space-y-6">
+                            <h3 class="text-xs font-black text-[var(--text-main)] uppercase tracking-[0.25em] pl-2 flex items-center gap-2">
+                                <span class="flex h-2 w-2 relative">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                                </span>
+                                Promos de {assignedSeller.name}
+                            </h3>
+
+                            {sellerProfile.promo1_titulo && sellerProfile.promo1_imagen && (
+                                <section class="bg-[var(--bg-card)] border-2 border-[oklch(0.6_0.15_220)] p-6 rounded-[2rem] relative overflow-hidden shadow-md transition-all group" aria-labelledby="promo1-card-title">
+                                    <div class="absolute top-3 right-3 bg-[oklch(0.6_0.15_220)] text-white font-mono font-black text-[8px] uppercase px-2 py-0.5 rounded">
+                                        PROMO DESTACADA
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-4 mb-3">
+                                        <div class="w-16 h-16 bg-white rounded-xl overflow-hidden border border-[var(--border-card)] p-1 flex-shrink-0 flex items-center justify-center">
+                                            <img src={sellerProfile.promo1_imagen} alt={sellerProfile.promo1_titulo} class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <h4 id="promo1-card-title" class="text-[12px] font-black text-[var(--text-main)] uppercase leading-tight line-clamp-2">
+                                                {sellerProfile.promo1_titulo}
+                                            </h4>
+                                            {sellerProfile.promo1_precio && (
+                                                <p class="text-sm font-black text-rose-500 font-mono mt-1">
+                                                    {sellerProfile.promo1_precio}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {sellerProfile.promo1_mensaje && (
+                                        <p class="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed mb-4 bg-[var(--bg-main)] p-2.5 rounded-xl border border-[var(--border-card)]">
+                                            "{sellerProfile.promo1_mensaje}"
+                                        </p>
+                                    )}
+
+                                    <a href={`https://wa.me/${assignedSeller.whatsapp}?text=Hola%20${encodeURIComponent(assignedSeller.name)}!%20Me%20interesa%20la%20Promo%201:%20${encodeURIComponent(sellerProfile.promo1_titulo)}%20a%20${encodeURIComponent(sellerProfile.promo1_precio || '')}`} target="_blank" rel="noopener noreferrer" class="w-full bg-[oklch(0.6_0.15_220)] hover:bg-black hover:text-white text-white font-black py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-[9px] shadow-sm">
+                                        <i class="fab fa-whatsapp text-xs" aria-hidden="true"></i> Pedir Promo 1
+                                    </a>
+                                </section>
+                            )}
+
+                            {sellerProfile.promo2_titulo && sellerProfile.promo2_imagen && (
+                                <section class="bg-[var(--bg-card)] border-2 border-[oklch(0.6_0.15_140)] p-6 rounded-[2rem] relative overflow-hidden shadow-md transition-all group" aria-labelledby="promo2-card-title">
+                                    <div class="absolute top-3 right-3 bg-[oklch(0.6_0.15_140)] text-white font-mono font-black text-[8px] uppercase px-2 py-0.5 rounded">
+                                        PROMO ESPECIAL
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-4 mb-3">
+                                        <div class="w-16 h-16 bg-white rounded-xl overflow-hidden border border-[var(--border-card)] p-1 flex-shrink-0 flex items-center justify-center">
+                                            <img src={sellerProfile.promo2_imagen} alt={sellerProfile.promo2_titulo} class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <h4 id="promo2-card-title" class="text-[12px] font-black text-[var(--text-main)] uppercase leading-tight line-clamp-2">
+                                                {sellerProfile.promo2_titulo}
+                                            </h4>
+                                            {sellerProfile.promo2_precio && (
+                                                <p class="text-sm font-black text-rose-500 font-mono mt-1">
+                                                    {sellerProfile.promo2_precio}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {sellerProfile.promo2_mensaje && (
+                                        <p class="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed mb-4 bg-[var(--bg-main)] p-2.5 rounded-xl border border-[var(--border-card)]">
+                                            "{sellerProfile.promo2_mensaje}"
+                                        </p>
+                                    )}
+
+                                    <a href={`https://wa.me/${assignedSeller.whatsapp}?text=Hola%20${encodeURIComponent(assignedSeller.name)}!%20Me%20interesa%20la%20Promo%202:%20${encodeURIComponent(sellerProfile.promo2_titulo)}%20a%20${encodeURIComponent(sellerProfile.promo2_precio || '')}`} target="_blank" rel="noopener noreferrer" class="w-full bg-[oklch(0.6_0.15_140)] hover:bg-black hover:text-white text-white font-black py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-[9px] shadow-sm">
+                                        <i class="fab fa-whatsapp text-xs" aria-hidden="true"></i> Pedir Promo 2
+                                    </a>
+                                </section>
+                            )}
+                        </div>
+                    )}
 
                     <!-- Panel de Control Unificado (UX Limpia) -->
                     <nav class="bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2.5rem] shadow-sm transition-colors duration-300" aria-label="Menú secundario de la suite">

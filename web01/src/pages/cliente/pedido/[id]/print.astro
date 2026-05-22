@@ -3,8 +3,10 @@ import { directus, readItem } from '@conexiones/directus.js';
 
 const { id } = Astro.params;
 const clientId = Astro.cookies.get('client_session')?.value;
+const isSeller = Astro.cookies.has('seller_session');
+const isAdmin = Astro.cookies.has('admin_session');
 
-if (!clientId) return Astro.redirect('/login');
+if (!clientId && !isSeller && !isAdmin) return Astro.redirect('/login');
 
 let pedido = null;
 try {
@@ -12,12 +14,12 @@ try {
         fields: ['*', 'datos_optimizacion']
     }));
 
-    // Seguridad: verificar que el pedido sea del cliente
-    if (pedido.cliente_id != clientId) {
+    // Seguridad: verificar que el pedido sea del cliente, a menos que sea staff (vendedor o admin)
+    if (pedido.cliente_id != clientId && !isSeller && !isAdmin) {
         return Astro.redirect('/cliente');
     }
 } catch (e) {
-    return Astro.redirect('/cliente');
+    return Astro.redirect(isSeller ? '/vendedor' : isAdmin ? '/admin' : '/cliente');
 }
 
 const data = pedido.datos_optimizacion;

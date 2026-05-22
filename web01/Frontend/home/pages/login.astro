@@ -71,6 +71,18 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
                     </button>
                 </div>
             </form>
+
+            <!-- WhatsApp Request Container -->
+            <div id="whatsapp-container" class="mt-8 space-y-6 hidden">
+                <div class="p-6 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+                    <h3 class="text-xl font-bold text-red-500 mb-2"><i class="fas fa-clock"></i> Acceso Restringido</h3>
+                    <p class="text-sm text-gray-300 mb-6" id="whatsapp-message">El horario de atención ha finalizado.</p>
+                    <a href="#" id="whatsapp-link" target="_blank" class="flex items-center justify-center gap-2 w-full py-4 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-[#25D366] hover:bg-[#128C7E] transition-all shadow-[0_0_20px_rgba(37,211,102,0.2)]">
+                        <i class="fab fa-whatsapp text-xl"></i> Solicitar Acceso a Facundo
+                    </a>
+                    <button type="button" onclick="window.location.reload()" class="mt-4 text-xs text-gray-400 hover:text-white transition-colors">Volver al inicio</button>
+                </div>
+            </div>
         </div>
 
         <!-- Toast Container - Centered for Mobile Visibility -->
@@ -147,9 +159,25 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
                             window.location.href = result.redirectUrl || '/'; 
                         }, 1000);
                     } else {
-                        showToast(result.message || 'Error en el inicio de sesión', 'error');
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalBtnContent;
+                        if (result.requiresWhatsApp) {
+                            form.classList.add('hidden');
+                            const waContainer = document.getElementById('whatsapp-container');
+                            const waMessage = document.getElementById('whatsapp-message');
+                            const waLink = document.getElementById('whatsapp-link');
+                            
+                            waContainer.classList.remove('hidden');
+                            waMessage.textContent = result.message;
+                            
+                            const sellerName = result.sellerName || 'vendedor';
+                            const waText = encodeURIComponent(`Hola Facundo, soy el vendedor ${sellerName}, solicito acceso al sistema fuera de horario.`);
+                            waLink.href = `https://wa.me/541136367168?text=${waText}`;
+                            
+                            showToast('Acceso restringido por horario', 'error');
+                        } else {
+                            showToast(result.message || 'Error en el inicio de sesión', 'error');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnContent;
+                        }
                     }
                 } catch (error) {
                     console.error('Login error:', error);

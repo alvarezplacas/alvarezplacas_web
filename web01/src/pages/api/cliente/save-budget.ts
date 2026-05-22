@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         console.log(`[SaveBudget] Saving budget for client ${cliente_id} (Seller: ${assignedSellerId})`);
 
-        await directusClient.request(createItem('pedidos', {
+        const newPedido = await directusClient.request(createItem('pedidos', {
             cliente_id,
             vendedor_id: assignedSellerId || null,
             resumen_visible: resumen,
@@ -54,9 +54,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             total_m2: total_m2 || '0',
             status: 'presupuesto',
             fecha_pedido: new Date().toISOString()
-        }));
+        })) as any;
 
-        return new Response(JSON.stringify({ success: true, message: 'Presupuesto guardado con éxito' }), { status: 201 });
+        // --- ENVÍO AUTOMÁTICO DE NOTIFICACIÓN AL VENDEDOR ---
+        if (assignedSellerId) {
+            try {
+                const { CommunicationService } = await import('../../../../Backend/dashboard/logic/communication.js');
+                const msgContent = `[Sistema] He guardado un nuevo presupuesto (Pedido #${newPedido.id}) por un total de ${total_m2 || 0} m² para tu revisión.`;
+                await CommunicationService.sendMessage(cliente_id.toString(), assignedSellerId.toString(), msgContent, newPedido.id, 'alta');
+                console.log(`[SaveBudget] Notificación de chat enviada al vendedor ${assignedSellerId} para pedido ${newPedido.id}`);
+            } catch (msgErr: any) {
+                console.error('[SaveBudget Notification Error]:', msgErr.message);
+            }
+        }
+
+        return new Response(JSON.stringify({ success: true, message: 'Presupuesto guardado con éxito', pedidoId: newPedido.id }), { status: 201 });
 
     } catch (e: any) {
         console.error('[SaveBudget Error]:', e);

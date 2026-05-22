@@ -5,6 +5,8 @@ import AgendaPanel from '../components/AgendaPanel.astro';
 import { directus, readItems } from '@conexiones/directus.js';
 import { aggregate } from '@directus/sdk';
 import { CommunicationService } from '../logic/communication.js';
+import { query } from '@conexiones/lib/db.js';
+import BusinessHoursCounter from '../components/BusinessHoursCounter.astro';
 
 interface Props {
 	title: string;
@@ -20,6 +22,14 @@ const resolvedSellerId = vendedor_id || Astro.cookies.get('seller_session')?.val
 let sellerRole = role;
 let sellerName = "Vendedor Pro";
 
+let sellerProfile = {
+    name: '',
+    foto_personal: '',
+    foto_oferta: '',
+    nombre_oferta: '',
+    mensaje_oferta: ''
+};
+
 if (resolvedSellerId) {
     try {
         const sellerResults = await directus.request(readItems('vendedores', {
@@ -31,8 +41,15 @@ if (resolvedSellerId) {
             sellerRole = sellerObj.role || '';
             sellerName = sellerObj.name || (sellerRole === 'admin' ? "Facundo (Jefe)" : "Vendedor Pro");
         }
+
+        // Cargar datos personalizados del perfil desde PostgreSQL
+        const profileRes = await query('SELECT * FROM vendedor_perfiles WHERE vendedor_id = $1 LIMIT 1', [parseInt(resolvedSellerId)]);
+        if (profileRes?.rows?.[0]) {
+            sellerProfile = profileRes.rows[0];
+            if (sellerProfile.name) sellerName = sellerProfile.name;
+        }
     } catch(e) {
-        console.error("[Workspace] Error fetching seller info:", e);
+        console.error("[Workspace] Error fetching seller info / profile:", e);
     }
 }
 
@@ -76,7 +93,15 @@ try {
                         </a>
                     </div>
                 </div>
-                <span class="nav-item">Vista</span>
+                <div class="nav-item-dropdown">
+                    <span class="nav-item" id="nav-item-vista">Vista</span>
+                    <div class="dropdown-menu" id="dropdown-vista">
+                        <a href="javascript:void(0)" class="dropdown-item" id="btn-generar-promo-trigger">
+                            <i class="fas fa-bullhorn dropdown-icon" style="color: #f59e0b;"></i>
+                            <span>Generar Promo</span>
+                        </a>
+                    </div>
+                </div>
                 <span class="nav-item">Ventana</span>
                 <div class="nav-item-dropdown">
                     <span class="nav-item" id="nav-item-ayuda">Ayuda</span>
@@ -94,13 +119,15 @@ try {
                 </div>
             </nav>
             <div class="top-bar-status">
+                <BusinessHoursCounter />
+                <div class="top-bar-divider"></div>
                 <div class="live-badge">
                     <i class="fas fa-circle live-dot"></i>
                     LIVE: {sellerName}
                 </div>
                 <div class="top-bar-divider"></div>
                 <i class="fas fa-search top-bar-icon"></i>
-                <i class="fas fa-user-circle top-bar-icon"></i>
+                <i class="fa-solid fa-user-tie top-bar-icon" id="profile-trigger-icon" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.transform='scale(1.15) rotate(5deg)'" onmouseout="this.style.transform='scale(1)'"></i>
             </div>
         </header>
 
@@ -289,6 +316,79 @@ try {
         <!-- TOOLTIP -->
         <div id="tooltip" class="tooltip-popup">TOOLTIP</div>
 
+        <!-- SELLER PROFILE EDIT MODAL -->
+        <div id="profile-modal" class="modal-overlay">
+            <div class="modal-window modal-window--profile" style="max-width: 600px; height: auto; min-height: 480px; display: flex; flex-direction: column;">
+                <header class="modal-header" style="height: 48px; background: #2d2d2d; border-bottom: 1px solid #111; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0;">
+                    <div class="modal-header-title" style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; color: #fff;">
+                        <i class="fas fa-user-circle" style="color: #e02020; font-size: 22px;"></i>
+                        <span>Personalización de tu Ficha de Vendedor</span>
+                    </div>
+                    <button class="modal-close" id="btn-close-profile" style="background: transparent; border: none; color: #888; font-size: 24px; cursor: pointer; transition: color .15s;">&times;</button>
+                </header>
+                <div class="modal-body" style="display: block; padding: 25px; flex: 1; background: #252525; overflow-y: auto;">
+                    <p style="font-size: 13px; color: #aaa; margin-bottom: 20px; font-weight: 500;">
+                        Personalizá los datos que tus clientes asignados verán cuando ingresen a su panel de control de Alvarez Placas.
+                    </p>
+                    <form id="profile-edit-form" style="display: flex; flex-direction: column; gap: 20px;">
+                        
+                        <!-- Grid 1: Datos Personales -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <label style="display: block; font-size: 12px; font-weight: 900; text-transform: uppercase; color: #888; margin-bottom: 8px; letter-spacing: .05em;">Nombre Comercial (Display)</label>
+                                <input type="text" id="profile-name" value={sellerProfile.name || sellerName} required style="width: 100%; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; background: #1a1a1a;" placeholder="Ej: Ariel Santivañez (Ventas)" />
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; font-weight: 900; text-transform: uppercase; color: #888; margin-bottom: 8px; letter-spacing: .05em;">Foto de Perfil (Avatar)</label>
+                                <div style="display: flex; gap: 12px; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #333; height: 46px;">
+                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #2d2d2d; border: 1px solid #e02020; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 14px;">
+                                        <i class="fa-solid fa-user-tie"></i>
+                                    </div>
+                                    <div style="flex: 1; line-height: 1.2;">
+                                        <span style="font-size: 11px !important; font-weight: bold; color: #fff; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Avatar Unificado AP</span>
+                                        <span style="font-size: 9.5px !important; color: #888; display: block; margin-top: 1px;">Se utiliza el Icono de Identificación común.</span>
+                                    </div>
+                                    <input type="hidden" id="profile-foto" value="" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cambio de Contraseña -->
+                        <div style="border-top: 1px solid #333; padding-top: 15px; margin-top: 10px;">
+                            <label style="display: block; font-size: 12px; font-weight: 900; text-transform: uppercase; color: #888; margin-bottom: 8px; letter-spacing: .05em; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-lock" style="color: #e02020;"></i> Cambiar Contraseña <span style="font-size: 10px; font-weight: 500; text-transform: none; color: #666;">(Dejar en blanco para mantener la actual)</span>
+                            </label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div>
+                                    <input type="password" id="profile-password" style="width: 100%; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; background: #1a1a1a;" placeholder="Nueva contraseña (mín. 6 caracteres)" />
+                                </div>
+                                <div>
+                                    <input type="password" id="profile-password-confirm" style="width: 100%; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; background: #1a1a1a;" placeholder="Confirmar nueva contraseña" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div style="display: flex; gap: 12px; margin-top: 25px; border-top: 1px solid #333; padding-top: 20px;">
+                            <button type="button" id="btn-logout-profile" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #f43f5e; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 900; text-transform: uppercase; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-power-off" style="margin-right: 5px;"></i> Cerrar Sesión
+                            </button>
+                            
+                            <div style="margin-left: auto; display: flex; gap: 12px;">
+                                <button type="button" id="btn-cancel-profile" style="background: #252525; border: 1px solid #333; color: #aaa; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.2s;">
+                                    Cancelar
+                                </button>
+                                <button type="submit" id="btn-save-profile" style="background: #e02020; border: none; color: #fff; padding: 12px 30px; border-radius: 8px; font-size: 13px; font-weight: 900; text-transform: uppercase; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(224,32,32,0.3);">
+                                    Guardar Cambios <i class="fas fa-check-circle" style="margin-left: 5px;"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- HELP MANUAL MODAL -->
         <div id="help-modal" class="modal-overlay">
             <div class="modal-window">
@@ -316,6 +416,9 @@ try {
                         </button>
                         <button class="help-nav-btn" data-tab="help-planta">
                             <i class="fas fa-industry"></i> Estado de Planta
+                        </button>
+                        <button class="help-nav-btn" data-tab="help-estrategia">
+                            <i class="fas fa-book"></i> Estrategia y Materiales
                         </button>
                         <button class="help-nav-btn" data-tab="help-acerca">
                             <i class="fas fa-info-circle"></i> Acerca de (Beta)
@@ -347,6 +450,48 @@ try {
                             </ul>
                             <h3>Limitaciones en Fase Beta:</h3>
                             <p>Los recordatorios actualmente no envían notificaciones push externas; las alertas son internas y visibles únicamente dentro de la pestaña activa del Workspace.</p>
+                        </div>
+
+                        <!-- Estrategia Panel -->
+                        <div class="help-tab-content" id="help-tab-estrategia">
+                            <h2>📚 Estrategia y Argumentación Comercial</h2>
+                            <p class="help-intro">Diccionario rápido de materiales para resolver dudas de clientes y argumentar ventas.</p>
+                            
+                            <div class="search-container" style="margin-bottom: 15px;">
+                                <input type="text" id="estrategia-search" placeholder="Buscar término (ej. MDF, FSC, Egger)..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-card); background: var(--bg-card); color: var(--text-main);">
+                            </div>
+
+                            <ul id="estrategia-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+                                <li class="estrategia-item" data-term="mdf medium density fiberboard trupan finsa">
+                                    <strong>MDF:</strong> Tablero de fibras de densidad media. Ideal para ruteados y lacados. Ej: Trupán (Arauco), Finsa.
+                                </li>
+                                <li class="estrategia-item" data-term="mdp pb aglomerado melamina faplac egger sadepan">
+                                    <strong>MDP / Aglomerado:</strong> Tablero de partículas recubierto en melamina. Excelente retención de tornillos. Marcas: Faplac, Egger, Sadepan.
+                                </li>
+                                <li class="estrategia-item" data-term="hb hardboard cholguan durolac fondo">
+                                    <strong>Hardboard (HB):</strong> Tablero prensado de alta densidad y bajo espesor (ej. Cholguán, Durolac). Ideal para fondos de mueble.
+                                </li>
+                                <li class="estrategia-item" data-term="fsc pefc certificacion bosque sostenible">
+                                    <strong>FSC / PEFC:</strong> Sellos que garantizan que la madera proviene de bosques gestionados de forma sustentable. Argumento clave para arquitectos.
+                                </li>
+                                <li class="estrategia-item" data-term="e1 naf carb formaldehido emisiones salud">
+                                    <strong>Emisiones E1 / NAF:</strong> Clasificación de resinas con baja o nula emisión de formaldehídos. Argumento clave para salud, escuelas y hospitales.
+                                </li>
+                                <li class="estrategia-item" data-term="leed breeam creditos construccion ecologica">
+                                    <strong>LEED / BREEAM:</strong> Sistemas de certificación de edificios ecológicos. Nuestros productos suman puntos para que el arquitecto certifique su obra.
+                                </li>
+                            </ul>
+                            
+                            <script>
+                                document.getElementById('estrategia-search').addEventListener('input', function(e) {
+                                    const term = e.target.value.toLowerCase();
+                                    const items = document.querySelectorAll('.estrategia-item');
+                                    items.forEach(item => {
+                                        const text = item.getAttribute('data-term') + " " + item.innerText.toLowerCase();
+                                        item.style.display = text.includes(term) ? 'block' : 'none';
+                                    });
+                                });
+                            </script>
                         </div>
 
                         <!-- Clientes Panel -->
@@ -662,7 +807,7 @@ try {
 
     /* RIGHT PANEL */
     .right-panel {
-        width: 240px;
+        width: 290px;
         background: #2d2d2d;
         border-left: 1px solid #111;
         display: flex;
@@ -670,9 +815,29 @@ try {
         z-index: 30;
         flex-shrink: 0;
         overflow: hidden;
+        font-size: 13px !important;
+    }
+    /* Force legibility increase on all inner texts inside right panel */
+    .right-panel span, 
+    .right-panel p, 
+    .right-panel div, 
+    .right-panel select, 
+    .right-panel button, 
+    .right-panel textarea {
+        font-size: 12.5px !important;
+    }
+    .right-panel .text-\[10px\], 
+    .right-panel .text-\[11px\], 
+    .right-panel .text-\[8px\], 
+    .right-panel .text-\[9px\], 
+    .right-panel .text-xs {
+        font-size: 12.5px !important;
+    }
+    .right-panel .text-\[7px\], .right-panel .text-\[8px\] {
+        font-size: 10.5px !important;
     }
     .panel-header {
-        height: 30px;
+        height: 36px;
         background: #333;
         border-bottom: 1px solid #111;
         display: flex;
@@ -681,20 +846,20 @@ try {
         justify-content: space-between;
         flex-shrink: 0;
     }
-    .panel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #fff; }
-    .panel-chevron { font-size: 9px; opacity: .3; }
-    .panel-body { padding: 10px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+    .panel-title { font-size: 12px !important; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #fff; }
+    .panel-chevron { font-size: 11px; opacity: .3; }
+    .panel-body { padding: 12px; display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; }
 
     /* Context Card */
-    .context-card { background: #1e1e1e; border: 1px solid #111; border-radius: 6px; padding: 10px; }
-    .context-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #e02020; margin-bottom: 8px; }
-    .context-rows { display: flex; flex-direction: column; gap: 4px; }
-    .context-row { display: flex; justify-content: space-between; font-size: 10px; }
-    .context-key { opacity: .5; }
-    .context-val { color: #fff; font-weight: 500; text-align: right; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .context-card { background: #1e1e1e; border: 1px solid #111; border-radius: 6px; padding: 12px; }
+    .context-label { font-size: 11px !important; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #e02020; margin-bottom: 10px; }
+    .context-rows { display: flex; flex-direction: column; gap: 6px; }
+    .context-row { display: flex; justify-content: space-between; font-size: 12.5px !important; }
+    .context-key { opacity: .6; }
+    .context-val { color: #fff; font-weight: 600; text-align: right; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .context-active { color: #22c55e !important; }
-    .context-rank { color: #60a5fa !important; font-weight: 700; font-size: 9px; text-transform: uppercase; }
-    .context-row--border { padding-top: 5px; border-top: 1px solid rgba(255,255,255,.05); margin-top: 2px; }
+    .context-rank { color: #60a5fa !important; font-weight: 700; font-size: 10.5px !important; text-transform: uppercase; }
+    .context-row--border { padding-top: 7px; border-top: 1px solid rgba(255,255,255,.05); margin-top: 4px; }
 
     /* Suggested tools */
     .suggested-tools { border-top: 1px solid rgba(255,255,255,.05); padding-top: 10px; }
@@ -938,7 +1103,8 @@ try {
         pedidos:   'Pedidos y Estados',
         mensajes:  'Mensajería',
         agenda:    'Agenda',
-        buscador:  'Buscador Inteligente'
+        buscador:  'Buscador Inteligente',
+        promo:     'Generar Promo'
     };
 
     let currentView = 'dashboard';
@@ -1072,6 +1238,25 @@ try {
             });
         }
 
+        // ---- Vista Dropdown ----
+        const btnVista = document.getElementById('nav-item-vista');
+        const dropdownVista = document.getElementById('dropdown-vista');
+        const btnGenerarPromo = document.getElementById('btn-generar-promo-trigger');
+
+        if (btnVista && dropdownVista) {
+            btnVista.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownVista.classList.toggle('show');
+            });
+        }
+
+        if (btnGenerarPromo) {
+            btnGenerarPromo.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.workspaceLoadView) window.workspaceLoadView('promo');
+            });
+        }
+
         // ---- Ayuda Dropdown ----
         const btnAyuda = document.getElementById('nav-item-ayuda');
         const dropdownAyuda = document.getElementById('dropdown-ayuda');
@@ -1086,6 +1271,7 @@ try {
         document.addEventListener('click', () => {
             if (dropdownArchivo) dropdownArchivo.classList.remove('show');
             if (dropdownAyuda) dropdownAyuda.classList.remove('show');
+            if (dropdownVista) dropdownVista.classList.remove('show');
         });
 
         // ---- Help Center Modal Engine ----
@@ -1154,6 +1340,181 @@ try {
         // ---- Logout ----
         document.getElementById('logout-btn')?.addEventListener('click', () => {
             window.location.href = '/api/auth/logout';
+        });
+
+        // ---- Profile Modal Engine ----
+        const profileModal = document.getElementById('profile-modal');
+        const triggerIcon = document.getElementById('profile-trigger-icon');
+        const btnCloseProfile = document.getElementById('btn-close-profile');
+        const btnCancelProfile = document.getElementById('btn-cancel-profile');
+        const btnLogoutProfile = document.getElementById('btn-logout-profile');
+        const profileForm = document.getElementById('profile-edit-form');
+
+        // File Uploader Elements
+        const btnUploadAvatarTrigger = document.getElementById('btn-upload-avatar-trigger');
+        const fileAvatarUpload = document.getElementById('file-avatar-upload');
+        const previewAvatar = document.getElementById('preview-avatar');
+        const profileFotoInput = document.getElementById('profile-foto');
+
+        const btnUploadOfferTrigger = document.getElementById('btn-upload-offer-trigger');
+        const fileOfferUpload = document.getElementById('file-offer-upload');
+        const previewOffer = document.getElementById('preview-offer');
+        const profileOfferFotoInput = document.getElementById('profile-offer-foto');
+
+        // File Upload Handlers (FileReader Base64)
+        btnUploadAvatarTrigger?.addEventListener('click', () => fileAvatarUpload?.click());
+        fileAvatarUpload?.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const base64 = evt.target?.result;
+                    if (base64 && previewAvatar && profileFotoInput) {
+                        previewAvatar.src = base64;
+                        profileFotoInput.value = base64;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        btnUploadOfferTrigger?.addEventListener('click', () => fileOfferUpload?.click());
+        fileOfferUpload?.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const base64 = evt.target?.result;
+                    if (base64 && previewOffer && profileOfferFotoInput) {
+                        previewOffer.src = base64;
+                        profileOfferFotoInput.value = base64;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Presets Handlers
+        document.querySelectorAll('.avatar-preset').forEach(img => {
+            img.addEventListener('click', () => {
+                const url = img.getAttribute('data-url');
+                if (url && previewAvatar && profileFotoInput) {
+                    previewAvatar.src = url;
+                    profileFotoInput.value = url;
+                    
+                    // Highlight preset border
+                    document.querySelectorAll('.avatar-preset').forEach(i => i.style.borderColor = '#444');
+                    img.style.borderColor = '#e02020';
+                }
+            });
+        });
+
+        document.querySelectorAll('.offer-preset').forEach(img => {
+            img.addEventListener('click', () => {
+                const url = img.getAttribute('data-url');
+                if (url && previewOffer && profileOfferFotoInput) {
+                    previewOffer.src = url;
+                    profileOfferFotoInput.value = url;
+
+                    // Highlight preset border
+                    document.querySelectorAll('.offer-preset').forEach(i => i.style.borderColor = '#444');
+                    img.style.borderColor = '#e02020';
+                }
+            });
+        });
+
+        triggerIcon?.addEventListener('click', (e) => {
+            e.preventDefault();
+            profileModal?.classList.add('show');
+        });
+
+        const closeProfile = () => {
+            profileModal?.classList.remove('show');
+        };
+
+        btnCloseProfile?.addEventListener('click', closeProfile);
+        btnCancelProfile?.addEventListener('click', closeProfile);
+        profileModal?.addEventListener('click', (e) => {
+            if (e.target === profileModal) closeProfile();
+        });
+
+        btnLogoutProfile?.addEventListener('click', () => {
+            window.location.href = '/api/auth/logout';
+        });
+
+        profileForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btnSave = document.getElementById('btn-save-profile');
+
+            const passwordInput = document.getElementById('profile-password')?.value;
+            const passwordConfirmInput = document.getElementById('profile-password-confirm')?.value;
+
+            // Si el vendedor intentó cambiar su contraseña
+            if (passwordInput || passwordConfirmInput) {
+                if (passwordInput !== passwordConfirmInput) {
+                    alert('Las contraseñas ingresadas no coinciden.');
+                    return;
+                }
+                if (passwordInput.length < 6) {
+                    alert('La contraseña debe tener al menos 6 caracteres.');
+                    return;
+                }
+            }
+
+            if (btnSave) {
+                btnSave.setAttribute('disabled', 'true');
+                btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+            }
+
+            // 1. Guardar primero los cambios del perfil general
+            const payload = {
+                name: document.getElementById('profile-name')?.value,
+                foto_personal: document.getElementById('profile-foto')?.value,
+                foto_oferta: document.getElementById('profile-offer-foto')?.value,
+                nombre_oferta: document.getElementById('profile-offer-title')?.value,
+                mensaje_oferta: document.getElementById('profile-offer-msg')?.value,
+            };
+
+            try {
+                const resProfile = await fetch('/api/vendedor/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const dataProfile = await resProfile.json();
+                
+                if (!dataProfile.success) {
+                    alert('Error al guardar datos del perfil: ' + dataProfile.error);
+                    return;
+                }
+
+                // 2. Si hay contraseña nueva, realizar la actualización
+                if (passwordInput) {
+                    const resPassword = await fetch('/api/vendedor/change-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: passwordInput })
+                    });
+                    const dataPassword = await resPassword.json();
+                    if (!dataPassword.success) {
+                        alert('Los datos del perfil se guardaron, pero ocurrió un error al actualizar la contraseña: ' + dataPassword.error);
+                        return;
+                    }
+                }
+
+                alert('¡Perfil y configuración guardados exitosamente!');
+                closeProfile();
+                window.location.reload();
+
+            } catch (err) {
+                alert('Error al procesar los cambios de tu cuenta');
+                console.error(err);
+            } finally {
+                if (btnSave) {
+                    btnSave.removeAttribute('disabled');
+                    btnSave.innerHTML = 'Guardar Cambios <i class="fas fa-check-circle" style="margin-left: 5px;"></i>';
+                }
+            }
         });
 
         // ---- Status bar: ping Directus ----

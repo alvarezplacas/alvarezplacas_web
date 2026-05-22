@@ -14,6 +14,12 @@ let clientId = Astro.cookies.get('client_session')?.value;
 const isSeller = Astro.cookies.has('seller_session');
 const isAdmin = Astro.cookies.has('admin_session');
 
+const url = new URL(Astro.request.url);
+const queryClientId = url.searchParams.get('id') || url.searchParams.get('clientId');
+if (queryClientId && (isSeller || isAdmin)) {
+    clientId = queryClientId;
+}
+
 if (!clientId) {
     if (isSeller || isAdmin) {
         try {
