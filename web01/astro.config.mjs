@@ -57,7 +57,7 @@ export default defineConfig({
       cssMinify: 'lightningcss'
     },
     ssr: {
-      external: ['pg']
+      external: ['pg', 'imapflow']
     }
   }
 });
