@@ -9,19 +9,36 @@ let pendingOrdersCount = 0;
 let myClientsCount = 0;
 let unreadMessages = 0;
 
+let isCajero = false;
+let isCeo = false;
+
 try {
-    const [ordersRes, clientsRes] = await Promise.all([
-        directus.request(aggregate('pedidos', {
-            aggregate: { count: '*' },
-            query: { filter: { vendedor_id: { _eq: sellerId }, status: { _neq: 'entregado' } } }
-        })),
-        directus.request(aggregate('clientes', {
-            aggregate: { count: '*' },
-            query: { filter: { vendedor_id: { _eq: sellerId } } }
-        }))
-    ]);
-    pendingOrdersCount = parseInt((ordersRes as any)[0]?.count || '0');
-    myClientsCount = parseInt((clientsRes as any)[0]?.count || '0');
+    const sellerInfo = await directus.request(readItems('vendedores', {
+        filter: { id: { _eq: parseInt(sellerId) } },
+        fields: ['email', 'role']
+    }));
+    if (sellerInfo && sellerInfo[0]) {
+        if (sellerInfo[0].email === 'fernando@alvarezplacas.com.ar' || sellerInfo[0].role === 'cajero') {
+            isCajero = true;
+        } else if (sellerInfo[0].email === 'guillermo@alvarezplacas.com.ar' || sellerInfo[0].role === 'ceo') {
+            isCeo = true;
+        }
+    }
+
+    if (!isCajero) {
+        const [ordersRes, clientsRes] = await Promise.all([
+            directus.request(aggregate('pedidos', {
+                aggregate: { count: '*' },
+                query: { filter: { vendedor_id: { _eq: sellerId }, status: { _neq: 'entregado' } } }
+            })),
+            directus.request(aggregate('clientes', {
+                aggregate: { count: '*' },
+                query: { filter: { vendedor_id: { _eq: sellerId } } }
+            }))
+        ]);
+        pendingOrdersCount = parseInt((ordersRes as any)[0]?.count || '0');
+        myClientsCount = parseInt((clientsRes as any)[0]?.count || '0');
+    }
     unreadMessages = await CommunicationService.getUnreadCount(sellerId);
 } catch (e: any) {
     console.error("Error loading seller stats:", e.message);
@@ -31,6 +48,20 @@ const now = new Date();
 const hour = now.getHours();
 const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
 ---
+
+{isCajero && (
+    <div style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#111; z-index:99999; display:flex; justify-content:center; align-items:center; color:white; font-family:sans-serif;">
+        Cargando entorno de Caja...
+    </div>
+    <script is:inline>window.location.replace('/vendedor/caja');</script>
+)}
+
+{isCeo && (
+    <div style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#111; z-index:99999; display:flex; justify-content:center; align-items:center; color:white; font-family:sans-serif;">
+        Cargando entorno de CEO...
+    </div>
+    <script is:inline>window.location.replace('/ceo');</script>
+)}
 
 <VendedorWorkspace title="Operaciones Diarias" vendedor_id={sellerId}>
     <!-- GREETING -->
@@ -107,8 +138,17 @@ const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Bue
             <button class="tool-card" onclick="workspaceLoadView('mensajes')">
                 <div class="tool-card-icon" style="background: rgba(168,85,247,.1); color: #a855f7"><i class="fas fa-comments"></i></div>
                 <div class="tool-card-body">
-                    <h3>Comunicación Interna</h3>
-                    <p>Respondé consultas y enviá presupuestos actualizados.</p>
+                    <h3>Chat Planta</h3>
+                    <p>Coordiná prioridades urgentes directo con producción.</p>
+                </div>
+                <i class="fas fa-chevron-right tool-card-arrow"></i>
+            </button>
+
+            <button class="tool-card" onclick="workspaceLoadView('buscador')">
+                <div class="tool-card-icon" style="background: rgba(239,68,68,.1); color: #ef4444"><i class="fas fa-file-invoice"></i></div>
+                <div class="tool-card-body">
+                    <h3>Buscador Facturas</h3>
+                    <p>Encontrá PDFs de clientes y facturas al instante.</p>
                 </div>
                 <i class="fas fa-chevron-right tool-card-arrow"></i>
             </button>

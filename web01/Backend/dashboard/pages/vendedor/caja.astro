@@ -1,0 +1,1248 @@
+---
+import CajeroWorkspace from '../../layouts/CajeroWorkspace.astro';
+import { directus, readItems } from '@conexiones/directus.js';
+import CalculadoraNeta from '../../components/cajero/CalculadoraNeta.astro';
+import ManualGecom from '../../components/cajero/ManualGecom.astro';
+
+let sellerId = Astro.cookies.get('seller_session')?.value;
+
+// Verificar que el usuario es realmente el Cajero
+if (!sellerId) {
+    return Astro.redirect('/vendedor/login');
+}
+
+let sellerEmail = '';
+try {
+    const sellerInfo = await directus.request(readItems('vendedores', {
+        filter: { id: { _eq: parseInt(sellerId) } },
+        fields: ['email', 'role']
+    })) as any[];
+    if (sellerInfo?.[0]) {
+        sellerEmail = sellerInfo[0].email;
+        const role = sellerInfo[0].role;
+        if (sellerEmail !== 'fernando@alvarezplacas.com.ar' && role !== 'cajero') {
+            return Astro.redirect('/vendedor');
+        }
+    }
+} catch(e) {
+    console.error("[Caja] Error verifying user:", e);
+}
+---
+
+<CajeroWorkspace title="Caja" vendedor_id={sellerId}>
+    
+    <!-- TABS NAV (dentro del canvas) -->
+    <div class="caja-tab-nav">
+        <button class="ctab active" data-ctab="diario">
+            <i class="fas fa-file-invoice-dollar"></i> Operación Diaria
+        </button>
+        <button class="ctab" data-ctab="ejecutivo">
+            <i class="fas fa-chart-pie"></i> Dashboard Ejecutivo
+        </button>
+        <button class="ctab" data-ctab="historico">
+            <i class="fas fa-chart-line"></i> Reportes Históricos
+        </button>
+        <button class="ctab" data-ctab="calculadora">
+            <i class="fas fa-calculator"></i> Calculadora Neta
+        </button>
+        <button class="ctab" data-ctab="manual">
+            <i class="fas fa-book"></i> Libro de Ayuda
+        </button>
+    </div>
+
+    <!-- ========================= -->
+    <!-- SOLAPA 1: OPERACIÓN DIARIA -->
+    <!-- ========================= -->
+    <div class="ctab-panel active" id="panel-diario">
+
+        <!-- KPIs del día -->
+        <div class="kpi-row" id="kpi-row">
+            <div class="kpi-card" id="kpi-ingresos">
+                <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:#10b981;">
+                    <i class="fas fa-arrow-up"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Ingresos Hoy</span>
+                    <span class="kpi-value" id="val-ingresos">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-egresos">
+                <div class="kpi-icon" style="background:rgba(239,68,68,0.15); color:#ef4444;">
+                    <i class="fas fa-arrow-down"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Egresos Hoy</span>
+                    <span class="kpi-value" id="val-egresos">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-neto">
+                <div class="kpi-icon" style="background:rgba(59,130,246,0.15); color:#3b82f6;">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Neto del Día</span>
+                    <span class="kpi-value" id="val-neto">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-movs">
+                <div class="kpi-icon" style="background:rgba(245,158,11,0.15); color:#f59e0b;">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Movimientos</span>
+                    <span class="kpi-value" id="val-movs">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form + Table layout -->
+        <div class="diario-layout">
+
+            <!-- Form de ingreso rápido -->
+            <div class="quick-form-card">
+                <div class="card-header">
+                    <i class="fas fa-plus-circle" style="color:#10b981;"></i>
+                    <h3>Asentar Movimiento</h3>
+                </div>
+
+                <form id="form-movimiento" autocomplete="off">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <input type="date" id="mov-fecha" class="ps-input" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select id="mov-tipo" class="ps-input" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="ingreso">🟢 Ingreso</option>
+                                <option value="egreso">🔴 Egreso</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <select id="mov-categoria" class="ps-input" required>
+                            <option value="">Seleccionar...</option>
+                            <optgroup label="Ventas">
+                                <option value="venta_blanco">Venta 1</option>
+                                <option value="venta_negro">Venta 2</option>
+                            </optgroup>
+                            <optgroup label="Gastos Fijos">
+                                <option value="gasto_fijo_agua_calle">AGUA DE CALLE</option>
+                                <option value="gasto_fijo_alquiler">ALQUILER</option>
+                                <option value="gasto_fijo_arca">ARCA</option>
+                                <option value="gasto_fijo_arba_iibb">ARBA IIBB</option>
+                                <option value="gasto_fijo_comisiones_bancarias">COMISIONES BANCARIAS</option>
+                                <option value="gasto_fijo_contadora">CONTADORA</option>
+                                <option value="gasto_fijo_faecys">FAECYS</option>
+                                <option value="gasto_fijo_gecom">GECOM</option>
+                                <option value="gasto_fijo_luz">LUZ</option>
+                                <option value="gasto_fijo_monitoreo_alarmas">MONITOREO DE ALARMAS</option>
+                                <option value="gasto_fijo_municipalidad">MUNICIPALIDAD</option>
+                                <option value="gasto_fijo_sec">SEC</option>
+                                <option value="gasto_fijo_seguridad_higiene">SEGURIDAD E HIGIENE</option>
+                                <option value="gasto_fijo_seguro_camion">SEGURO CAMION</option>
+                                <option value="gasto_fijo_seguros_galpon">SEGUROS GALPON</option>
+                                <option value="gasto_fijo_servidor">SERVIDOR</option>
+                                <option value="gasto_fijo_sueldos_2026">SUELDOS 2026</option>
+                                <option value="gasto_fijo_telefonos_internet">TELEFONOS INTERNET</option>
+                            </optgroup>
+                            <optgroup label="Gastos Variables">
+                                <option value="gasto_variable_agua_ivess_dani">AGUA IVESS y DANI</option>
+                                <option value="gasto_variable_arreglos_maquinaria_camion">ARREGLOS MAQUINARIA Y CAMION</option>
+                                <option value="gasto_variable_bomberos">BOMBEROS</option>
+                                <option value="gasto_variable_combustible_guille_facu_agus">COMBUSTIBLE GUILLE, FACU Y AGUS</option>
+                                <option value="gasto_variable_combustible_maquinaria">COMBUSTIBLE MAQUINARIA</option>
+                                <option value="gasto_variable_consumibles">CONSUMIBLES</option>
+                                <option value="gasto_variable_devoluciones_clientes_sf_caja">DEVOLUCIONES A CLIENTES Y SF DE CAJA</option>
+                                <option value="gasto_variable_electricidad_ezequiel">ELECTRICIDAD EZEQUIEL</option>
+                                <option value="gasto_variable_gastos_administrativos_prestamos">GASTOS ADMINISTRATIVOS PRESTAMOS</option>
+                                <option value="gasto_variable_gastos_varios_administracion">GASTOS VARIOS DE ADMINISTRACION</option>
+                                <option value="gasto_variable_gastos_varios_produccion">GASTOS VARIOS DE PRODUCCION</option>
+                                <option value="gasto_variable_libreria">LIBRERÍA</option>
+                                <option value="gasto_variable_limpieza">LIMPIEZA</option>
+                                <option value="gasto_variable_merma_mercaderia">MERMA MERCADERIA</option>
+                                <option value="gasto_variable_pegamento_maquina">PEGAMENTO MAQUINA</option>
+                                <option value="gasto_variable_plan_arca">PLAN ARCA</option>
+                                <option value="gasto_variable_publicidad">PUBLICIDAD</option>
+                                <option value="gasto_variable_refrigerios">REFRIGERIOS</option>
+                                <option value="gasto_variable_refrigerios_facu_agus_guille">REFRIGERIOS FACU, AGUS Y GUILLE</option>
+                                <option value="gasto_variable_viaticos">VIATICOS</option>
+                                <option value="gasto_variable_volquete">VOLQUETE</option>
+                            </optgroup>
+                            <optgroup label="Impuestos">
+                                <option value="impuestos">Impuestos / IVA</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Monto ($)</label>
+                        <input type="number" id="mov-monto" class="ps-input" placeholder="0.00" step="0.01" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Detalle</label>
+                        <input type="text" id="mov-detalle" class="ps-input" placeholder="Ej: Cobranza cliente García" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Observaciones</label>
+                        <textarea id="mov-obs" class="ps-input" rows="2" placeholder="Notas adicionales..."></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary" id="btn-guardar">
+                            <i class="fas fa-save"></i> Guardar Movimiento
+                        </button>
+                    </div>
+                    
+                    <div id="form-feedback" class="form-feedback hidden"></div>
+                </form>
+            </div>
+
+            <!-- Tabla de movimientos del día -->
+            <div class="table-card">
+                <div class="card-header">
+                    <i class="fas fa-list" style="color:#3b82f6;"></i>
+                    <h3>Movimientos del Día</h3>
+                    <div class="filter-controls">
+                        <input type="date" id="filter-fecha" class="ps-input-sm" />
+                    </div>
+                </div>
+
+                <div class="table-scroll">
+                    <table class="caja-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Categoría</th>
+                                <th>Detalle</th>
+                                <th class="text-right">Monto</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-movimientos">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Cargando movimientos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================ -->
+    <!-- SOLAPA 2: DASHBOARD EJECUTIVO -->
+    <!-- ============================ -->
+    <div class="ctab-panel hidden" id="panel-ejecutivo">
+
+        <!-- Filtro de período -->
+        <div class="period-selector">
+            <span class="period-label">Período:</span>
+            <button class="period-btn active" data-period="30">30 Días</button>
+            <button class="period-btn" data-period="60">60 Días</button>
+            <button class="period-btn" data-period="90">90 Días</button>
+        </div>
+
+        <!-- KPIs del período -->
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:#10b981;">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Total Ingresos</span>
+                    <span class="kpi-value" id="ejec-ingresos">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(239,68,68,0.15); color:#ef4444;">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Total Egresos</span>
+                    <span class="kpi-value" id="ejec-egresos">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:#10b981;">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Ganancia Neta</span>
+                    <span class="kpi-value" id="ejec-neto">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(139,92,246,0.15); color:#8b5cf6;">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Margen Neto</span>
+                    <span class="kpi-value" id="ejec-margen">--%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts grid -->
+        <div class="charts-grid">
+            <div class="chart-card chart-large">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar" style="color:#3b82f6;"></i>
+                    <h3>Ingresos vs Egresos</h3>
+                </div>
+                <div id="chart-barras"></div>
+            </div>
+
+            <div class="chart-card">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie" style="color:#8b5cf6;"></i>
+                    <h3>Composición de Gastos</h3>
+                </div>
+                <div id="chart-torta"></div>
+            </div>
+
+            <div class="chart-card">
+                <div class="card-header">
+                    <i class="fas fa-layer-group" style="color:#f59e0b;"></i>
+                    <h3>Ventas: Venta 1 vs Venta 2</h3>
+                </div>
+                <div id="chart-ventas"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================ -->
+    <!-- SOLAPA 3: REPORTES HISTÓRICOS -->
+    <!-- ============================ -->
+    <div class="ctab-panel hidden" id="panel-historico">
+
+        <div class="historico-controls">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Desde</label>
+                    <input type="date" id="hist-desde" class="ps-input" />
+                </div>
+                <div class="form-group">
+                    <label>Hasta</label>
+                    <input type="date" id="hist-hasta" class="ps-input" />
+                </div>
+                <div class="form-group" style="align-self:flex-end;">
+                    <button class="btn-primary" id="btn-generar-reporte">
+                        <i class="fas fa-search"></i> Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPIs del período histórico -->
+        <div class="kpi-row" id="hist-kpis" style="display:none;">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:#10b981;">
+                    <i class="fas fa-arrow-up"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Ingresos Totales</span>
+                    <span class="kpi-value" id="hist-val-ingresos">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(239,68,68,0.15); color:#ef4444;">
+                    <i class="fas fa-arrow-down"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Egresos Totales</span>
+                    <span class="kpi-value" id="hist-val-egresos">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(59,130,246,0.15); color:#3b82f6;">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Ganancia Neta</span>
+                    <span class="kpi-value" id="hist-val-neto">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(139,92,246,0.15); color:#8b5cf6;">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Total Movimientos</span>
+                    <span class="kpi-value" id="hist-val-movs">--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card" id="hist-chart-card" style="display:none; margin-top:20px;">
+            <div class="card-header">
+                <i class="fas fa-chart-line" style="color:#10b981;"></i>
+                <h3>Evolución de Ganancia Neta</h3>
+            </div>
+            <div id="chart-historico"></div>
+        </div>
+        
+        <div id="hist-empty" style="display:flex; align-items:center; justify-content:center; height:300px; color:#888; flex-direction:column; gap:10px;">
+            <i class="fas fa-filter" style="font-size:2rem; opacity:0.3;"></i>
+            <p>Selecciona un rango de fechas y presiona "Generar Reporte"</p>
+        </div>
+    </div>
+
+    <!-- ============================ -->
+    <!-- SOLAPA 4: CALCULADORA NETA -->
+    <!-- ============================ -->
+    <div class="ctab-panel hidden" id="panel-calculadora">
+        <CalculadoraNeta />
+    </div>
+
+    <!-- ============================ -->
+    <!-- SOLAPA 5: MANUAL GECOM -->
+    <!-- ============================ -->
+    <div class="ctab-panel hidden" id="panel-manual">
+        <ManualGecom />
+    </div>
+
+</CajeroWorkspace>
+
+<style>
+    /* === TABS NAV === */
+    .caja-tab-nav {
+        display: flex;
+        gap: 4px;
+        padding: 0 0 16px 0;
+        border-bottom: 1px solid #383838;
+        margin-bottom: 20px;
+    }
+
+    .ctab {
+        background: #252525;
+        color: #888;
+        border: 1px solid #383838;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .ctab:hover { background: #2d2d2d; color: #ccc; }
+    .ctab.active {
+        background: #2e609c;
+        color: #fff;
+        border-color: #3d79bf;
+    }
+
+    /* === PANELS === */
+    .ctab-panel { display: block; }
+    .ctab-panel.hidden { display: none; }
+
+    /* === KPI CARDS === */
+    .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .kpi-card {
+        background: #252525;
+        border: 1px solid #383838;
+        border-radius: 8px;
+        padding: 14px 16px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        transition: border-color 0.2s;
+    }
+
+    .kpi-card:hover { border-color: #555; }
+
+    .kpi-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .kpi-info { display: flex; flex-direction: column; }
+    .kpi-label { font-size: 11px; color: #888; margin-bottom: 3px; }
+    .kpi-value { font-size: 18px; font-weight: 600; color: #fff; font-family: 'Roboto Mono', monospace; }
+
+    /* === DIARIO LAYOUT === */
+    .diario-layout {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 16px;
+    }
+
+    /* === CARDS === */
+    .quick-form-card, .table-card, .chart-card {
+        background: #252525;
+        border: 1px solid #383838;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #383838;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #2a2a2a;
+    }
+
+    .card-header h3 { color: #ccc; font-size: 13px; font-weight: 600; flex: 1; }
+
+    /* === FORM === */
+    .quick-form-card form { padding: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+    .form-group label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .ps-input {
+        background: #1e1e1e;
+        border: 1px solid #444;
+        color: #ccc;
+        padding: 7px 10px;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 13px;
+        outline: none;
+        width: 100%;
+        transition: border-color 0.2s;
+    }
+    .ps-input:focus { border-color: #2e609c; }
+    
+    .ps-input-sm {
+        background: #1e1e1e;
+        border: 1px solid #444;
+        color: #ccc;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 12px;
+        outline: none;
+    }
+    
+    select.ps-input option { background: #1e1e1e; }
+
+    .form-actions { display: flex; justify-content: flex-end; margin-top: 4px; }
+    .btn-primary {
+        background: #2e609c;
+        color: #fff;
+        border: none;
+        padding: 9px 18px;
+        border-radius: 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-family: inherit;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    .btn-primary:hover { background: #3d79bf; }
+
+    .form-feedback {
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-top: 10px;
+    }
+    .form-feedback.success { background: rgba(16,185,129,0.1); border: 1px solid #10b981; color: #10b981; }
+    .form-feedback.error { background: rgba(239,68,68,0.1); border: 1px solid #ef4444; color: #ef4444; }
+    .hidden { display: none !important; }
+
+    /* === TABLE === */
+    .table-card { display: flex; flex-direction: column; }
+    .table-scroll { overflow-x: auto; flex: 1; }
+    .filter-controls { margin-left: auto; }
+
+    .caja-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .caja-table thead th {
+        background: #1e1e1e;
+        color: #888;
+        padding: 10px 14px;
+        text-align: left;
+        font-weight: 500;
+        border-bottom: 1px solid #383838;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
+
+    .caja-table tbody td {
+        padding: 9px 14px;
+        color: #ccc;
+        border-bottom: 1px solid #2a2a2a;
+        vertical-align: middle;
+    }
+
+    .caja-table tbody tr:hover td { background: #2a2a2a; }
+
+    .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .badge-ingreso { background: rgba(16,185,129,0.15); color: #10b981; }
+    .badge-egreso { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .text-muted { color: #666; }
+
+    /* === EJECUTIVO === */
+    .period-selector {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .period-label { color: #888; font-size: 12px; margin-right: 4px; }
+    .period-btn {
+        background: #252525;
+        border: 1px solid #383838;
+        color: #888;
+        padding: 5px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        font-family: inherit;
+        transition: all 0.2s;
+    }
+    .period-btn:hover { border-color: #555; color: #ccc; }
+    .period-btn.active { background: #2e609c; border-color: #3d79bf; color: #fff; }
+
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .chart-large { grid-column: 1 / -1; }
+
+    .chart-card { background: #252525; border: 1px solid #383838; border-radius: 8px; overflow: hidden; }
+    .chart-card .card-header { padding: 12px 16px; border-bottom: 1px solid #383838; display: flex; align-items: center; gap: 8px; background: #2a2a2a; }
+    .chart-card .card-header h3 { color: #ccc; font-size: 13px; font-weight: 600; }
+
+    #chart-barras, #chart-torta, #chart-ventas, #chart-historico {
+        padding: 10px;
+        min-height: 280px;
+    }
+
+    /* === HISTORICO === */
+    .historico-controls {
+        background: #252525;
+        border: 1px solid #383838;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+</style>
+
+<script>
+    // ========================
+    // Tab switching logic
+    // ========================
+    document.querySelectorAll('.ctab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.ctab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.ctab-panel').forEach(p => p.classList.add('hidden'));
+            btn.classList.add('active');
+            const tabName = (btn as HTMLElement).dataset.ctab;
+            const panel = document.getElementById(`panel-${tabName}`);
+            if (panel) panel.classList.remove('hidden');
+            
+            // Update tab name in tabs bar
+            const tabLabel = { diario: 'Operacion_Diaria.xls', ejecutivo: 'Dashboard_Ejecutivo.psd', historico: 'Reportes_Historicos.xls', calculadora: 'Calculadora_Neta.xls', manual: 'Manual_Gecom.pdf' };
+            const tabEl = document.getElementById('active-tab-name');
+            if (tabEl) tabEl.textContent = tabLabel[tabName] || title;
+
+            // Init charts when executive tab opens
+            if (tabName === 'ejecutivo') initCharts(currentPeriod);
+            if (tabName === 'historico') initHistoricoDefaults();
+            if (tabName === 'calculadora') {
+                window.dispatchEvent(new CustomEvent('sync-calculator'));
+            }
+        });
+    });
+
+    // ========================
+    // Toolbar tab links
+    // ========================
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = (btn as HTMLElement).dataset.tab;
+            const ctabMap = { 'tab-diario': 'diario', 'tab-ejecutivo': 'ejecutivo', 'tab-historico': 'historico' };
+            const ctabName = ctabMap[tabName];
+            if (ctabName) {
+                const ctab = document.querySelector(`.ctab[data-ctab="${ctabName}"]`);
+                if (ctab) (ctab as HTMLElement).click();
+            }
+        });
+    });
+
+    // ========================
+    // Directus API
+    // ========================
+    const DIRECTUS_URL = 'https://admin.alvarezplacas.com.ar';
+    
+    function fmt(num: number): string {
+        return '$ ' + num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtFecha(fechaStr: string): string {
+        if (!fechaStr) return '--';
+        const parts = fechaStr.split('-');
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return fechaStr;
+    }
+    function toARDate(d: Date): string {
+        return d.toISOString().split('T')[0];
+    }
+    function today(): string {
+        return toARDate(new Date());
+    }
+
+    function generateUUID(): string {
+        try {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                return crypto.randomUUID();
+            }
+        } catch (e) {}
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    // ========================
+    // LOCALSTORAGE FALLBACK HELPERS
+    // ========================
+    function getLocalMovimientos(): any[] {
+        try {
+            const data = localStorage.getItem('caja_movimientos_local');
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveLocalMovimientos(movs: any[]) {
+        try {
+            localStorage.setItem('caja_movimientos_local', JSON.stringify(movs));
+        } catch (e) {}
+    }
+
+    // ========================
+    // FORM: Guardar movimiento
+    // ========================
+    const form = document.getElementById('form-movimiento') as HTMLFormElement;
+    const feedback = document.getElementById('form-feedback');
+
+    // Set today as default date
+    (document.getElementById('mov-fecha') as HTMLInputElement).value = today();
+    (document.getElementById('filter-fecha') as HTMLInputElement).value = today();
+
+    form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btn-guardar') as HTMLButtonElement;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+        const payload = {
+            id: generateUUID(),
+            date_created: new Date().toISOString(),
+            fecha: (document.getElementById('mov-fecha') as HTMLInputElement).value,
+            tipo: (document.getElementById('mov-tipo') as HTMLSelectElement).value,
+            categoria: (document.getElementById('mov-categoria') as HTMLSelectElement).value,
+            monto: parseFloat((document.getElementById('mov-monto') as HTMLInputElement).value),
+            detalle: (document.getElementById('mov-detalle') as HTMLInputElement).value,
+            observaciones: (document.getElementById('mov-obs') as HTMLTextAreaElement).value,
+            synced: false
+        };
+
+        // 1. Save locally first (immediate feedback & safety)
+        const localMovs = getLocalMovimientos();
+        localMovs.push(payload);
+        saveLocalMovimientos(localMovs);
+
+        // 2. Try POSTing to Directus
+        try {
+            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer alvarez-api-token-v16-2026`
+                },
+                body: JSON.stringify({
+                    id: payload.id,
+                    fecha: payload.fecha,
+                    tipo: payload.tipo,
+                    categoria: payload.categoria,
+                    monto: payload.monto,
+                    detalle: payload.detalle,
+                    observaciones: payload.observaciones
+                })
+            });
+
+            if (res.ok) {
+                // Update local storage to mark synced
+                const updatedMovs = getLocalMovimientos();
+                const idx = updatedMovs.findIndex(m => m.id === payload.id);
+                if (idx !== -1) {
+                    updatedMovs[idx].synced = true;
+                    saveLocalMovimientos(updatedMovs);
+                }
+
+                showFeedback('success', '✓ Movimiento guardado correctamente en Directus y base local');
+                form.reset();
+                (document.getElementById('mov-fecha') as HTMLInputElement).value = today();
+                const currentFilter = (document.getElementById('filter-fecha') as HTMLInputElement).value || today();
+                loadMovimientos(currentFilter);
+                loadKPIs(currentFilter);
+                window.dispatchEvent(new CustomEvent('sync-calculator'));
+            } else {
+                showFeedback('success', '✓ Movimiento guardado localmente (Directus fuera de línea)');
+                form.reset();
+                (document.getElementById('mov-fecha') as HTMLInputElement).value = today();
+                const currentFilter = (document.getElementById('filter-fecha') as HTMLInputElement).value || today();
+                loadMovimientos(currentFilter);
+                loadKPIs(currentFilter);
+                window.dispatchEvent(new CustomEvent('sync-calculator'));
+            }
+        } catch(err) {
+            showFeedback('success', '✓ Movimiento guardado localmente (Modo sin conexión)');
+            form.reset();
+            (document.getElementById('mov-fecha') as HTMLInputElement).value = today();
+            const currentFilter = (document.getElementById('filter-fecha') as HTMLInputElement).value || today();
+            loadMovimientos(currentFilter);
+            loadKPIs(currentFilter);
+            window.dispatchEvent(new CustomEvent('sync-calculator'));
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Guardar Movimiento';
+    });
+
+    function showFeedback(type: string, msg: string) {
+        feedback!.className = `form-feedback ${type}`;
+        feedback!.textContent = msg;
+        feedback!.classList.remove('hidden');
+        setTimeout(() => feedback!.classList.add('hidden'), 4000);
+    }
+
+    // ========================
+    // LOAD: Movimientos del día
+    // ========================
+    async function loadMovimientos(fecha: string) {
+        const tbody = document.getElementById('tbody-movimientos')!;
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Cargando movimientos...</td></tr>';
+
+        let items: any[] = [];
+
+        // Try getting from Directus first
+        try {
+            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos?filter[fecha][_eq]=${fecha}&sort=-date_created&limit=50`, {
+                headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                items = data.data || [];
+            }
+        } catch(e) {
+            console.warn("Directus fetch failed, loading local items only:", e);
+        }
+
+        // Merge from local storage
+        const localItems = getLocalMovimientos().filter(m => m.fecha === fecha);
+        localItems.forEach(lm => {
+            const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
+            if (!exists) {
+                items.push(lm);
+            }
+        });
+
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay movimientos para esta fecha.</td></tr>';
+            return;
+        }
+
+        // Sort items by date_created descending, newly created first
+        items.sort((a, b) => {
+            const timeA = a.date_created ? new Date(a.date_created).getTime() : 0;
+            const timeB = b.date_created ? new Date(b.date_created).getTime() : 0;
+            return timeB - timeA;
+        });
+
+        const catLabel: Record<string, string> = {
+            venta_blanco: 'Venta 1',
+            venta_negro: 'Venta 2',
+            gasto_fijo: 'Gasto Fijo',
+            gasto_variable: 'Gasto Variable',
+            impuestos: 'Impuestos'
+        };
+
+        tbody.innerHTML = items.map((m: any) => {
+            const isLocalOnly = !m.synced;
+            return `
+                <tr>
+                    <td>${fmtFecha(m.fecha)}</td>
+                    <td>
+                        <span class="badge badge-${m.tipo}">${m.tipo === 'ingreso' ? '▲ Ingreso' : '▼ Egreso'}</span>
+                        ${isLocalOnly ? '<span class="badge" style="background:rgba(245,158,11,0.15); color:#f59e0b; margin-left:4px;">Local</span>' : ''}
+                    </td>
+                    <td>${catLabel[m.categoria] || m.categoria}</td>
+                    <td>${m.detalle || '--'}</td>
+                    <td class="text-right" style="color:${m.tipo === 'ingreso' ? '#10b981' : '#ef4444'}; font-family:'Roboto Mono',monospace; font-weight:bold;">
+                        ${m.tipo === 'egreso' ? '-' : '+'}${fmt(m.monto)}
+                    </td>
+                    <td>
+                        <button onclick="deleteMov('${m.id}')" style="background:none;border:none;color:#888;cursor:pointer;padding:2px 6px;" title="Eliminar">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // ========================
+    // KPIs Diarios
+    // ========================
+    async function loadKPIs(fecha: string) {
+        let items: any[] = [];
+
+        try {
+            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos?filter[fecha][_eq]=${fecha}&limit=1000`, {
+                headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                items = data.data || [];
+            }
+        } catch(e) {
+            console.error("Error loading KPIs from Directus:", e);
+        }
+
+        // Merge from local storage
+        const localItems = getLocalMovimientos().filter(m => m.fecha === fecha);
+        localItems.forEach(lm => {
+            const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
+            if (!exists) {
+                items.push(lm);
+            }
+        });
+
+        let ingresos = 0, egresos = 0;
+        items.forEach(m => {
+            if (m.tipo === 'ingreso') ingresos += parseFloat(m.monto);
+            else egresos += parseFloat(m.monto);
+        });
+
+        const neto = ingresos - egresos;
+
+        document.getElementById('val-ingresos')!.textContent = fmt(ingresos);
+        document.getElementById('val-egresos')!.textContent = fmt(egresos);
+        document.getElementById('val-neto')!.textContent = fmt(neto);
+        document.getElementById('val-neto')!.style.color = neto >= 0 ? '#10b981' : '#ef4444';
+        document.getElementById('val-movs')!.textContent = items.length.toString();
+    }
+
+    // Delete movement
+    (window as any).deleteMov = async (id: string) => {
+        if (!confirm('¿Eliminar este movimiento?')) return;
+
+        // Delete from local storage
+        const localMovs = getLocalMovimientos();
+        const localItem = localMovs.find(m => m && m.id && id && m.id.toString() === id.toString());
+        const isLocalOnly = localItem && !localItem.synced;
+        const filtered = localMovs.filter(m => m && m.id && id && m.id.toString() !== id.toString());
+        saveLocalMovimientos(filtered);
+
+        // Delete from Directus if synced/real ID
+        if (!isLocalOnly) {
+            try {
+                await fetch(`${DIRECTUS_URL}/items/caja_movimientos/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+                });
+            } catch(e) {
+                console.warn("Directus delete failed, item deleted locally only:", e);
+            }
+        }
+
+        const filterFecha = (document.getElementById('filter-fecha') as HTMLInputElement).value || today();
+        loadMovimientos(filterFecha);
+        loadKPIs(filterFecha);
+        window.dispatchEvent(new CustomEvent('sync-calculator'));
+    };
+
+    // Filter by date
+    document.getElementById('filter-fecha')?.addEventListener('change', (e) => {
+        const fecha = (e.target as HTMLInputElement).value;
+        loadMovimientos(fecha);
+        loadKPIs(fecha);
+    });
+
+    // Initial load
+    loadMovimientos(today());
+    loadKPIs(today());
+
+    // ========================
+    // EJECUTIVO: Charts
+    // ========================
+    let currentPeriod = 30;
+    let chartsInitialized = false;
+    let barChart: any = null, tortaChart: any = null, ventasChart: any = null;
+
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentPeriod = parseInt((btn as HTMLElement).dataset.period!);
+            initCharts(currentPeriod);
+        });
+    });
+
+    async function initCharts(days: number) {
+        try {
+            const desde = new Date();
+            desde.setDate(desde.getDate() - days);
+            const desdeStr = toARDate(desde);
+
+            let items: any[] = [];
+
+            try {
+            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos?filter[fecha][_gte]=${desdeStr}&limit=1000&sort=fecha`, {
+                headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                items = data.data || [];
+            }
+        } catch(e) {
+            console.error("Directus charts fetch failed, falling back to local:", e);
+        }
+
+        // Merge local
+        const localItems = getLocalMovimientos().filter(m => m.fecha >= desdeStr);
+        localItems.forEach(lm => {
+            const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
+            if (!exists) {
+                items.push(lm);
+            }
+        });
+
+        // Sort items by date
+        items.sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+        let totalIngresos = 0, totalEgresos = 0;
+        let gastoFijo = 0, gastoVar = 0, impuestos = 0;
+        let ventaBlanco = 0, ventaNegro = 0;
+
+        // Agrupación por fecha para chart de barras
+        const byDate: Record<string, {ingresos: number, egresos: number}> = {};
+
+            items.forEach(m => {
+                const date = m.fecha;
+                if (!byDate[date]) byDate[date] = { ingresos: 0, egresos: 0 };
+                
+                const monto = parseFloat(m.monto);
+                if (m.tipo === 'ingreso') {
+                    totalIngresos += monto;
+                    byDate[date].ingresos += monto;
+                    if (m.categoria === 'venta_blanco') ventaBlanco += monto;
+                    else if (m.categoria === 'venta_negro') ventaNegro += monto;
+                } else {
+                    totalEgresos += monto;
+                    byDate[date].egresos += monto;
+                    if (m.categoria === 'gasto_fijo') gastoFijo += monto;
+                    else if (m.categoria === 'gasto_variable') gastoVar += monto;
+                    else if (m.categoria === 'impuestos') impuestos += monto;
+                }
+            });
+
+            const neto = totalIngresos - totalEgresos;
+            const margen = totalIngresos > 0 ? ((neto / totalIngresos) * 100).toFixed(1) : '0';
+
+            document.getElementById('ejec-ingresos')!.textContent = fmt(totalIngresos);
+            document.getElementById('ejec-egresos')!.textContent = fmt(totalEgresos);
+            document.getElementById('ejec-neto')!.textContent = fmt(neto);
+            document.getElementById('ejec-neto')!.style.color = neto >= 0 ? '#10b981' : '#ef4444';
+            document.getElementById('ejec-margen')!.textContent = `${margen}%`;
+
+            const dates = Object.keys(byDate).sort();
+            const ingresosArr = dates.map(d => parseFloat(byDate[d].ingresos.toFixed(2)));
+            const egresosArr = dates.map(d => parseFloat(byDate[d].egresos.toFixed(2)));
+
+            const apexOpts = {
+                chart: { background: 'transparent', toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+                theme: { mode: 'dark' },
+                dataLabels: { enabled: false },
+                grid: { borderColor: '#383838' }
+            };
+
+            // Barras
+            if (barChart) barChart.destroy();
+            barChart = new ApexCharts(document.getElementById('chart-barras'), {
+                ...apexOpts,
+                chart: { ...apexOpts.chart, type: 'bar', height: 280 },
+                series: [
+                    { name: 'Ingresos', data: ingresosArr },
+                    { name: 'Egresos', data: egresosArr }
+                ],
+                xaxis: { categories: dates, labels: { rotate: -45, style: { colors: '#888', fontSize: '10px' } } },
+                yaxis: { labels: { style: { colors: '#888' }, formatter: (v: number) => `$${v.toLocaleString('es-AR')}` } },
+                colors: ['#10b981', '#ef4444'],
+                tooltip: { y: { formatter: (v: number) => fmt(v) } }
+            });
+            barChart.render();
+
+            // Torta (Composición de Gastos)
+            if (tortaChart) tortaChart.destroy();
+            tortaChart = new ApexCharts(document.getElementById('chart-torta'), {
+                ...apexOpts,
+                chart: { ...apexOpts.chart, type: 'donut', height: 280 },
+                series: [gastoFijo, gastoVar, impuestos].filter(v => v > 0),
+                labels: ['Gastos Fijos', 'Gastos Variables', 'Impuestos'],
+                colors: ['#3b82f6', '#f59e0b', '#ef4444'],
+                legend: { labels: { colors: '#888' } },
+                tooltip: { y: { formatter: (v: number) => fmt(v) } }
+            });
+            tortaChart.render();
+
+            // Ventas Blanco vs Negro
+            if (ventasChart) ventasChart.destroy();
+            ventasChart = new ApexCharts(document.getElementById('chart-ventas'), {
+                ...apexOpts,
+                chart: { ...apexOpts.chart, type: 'pie', height: 280 },
+                series: [ventaBlanco, ventaNegro].filter(v => v > 0),
+                labels: ['Venta 1', 'Venta 2'],
+                colors: ['#10b981', '#8b5cf6'],
+                legend: { labels: { colors: '#888' } },
+                tooltip: { y: { formatter: (v: number) => fmt(v) } }
+            });
+            ventasChart.render();
+
+        } catch(e) {
+            console.error("Error initializing charts:", e);
+        }
+    }
+
+    // ========================
+    // HISTORICO
+    // ========================
+    let histChart: any = null;
+
+    function initHistoricoDefaults() {
+        const hasta = new Date();
+        const desde = new Date();
+        desde.setMonth(desde.getMonth() - 6);
+        (document.getElementById('hist-hasta') as HTMLInputElement).value = toARDate(hasta);
+        (document.getElementById('hist-desde') as HTMLInputElement).value = toARDate(desde);
+    }
+
+    document.getElementById('btn-generar-reporte')?.addEventListener('click', async () => {
+        try {
+            const desde = (document.getElementById('hist-desde') as HTMLInputElement).value;
+            const hasta = (document.getElementById('hist-hasta') as HTMLInputElement).value;
+            if (!desde || !hasta) return;
+
+            document.getElementById('hist-empty')!.style.display = 'none';
+        document.getElementById('hist-kpis')!.style.display = 'grid';
+        document.getElementById('hist-chart-card')!.style.display = 'block';
+
+        let items: any[] = [];
+        try {
+            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos?filter[fecha][_gte]=${desde}&filter[fecha][_lte]=${hasta}&limit=5000&sort=fecha`, {
+                headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                items = data.data || [];
+            }
+        } catch(e) {
+            console.warn("Directus fetch failed for historical reports, loading local items only:", e);
+        }
+
+        // Merge from local storage
+        const localItems = getLocalMovimientos().filter(m => m.fecha >= desde && m.fecha <= hasta);
+        localItems.forEach(lm => {
+            const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
+            if (!exists) {
+                items.push(lm);
+            }
+        });
+
+        // Sort items by date
+        items.sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+        let totalIngresos = 0, totalEgresos = 0;
+            // Agrupación mensual para la línea temporal
+            const byMonth: Record<string, {ingresos: number, egresos: number}> = {};
+
+            items.forEach(m => {
+                const month = m.fecha.substring(0, 7);
+                if (!byMonth[month]) byMonth[month] = { ingresos: 0, egresos: 0 };
+                const monto = parseFloat(m.monto);
+                if (m.tipo === 'ingreso') { totalIngresos += monto; byMonth[month].ingresos += monto; }
+                else { totalEgresos += monto; byMonth[month].egresos += monto; }
+            });
+
+            const neto = totalIngresos - totalEgresos;
+
+            document.getElementById('hist-val-ingresos')!.textContent = fmt(totalIngresos);
+            document.getElementById('hist-val-egresos')!.textContent = fmt(totalEgresos);
+            document.getElementById('hist-val-neto')!.textContent = fmt(neto);
+            document.getElementById('hist-val-neto')!.style.color = neto >= 0 ? '#10b981' : '#ef4444';
+            document.getElementById('hist-val-movs')!.textContent = items.length.toString();
+
+            const months = Object.keys(byMonth).sort();
+            const netoPorMes = months.map(m => parseFloat((byMonth[m].ingresos - byMonth[m].egresos).toFixed(2)));
+
+            if (histChart) histChart.destroy();
+            histChart = new ApexCharts(document.getElementById('chart-historico'), {
+                chart: { background: 'transparent', type: 'area', height: 300, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+                theme: { mode: 'dark' },
+                series: [{ name: 'Ganancia Neta', data: netoPorMes }],
+                xaxis: { categories: months, labels: { style: { colors: '#888' } } },
+                yaxis: { labels: { style: { colors: '#888' }, formatter: (v: number) => `$${v.toLocaleString('es-AR')}` } },
+                colors: ['#10b981'],
+                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
+                dataLabels: { enabled: false },
+                grid: { borderColor: '#383838' },
+                stroke: { curve: 'smooth', width: 2 },
+                tooltip: { y: { formatter: (v: number) => fmt(v) } }
+            });
+            histChart.render();
+
+        } catch(e) {
+            console.error("Error generating historical report:", e);
+        }
+    });
+</script>
