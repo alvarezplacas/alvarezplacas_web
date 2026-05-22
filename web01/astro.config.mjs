@@ -56,11 +56,11 @@ export default defineConfig({
     build: {
       cssMinify: 'lightningcss',
       rollupOptions: {
-        external: ['imapflow']
+        external: ['imapflow', 'mailparser', 'nodemailer', 'googleapis', 'pg', 'bcryptjs', 'jsonwebtoken', 'csv-parse', 'pdf-parse', 'xlsx']
       }
     },
     ssr: {
-      external: ['pg', 'imapflow']
+      external: ['imapflow', 'mailparser', 'nodemailer', 'googleapis', 'pg', 'bcryptjs', 'jsonwebtoken', 'csv-parse', 'pdf-parse', 'xlsx']
     }
   }
 });
