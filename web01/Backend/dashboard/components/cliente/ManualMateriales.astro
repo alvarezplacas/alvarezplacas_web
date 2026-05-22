@@ -30,6 +30,11 @@ try {
 }
 ---
 
+<!-- Inyección segura de datos para Alpine -->
+<script is:inline define:vars={{ melaminasSamples }}>
+    window.MELAMINAS_SAMPLES = melaminasSamples || [];
+</script>
+
 <article class="manual-interactivo-container" x-data="{ tab: 'mdf' }" aria-label="Manual interactivo de materiales">
     <header class="mb-8 border-b border-[var(--border-card)] pb-6">
         <h1 class="text-3xl md:text-5xl font-black text-[var(--text-main)] uppercase tracking-tighter mb-4 leading-none">
@@ -109,42 +114,70 @@ try {
 
         <!-- PANEL: MELAMINAS -->
         <section id="panel-melaminas" x-show="tab === 'melaminas'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;" aria-labelledby="title-melaminas"
-                 x-data={`{ activeSample: ${melaminasSamples.length > 0 ? 0 : -1}, samples: ${JSON.stringify(melaminasSamples)} }`}>
+                 x-data="{ activeSample: window.MELAMINAS_SAMPLES.length > 0 ? 0 : -1, samples: window.MELAMINAS_SAMPLES }">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Columna Izquierda: Información Interactiva -->
-                <div class="bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] shadow-sm flex flex-col">
-                    <h2 id="title-melaminas" class="text-xl font-black text-[var(--text-main)] uppercase tracking-widest mb-4">
-                        Tableros Melamínicos
-                    </h2>
-                    <p class="text-sm text-[var(--text-muted)] mb-6 leading-relaxed font-medium">
-                        Placas de aglomerado (PB/MDP) recubiertas con papeles decorativos de altísima resistencia. Cumplen normativas internacionales y presentan texturas sincronizadas, tratamientos antimicrobianos y extrema durabilidad.
-                    </p>
+                <!-- Columna Izquierda: Información y Proyector 3D -->
+                <div class="bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] shadow-sm flex flex-col relative overflow-hidden">
+                    <div class="relative z-10">
+                        <h2 id="title-melaminas" class="text-xl font-black text-[var(--text-main)] uppercase tracking-widest mb-4">
+                            Proyector de Texturas
+                        </h2>
+                        <p class="text-sm text-[var(--text-muted)] mb-4 leading-relaxed font-medium">
+                            Nuestras melaminas cumplen normativas internacionales y presentan texturas sincronizadas. Explora nuestro catálogo en tiempo real.
+                        </p>
+                    </div>
                     
                     <template x-if="activeSample !== -1">
-                        <div class="mt-auto bg-[var(--bg-main)] border border-[var(--border-card)] rounded-2xl p-6 relative overflow-hidden group">
-                            <!-- Fondo difuminado de la muestra activa -->
-                            <div class="absolute inset-0 opacity-10 bg-cover bg-center transition-all duration-500" :style="'background-image: url(' + samples[activeSample].image + ')'"></div>
-                            
-                            <div class="relative z-10">
-                                <span class="bg-[var(--alvarez-blue)] text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full mb-3 inline-block" x-text="samples[activeSample].brand"></span>
-                                <h3 class="text-2xl font-black text-[var(--text-main)] italic uppercase leading-none mb-1" x-text="samples[activeSample].name"></h3>
-                                <p class="text-[10px] text-[var(--text-muted)] font-mono uppercase mb-4" x-text="'SKU: ' + samples[activeSample].sku"></p>
+                        <div class="mt-4 flex-1 flex flex-col items-center justify-center relative min-h-[350px]">
+                            <!-- Escenario 3D (Canvas CSS) -->
+                            <div class="projector-stage relative w-full h-full flex items-center justify-center perspective-[1000px]">
+                                <!-- Foco de luz -->
+                                <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-[200%] h-[150%] bg-gradient-to-b from-[var(--alvarez-blue)]/10 via-white/5 to-transparent rounded-[100%] blur-[50px] pointer-events-none transform -rotate-12 opacity-50 transition-opacity duration-500"></div>
                                 
-                                <div class="flex items-center gap-4">
-                                    <div class="w-16 h-16 rounded-xl border-2 border-[var(--border-card)] shadow-md overflow-hidden flex-shrink-0">
-                                        <img :src="samples[activeSample].image" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125" alt="Detalle textura">
+                                <!-- Tablero 3D -->
+                                <div class="board-3d relative w-64 h-64 md:w-80 md:h-80 shadow-2xl transition-all duration-700 ease-in-out transform hover:scale-105"
+                                     style="transform-style: preserve-3d; transform: rotateX(20deg) rotateY(-15deg) translateZ(50px);">
+                                    
+                                    <!-- Cara frontal (Textura Principal) -->
+                                    <div class="absolute inset-0 rounded-lg border-2 border-white/10 shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] bg-cover bg-center transition-all duration-700"
+                                         :style="'background-image: url(' + samples[activeSample].image + ')'">
+                                        <!-- Brillo interactivo (Luz) -->
+                                        <div class="absolute inset-0 bg-gradient-to-tr from-black/60 via-transparent to-white/20 rounded-lg"></div>
                                     </div>
-                                    <p class="text-[10px] font-bold text-[var(--text-main)] leading-relaxed">
-                                        Toca las muestras de la galería para explorar texturas en detalle.
-                                    </p>
+                                    
+                                    <!-- Canto izquierdo (Grosor de la placa) -->
+                                    <div class="absolute left-0 top-0 bottom-0 w-4 bg-[#8b6b4e] origin-left"
+                                         style="transform: rotateY(-90deg);">
+                                         <div class="absolute inset-0 bg-black/40"></div>
+                                    </div>
+                                    
+                                    <!-- Canto inferior -->
+                                    <div class="absolute left-0 right-0 bottom-0 h-4 bg-[#6e5138] origin-bottom"
+                                         style="transform: rotateX(90deg);">
+                                         <div class="absolute inset-0 bg-black/60"></div>
+                                    </div>
+                                    
+                                    <!-- Sombra arrojada -->
+                                    <div class="absolute -bottom-10 left-4 right-4 h-12 bg-black/40 blur-xl rounded-[100%]"
+                                         style="transform: translateZ(-50px) rotateX(90deg);"></div>
                                 </div>
+                            </div>
+                            
+                            <!-- Información de la muestra seleccionada -->
+                            <div class="w-full bg-[var(--bg-main)]/80 backdrop-blur border border-[var(--border-card)] rounded-2xl p-5 relative z-20 mt-6 shadow-xl transform translate-y-0 transition-all">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="bg-[var(--alvarez-blue)] text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg" x-text="samples[activeSample].brand"></span>
+                                    <p class="text-[10px] text-[var(--text-muted)] font-mono uppercase bg-[var(--bg-card)] px-2 py-1 rounded" x-text="'SKU: ' + samples[activeSample].sku"></p>
+                                </div>
+                                <h3 class="text-2xl font-black text-[var(--text-main)] italic uppercase leading-none" x-text="samples[activeSample].name"></h3>
                             </div>
                         </div>
                     </template>
+                    
                     <template x-if="activeSample === -1">
                         <div class="mt-auto bg-[var(--bg-main)] border border-[var(--border-card)] rounded-2xl p-6 text-center text-[var(--text-muted)] text-xs font-medium">
                             <i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>
-                            Cargando muestras interactivas del catálogo...
+                            Cargando proyector 3D...
                         </div>
                     </template>
                 </div>
