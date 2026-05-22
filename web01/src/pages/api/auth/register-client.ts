@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createDirectus, rest, readItems, createItem, staticToken, updateItem } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
+import { registerSession } from '../../../session_store';
 
 const DIRECTUS_URL = import.meta.env.DIRECTUS_URL_INTERNAL || import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
 const STATIC_TOKEN = import.meta.env.DIRECTUS_TOKEN || 'sv47_8QErnkx0-EBKFBnAoBw433CJs13';
@@ -14,7 +15,7 @@ export const GET: APIRoute = ({ redirect }) => {
     return redirect('/cliente/registro');
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
     try {
         let body: any = {};
         const contentType = request.headers.get('content-type') || '';
@@ -109,7 +110,7 @@ export const POST: APIRoute = async ({ request }) => {
         console.log(`[Register] Creating client: ${email} (${client_number}) - Seller: ${assignedSellerId}`);
         
         try {
-            await directusClient.request(createItem('clientes', {
+            const newClient = await directusClient.request(createItem('clientes', {
                 name,
                 email: email.toLowerCase().trim(),
                 phone: phone ? phone.replace(/\D/g, '') : '',
@@ -123,10 +124,25 @@ export const POST: APIRoute = async ({ request }) => {
                 registration_date: new Date().toISOString()
             }));
 
+            // Auto-login
+            const clientId = newClient?.id?.toString();
+            if (clientId) {
+                cookies.set('client_session', clientId, {
+                    path: '/',
+                    maxAge: 60 * 60 * 24 * 30, // 30 días
+                    httpOnly: true,
+                    sameSite: 'lax'
+                });
+
+                const ip = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+                const userAgent = request.headers.get('user-agent') || 'unknown';
+                registerSession(ip, userAgent, clientId, 'client');
+            }
+
             return new Response(JSON.stringify({ 
                 success: true, 
                 message: 'Registro exitoso. ¡Bienvenido al Club!',
-                redirectUrl: '/login'
+                redirectUrl: '/cliente'
             }), { status: 201, headers: { 'Content-Type': 'application/json' } });
 
         } catch (directusError: any) {
