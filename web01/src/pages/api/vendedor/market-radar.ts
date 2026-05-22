@@ -18,7 +18,8 @@ export const GET: APIRoute = async ({ request, cookies }) => {
             ali: { name: 'Aluminio (Perfiles/Grupo Euro)', symbol: 'ALI=F', price: 0, change: 0, changePercent: 0 },
             hrc: { name: 'Acero (Correderas/Bisagras)', symbol: 'HRC=F', price: 0, change: 0, changePercent: 0 },
             ypf: { name: 'YPF S.A. (Flete Nacional/Egger)', symbol: 'YPFD.BA', price: 0, change: 0, changePercent: 0 },
-            dolar: { blue: 0, mep: 0, ccl: 0 }
+            dolar: { blue: { val: 0, var: 0 }, mep: { val: 0, var: 0 }, ccl: { val: 0, var: 0 } },
+            riesgoPais: 0
         };
 
         // Helper function to fetch Yahoo Finance Data safely
@@ -64,13 +65,23 @@ export const GET: APIRoute = async ({ request, cookies }) => {
             .then(data => {
                 if(Array.isArray(data)) {
                     data.forEach(d => {
-                        if(d.casa === 'blue') results.dolar.blue = d.venta;
-                        if(d.casa === 'mep') results.dolar.mep = d.venta;
-                        if(d.casa === 'contadoconliqui') results.dolar.ccl = d.venta;
+                        if(d.casa === 'blue') { results.dolar.blue.val = d.venta; results.dolar.blue.var = d.variacion || 0; }
+                        if(d.casa === 'bolsa') { results.dolar.mep.val = d.venta; results.dolar.mep.var = d.variacion || 0; }
+                        if(d.casa === 'contadoconliqui') { results.dolar.ccl.val = d.venta; results.dolar.ccl.var = d.variacion || 0; }
                     });
                 }
             })
             .catch(e => console.error("Error DolarAPI:", e))
+        );
+
+        // Add Riesgo Pais
+        promises.push(
+            fetch('https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo')
+            .then(r => r.json())
+            .then(data => {
+                if(data && data.valor) results.riesgoPais = data.valor;
+            })
+            .catch(e => console.error("Error Riesgo Pais:", e))
         );
 
         await Promise.all(promises);

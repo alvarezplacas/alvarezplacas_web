@@ -35,24 +35,56 @@ if (!sellerId) {
                 </div>
             </div>
 
-            <!-- Dólares Locales -->
-            <div class="radar-card full-width">
-                <div class="card-title"><i class="fas fa-money-bill-wave" style="color:#10b981;"></i> Mercado Cambiario Local (Argentina)</div>
-                <div class="indicator-row">
-                    <div class="indicator">
-                        <span class="ind-label">Dólar Blue</span>
-                        <span class="ind-value" x-text="fmtDolar(dolar.blue)"></span>
+                <!-- Indicadores Locales -->
+                <div class="radar-card full-width" style="padding: 15px;">
+                    <div class="card-title" style="margin-bottom: 10px; font-size: 13px;">
+                        <i class="fas fa-money-bill-wave" style="color: #10b981;"></i> Indicadores Macro Locales
                     </div>
-                    <div class="indicator">
-                        <span class="ind-label">Dólar MEP</span>
-                        <span class="ind-value" x-text="fmtDolar(dolar.mep)"></span>
-                    </div>
-                    <div class="indicator">
-                        <span class="ind-label">Dólar CCL</span>
-                        <span class="ind-value" x-text="fmtDolar(dolar.ccl)"></span>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <template x-if="dolar?.blue?.val > 0">
+                            <div class="indicator" style="flex: 1; padding: 10px; min-width: 120px;">
+                                <span class="ind-label">Dólar Blue</span>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span class="ind-value" style="font-size: 18px;" x-text="fmtDolar(dolar.blue.val)"></span>
+                                    <span style="font-size: 12px; font-weight: bold;" :class="dolar.blue.var > 0 ? 'text-danger' : (dolar.blue.var < 0 ? 'text-success' : 'text-muted')">
+                                        <i class="fas" :class="dolar.blue.var > 0 ? 'fa-caret-up' : (dolar.blue.var < 0 ? 'fa-caret-down' : 'fa-minus')"></i>
+                                        <span x-text="Math.abs(dolar.blue.var).toFixed(2) + '%'"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dolar?.mep?.val > 0">
+                            <div class="indicator" style="flex: 1; padding: 10px; min-width: 120px;">
+                                <span class="ind-label">Dólar MEP</span>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span class="ind-value" style="font-size: 18px;" x-text="fmtDolar(dolar.mep.val)"></span>
+                                    <span style="font-size: 12px; font-weight: bold;" :class="dolar.mep.var > 0 ? 'text-danger' : (dolar.mep.var < 0 ? 'text-success' : 'text-muted')">
+                                        <i class="fas" :class="dolar.mep.var > 0 ? 'fa-caret-up' : (dolar.mep.var < 0 ? 'fa-caret-down' : 'fa-minus')"></i>
+                                        <span x-text="Math.abs(dolar.mep.var).toFixed(2) + '%'"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="dolar?.ccl?.val > 0">
+                            <div class="indicator" style="flex: 1; padding: 10px; min-width: 120px;">
+                                <span class="ind-label">Dólar CCL</span>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span class="ind-value" style="font-size: 18px;" x-text="fmtDolar(dolar.ccl.val)"></span>
+                                    <span style="font-size: 12px; font-weight: bold;" :class="dolar.ccl.var > 0 ? 'text-danger' : (dolar.ccl.var < 0 ? 'text-success' : 'text-muted')">
+                                        <i class="fas" :class="dolar.ccl.var > 0 ? 'fa-caret-up' : (dolar.ccl.var < 0 ? 'fa-caret-down' : 'fa-minus')"></i>
+                                        <span x-text="Math.abs(dolar.ccl.var).toFixed(2) + '%'"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="riesgoPais > 0">
+                            <div class="indicator" style="flex: 1; padding: 10px; min-width: 120px; border-color: #333; background: rgba(245, 158, 11, 0.05);">
+                                <span class="ind-label" style="color: #f59e0b;">Riesgo País</span>
+                                <span class="ind-value" style="font-size: 18px;" x-text="riesgoPais + ' pts'"></span>
+                            </div>
+                        </template>
                     </div>
                 </div>
-            </div>
 
             <!-- Panel Sudamérica (Tableros) -->
             <div class="radar-card">
@@ -251,7 +283,8 @@ if (!sellerId) {
             ali: { name: '', symbol: '', price: 0, changePercent: 0 },
             hrc: { name: '', symbol: '', price: 0, changePercent: 0 },
             ypf: { name: '', symbol: '', price: 0, changePercent: 0 },
-            dolar: { blue: 0, mep: 0, ccl: 0 },
+            dolar: { blue: { val: 0, var: 0 }, mep: { val: 0, var: 0 }, ccl: { val: 0, var: 0 } },
+            riesgoPais: 0,
 
             async fetchData() {
                 this.loading = true;
@@ -269,6 +302,7 @@ if (!sellerId) {
                         this.hrc = json.data.hrc;
                         this.ypf = json.data.ypf;
                         this.dolar = json.data.dolar;
+                        this.riesgoPais = json.data.riesgoPais;
                     }
                 } catch (e) {
                     console.error("Error cargando radar", e);
