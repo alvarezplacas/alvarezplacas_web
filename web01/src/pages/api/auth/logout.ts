@@ -17,3 +17,5 @@ export const GET: APIRoute = async ({ request, cookies, redirect }) => {
     // Redirect to home as requested
     return redirect('/');
 };
+
+export const POST: APIRoute = GET;
