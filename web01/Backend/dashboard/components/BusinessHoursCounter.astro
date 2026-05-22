@@ -1,0 +1,244 @@
+---
+/**
+ * BusinessHoursCounter - Contador dinámico de Horario Comercial para Alvarez Placas.
+ * Zona Horaria: America/Argentina/Buenos_Aires (UTC-3)
+ * Horario Laboral:
+ * - Lunes a Viernes: 08:00 a 13:00 y 14:00 a 17:00
+ * - Sábados: 08:00 a 13:00
+ * - Domingos: Cerrado
+ */
+---
+
+<div class="business-hours-container" id="business-hours-container" style="display: none;">
+    <div class="business-hours-pill">
+        <span class="status-dot" id="business-status-dot"></span>
+        <i class="fa-regular fa-clock clock-icon"></i>
+        <span id="business-hours-text">Cargando horario...</span>
+    </div>
+</div>
+
+<style>
+    .business-hours-container {
+        display: inline-flex;
+        align-items: center;
+    }
+    .business-hours-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(30, 30, 30, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-family: 'Roboto Mono', 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 11px;
+        color: #ccc;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+        backdrop-filter: blur(4px);
+        user-select: none;
+    }
+    .business-hours-pill:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        background: rgba(40, 40, 40, 0.8);
+        color: #fff;
+    }
+    .clock-icon {
+        font-size: 11px;
+        color: #888;
+        margin-right: 1px;
+    }
+    .business-hours-pill:hover .clock-icon {
+        color: #aaa;
+    }
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    .status-dot.open {
+        background-color: #10b981;
+        box-shadow: 0 0 6px #10b981, 0 0 12px #10b981;
+        animation: pulse-green-glow 2s infinite;
+    }
+    .status-dot.closed {
+        background-color: #f59e0b;
+        box-shadow: 0 0 6px #f59e0b, 0 0 12px #f59e0b;
+        animation: pulse-orange-glow 2s infinite;
+    }
+    @keyframes pulse-green-glow {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+        70% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    @keyframes pulse-orange-glow {
+        0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+        70% { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+</style>
+
+<script>
+    // Client-side execution
+    document.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('business-hours-container');
+        const dot = document.getElementById('business-status-dot');
+        const textSpan = document.getElementById('business-hours-text');
+
+        if (!container || !dot || !textSpan) return;
+
+        // Show the container once script has loaded
+        container.style.display = 'inline-flex';
+
+        function getArgentinaTime() {
+            const now = new Date();
+            // Convert to Argentina (America/Argentina/Buenos_Aires) timezone safely
+            try {
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/Argentina/Buenos_Aires',
+                    year: 'numeric', month: 'numeric', day: 'numeric',
+                    hour: 'numeric', minute: 'numeric', second: 'numeric',
+                    hour12: false
+                });
+                const parts = formatter.formatToParts(now);
+                const map: any = {};
+                for (const part of parts) {
+                    map[part.type] = part.value;
+                }
+                return new Date(
+                    parseInt(map.year),
+                    parseInt(map.month) - 1,
+                    parseInt(map.day),
+                    parseInt(map.hour),
+                    parseInt(map.minute),
+                    parseInt(map.second)
+                );
+            } catch (e) {
+                // Return standard local time if Intl.DateTimeFormat fails
+                return now;
+            }
+        }
+
+        function formatTime(diffMs) {
+            const totalSecs = Math.floor(diffMs / 1000);
+            const secs = totalSecs % 60;
+            const totalMins = Math.floor(totalSecs / 60);
+            const mins = totalMins % 60;
+            const totalHours = Math.floor(totalMins / 60);
+            
+            const pad = (n) => String(n).padStart(2, '0');
+            
+            if (totalHours >= 24) {
+                const days = Math.floor(totalHours / 24);
+                const hours = totalHours % 24;
+                return `${days}d ${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+            } else {
+                return `${pad(totalHours)}:${pad(mins)}:${pad(secs)}`;
+            }
+        }
+
+        function updateBusinessHours() {
+            const arTime = getArgentinaTime();
+            const day = arTime.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
+            const hours = arTime.getHours();
+            const minutes = arTime.getMinutes();
+            const seconds = arTime.getSeconds();
+            const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+
+            const toSec = (h, m) => (h * 3600) + (m * 60);
+
+            const open1 = toSec(8, 0);
+            const close1 = toSec(13, 0);
+            const open2 = toSec(14, 0);
+            const close2 = toSec(17, 0);
+
+            let status = ""; // "abierto" or "cerrado"
+            let targetSeconds = 0;
+            let targetDate = new Date(arTime);
+            let stateLabel = "";
+
+            if (day >= 1 && day <= 5) {
+                // Lunes a Viernes
+                if (totalSeconds < open1) {
+                    status = "cerrado";
+                    targetSeconds = open1;
+                    stateLabel = "Apertura";
+                } else if (totalSeconds >= open1 && totalSeconds < close1) {
+                    status = "abierto";
+                    targetSeconds = close1;
+                    stateLabel = "Almuerzo";
+                } else if (totalSeconds >= close1 && totalSeconds < open2) {
+                    status = "cerrado";
+                    targetSeconds = open2;
+                    stateLabel = "Apertura Tarde";
+                } else if (totalSeconds >= open2 && totalSeconds < close2) {
+                    status = "abierto";
+                    targetSeconds = close2;
+                    stateLabel = "Cierre";
+                } else {
+                    // After 17:00. Next is tomorrow 08:00 (Saturday if Friday, else next weekday)
+                    status = "cerrado";
+                    targetSeconds = open1;
+                    stateLabel = "Apertura";
+                    targetDate.setDate(targetDate.getDate() + 1);
+                }
+            } else if (day === 6) {
+                // Sábado
+                if (totalSeconds < open1) {
+                    status = "cerrado";
+                    targetSeconds = open1;
+                    stateLabel = "Apertura";
+                } else if (totalSeconds >= open1 && totalSeconds < close1) {
+                    status = "abierto";
+                    targetSeconds = close1;
+                    stateLabel = "Cierre";
+                } else {
+                    // Sábado tarde. Next is Lunes 08:00
+                    status = "cerrado";
+                    targetSeconds = open1;
+                    stateLabel = "Lunes";
+                    targetDate.setDate(targetDate.getDate() + 2);
+                }
+            } else {
+                // Domingo. Next is Lunes 08:00
+                status = "cerrado";
+                targetSeconds = open1;
+                stateLabel = "Lunes";
+                targetDate.setDate(targetDate.getDate() + 1);
+            }
+
+            const targetH = Math.floor(targetSeconds / 3600);
+            const targetM = Math.floor((targetSeconds % 3600) / 60);
+            targetDate.setHours(targetH, targetM, 0, 0);
+
+            let diffMs = targetDate.getTime() - arTime.getTime();
+            if (diffMs < 0) diffMs = 0;
+
+            const timeStr = formatTime(diffMs);
+
+            if (status === "abierto") {
+                dot.className = "status-dot open";
+                if (stateLabel === "Almuerzo") {
+                    textSpan.textContent = `Abierto • Almuerzo en ${timeStr}`;
+                } else {
+                    textSpan.textContent = `Abierto • Cierra en ${timeStr}`;
+                }
+            } else {
+                dot.className = "status-dot closed";
+                if (stateLabel === "Lunes") {
+                    textSpan.textContent = `Cerrado • Abre Lunes en ${timeStr}`;
+                } else if (stateLabel === "Apertura Tarde") {
+                    textSpan.textContent = `Almuerzo • Abre en ${timeStr}`;
+                } else {
+                    textSpan.textContent = `Cerrado • Abre en ${timeStr}`;
+                }
+            }
+        }
+
+        // Run immediately and update every second
+        updateBusinessHours();
+        setInterval(updateBusinessHours, 1000);
+    });
+</script>

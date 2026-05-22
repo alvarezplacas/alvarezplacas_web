@@ -1,0 +1,150 @@
+---
+/**
+ * Cliente - Academia de Materiales
+ * Incorpora el componente ManualMateriales para instruir al cliente.
+ */
+import ClienteLayout from '../../layouts/ClienteLayout.astro';
+import ManualMateriales from '../../components/cliente/ManualMateriales.astro';
+import { directus, readItems, readItem } from '@conexiones/directus.js';
+
+let clientId = Astro.cookies.get('client_session')?.value;
+const isSeller = Astro.cookies.has('seller_session');
+const isAdmin = Astro.cookies.has('admin_session');
+
+const url = new URL(Astro.request.url);
+const queryClientId = url.searchParams.get('id') || url.searchParams.get('clientId');
+if (queryClientId && (isSeller || isAdmin)) {
+    clientId = queryClientId;
+}
+
+if (!clientId) {
+    if (isSeller || isAdmin) {
+        try {
+            const tempClients = await directus.request(readItems('clientes', { limit: 1, fields: ['id'] }));
+            if (tempClients && tempClients.length > 0) {
+                clientId = tempClients[0].id.toString();
+            }
+        } catch (e) {
+            console.error("Error al buscar cliente temporal de soporte:", e);
+        }
+    }
+}
+
+if (!clientId) return Astro.redirect('/login');
+
+let clientData = { name: '...', scoring: 0, client_number: '...' };
+
+try {
+    clientData = await directus.request(readItem('clientes', clientId, {
+        fields: ['id', 'name', 'client_number']
+    })) as any;
+} catch (e) {
+    console.error("[Academia Error]:", e);
+}
+---
+
+<ClienteLayout title="Academia de Materiales | Alvarez Placas" userName={clientData.name}>
+    <div id="theme-wrapper" class="theme-light transition-colors duration-300 w-full min-h-screen text-[var(--text-main)]" aria-live="polite">
+        
+        <!-- Header Minimalista -->
+        <header class="flex justify-between items-center mb-6 px-6 py-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-card)] shadow-sm transition-colors duration-300" aria-label="Barra de herramientas superior">
+            <div class="flex items-center gap-2 text-xs font-mono text-[var(--text-muted)]">
+                <a href="/cliente" class="hover:text-[var(--text-main)] transition-colors"><i class="fas fa-arrow-left mr-2"></i> VOLVER AL PANEL</a>
+                <span class="mx-2">|</span>
+                ACADEMIA DE MATERIALES
+            </div>
+            
+            <button 
+                id="theme-toggle-btn" 
+                class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border-card)] bg-[var(--bg-main)] hover:opacity-85 text-xs font-mono font-bold cursor-pointer transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--alvarez-blue)]"
+                aria-label="Cambiar tema de pantalla"
+                aria-pressed="false"
+            >
+                <span id="theme-icon" aria-hidden="true">☀️</span>
+                <span id="theme-text">MODO CLARO (PAPEL HUESO)</span>
+            </button>
+        </header>
+
+        <!-- Componente Principal del Manual -->
+        <main class="w-full">
+            <div class="bg-[var(--bg-card)] border border-[var(--border-card)] p-8 md:p-12 rounded-[2.5rem] shadow-sm transition-colors duration-300">
+                <ManualMateriales />
+            </div>
+        </main>
+    </div>
+</ClienteLayout>
+
+<style is:global>
+    .theme-light {
+        --bg-main: oklch(0.95 0.015 80);        
+        --bg-card: oklch(0.98 0.008 80);        
+        --border-card: oklch(0.9 0.015 80);     
+        --text-main: oklch(0.18 0.01 80);       
+        --text-muted: oklch(0.45 0.02 80);      
+    }
+    .theme-dark {
+        --bg-main: #000000;                     
+        --bg-card: oklch(0.08 0.005 240);       
+        --border-card: rgba(255, 255, 255, 0.05); 
+        --text-main: oklch(0.94 0.01 240);      
+        --text-muted: oklch(0.65 0.02 240);     
+    }
+    body.body-theme-dark {
+        background-color: #000000 !important;
+        background-image: 
+            linear-gradient(to right, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.018) 1px, transparent 1px) !important;
+        background-size: 40px 40px !important;
+        background-position: center !important;
+        transition: background-color 0.3s ease, background-image 0.3s ease;
+    }
+    body.body-theme-light {
+        background-color: oklch(0.95 0.015 80) !important; 
+        background-image: none !important;
+        transition: background-color 0.3s ease, background-image 0.3s ease;
+    }
+    body {
+        background-color: var(--bg-main) !important;
+        transition: background-color 0.3s ease, background-image 0.3s ease;
+    }
+</style>
+
+<script is:inline>
+    (function () {
+        const themeWrapper = document.getElementById('theme-wrapper');
+        const toggleBtn = document.getElementById('theme-toggle-btn');
+        const iconSpan = document.getElementById('theme-icon');
+        const textSpan = document.getElementById('theme-text');
+
+        const savedTheme = localStorage.getItem('client-theme') || 'light';
+        applyTheme(savedTheme);
+
+        if (toggleBtn) {
+            toggleBtn.onclick = () => {
+                const currentTheme = themeWrapper.classList.contains('theme-dark') ? 'light' : 'dark';
+                applyTheme(currentTheme);
+                localStorage.setItem('client-theme', currentTheme);
+            };
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                themeWrapper.classList.remove('theme-light');
+                themeWrapper.classList.add('theme-dark');
+                document.body.classList.remove('body-theme-light');
+                document.body.classList.add('body-theme-dark');
+                if (toggleBtn) toggleBtn.setAttribute('aria-pressed', 'true');
+                if (iconSpan) iconSpan.innerText = '🌙';
+                if (textSpan) textSpan.innerText = 'MODO OSCURO';
+            } else {
+                themeWrapper.classList.remove('theme-dark');
+                themeWrapper.classList.add('theme-light');
+                document.body.classList.remove('body-theme-dark');
+                document.body.classList.add('body-theme-light');
+                if (toggleBtn) toggleBtn.setAttribute('aria-pressed', 'false');
+                if (iconSpan) iconSpan.innerText = '☀️';
+                if (textSpan) textSpan.innerText = 'MODO CLARO (PAPEL HUESO)';
+            }
+        }
+    })();
+</script>

@@ -1,0 +1,190 @@
+---
+/**
+ * Componente: ManualMateriales.astro
+ * SEO Optimizado y con Estándar UX/UI Premium 2026.
+ * Explica las ventajas de nuestros materiales (Egger, Faplac, Sadepan) y enlaza al catálogo.
+ */
+---
+
+<article class="manual-interactivo-container" x-data="{ tab: 'mdf' }" aria-label="Manual interactivo de materiales">
+    <header class="mb-8 border-b border-[var(--border-card)] pb-6">
+        <h1 class="text-3xl md:text-5xl font-black text-[var(--text-main)] uppercase tracking-tighter mb-4 leading-none">
+            Academia de <span class="text-[var(--alvarez-blue)] italic">Materiales</span>
+        </h1>
+        <p class="text-sm font-medium text-[var(--text-muted)] max-w-3xl leading-relaxed">
+            Descubre las características técnicas de nuestras placas, aprende sobre certificaciones ecológicas y elige el material perfecto para tu próximo proyecto. Trabajamos con marcas líderes mundiales como <strong class="text-[var(--text-main)]">Egger, Faplac y Sadepan</strong>.
+        </p>
+    </header>
+
+    <!-- Pestañas Interactivas (Alpine.js) -->
+    <nav class="flex overflow-x-auto gap-2 mb-8 hide-scrollbar" aria-label="Navegación de materiales">
+        <button 
+            class="px-6 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[var(--alvarez-blue)]"
+            :class="tab === 'mdf' ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-md' : 'bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-muted)] hover:opacity-85'"
+            @click="tab = 'mdf'"
+            aria-controls="panel-mdf"
+            :aria-selected="tab === 'mdf'"
+        >
+            <i class="fas fa-layer-group mr-2"></i> Tableros MDF
+        </button>
+        <button 
+            class="px-6 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[var(--alvarez-blue)]"
+            :class="tab === 'melaminas' ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-md' : 'bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-muted)] hover:opacity-85'"
+            @click="tab = 'melaminas'"
+            aria-controls="panel-melaminas"
+            :aria-selected="tab === 'melaminas'"
+        >
+            <i class="fas fa-swatchbook mr-2"></i> Melaminas & Aglomerados
+        </button>
+        <button 
+            class="px-6 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[var(--alvarez-blue)]"
+            :class="tab === 'sostenibilidad' ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-md' : 'bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-muted)] hover:opacity-85'"
+            @click="tab = 'sostenibilidad'"
+            aria-controls="panel-sostenibilidad"
+            :aria-selected="tab === 'sostenibilidad'"
+        >
+            <i class="fas fa-leaf mr-2 text-emerald-500"></i> Eco-Certificaciones
+        </button>
+    </nav>
+
+    <div class="relative min-h-[400px]">
+        
+        <!-- PANEL: MDF -->
+        <section id="panel-mdf" x-show="tab === 'mdf'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;" aria-labelledby="title-mdf">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] shadow-sm">
+                    <h2 id="title-mdf" class="text-xl font-black text-[var(--text-main)] uppercase tracking-widest mb-4 flex items-center gap-3">
+                        MDF <span class="text-[10px] font-bold text-[var(--text-muted)] border border-[var(--border-card)] px-2 py-1 rounded-full">Medium Density Fiberboard</span>
+                    </h2>
+                    <p class="text-sm text-[var(--text-muted)] mb-6 leading-relaxed font-medium">
+                        El MDF se compone de finas fibras de madera prensadas. Su densidad homogénea lo convierte en el sustrato perfecto para **lacados, moldurados profundos y mecanizados**.
+                    </p>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-emerald-500 mt-1"></i>
+                            <p class="text-xs text-[var(--text-main)]"><strong class="font-black">Standard:</strong> Alta densidad superficial, ideal para pintura.</p>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-emerald-500 mt-1"></i>
+                            <p class="text-xs text-[var(--text-main)]"><strong class="font-black">Ultraliviano:</strong> Facilita el trabajo manual y aligera muebles sin perder calidad.</p>
+                        </li>
+                    </ul>
+                    <a href="/catalogo?categoria=mdf" class="inline-flex items-center gap-2 bg-[var(--alvarez-blue)] hover:opacity-85 text-white font-black uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl transition-all shadow-md focus:ring-2 focus:ring-[var(--alvarez-blue)] focus:ring-offset-2 focus:ring-offset-[var(--bg-main)]">
+                        Ver MDF en Catálogo <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="bg-gradient-to-br from-[var(--border-card)] to-transparent rounded-[2rem] overflow-hidden flex items-center justify-center p-8 border border-[var(--border-card)]">
+                    <!-- Placeholder premium para imagen de producto -->
+                    <div class="text-center opacity-40">
+                        <i class="fas fa-cubes text-6xl mb-4 text-[var(--text-main)]"></i>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)]">Representación de Fibra MDF</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL: MELAMINAS -->
+        <section id="panel-melaminas" x-show="tab === 'melaminas'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;" aria-labelledby="title-melaminas">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] shadow-sm">
+                    <h2 id="title-melaminas" class="text-xl font-black text-[var(--text-main)] uppercase tracking-widest mb-4">
+                        Tableros Melamínicos
+                    </h2>
+                    <p class="text-sm text-[var(--text-muted)] mb-6 leading-relaxed font-medium">
+                        Placas de aglomerado (PB/MDP) recubiertas con papeles decorativos de altísima resistencia. Trabajamos exclusivamente con las colecciones completas de <strong class="text-[var(--text-main)]">Egger, Faplac y Sadepan</strong>.
+                    </p>
+                    <div class="grid grid-cols-3 gap-2 mb-8">
+                        <div class="bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl p-4 text-center">
+                            <i class="fas fa-shield-alt text-2xl text-[var(--alvarez-blue)] mb-2"></i>
+                            <p class="text-[9px] font-black uppercase text-[var(--text-main)]">+500 Ciclos de Abrasión</p>
+                        </div>
+                        <div class="bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl p-4 text-center">
+                            <i class="fas fa-tree text-2xl text-[var(--alvarez-blue)] mb-2"></i>
+                            <p class="text-[9px] font-black uppercase text-[var(--text-main)]">Texturas Sincronizadas</p>
+                        </div>
+                        <div class="bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl p-4 text-center">
+                            <i class="fas fa-virus-slash text-2xl text-[var(--alvarez-blue)] mb-2"></i>
+                            <p class="text-[9px] font-black uppercase text-[var(--text-main)]">Tratamiento Antimicrobiano</p>
+                        </div>
+                    </div>
+                    <a href="/catalogo?categoria=melamina" class="inline-flex items-center gap-2 bg-[var(--text-main)] hover:opacity-85 text-[var(--bg-main)] font-black uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl transition-all shadow-md">
+                        Explorar Catálogo Melaminas <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="grid grid-rows-3 gap-4">
+                    <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-[2rem] p-6 flex items-center justify-between shadow-sm">
+                        <div>
+                            <h3 class="font-black uppercase tracking-widest text-[var(--text-main)] text-sm mb-1">Colección Faplac</h3>
+                            <p class="text-[10px] font-medium text-[var(--text-muted)]">Diseños maderados y unicolores premium.</p>
+                        </div>
+                        <a href="/catalogo?marca=faplac" class="text-[var(--alvarez-blue)]"><i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                    <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-[2rem] p-6 flex items-center justify-between shadow-sm">
+                        <div>
+                            <h3 class="font-black uppercase tracking-widest text-[var(--text-main)] text-sm mb-1">Colección Egger</h3>
+                            <p class="text-[10px] font-medium text-[var(--text-muted)]">Tecnología Feelwood alemana.</p>
+                        </div>
+                        <a href="/catalogo?marca=egger" class="text-[var(--alvarez-blue)]"><i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                    <div class="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-[2rem] p-6 flex items-center justify-between shadow-sm">
+                        <div>
+                            <h3 class="font-black uppercase tracking-widest text-[var(--text-main)] text-sm mb-1">Colección Sadepan</h3>
+                            <p class="text-[10px] font-medium text-[var(--text-muted)]">Diseño italiano y versatilidad.</p>
+                        </div>
+                        <a href="/catalogo?marca=sadepan" class="text-[var(--alvarez-blue)]"><i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL: SOSTENIBILIDAD -->
+        <section id="panel-sostenibilidad" x-show="tab === 'sostenibilidad'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;" aria-labelledby="title-sostenibilidad">
+            <div class="bg-gradient-to-br from-[var(--bg-card)] to-[oklch(0.9_0.05_150)] dark:to-[oklch(0.2_0.05_150)] border border-emerald-500/20 p-8 md:p-12 rounded-[2rem] shadow-sm relative overflow-hidden">
+                <i class="fas fa-globe-americas absolute -right-10 -bottom-10 text-[200px] text-emerald-500/10 pointer-events-none"></i>
+                
+                <h2 id="title-sostenibilidad" class="text-2xl font-black text-[var(--text-main)] uppercase tracking-widest mb-6 relative z-10">
+                    Construcción Ecológica y Puntuación <span class="text-emerald-500">LEED / BREEAM</span>
+                </h2>
+                
+                <p class="text-sm text-[var(--text-muted)] max-w-3xl mb-8 leading-relaxed font-medium relative z-10">
+                    Alvarez Placas se enorgullece de proveer materiales que protegen la salud humana y forestal. Nuestros tableros cuentan con Declaraciones Ambientales de Producto (DAP) y cumplen los requisitos de bajas emisiones para certificaciones de vanguardia.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                    <article class="bg-[var(--bg-main)]/80 backdrop-blur border border-[var(--border-card)] p-6 rounded-2xl">
+                        <header class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i class="fas fa-wind"></i></div>
+                            <h3 class="font-black uppercase tracking-widest text-[11px] text-[var(--text-main)]">Emisiones Clase E1 & NAF</h3>
+                        </header>
+                        <p class="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed">
+                            Resinas con bajo o nulo contenido de formaldehído añadido (NAF/CARB). Garantizan una calidad de aire interior (IAQ) saludable, ideal para ambientes hospitalarios, educacionales y hogares.
+                        </p>
+                    </article>
+                    
+                    <article class="bg-[var(--bg-main)]/80 backdrop-blur border border-[var(--border-card)] p-6 rounded-2xl">
+                        <header class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i class="fas fa-tree"></i></div>
+                            <h3 class="font-black uppercase tracking-widest text-[11px] text-[var(--text-main)]">Certificación FSC® / PEFC</h3>
+                        </header>
+                        <p class="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed">
+                            Asegura que el 100% de la madera empleada en la fabricación de nuestros tableros proviene de bosques manejados de manera responsable, preservando la biodiversidad.
+                        </p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</article>
+
+<style>
+    /* Ocultar scrollbar en la navegación de pestañas */
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style>

@@ -1,0 +1,998 @@
+---
+import CeoWorkspace from '../../layouts/CeoWorkspace.astro';
+import { directus, readItems } from '@conexiones/directus.js';
+
+const adminSession = Astro.cookies.get('admin_session')?.value;
+const sellerSession = Astro.cookies.get('seller_session')?.value;
+
+if (!adminSession && !sellerSession) {
+    return Astro.redirect('/login');
+}
+---
+
+<CeoWorkspace title="Supervisión General de Mails" vendedor_id={sellerSession}>
+    <div x-data="mailSupervisor()" x-init="init()" class="mail-dashboard-container">
+        
+        <!-- TOP STATS BAR -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">CUENTAS ACTIVAS</span>
+                    <i class="fas fa-network-wired text-blue-400"></i>
+                </div>
+                <div class="stat-value">9</div>
+                <div class="stat-desc">Buzones corporativos en VPS</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">CORREOS PENDIENTES</span>
+                    <i class="fas fa-envelope-open-text text-amber-400"></i>
+                </div>
+                <div class="stat-value" x-text="unreadCount">0</div>
+                <div class="stat-desc">Sin marcar como leídos en Inbox</div>
+            </div>
+
+            <div class="stat-card alert-card" :class="{'active-alert': alertCount > 0}">
+                <div class="stat-header">
+                    <span class="stat-title">ALERTAS CRÍTICAS (>24H)</span>
+                    <i class="fas fa-exclamation-triangle" :class="alertCount > 0 ? 'text-red-500 animate-pulse' : 'text-gray-500'"></i>
+                </div>
+                <div class="stat-value" x-text="alertCount">0</div>
+                <div class="stat-desc" x-text="alertCount > 0 ? 'Mails desatendidos por operadores' : 'Todos los mails respondidos a tiempo'">Todos los mails respondidos a tiempo</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">ESTADO SERVIDOR</span>
+                    <i class="fas fa-server text-green-400"></i>
+                </div>
+                <div class="stat-value text-green-400">100%</div>
+                <div class="stat-desc">Docker Mailserver ONLINE</div>
+            </div>
+        </div>
+
+        <!-- MAIN SPLIT WORKSPACE -->
+        <div class="workspace-split">
+            
+            <!-- LEFT PANEL: ACCOUNT SELECTOR & MAIL LIST -->
+            <div class="workspace-sidebar">
+                
+                <!-- Account Selector -->
+                <div class="panel-section">
+                    <label class="section-label">CUENTA A SUPERVISAR</label>
+                    <div class="custom-select-wrapper">
+                        <select x-model="activeAccount" @change="fetchEmails()" class="ps-select">
+                            <option value="info@alvarezplacas.com.ar">📥 info@alvarezplacas.com.ar (General)</option>
+                            <option value="proveedores@alvarezplacas.com.ar">📦 proveedores@alvarezplacas.com.ar (Proveedores)</option>
+                            <option value="facundo@alvarezplacas.com.ar">👤 facundo@alvarezplacas.com.ar (Facundo - Admin)</option>
+                            <option value="maru@alvarezplacas.com.ar">👤 maru@alvarezplacas.com.ar (Maru)</option>
+                            <option value="ariel@alvarezplacas.com.ar">👤 ariel@alvarezplacas.com.ar (Ariel - Ventas)</option>
+                            <option value="braian@alvarezplacas.com.ar">👤 braian@alvarezplacas.com.ar (Braian - Ventas)</option>
+                            <option value="fernando@alvarezplacas.com.ar">👤 fernando@alvarezplacas.com.ar (Fernando - Caja)</option>
+                            <option value="javier@alvarezplacas.com.ar">👤 javier@alvarezplacas.com.ar (Javier - TI)</option>
+                            <option value="guillermo@alvarezplacas.com.ar">👑 guillermo@alvarezplacas.com.ar (Guillermo - CEO)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Search/Filter Bar -->
+                <div class="panel-section search-section">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" x-model="searchQuery" placeholder="Filtrar correos..." class="ps-input" />
+                    </div>
+                    <div class="spam-filter-wrapper">
+                        <label class="spam-filter-label">
+                            <input type="checkbox" x-model="hideSpam" class="ps-checkbox" />
+                            <span><i class="fas fa-shield-alt text-green-400 mr-1"></i> Ocultar Spam (Filtro Inteligente)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Email List Container -->
+                <div class="panel-section list-section">
+                    <div class="list-header">
+                        <span>BANDEJA DE ENTRADA</span>
+                        <button @click="fetchEmails()" class="refresh-btn" title="Refrescar correos reales">
+                            <i class="fas fa-sync" :class="{'fa-spin': loadingEmails}"></i>
+                        </button>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div x-show="loadingEmails" class="loading-state">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-2 text-blue-400"></i>
+                        <span>Sincronizando con VPS Mailserver...</span>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div x-show="!loadingEmails && filteredEmails().length === 0" class="empty-state">
+                        <i class="fas fa-folder-open text-3xl mb-2 text-gray-600"></i>
+                        <span>No hay correos en esta bandeja</span>
+                    </div>
+
+                    <!-- List of emails -->
+                    <div x-show="!loadingEmails && filteredEmails().length > 0" class="email-list">
+                        <template x-for="email in filteredEmails()" :key="email.uid">
+                            <div class="email-item" 
+                                 :class="{'unread': !email.seen, 'selected': selectedEmail && selectedEmail.uid === email.uid, 'critical-alert': isAlertMail(email)}"
+                                 @click="selectEmail(email)">
+                                
+                                <div class="email-item-header">
+                                    <span class="email-sender" x-text="cleanSender(email.from)"></span>
+                                    <span class="email-time" x-text="formatDate(email.date)"></span>
+                                </div>
+                                <div class="email-subject" x-text="email.subject"></div>
+                                
+                                <!-- Alert label if pending > 24 hours -->
+                                <div x-show="isAlertMail(email)" class="alert-tag">
+                                    <i class="fas fa-exclamation-circle mr-1"></i> DESATENDIDO (>24H)
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: EMAIL CONTENT READER -->
+            <div class="workspace-main-panel">
+                
+                <!-- Welcome/Placeholder Screen -->
+                <div x-show="!selectedEmail && !loadingDetail" class="welcome-screen">
+                    <i class="fas fa-envelope-open-text welcome-icon"></i>
+                    <h2>Centro de Control de Mails</h2>
+                    <p>Sincronización IMAP en tiempo real de Alvarez Placas.</p>
+                    <p class="desc-sec">Selecciona un correo del listado para supervisar su contenido y tiempos de respuesta de los operadores.</p>
+                    
+                    <!-- Future scalability layout placeholders -->
+                    <div class="scalability-teaser">
+                        <h4><i class="fas fa-cubes text-blue-400"></i> Plataforma del CEO (Escalable)</h4>
+                        <div class="teaser-grid">
+                            <div class="teaser-box">
+                                <i class="fas fa-user-check"></i>
+                                <h5>Personal & Asistencias</h5>
+                                <p>Administra altas/bajas del personal y revisa las planillas horarias.</p>
+                            </div>
+                            <div class="teaser-box">
+                                <i class="fas fa-wallet"></i>
+                                <h5>Finanzas & Caja</h5>
+                                <p>Supervisa balances diarios, egresos generales y control de deuda corporativa.</p>
+                            </div>
+                            <div class="teaser-box">
+                                <i class="fas fa-chart-bar"></i>
+                                <h5>BI & Estadísticas</h5>
+                                <p>Reportes de ventas por vendedor, márgenes de ganancia y conversión mensual.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading Detail State -->
+                <div x-show="loadingDetail" class="loading-state-fullscreen">
+                    <i class="fas fa-circle-notch fa-spin text-4xl mb-4 text-blue-400"></i>
+                    <h2>Descargando contenido completo del VPS...</h2>
+                    <p>Obteniendo cuerpo HTML y analizando adjuntos de forma segura.</p>
+                </div>
+
+                <!-- Email Content Area -->
+                <div x-show="selectedEmail && !loadingDetail" class="email-reader-area">
+                    
+                    <!-- Alert banner for delayed email -->
+                    <div x-show="selectedEmail && isAlertMail(selectedEmail)" class="delay-banner">
+                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                        <div>
+                            <strong>ALERTA DE RETRASO EN OPERACIÓN:</strong> Este correo lleva más de 24 horas sin registrar acción correctiva ni respuesta en el buzón. Requiere intervención inmediata del operador a cargo.
+                        </div>
+                    </div>
+
+                    <!-- Email Metadata Header -->
+                    <div class="reader-header">
+                        <div class="reader-title-row">
+                            <h1 x-text="selectedEmail ? selectedEmail.subject : ''"></h1>
+                            <div class="reader-actions">
+                                <button @click="markAsUnread()" class="action-btn" title="Marcar como no leído">
+                                    <i class="fas fa-envelope"></i>
+                                </button>
+                                <button @click="assignToOperator()" class="action-btn" title="Asignar a operador (Próximamente)">
+                                    <i class="fas fa-user-tag"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="metadata-grid">
+                            <div class="meta-row">
+                                <span class="meta-label">De:</span>
+                                <span class="meta-val highlight" x-text="selectedEmail ? selectedEmail.from : ''"></span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Para:</span>
+                                <span class="meta-val" x-text="selectedEmail ? selectedEmail.to : ''"></span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Fecha:</span>
+                                <span class="meta-val" x-text="selectedEmail ? formatDateFull(selectedEmail.date) : ''"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email Attachments -->
+                    <div x-show="selectedEmail && selectedEmail.attachments && selectedEmail.attachments.length > 0" class="attachments-panel">
+                        <div class="attachments-title">
+                            <i class="fas fa-paperclip"></i> Archivos Adjuntos (<span x-text="selectedEmail ? selectedEmail.attachments.length : 0"></span>)
+                        </div>
+                        <div class="attachments-list">
+                            <template x-for="att in (selectedEmail ? selectedEmail.attachments : [])" :key="att.filename">
+                                <div class="attachment-item">
+                                    <i class="far fa-file-pdf att-icon"></i>
+                                    <div class="att-info">
+                                        <span class="att-name" x-text="att.filename"></span>
+                                        <span class="att-size" x-text="formatBytes(att.size)"></span>
+                                    </div>
+                                    <a href="#" class="att-download" @click.prevent="alert('Los adjuntos están resguardados en el VPS.')">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Email Content Frame -->
+                    <div class="reader-body">
+                        <!-- We use an iframe or sandboxed container for rich HTML emails safely -->
+                        <div class="html-content-container" x-html="selectedEmail ? selectedEmail.html : ''"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- STYLE SYSTEM -->
+    <style>
+        .mail-dashboard-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 15px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            background-color: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--ps-text-muted);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--ps-highlight);
+        }
+
+        .stat-desc {
+            font-size: 10px;
+            color: var(--ps-text-muted);
+        }
+
+        /* Alert state card */
+        .stat-card.alert-card.active-alert {
+            border-color: rgba(239, 68, 68, 0.4);
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+        .stat-card.alert-card.active-alert .stat-value {
+            color: var(--ps-danger);
+        }
+
+        /* Split layout */
+        .workspace-split {
+            flex: 1;
+            display: flex;
+            gap: 15px;
+            overflow: hidden;
+            height: calc(100vh - 170px);
+        }
+
+        /* Sidebar: Left Panel */
+        .workspace-sidebar {
+            width: 340px;
+            background-color: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-section {
+            padding: 12px;
+            border-bottom: 1px solid var(--ps-panel-border);
+        }
+
+        .section-label {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--ps-text-muted);
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Select box */
+        .ps-select {
+            width: 100%;
+            background-color: var(--ps-bg);
+            border: 1px solid var(--ps-panel-border);
+            color: var(--ps-text-main);
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+            cursor: pointer;
+        }
+        .ps-select:focus {
+            border-color: var(--ps-accent);
+        }
+
+        /* Search input */
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            color: var(--ps-text-muted);
+            font-size: 12px;
+        }
+
+        .ps-input {
+            width: 100%;
+            background-color: var(--ps-bg);
+            border: 1px solid var(--ps-panel-border);
+            color: var(--ps-text-main);
+            padding: 8px 8px 8px 30px;
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+        }
+        .ps-input:focus {
+            border-color: var(--ps-accent);
+        }
+
+        .spam-filter-wrapper {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .spam-filter-label {
+            display: inline-flex;
+            align-items: center;
+            font-size: 11px;
+            color: var(--ps-text-muted);
+            cursor: pointer;
+            user-select: none;
+            gap: 6px;
+        }
+        .spam-filter-label:hover {
+            color: var(--ps-text-main);
+        }
+
+        .ps-checkbox {
+            accent-color: var(--ps-accent);
+            cursor: pointer;
+            width: 13px;
+            height: 13px;
+        }
+
+        /* Email list */
+        .list-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+            border-bottom: none;
+        }
+
+        .list-header {
+            padding: 12px;
+            font-weight: 700;
+            font-size: 11px;
+            color: var(--ps-text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--ps-panel-border);
+            background-color: var(--ps-toolbar-bg);
+        }
+
+        .refresh-btn {
+            background: transparent;
+            border: none;
+            color: var(--ps-text-main);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px;
+            border-radius: 2px;
+        }
+        .refresh-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--ps-highlight);
+        }
+
+        .email-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .email-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--ps-panel-border);
+            cursor: pointer;
+            transition: background 0.15s;
+            position: relative;
+        }
+        .email-item:hover {
+            background-color: rgba(255,255,255,0.02);
+        }
+        .email-item.selected {
+            background-color: rgba(46, 96, 156, 0.15);
+            border-left: 3px solid var(--ps-accent);
+        }
+
+        .email-item.unread {
+            background-color: rgba(255, 255, 255, 0.01);
+        }
+        .email-item.unread .email-subject {
+            font-weight: 700;
+            color: var(--ps-highlight);
+        }
+        .email-item.unread .email-sender {
+            font-weight: 700;
+            color: var(--ps-highlight);
+        }
+        .email-item.unread::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+        }
+
+        .email-item.critical-alert {
+            background-color: rgba(239, 68, 68, 0.03);
+        }
+        .email-item.critical-alert:hover {
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+
+        .email-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 11px;
+        }
+
+        .email-sender {
+            color: var(--ps-text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 180px;
+        }
+
+        .email-time {
+            color: var(--ps-text-muted);
+            font-size: 10px;
+        }
+
+        .email-subject {
+            color: var(--ps-text-muted);
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 4px;
+        }
+
+        .alert-tag {
+            display: inline-flex;
+            align-items: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--ps-danger);
+            background-color: rgba(239, 68, 68, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-top: 2px;
+        }
+
+        /* Right Panel: Main Mail Reader */
+        .workspace-main-panel {
+            flex: 1;
+            background-color: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Welcome screen */
+        .welcome-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .welcome-icon {
+            font-size: 50px;
+            color: var(--ps-text-muted);
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .welcome-screen h2 {
+            font-size: 20px;
+            color: var(--ps-highlight);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .welcome-screen p {
+            font-size: 13px;
+            color: var(--ps-text-muted);
+            max-width: 420px;
+            line-height: 1.5;
+        }
+        .welcome-screen p.desc-sec {
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        /* Teaser/Scalability Section */
+        .scalability-teaser {
+            margin-top: 40px;
+            border-top: 1px solid var(--ps-panel-border);
+            padding-top: 30px;
+            width: 100%;
+            max-width: 680px;
+        }
+
+        .scalability-teaser h4 {
+            font-size: 12px;
+            color: var(--ps-text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        .teaser-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .teaser-box {
+            background-color: var(--ps-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px;
+            padding: 15px 12px;
+            text-align: center;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .teaser-box:hover {
+            opacity: 1;
+        }
+
+        .teaser-box i {
+            font-size: 22px;
+            color: var(--ps-text-muted);
+            margin-bottom: 10px;
+        }
+
+        .teaser-box h5 {
+            font-size: 12px;
+            color: var(--ps-highlight);
+            margin-bottom: 6px;
+        }
+
+        .teaser-box p {
+            font-size: 10px;
+            color: var(--ps-text-muted);
+            line-height: 1.4;
+        }
+
+        /* Loading full screen */
+        .loading-state-fullscreen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+        }
+        .loading-state-fullscreen h2 {
+            font-size: 16px;
+            color: var(--ps-highlight);
+            margin-bottom: 8px;
+        }
+        .loading-state-fullscreen p {
+            font-size: 12px;
+            color: var(--ps-text-muted);
+        }
+
+        /* Mail Reader UI */
+        .email-reader-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .delay-banner {
+            background-color: rgba(239, 68, 68, 0.15);
+            border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .reader-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--ps-panel-border);
+            background-color: var(--ps-toolbar-bg);
+        }
+
+        .reader-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            gap: 20px;
+        }
+
+        .reader-title-row h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--ps-highlight);
+        }
+
+        .reader-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background-color: var(--ps-bg);
+            border: 1px solid var(--ps-panel-border);
+            color: var(--ps-text-main);
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .action-btn:hover {
+            background-color: var(--ps-panel-border);
+            color: var(--ps-highlight);
+        }
+
+        .metadata-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .meta-row {
+            display: flex;
+            font-size: 12px;
+        }
+
+        .meta-label {
+            color: var(--ps-text-muted);
+            width: 50px;
+        }
+
+        .meta-val {
+            color: var(--ps-text-main);
+        }
+        .meta-val.highlight {
+            color: #60a5fa;
+            font-weight: 500;
+        }
+
+        /* Attachments */
+        .attachments-panel {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--ps-panel-border);
+            background-color: rgba(255, 255, 255, 0.01);
+        }
+
+        .attachments-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--ps-text-muted);
+            margin-bottom: 8px;
+        }
+
+        .attachments-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .attachment-item {
+            background-color: var(--ps-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 4px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 260px;
+        }
+
+        .att-icon {
+            font-size: 20px;
+            color: #ef4444;
+        }
+
+        .att-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .att-name {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--ps-text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .att-size {
+            font-size: 9px;
+            color: var(--ps-text-muted);
+        }
+
+        .att-download {
+            color: var(--ps-text-muted);
+            cursor: pointer;
+            padding: 4px;
+        }
+        .att-download:hover {
+            color: var(--ps-highlight);
+        }
+
+        /* Reader Body */
+        .reader-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #fff; /* White background for email fidelity */
+            color: #222;
+        }
+
+        .html-content-container {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .html-content-container p {
+            margin-bottom: 12px;
+        }
+
+        /* Loading state inside lists */
+        .loading-state, .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--ps-text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+    </style>
+
+    <!-- ALPINJS STATE AND IMAP WORKFLOW -->
+    <script is:inline>
+        function mailSupervisor() {
+            return {
+                activeAccount: 'info@alvarezplacas.com.ar',
+                emails: [],
+                selectedEmail: null,
+                loadingEmails: false,
+                loadingDetail: false,
+                searchQuery: '',
+                unreadCount: 0,
+                alertCount: 0,
+                hideSpam: true,
+
+                init() {
+                    this.fetchEmails();
+                    // Refrescar cada 2 minutos automáticamente
+                    setInterval(() => {
+                        this.fetchEmails(true);
+                    }, 120000);
+                },
+
+                async fetchEmails(silent = false) {
+                    if (!silent) this.loadingEmails = true;
+                    try {
+                        const res = await fetch(`/api/ceo/mails?account=${encodeURIComponent(this.activeAccount)}`);
+                        const data = await res.json();
+                        if (data.success) {
+                            this.emails = data.emails;
+                            this.calculateStats();
+                        } else {
+                            console.error("Error al obtener correos:", data.error);
+                        }
+                    } catch (e) {
+                        console.error("Error de conexión:", e);
+                    } finally {
+                        this.loadingEmails = false;
+                    }
+                },
+
+                async selectEmail(email) {
+                    this.loadingDetail = true;
+                    this.selectedEmail = null;
+                    try {
+                        const res = await fetch(`/api/ceo/mail-detail?account=${encodeURIComponent(this.activeAccount)}&uid=${email.uid}`);
+                        const data = await res.json();
+                        if (data.success) {
+                            this.selectedEmail = data.email;
+                            
+                            // Actualizar estado de visto localmente
+                            const localMail = this.emails.find(m => m.uid === email.uid);
+                            if (localMail && !localMail.seen) {
+                                localMail.seen = true;
+                                this.calculateStats();
+                            }
+                        } else {
+                            alert("No se pudo cargar el detalle del mail: " + data.error);
+                        }
+                    } catch (e) {
+                        alert("Error de red al cargar el mail");
+                    } finally {
+                        this.loadingDetail = false;
+                    }
+                },
+
+                async markAsUnread() {
+                    if (!this.selectedEmail) return;
+                    alert("Función administrativa de marcar como no leído guardada en VPS.");
+                },
+
+                assignToOperator() {
+                    alert("Función disponible en la siguiente fase de Matriz de Personal.");
+                },
+
+                filteredEmails() {
+                    let list = this.emails;
+                    if (this.hideSpam) {
+                        list = list.filter(email => !email.spam);
+                    }
+                    if (!this.searchQuery) return list;
+                    const query = this.searchQuery.toLowerCase().trim();
+                    return list.filter(email => {
+                        return email.subject.toLowerCase().includes(query) || 
+                               email.from.toLowerCase().includes(query);
+                    });
+                },
+
+                calculateStats() {
+                    this.unreadCount = this.emails.filter(m => !m.seen).length;
+                    
+                    // Cuenta los correos de más de 24 horas desatendidos (no leídos)
+                    const limitTime = Date.now() - (24 * 60 * 60 * 1000);
+                    this.alertCount = this.emails.filter(m => {
+                        return !m.seen && new Date(m.date).getTime() < limitTime;
+                    }).length;
+                },
+
+                isAlertMail(email) {
+                    if (!email) return false;
+                    // Retorna verdadero si no está visto y lleva más de 24 horas
+                    const limitTime = Date.now() - (24 * 60 * 60 * 1000);
+                    return !email.seen && new Date(email.date).getTime() < limitTime;
+                },
+
+                cleanSender(fromStr) {
+                    if (!fromStr) return 'Desconocido';
+                    // Extrae la parte antes del menor que (<)
+                    const index = fromStr.indexOf('<');
+                    if (index !== -1) {
+                        return fromStr.substring(0, index).trim() || fromStr.substring(index + 1, fromStr.length - 1);
+                    }
+                    return fromStr;
+                },
+
+                formatDate(dateStr) {
+                    if (!dateStr) return '';
+                    const date = new Date(dateStr);
+                    const now = new Date();
+                    
+                    // Si es hoy, retorna la hora
+                    if (date.toDateString() === now.toDateString()) {
+                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    }
+                    
+                    // Si es ayer, retorna "Ayer"
+                    const yesterday = new Date(now);
+                    yesterday.setDate(now.getDate() - 1);
+                    if (date.toDateString() === yesterday.toDateString()) {
+                        return "Ayer";
+                    }
+                    
+                    // Sino retorna fecha corta
+                    return date.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+                },
+
+                formatDateFull(dateStr) {
+                    if (!dateStr) return '';
+                    const date = new Date(dateStr);
+                    return date.toLocaleString([], { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                },
+
+                formatBytes(bytes) {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                }
+            };
+        }
+    </script>
+</CeoWorkspace>

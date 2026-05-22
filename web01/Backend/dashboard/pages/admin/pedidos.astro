@@ -1,0 +1,373 @@
+---
+/**
+ * Gestión de Pedidos SmartCut - Centro de Operaciones.
+ * Propiedad del Agente Antigravity (Google Deepmind).
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { directus, readItems } from '../../../conexiones/directus.js';
+
+let pedidos = [];
+let vendedores = [];
+
+try {
+    // 1. Cargar Pedidos con Relación a Cliente y Vendedor
+    const resPedidos = await directus.request(readItems('pedidos', {
+        sort: ['-fecha_pedido', '-id'],
+        fields: [
+            '*',
+            { cliente_id: ['id', 'name', 'email', 'phone', 'cuit_dni', 'client_number', 'nombre_empresa'] },
+            { vendedor_id: ['id', 'name', 'email'] }
+        ],
+        limit: 100
+    }));
+    pedidos = resPedidos || [];
+
+    // 2. Cargar Vendedores para el Reasignador
+    vendedores = await directus.request(readItems('vendedores', {
+        fields: ['id', 'name'],
+        limit: -1
+    }));
+
+} catch (e) {
+    console.error("[Backend Orders Error]:", e);
+}
+
+const statusConfig = {
+    'presupuesto': { label: 'Presupuesto', color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
+    'en_produccion': { label: 'En Producción', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+    'en_corte': { label: 'En Corte', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+    'terminado': { label: 'Listo / Terminado', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+    'en_reparto': { label: 'En Reparto', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+    'entregado': { label: 'Entregado', color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20' }
+};
+---
+
+<AdminLayout title="Pedidos SmartCut">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h2 class="text-3xl font-black text-white mb-2 uppercase tracking-tight">Pedidos <span class="text-primary italic">SmartCut</span></h2>
+            <p class="text-gray-400 font-medium">Control en tiempo real de presupuestos, planos y asignación de vendedores.</p>
+        </div>
+        <div class="bg-[#1a1a1a] border border-gray-800 px-4 py-2.5 rounded-xl text-xs font-mono text-gray-500">
+            TOTAL EN DB: <span class="text-white font-bold">{pedidos.length}</span>
+        </div>
+    </div>
+
+    <!-- Buscador / Filtro Rápido -->
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input 
+            type="text" 
+            id="search-input" 
+            class="bg-[#1a1a1a] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50" 
+            placeholder="Buscar por cliente o ID de pedido..." 
+        />
+        <select 
+            id="status-filter" 
+            class="bg-[#1a1a1a] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+        >
+            <option value="all">Todos los Estados</option>
+            {Object.entries(statusConfig).map(([val, cfg]) => (
+                <option value={val}>{cfg.label}</option>
+            ))}
+        </select>
+        <select 
+            id="seller-filter" 
+            class="bg-[#1a1a1a] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+        >
+            <option value="all">Todos los Vendedores</option>
+            <option value="none">Sin Vendedor Asignado</option>
+            {vendedores.map(v => (
+                <option value={v.id}>{v.name}</option>
+            ))}
+        </select>
+    </div>
+
+    <!-- Tabla de Pedidos -->
+    <div class="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="orders-table">
+                <thead>
+                    <tr class="bg-white/2 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-800">
+                        <th class="px-6 py-4">Pedido ID</th>
+                        <th class="px-6 py-4">Cliente</th>
+                        <th class="px-6 py-4">Fecha</th>
+                        <th class="px-6 py-4">Monto Estimado</th>
+                        <th class="px-6 py-4">Vendedor Asignado</th>
+                        <th class="px-6 py-4">Estado</th>
+                        <th class="px-6 py-4 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    {pedidos.map(p => {
+                        const clienteNombre = p.cliente_id?.name || p.cliente_id?.nombre_empresa || 'Consumidor Final';
+                        const clienteEmail = p.cliente_id?.email || '';
+                        const vendedorNombre = p.vendedor_id?.name || '❌ Sin Asignar';
+                        const cfg = statusConfig[p.status] || { label: p.status, color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20' };
+
+                        return (
+                            <tr 
+                                class="hover:bg-white/2 transition-colors group order-row cursor-pointer"
+                                data-id={p.id}
+                                data-cliente={clienteNombre.toLowerCase()}
+                                data-status={p.status}
+                                data-vendedor={p.vendedor_id?.id || 'none'}
+                            >
+                                <td class="px-6 py-4 text-sm font-mono font-bold text-primary">#{p.id}</td>
+                                <td class="px-6 py-4">
+                                    <p class="text-white font-bold text-sm">{clienteNombre}</p>
+                                    <p class="text-[10px] text-gray-500">{clienteEmail}</p>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-gray-400 font-medium">
+                                    {p.fecha_pedido ? new Date(p.fecha_pedido).toLocaleDateString('es-AR') : '—'}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-white font-black italic">{p.total_m2 || 0} m²</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class={`text-xs font-bold ${p.vendedor_id ? 'text-gray-300' : 'text-rose-500/80 font-black'}`}>
+                                        {vendedorNombre}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class={`inline-block text-[10px] font-black uppercase px-3 py-1 rounded-full border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+                                        {cfg.label}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right flex justify-end gap-2" onclick="event.stopPropagation()">
+                                    <button 
+                                        class="px-4 py-2 bg-white/5 hover:bg-primary hover:text-white border border-white/5 rounded-xl text-xs font-bold text-gray-300 transition-all view-details-btn"
+                                        data-id={p.id}
+                                        data-cliente={clienteNombre}
+                                        data-email={clienteEmail}
+                                        data-phone={p.cliente_id?.phone || 'No especificado'}
+                                        data-cuit={p.cliente_id?.cuit_dni || 'No especificado'}
+                                        data-resumen={p.resumen_visible || 'No hay resumen técnico disponible para este pedido.'}
+                                        data-vendedor-id={p.vendedor_id?.id || ''}
+                                        data-status={p.status}
+                                        data-optimizacion={p.datos_optimizacion ? 'true' : 'false'}
+                                    >
+                                        <i class="fas fa-eye mr-1"></i> Detalles
+                                    </button>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Detalle del Pedido -->
+    <div id="details-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] hidden items-center justify-center p-4">
+        <div class="bg-[#1a1a1a] w-full max-w-2xl rounded-3xl border border-gray-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-gray-800 bg-white/2 flex justify-between items-center">
+                <div>
+                    <span class="text-xs font-black text-primary uppercase tracking-[0.2em]" id="modal-order-number">Pedido #...</span>
+                    <h3 class="text-xl font-black text-white uppercase tracking-tight" id="modal-client-name">Nombre del Cliente</h3>
+                </div>
+                <button id="close-modal-btn" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+                <!-- Grid de Datos del Cliente -->
+                <div class="grid grid-cols-2 gap-4 bg-black/40 border border-white/5 p-4 rounded-2xl">
+                    <div>
+                        <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Email</p>
+                        <p class="text-xs text-white font-bold truncate" id="modal-client-email">...</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest">WhatsApp</p>
+                        <p class="text-xs text-white font-bold" id="modal-client-phone">...</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest">CUIT / DNI</p>
+                        <p class="text-xs text-white font-mono font-bold" id="modal-client-cuit">...</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Reporte Industrial</p>
+                        <div id="modal-report-link-wrap">
+                            <span class="text-xs text-gray-500 italic">No disponible</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalle de Materiales y Medidas -->
+                <div>
+                    <h4 class="text-xs font-black text-white uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <i class="fas fa-clipboard-list text-primary"></i> Resumen del Pedido (SmartCut)
+                    </h4>
+                    <div class="bg-black/50 border border-gray-800 rounded-2xl p-5 text-gray-300 text-xs leading-relaxed font-mono whitespace-pre-wrap max-h-60 overflow-y-auto" id="modal-resumen">
+                        ...
+                    </div>
+                </div>
+
+                <!-- Modificación de Estado y Vendedor -->
+                <form id="order-update-form" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-800">
+                    <input type="hidden" id="update-pedido-id" name="pedidoId" />
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Cambiar Vendedor Asignado</label>
+                        <select id="update-vendedor" name="vendedorId" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-primary/50 font-bold">
+                            <option value="">❌ Sin Vendedor</option>
+                            {vendedores.map(v => (
+                                <option value={v.id}>{v.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Modificar Estado</label>
+                        <select id="update-status" name="status" class="w-full bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-primary/50 font-bold">
+                            {Object.entries(statusConfig).map(([val, cfg]) => (
+                                <option value={val}>{cfg.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <div class="p-6 bg-white/2 border-t border-gray-800 flex justify-end gap-3">
+                <button id="close-modal-footer" class="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all">
+                    Cerrar
+                </button>
+                <button id="save-order-changes" class="px-8 py-3 bg-primary hover:bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-primary/20">
+                    Guardar Cambios <i class="fas fa-check-circle ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] hidden bg-white text-black px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl animate-in slide-in-from-bottom duration-300">
+    </div>
+</AdminLayout>
+
+<script is:inline>
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+    const sellerFilter = document.getElementById('seller-filter');
+    const orderRows = document.querySelectorAll('.order-row');
+
+    function filterTable() {
+        const query = searchInput.value.toLowerCase().trim();
+        const statusVal = statusFilter.value;
+        const sellerVal = sellerFilter.value;
+
+        orderRows.forEach(row => {
+            const id = row.getAttribute('data-id');
+            const cliente = row.getAttribute('data-cliente');
+            const status = row.getAttribute('data-status');
+            const seller = row.getAttribute('data-vendedor');
+
+            const matchesSearch = id.includes(query) || cliente.includes(query);
+            const matchesStatus = statusVal === 'all' || status === statusVal;
+            const matchesSeller = sellerVal === 'all' || 
+                                  (sellerVal === 'none' && seller === 'none') || 
+                                  seller === sellerVal;
+
+            if (matchesSearch && matchesStatus && matchesSeller) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+    }
+
+    searchInput.addEventListener('input', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+    sellerFilter.addEventListener('change', filterTable);
+
+    // Modal Details System
+    const modal = document.getElementById('details-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const closeModalFooter = document.getElementById('close-modal-footer');
+    const saveChangesBtn = document.getElementById('save-order-changes');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg, isError = false) {
+        toast.innerText = msg;
+        toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl animate-in slide-in-from-bottom duration-300 ${
+            isError ? 'bg-red-600 text-white' : 'bg-white text-black'
+        }`;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    function openOrderDetails(data) {
+        document.getElementById('modal-order-number').innerText = `Pedido #${data.id}`;
+        document.getElementById('modal-client-name').innerText = data.cliente;
+        document.getElementById('modal-client-email').innerText = data.email || 'No especificado';
+        document.getElementById('modal-client-phone').innerText = data.phone || 'No especificado';
+        document.getElementById('modal-client-cuit').innerText = data.cuit || 'No especificado';
+        document.getElementById('modal-resumen').innerText = data.resumen;
+
+        document.getElementById('update-pedido-id').value = data.id;
+        document.getElementById('update-vendedor').value = data.vendedorId || '';
+        document.getElementById('update-status').value = data.status;
+
+        // Enlace al Reporte Industrial
+        const linkWrap = document.getElementById('modal-report-link-wrap');
+        if (data.optimizacion === 'true') {
+            linkWrap.innerHTML = `
+                <a href="/cliente/pedido/${data.id}/print" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">
+                    <i class="fas fa-file-pdf"></i> Plano de Corte
+                </a>
+            `;
+        } else {
+            linkWrap.innerHTML = `<span class="text-xs text-gray-500 italic">No disponible</span>`;
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    // Doble clic en fila o clic en botón
+    document.addEventListener('click', (e) => {
+        const row = e.target.closest('.order-row');
+        const btn = e.target.closest('.view-details-btn');
+
+        if (btn) {
+            openOrderDetails(btn.dataset);
+        } else if (row) {
+            const rowBtn = row.querySelector('.view-details-btn');
+            if (rowBtn) openOrderDetails(rowBtn.dataset);
+        }
+    });
+
+    const hideModal = () => { modal.style.display = 'none'; };
+    closeModalBtn.onclick = hideModal;
+    closeModalFooter.onclick = hideModal;
+
+    window.onclick = (event) => {
+        if (event.target == modal) hideModal();
+    };
+
+    // Guardar cambios
+    saveChangesBtn.onclick = async () => {
+        const pedidoId = document.getElementById('update-pedido-id').value;
+        const vendedorId = document.getElementById('update-vendedor').value;
+        const status = document.getElementById('update-status').value;
+
+        saveChangesBtn.disabled = true;
+        saveChangesBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...';
+
+        try {
+            const res = await fetch('/api/admin/update-order-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pedidoId, vendedorId, status })
+            });
+
+            const result = await res.json();
+            if (res.ok) {
+                showToast('Cambios de pedido aplicados con éxito');
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                showToast(result.error || 'Error al guardar cambios', true);
+                saveChangesBtn.disabled = false;
+                saveChangesBtn.innerHTML = 'Guardar Cambios <i class="fas fa-check-circle ml-1"></i>';
+            }
+        } catch (err) {
+            showToast('Error de red', true);
+            saveChangesBtn.disabled = false;
+            saveChangesBtn.innerHTML = 'Guardar Cambios <i class="fas fa-check-circle ml-1"></i>';
+        }
+    };
+</script>
