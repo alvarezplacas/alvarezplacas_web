@@ -10,6 +10,7 @@ let sellers = [];
 try {
     sellers = await directus.request(readItems('vendedores', {
         fields: ['id', 'name'], 
+        filter: { role: { _eq: 'seller' } },
         sort: ['name']
     }));
 } catch (e) {

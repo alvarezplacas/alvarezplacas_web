@@ -1,0 +1,1384 @@
+---
+/**
+ * Calculadora Neta Proyectada - Version Centralizada e Inteligente
+ * Centraliza e integra la logica compleja del Excel de Fernando.
+ */
+---
+
+<div class="space-y-6" x-data="calculadora()">
+    
+    <!-- HEADER Y ACCIONES RAPIDAS -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#161616] border border-white/5 p-6 rounded-2xl relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-900/10 to-transparent pointer-events-none"></div>
+        <div class="relative z-10">
+            <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Calculadora <span class="text-blue-500">Proyectada Avanzada</span></h2>
+            <p class="text-gray-400 text-sm">Centro operativo financiero con proyecciones y simulador de escenarios</p>
+        </div>
+        <div class="relative z-10 flex flex-wrap gap-2">
+            <button class="bg-[#1e1e1e] text-gray-300 hover:text-white transition-all px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-white/10" @click="showImporter = !showImporter">
+                <i class="fas fa-magic text-yellow-500"></i>
+                <span x-text="showImporter ? 'Ocultar Importador Gcom' : '⚡ Importar desde Gcom/Excel'"></span>
+            </button>
+            <button class="bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-all px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-blue-500/30" @click="exportCSV()">
+                <i class="fas fa-file-csv"></i> Exportar CSV
+            </button>
+            <button class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-emerald-500/30" @click="saveSnapshotToCEO()">
+                <i class="fas fa-cloud-upload-alt"></i> Registrar Cierre Proyectado
+            </button>
+        </div>
+    </div>
+
+    <!-- BANNER DE EDICIÓN ACTIVA -->
+    <div x-show="activeProyeccionId !== null" x-transition class="bg-blue-600/10 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden" style="display: none;">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent pointer-events-none"></div>
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-500/20 text-blue-400 w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse">
+                <i class="fas fa-edit text-lg"></i>
+            </div>
+            <div>
+                <h4 class="text-white font-bold text-xs uppercase tracking-wider">Edición Activa de Cierre Proyectado</h4>
+                <p class="text-gray-400 text-[11px]">
+                    Modificando: <span class="text-blue-400 font-bold" x-text="nombreProyeccion"></span>. Los cambios se pueden sobrescribir con 'Guardar Cambios'.
+                </p>
+            </div>
+        </div>
+        <div class="flex gap-2 w-full sm:w-auto relative z-10">
+            <button class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg transition" @click="saveSnapshotToCEO(true)">
+                <i class="fas fa-save mr-1"></i> Guardar Cambios
+            </button>
+            <button class="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg transition" @click="nuevoCierre()">
+                <i class="fas fa-plus mr-1"></i> Nuevo Cierre
+            </button>
+        </div>
+    </div>
+
+    <!-- IMAGEN/TOAST DE RETROALIMENTACIÓN -->
+    <div x-show="toast.show" x-transition class="fixed top-4 right-4 z-50 flex items-center gap-3 bg-[#111] border border-green-500/30 text-green-400 px-5 py-3 rounded-xl shadow-2xl" style="display: none;">
+        <i class="fas fa-check-circle text-lg"></i>
+        <span class="text-xs font-bold uppercase tracking-wider" x-text="toast.message"></span>
+    </div>
+
+    <!-- PARSER INTELIGENTE DE TEXTO GCOM / EXCEL -->
+    <div x-show="showImporter" x-collapse class="bg-[#111] border border-yellow-500/10 rounded-2xl p-6 relative overflow-hidden" style="display: none;">
+        <div class="absolute inset-0 bg-yellow-500/[0.02] pointer-events-none"></div>
+        <div class="flex items-center gap-2 mb-3">
+            <i class="fas fa-bolt text-yellow-500"></i>
+            <h4 class="text-white font-bold uppercase tracking-wider text-sm">Importador Inteligente Gecom Express</h4>
+        </div>
+        <p class="text-gray-400 text-xs mb-4 leading-relaxed">
+            Pegue directamente el texto copiado de su planilla Excel de cierres o las líneas de venta del facturador Gcom. El motor inteligente extraerá las cifras de ventas, cortes, pegados y gastos automáticamente.
+        </p>
+        <div class="space-y-4">
+            <textarea x-model="pasteArea" rows="4" class="w-full bg-[#000] border border-white/10 rounded-xl p-3 text-mono text-xs text-white outline-none focus:border-yellow-500" placeholder="Ejemplo de pegado:&#10;Venta 1 Blanco: 1,850,000&#10;Corte V1: 150000&#10;Pegados Blanco: 35 unidades a 1200&#10;Venta 2: $2.400.000&#10;Gastos Fijos Periodo: 850000"></textarea>
+            <div class="flex justify-end gap-2">
+                <button class="bg-[#222] text-gray-400 hover:text-white px-3 py-1.5 rounded-lg text-xs" @click="pasteArea = ''">Limpiar</button>
+                <button class="bg-yellow-500 text-black font-bold uppercase text-xs tracking-wider px-4 py-1.5 rounded-lg hover:bg-yellow-400 transition" @click="parseGcomData()">
+                    <i class="fas fa-sync-alt mr-1"></i> Procesar y Autocompletar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUADRO DE CALCULO - FORMATO INTERACTIVO DE CELDAS DE EXCEL (FONDO NEGRO) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        
+        <!-- OPERACIONES VENTA 1 -->
+        <div class="bg-[#111] border border-blue-500/10 rounded-2xl p-6 relative flex flex-col justify-between">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/[0.02] blur-xl pointer-events-none"></div>
+            <div>
+                <div class="flex items-center gap-2 mb-4 pb-2 border-b border-white/5">
+                    <i class="fas fa-file-invoice text-blue-500"></i>
+                    <h3 class="text-white font-bold uppercase tracking-widest text-xs">Operaciones Venta 1</h3>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Total Venta 1 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-gray-500 text-[10px] font-black uppercase tracking-wider">Venta 1 Bruta</label>
+                            <span class="text-[9px] text-blue-400/70 font-mono">Gcom V1</span>
+                        </div>
+                        <div class="relative flex items-center">
+                            <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaBlanco = Math.max(0, ventaBlanco - 50000); isLiveSync = false">-</button>
+                            <input type="number" x-model.number="ventaBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono font-bold tracking-tight hover:border-blue-700/60 transition" />
+                            <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaBlanco += 50000; isLiveSync = false">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Corte Venta 1 -->
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Servicio de Corte V1</label>
+                        <div class="relative flex items-center">
+                            <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaCorteBlanco = Math.max(0, ventaCorteBlanco - 10000); isLiveSync = false">-</button>
+                            <input type="number" x-model.number="ventaCorteBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono hover:border-blue-700/60 transition" />
+                            <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaCorteBlanco += 10000; isLiveSync = false">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Pegado Venta 1 -->
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Servicio de Pegado V1</label>
+                        <div class="relative flex items-center">
+                            <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaPegadoBlanco = Math.max(0, ventaPegadoBlanco - 10000); isLiveSync = false">-</button>
+                            <input type="number" x-model.number="ventaPegadoBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono hover:border-blue-700/60 transition" />
+                            <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaPegadoBlanco += 10000; isLiveSync = false">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Detalle Pegados -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Cant. Pegados</label>
+                            <input type="number" x-model.number="cantPegadosBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-3 py-2 text-white text-xs focus:border-blue-500 outline-none text-right font-mono" />
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Valor Unitario</label>
+                            <input type="number" x-model.number="precioPegadoBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/30 rounded-xl px-3 py-2 text-gray-400 text-xs focus:border-blue-500 outline-none text-right font-mono" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-white/5 space-y-2">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-500">Subtotal Melaminas:</span>
+                    <span class="font-mono text-gray-300" x-text="format(ventaSinCorteBlanco)"></span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-500">Utilidad Venta 1:</span>
+                    <span class="font-mono text-blue-400 font-bold" x-text="format(gananciaVentaBlanco)"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPERACIONES VENTA 2 -->
+        <div class="bg-[#111] border border-purple-500/10 rounded-2xl p-6 relative flex flex-col justify-between">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-purple-500/[0.02] blur-xl pointer-events-none"></div>
+            <div>
+                <div class="flex items-center gap-2 mb-4 pb-2 border-b border-white/5">
+                    <i class="fas fa-wallet text-purple-500"></i>
+                    <h3 class="text-white font-bold uppercase tracking-widest text-xs">Operaciones Venta 2</h3>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Total Venta 2 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-gray-500 text-[10px] font-black uppercase tracking-wider">Venta 2 Bruta</label>
+                            <span class="text-[9px] text-purple-400/70 font-mono">Gcom V2</span>
+                        </div>
+                        <div class="relative flex items-center">
+                            <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaNegro = Math.max(0, ventaNegro - 50000); isLiveSync = false">-</button>
+                            <input type="number" x-model.number="ventaNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono font-bold tracking-tight hover:border-purple-700/60 transition" />
+                            <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaNegro += 50000; isLiveSync = false">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Corte Venta 2 -->
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Servicio de Corte V2</label>
+                        <div class="relative flex items-center">
+                            <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaCorteNegro = Math.max(0, ventaCorteNegro - 10000); isLiveSync = false">-</button>
+                            <input type="number" x-model.number="ventaCorteNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono hover:border-purple-700/60 transition" />
+                            <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaCorteNegro += 10000; isLiveSync = false">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Pegado Venta 2 -->
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Servicio de Pegado V2</label>
+                        <div class="relative flex items-center">
+                            <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaPegadoNegro = Math.max(0, ventaPegadoNegro - 10000); isLiveSync = false">-</button>
+                            <input type="number" x-model.number="ventaPegadoNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono hover:border-purple-700/60 transition" />
+                            <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaPegadoNegro += 10000; isLiveSync = false">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Detalle Pegados -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Cant. Pegados</label>
+                            <input type="number" x-model.number="cantPegadosNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-3 py-2 text-white text-xs focus:border-purple-500 outline-none text-right font-mono" />
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Valor Unitario</label>
+                            <input type="number" x-model.number="precioPegadoNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/30 rounded-xl px-3 py-2 text-gray-400 text-xs focus:border-purple-500 outline-none text-right font-mono" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-white/5 space-y-2">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-500">Subtotal Melaminas:</span>
+                    <span class="font-mono text-gray-300" x-text="format(ventaSinCorteNegro)"></span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-500">Utilidad Venta 2:</span>
+                    <span class="font-mono text-purple-400 font-bold" x-text="format(gananciaVentaNegro)"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEDUCCIONES Y GASTOS (EXCEL NEGRO) -->
+        <div class="bg-[#111] border border-red-500/10 rounded-2xl p-6 relative flex flex-col justify-between">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-red-500/[0.02] blur-xl pointer-events-none"></div>
+            <div>
+                <div class="flex items-center gap-2 mb-4 pb-2 border-b border-white/5">
+                    <i class="fas fa-chart-pie text-red-500"></i>
+                    <h3 class="text-white font-bold uppercase tracking-widest text-xs">Deducciones & Gastos</h3>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Gastos Totales del Periodo - AUTO desde Operación Diaria -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-gray-500 text-[10px] font-black uppercase tracking-wider">Gastos Operativos (Fijos + Var)</label>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded" :class="isLiveSync ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'" x-text="isLiveSync ? '⚡ AUTO' : '✎ MANUAL'"></span>
+                        </div>
+                        <div class="relative flex items-center">
+                            <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="gastosTotales = Math.max(0, gastosTotales - 20000); isLiveSync = false">-</button>
+                            <input type="number" min="0" x-model.number="gastosTotales" @input="isLiveSync = false" class="w-full bg-[#000] border rounded-xl px-8 py-2.5 text-white text-sm outline-none text-right font-mono font-bold transition" :class="isLiveSync ? 'border-emerald-900/60 focus:border-emerald-500 hover:border-emerald-700/60' : 'border-red-900/50 focus:border-red-500 hover:border-red-700/60'" />
+                            <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="gastosTotales += 20000; isLiveSync = false">+</button>
+                        </div>
+                        <p class="text-[9px] text-gray-600 mt-1" x-show="isLiveSync">Suma automática de egresos del período seleccionado</p>
+                    </div>
+
+                    <!-- IVA Ventas vs IVA Compras -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">IVA Ventas</label>
+                            <input type="number" x-model.number="ivaVentas" @input="isLiveSync = false" class="w-full bg-[#000] border border-red-900/30 rounded-xl px-3 py-2.5 text-white text-xs focus:border-red-500 outline-none text-right font-mono" />
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">IVA Compras</label>
+                            <input type="number" x-model.number="ivaCompras" @input="isLiveSync = false" class="w-full bg-[#000] border border-red-900/30 rounded-xl px-3 py-2.5 text-white text-xs focus:border-red-500 outline-none text-right font-mono" />
+                        </div>
+                    </div>
+
+                    <!-- Periodo de Fecha a Fecha con Botón de Sincronización -->
+                    <div class="space-y-3">
+                        <!-- Sincronización Automática Toggle -->
+                        <div class="flex justify-between items-center bg-[#000]/50 p-2.5 rounded-xl border border-white/5">
+                            <div class="flex flex-col">
+                                <span class="text-gray-300 text-[10px] font-black uppercase tracking-widest">Sincronización en Vivo</span>
+                                <span class="text-[9px] text-gray-500 font-semibold" x-text="isLiveSync ? '✓ Datos vinculados en vivo' : '⚡ Modo manual / Escenario libre'"></span>
+                            </div>
+                            <button type="button" 
+                                    class="relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                    :class="isLiveSync ? 'bg-blue-600' : 'bg-[#222] border border-white/10'"
+                                    @click="toggleLiveSync()">
+                                <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                      :class="isLiveSync ? 'translate-x-5' : 'translate-x-0'"></span>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Desde</label>
+                                <input type="date" x-model="fechaDesde" class="w-full bg-[#000] border border-white/10 rounded-xl px-2 py-2 text-white text-xs focus:border-blue-500 outline-none font-mono text-center" />
+                            </div>
+                            <div>
+                                <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Hasta</label>
+                                <input type="date" x-model="fechaHasta" class="w-full bg-[#000] border border-white/10 rounded-xl px-2 py-2 text-white text-xs focus:border-blue-500 outline-none font-mono text-center" />
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center text-xs bg-[#000]/40 p-2.5 rounded-xl border border-white/5 gap-2">
+                            <div class="flex flex-col">
+                                <span class="text-gray-500 text-[10px] uppercase font-bold">Duración Base:</span>
+                                <span class="font-mono text-blue-400 font-bold text-[11px]" x-text="periodoRangoTexto"></span>
+                            </div>
+                            <button type="button" class="bg-[#1a1a1a] hover:bg-[#222] text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition" @click="syncFromDailyOps(false, true)">
+                                <i class="fas fa-sync-alt"></i> Sincronizar Caja
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-white/5 space-y-1">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-500">Saldo IVA a Pagar:</span>
+                    <span class="font-mono text-gray-300" x-text="format(ivaAPagar)"></span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-500">Utilidad Bruta Total:</span>
+                    <span class="font-mono text-gray-300 font-semibold" x-text="format(gananciaTotal)"></span>
+                </div>
+                <div class="flex justify-between text-xs pt-1.5 border-t border-white/5">
+                    <span class="text-emerald-500 font-bold uppercase tracking-wider">NETO PERIODO ACTUAL:</span>
+                    <span class="font-mono text-emerald-400 font-black text-sm" x-text="format(gananciaNetaAcumulada)"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTROL DE RECAUDACIÓN Y COMPRAS -->
+        <div class="bg-[#111] border border-amber-500/10 rounded-2xl p-6 relative flex flex-col justify-between">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-amber-500/[0.02] blur-xl pointer-events-none"></div>
+            <div>
+                <div class="flex items-center gap-2 mb-4 pb-2 border-b border-white/5">
+                    <i class="fas fa-cash-register text-amber-500"></i>
+                    <h3 class="text-white font-bold uppercase tracking-widest text-xs">Control de Caja & Compras</h3>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Recaudación -->
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Recaudación Real</label>
+                        <div class="relative flex items-center">
+                            <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="recaudacion = Math.max(0, recaudacion - 50000); isLiveSync = false">-</button>
+                            <input type="number" x-model.number="recaudacion" @input="isLiveSync = false" class="w-full bg-[#000] border border-amber-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-amber-500 outline-none text-right font-mono font-bold tracking-tight hover:border-amber-700/60 transition" />
+                            <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="recaudacion += 50000; isLiveSync = false">+</button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-[#000]/30 p-2.5 rounded-xl border border-white/5">
+                        <span class="text-gray-500 text-[9px] uppercase font-bold">Recaudación M/ Ventas</span>
+                        <span class="font-mono text-xs font-bold" :class="recaudacionMenosVentas < 0 ? 'text-red-400' : (recaudacionMenosVentas > 0 ? 'text-emerald-400' : 'text-gray-300')" x-text="format(recaudacionMenosVentas)"></span>
+                    </div>
+
+                    <!-- Compras Reales -->
+                    <div class="pt-2">
+                        <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Compra Total Real</label>
+                        <div class="relative flex items-center">
+                            <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="compraTotalReal = Math.max(0, compraTotalReal - 50000); isLiveSync = false">-</button>
+                            <input type="number" x-model.number="compraTotalReal" @input="isLiveSync = false" class="w-full bg-[#000] border border-amber-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-amber-500 outline-none text-right font-mono font-bold tracking-tight hover:border-amber-700/60 transition" />
+                            <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="compraTotalReal += 50000; isLiveSync = false">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-white/5 space-y-1">
+                <div class="flex justify-between text-[10px]">
+                    <span class="text-gray-500 uppercase">Materia Prima Blanco:</span>
+                    <span class="font-mono text-gray-400" x-text="format(materiaPrimaBlanco)"></span>
+                </div>
+                <div class="flex justify-between text-[10px]">
+                    <span class="text-gray-500 uppercase">Materia Prima Negro:</span>
+                    <span class="font-mono text-gray-400" x-text="format(materiaPrimaNegro)"></span>
+                </div>
+                <div class="flex justify-between text-[10px] pb-1.5 border-b border-white/5">
+                    <span class="text-gray-500 uppercase font-bold">Materia Prima Total:</span>
+                    <span class="font-mono text-gray-300 font-bold" x-text="format(materiaPrimaTotal)"></span>
+                </div>
+                <div class="flex justify-between text-xs pt-1.5">
+                    <span class="text-amber-500 font-bold uppercase tracking-wider">Desvío de Compra:</span>
+                    <span class="font-mono font-black text-sm" :class="desvioDeCompra > 0 ? 'text-red-400' : 'text-emerald-400'" x-text="format(desvioDeCompra)"></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SECCION CENTRAL DE SIMULACIÓN Y PROYECCIONES INTERACTIVAS (EL GRÁFICO PREVENTIVO) -->
+    <div class="bg-[#111] border border-white/5 rounded-2xl p-6">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 pb-4 border-b border-white/5">
+            <div>
+                <h3 class="text-white font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+                    <i class="fas fa-chart-line text-emerald-500"></i> Proyección Estratégica Financiera
+                </h3>
+                <p class="text-gray-400 text-xs">Visualice la evolución acumulativa en base al crecimiento y costos simulados</p>
+            </div>
+            
+            <!-- CONTROLES RAPIDOS DE PROYECCION -->
+            <div class="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500 text-[10px] uppercase font-bold">Horizonte:</span>
+                    <select x-model.number="mesesProyeccion" class="bg-black border border-white/10 text-white rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none">
+                        <option value="3">3 Meses</option>
+                        <option value="6">6 Meses</option>
+                        <option value="12">12 Meses</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- DESLIZADORES / SLIDERS DE VARIABLES -->
+            <div class="space-y-6 lg:col-span-1 bg-[#161616] p-4 border border-white/5 rounded-xl flex flex-col justify-between">
+                <div class="space-y-5">
+                    <h4 class="text-gray-300 font-bold text-xs uppercase tracking-wide">Variables del Simulador</h4>
+                    
+                    <!-- Slider de Crecimiento Ventas -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="text-gray-400 text-[10px] uppercase font-bold">Crecimiento Ventas:</span>
+                            <span class="text-emerald-400 text-xs font-mono font-bold" x-text="crecimientoVentas + '%'"></span>
+                        </div>
+                        <input type="range" min="-20" max="100" step="5" x-model.number="crecimientoVentas" class="w-full accent-emerald-500" />
+                        <span class="text-[9px] text-gray-500">Tasa de aumento mensual de facturación</span>
+                    </div>
+
+                    <!-- Slider de Inflación Gastos -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="text-gray-400 text-[10px] uppercase font-bold">Inflación Egresos:</span>
+                            <span class="text-red-400 text-xs font-mono font-bold" x-text="inflacionGastos + '%'"></span>
+                        </div>
+                        <input type="range" min="0" max="30" step="1" x-model.number="inflacionGastos" class="w-full accent-red-500" />
+                        <span class="text-[9px] text-gray-500">Tasa de incremento de costos operativos</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-white/5 space-y-3 bg-[#000]/30 p-3 rounded-lg">
+                    <div class="text-[10px] text-gray-500 uppercase tracking-widest text-center">Indicadores Proyectados (Mes 12)</div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400 text-xs">Ventas:</span>
+                        <span class="font-mono text-white font-bold" x-text="format(pCalculated.ventaUltima)"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400 text-xs">Gastos:</span>
+                        <span class="font-mono text-red-400" x-text="format(pCalculated.gastoUltimo)"></span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1 border-t border-white/5">
+                        <span class="text-emerald-400 text-xs font-bold">Ganancia Neta:</span>
+                        <span class="font-mono text-emerald-400 font-extrabold text-sm" x-text="format(pCalculated.netaUltima)"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AREA DE GRAFICOS DE APEXCHARTS -->
+            <div class="lg:col-span-3 bg-[#0c0c0c] border border-white/5 rounded-xl p-3 relative">
+                <div class="absolute top-2 right-2 flex items-center gap-2 z-10 text-[10px]">
+                    <span class="flex items-center gap-1 text-emerald-400 font-mono"><i class="fa fa-circle text-[8px]"></i> Ventas</span>
+                    <span class="flex items-center gap-1 text-red-400 font-mono"><i class="fa fa-circle text-[8px]"></i> Gastos</span>
+                    <span class="flex items-center gap-1 text-blue-400 font-mono"><i class="fa fa-circle text-[8px]"></i> Ganancia Neta</span>
+                </div>
+                
+                <div id="chart-calculadora-proyeccion" style="min-height: 280px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE TABLA COMPARATIVA TIPO HOJA EXCEL ORIGINAL -->
+    <div class="bg-[#111] border border-white/5 rounded-2xl p-6 overflow-hidden">
+        <h4 class="text-white font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
+            <i class="fas fa-table text-gray-500"></i> Desglose Detallado de Márgenes de Utilidad (Lógica Excel)
+        </h4>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="border-b border-white/10 bg-[#161616] text-gray-400">
+                        <th class="p-3 font-semibold">Descripción del Componente</th>
+                        <th class="p-3 font-semibold text-center">Fórmula Excel</th>
+                        <th class="p-3 font-semibold text-right">Monto Venta 1</th>
+                        <th class="p-3 font-semibold text-right">Monto Venta 2</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-gray-300">
+                    <tr>
+                        <td class="p-3 font-medium">Margen Base Melaminas (Placas)</td>
+                        <td class="p-3 text-center text-gray-500 font-mono">Venta Sin Corte × 23.077%</td>
+                        <td class="p-3 text-right font-mono" x-text="format(margenBlanco)"></td>
+                        <td class="p-3 text-right font-mono" x-text="format(margenNegro)"></td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 font-medium">Margen Servicio de Corte</td>
+                        <td class="p-3 text-center text-gray-500 font-mono">Corte × (80% / 100%)</td>
+                        <td class="p-3 text-right font-mono" x-text="format(margenCorteBlanco)"></td>
+                        <td class="p-3 text-right font-mono" x-text="format(margenCorteNegro)"></td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 font-medium">Costo Interno Servicio Pegado</td>
+                        <td class="p-3 text-center text-gray-500 font-mono">Cant. Pegados × Valor Unit.</td>
+                        <td class="p-3 text-right font-mono text-gray-400" x-text="format(costoPegadoBlanco)"></td>
+                        <td class="p-3 text-right font-mono text-gray-400" x-text="format(costoPegadoNegro)"></td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 font-medium">Excedente Servicio Pegado</td>
+                        <td class="p-3 text-center text-gray-500 font-mono">Servicio Total - Costo Interno</td>
+                        <td class="p-3 text-right font-mono text-gray-400" x-text="format(servPegadoBlanco)"></td>
+                        <td class="p-3 text-right font-mono text-gray-400" x-text="format(servPegadoNegro)"></td>
+                    </tr>
+                    <tr class="bg-blue-500/[0.02]">
+                        <td class="p-3 font-semibold text-white">Utilidad Bruta por Canal</td>
+                        <td class="p-3 text-center text-gray-500 font-mono">Suma de Utilidades Parciales</td>
+                        <td class="p-3 text-right font-semibold text-blue-400 font-mono" x-text="format(gananciaVentaBlanco)"></td>
+                        <td class="p-3 text-right font-semibold text-purple-400 font-mono" x-text="format(gananciaVentaNegro)"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE HISTORIAL Y COMPARATIVAS DE CIERRES PROYECTADOS -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
+        
+        <!-- Lista de Proyecciones Guardadas -->
+        <div class="bg-[#111] border border-white/5 rounded-2xl p-6 flex flex-col justify-between">
+            <div>
+                <h4 class="text-white font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
+                    <i class="fas fa-history text-blue-500"></i> Historial de Escenarios Guardados
+                </h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-white/10 bg-[#161616] text-gray-400">
+                                <th class="p-3 font-semibold">Nombre del Cierre / Fecha</th>
+                                <th class="p-3 font-semibold text-center">Periodo (Desde/Hasta)</th>
+                                <th class="p-3 font-semibold text-right">Neto Período</th>
+                                <th class="p-3 font-semibold text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-gray-300">
+                            <template x-if="savedProyecciones.length === 0">
+                                <tr>
+                                    <td colspan="4" class="p-4 text-center text-gray-500">No hay proyecciones registradas aún.</td>
+                                </tr>
+                            </template>
+                            <template x-for="proj in savedProyecciones" :key="proj.id">
+                                <tr :class="(activeProyeccionId && proj.id && activeProyeccionId.toString() === proj.id.toString()) ? 'bg-blue-600/5 font-semibold text-white' : ''">
+                                    <td class="p-3">
+                                        <div class="flex flex-col">
+                                            <span class="font-bold text-gray-200" x-text="JSON.parse(proj.detalles_simulacion).nombre || 'Sin nombre'"></span>
+                                            <span class="text-[10px] text-gray-500" x-text="'Guardado: ' + proj.fecha + ((proj.id && proj.id.toString().startsWith('local_')) ? ' (Local)' : '')"></span>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 text-center font-mono text-[10px]" x-text="((d => d ? d.split('-').reverse().join('/') : '--')(JSON.parse(proj.detalles_simulacion).fechaDesde)) + ' a ' + ((d => d ? d.split('-').reverse().join('/') : '--')(JSON.parse(proj.detalles_simulacion).fechaHasta))"></td>
+                                    <td class="p-3 text-right font-mono font-bold text-emerald-400" x-text="format(proj.utilidad_acumulada)"></td>
+                                    <td class="p-3 text-center">
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <button class="bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white px-2 py-1 rounded transition text-[10px] font-bold uppercase tracking-wider" @click="loadProyeccion(proj)">
+                                                Cargar
+                                            </button>
+                                            <button class="bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white px-2 py-1 rounded transition text-[10px] font-bold uppercase tracking-wider" @click="deleteProyeccion(proj)">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico Comparativo -->
+        <div class="bg-[#111] border border-white/5 rounded-2xl p-6">
+            <h4 class="text-white font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
+                <i class="fas fa-chart-bar text-purple-500"></i> Comparativa Estratégica (Utilidad Neta)
+            </h4>
+            <div id="chart-calculadora-comparativa" style="min-height: 280px; width: 100%;"></div>
+ <script is:inline>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('calculadora', () => ({
+            // State variables
+            isLiveSync: true,
+            ventaBlanco: 1500000,
+            ventaCorteBlanco: 150000,
+            ventaPegadoBlanco: 60000,
+            cantPegadosBlanco: 40,
+            precioPegadoBlanco: 1000,
+            
+            ventaNegro: 2200000,
+            ventaCorteNegro: 200000,
+            ventaPegadoNegro: 80000,
+            cantPegadosNegro: 50,
+            precioPegadoNegro: 1000,
+            
+            gastosTotales: 680000,
+            ivaCompras: 80000,
+            ivaVentas: 130000,
+
+            recaudacion: 3700000,
+            compraTotalReal: 2846151,
+            
+            fechaDesde: (() => {
+                const d = new Date();
+                d.setDate(d.getDate() - 30);
+                return d.toISOString().split('T')[0];
+            })(),
+            fechaHasta: new Date().toISOString().split('T')[0],
+            
+            // Simulación variables
+            mesesProyeccion: 12,
+            crecimientoVentas: 10, // 10% mensual
+            inflacionGastos: 5,   // 5% mensual
+            
+            showImporter: false,
+            pasteArea: '',
+            
+            toast: {
+                show: false,
+                message: ''
+            },
+            
+            // Projections history state
+            savedProyecciones: [],
+            activeProyeccionId: null,
+            nombreProyeccion: '',
+            
+            // Apexcharts references
+            chartInstance: null,
+            comparativaChartInstance: null,
+            
+            init() {
+                // Initialize charts on next tick
+                this.$nextTick(() => {
+                    this.initChart();
+                    this.initComparativaChart();
+                    this.syncFromDailyOps(true, true);
+                    this.loadSavedProyecciones();
+                });
+
+                window.addEventListener('sync-calculator', () => {
+                    this.syncFromDailyOps(true, true);
+                });
+
+                // Polling interval (real-time sync when tab is active)
+                setInterval(() => {
+                    const panel = document.getElementById('panel-calculadora');
+                    if (panel && !panel.classList.contains('hidden')) {
+                        this.syncFromDailyOps(true);
+                    }
+                }, 4000);
+
+                // Watchers to update chart
+                this.$watch('ventaBlanco', () => this.updateChart());
+                this.$watch('ventaCorteBlanco', () => this.updateChart());
+                this.$watch('ventaPegadoBlanco', () => this.updateChart());
+                this.$watch('cantPegadosBlanco', () => this.updateChart());
+                this.$watch('precioPegadoBlanco', () => this.updateChart());
+                this.$watch('ventaNegro', () => this.updateChart());
+                this.$watch('ventaCorteNegro', () => this.updateChart());
+                this.$watch('ventaPegadoNegro', () => this.updateChart());
+                this.$watch('cantPegadosNegro', () => this.updateChart());
+                this.$watch('precioPegadoNegro', () => this.updateChart());
+                this.$watch('gastosTotales', () => this.updateChart());
+                this.$watch('mesesProyeccion', () => this.updateChart());
+                this.$watch('crecimientoVentas', () => this.updateChart());
+                this.$watch('inflacionGastos', () => this.updateChart());
+                this.$watch('fechaDesde', () => { this.syncFromDailyOps(true, true); this.updateChart(); });
+                this.$watch('fechaHasta', () => { this.syncFromDailyOps(true, true); this.updateChart(); });
+            },
+
+            // Formula Getters Venta 1
+            get ventaSinCorteBlanco() { return Math.max(0, currency(this.ventaBlanco).subtract(this.ventaCorteBlanco).subtract(this.ventaPegadoBlanco).value); },
+            get margenBlanco() { return currency(this.ventaSinCorteBlanco).multiply(0.23077).value; },
+            get margenCorteBlanco() { return currency(this.ventaCorteBlanco).multiply(0.80).value; },
+            get costoPegadoBlanco() { return currency(this.cantPegadosBlanco).multiply(this.precioPegadoBlanco).value; },
+            get servPegadoBlanco() { return Math.max(0, currency(this.ventaPegadoBlanco).subtract(this.costoPegadoBlanco).value); },
+            get margenPegadoBlanco() { return currency(this.costoPegadoBlanco).add(currency(this.servPegadoBlanco).multiply(0.285715)).value; },
+            get gananciaVentaBlanco() { return currency(this.margenBlanco).add(this.margenCorteBlanco).add(this.margenPegadoBlanco).value; },
+
+            // Formula Getters Venta 2
+            get ventaSinCorteNegro() { return Math.max(0, currency(this.ventaNegro).subtract(this.ventaCorteNegro).subtract(this.ventaPegadoNegro).value); },
+            get margenNegro() { return currency(this.ventaSinCorteNegro).multiply(0.23077).value; },
+            get margenCorteNegro() { return currency(this.ventaCorteNegro).multiply(1.0).value; },
+            get costoPegadoNegro() { return currency(this.cantPegadosNegro).multiply(this.precioPegadoNegro).value; },
+            get servPegadoNegro() { return Math.max(0, currency(this.ventaPegadoNegro).subtract(this.costoPegadoNegro).value); },
+            get margenPegadoNegro() { return currency(this.costoPegadoNegro).add(currency(this.servPegadoNegro).multiply(0.285715)).value; },
+            get gananciaVentaNegro() { return currency(this.margenNegro).add(this.margenCorteNegro).add(this.margenPegadoNegro).value; },
+
+            // Control Recaudacion y Compras Getters
+            get materiaPrimaBlanco() { return currency(this.ventaSinCorteBlanco).multiply(0.76923).value; },
+            get materiaPrimaNegro() { return currency(this.ventaSinCorteNegro).multiply(0.76923).value; },
+            get materiaPrimaTotal() { return currency(this.materiaPrimaBlanco).add(this.materiaPrimaNegro).value; },
+            get desvioDeCompra() { return currency(this.compraTotalReal).subtract(this.materiaPrimaTotal).value; },
+            get recaudacionMenosVentas() { return currency(this.recaudacion).subtract(currency(this.ventaBlanco).add(this.ventaNegro).value).value; },
+
+            // Period duration getter
+            get periodoDias() {
+                if (!this.fechaDesde || !this.fechaHasta) return 30;
+                const d1 = new Date(this.fechaDesde);
+                const d2 = new Date(this.fechaHasta);
+                const diffTime = d2.getTime() - d1.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return Math.max(0, diffDays);
+            },
+
+            get periodoRangoTexto() {
+                if (!this.fechaDesde || !this.fechaHasta) return '';
+                const fD = this.fechaDesde.split('-').reverse().join('/');
+                const fH = this.fechaHasta.split('-').reverse().join('/');
+                return `de ${fD} a ${fH} (${this.periodoDias} días)`;
+            },
+
+            get gananciaTotal() { return currency(this.gananciaVentaBlanco).add(this.gananciaVentaNegro).value; },
+            get gananciaNetaAcumulada() { return currency(this.gananciaTotal).subtract(this.gastosTotales).value; },
+            get ivaAPagar() { return currency(this.ivaVentas).subtract(this.ivaCompras).value; },
+
+            // Projection Calculator (Intermediate reactive stats)
+            get pCalculated() {
+                const results = this.runSimulation();
+                const last = results[results.length - 1];
+                return {
+                    ventaUltima: last.ventas,
+                    gastoUltimo: last.gastos,
+                    netaUltima: last.netoAcumulado
+                };
+            },
+
+            format(value) {
+                return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
+            },
+
+            showToast(msg) {
+                this.toast.message = msg;
+                this.toast.show = true;
+                setTimeout(() => this.toast.show = false, 4000);
+            },
+
+            toggleLiveSync() {
+                this.isLiveSync = !this.isLiveSync;
+                if (this.isLiveSync) {
+                    this.syncFromDailyOps(false, true);
+                } else {
+                    this.showToast('✓ Sincronización en vivo desactivada (Modo Manual)');
+                }
+            },
+
+            // Parsing Gcom Log strings or copy-paste logs
+            parseGcomData() {
+                if (!this.pasteArea) return;
+                
+                const lines = this.pasteArea.split('\n');
+                let foundAny = false;
+                
+                lines.forEach(line => {
+                    const cleanLine = line.toLowerCase().replace(/[\$\.,]/g, '');
+                    const numbers = line.match(/\d+([\.,]\d+)?/g);
+                    if (!numbers) return;
+                    
+                    const value = parseFloat(numbers[0].replace(/[\.,]/g, ''));
+                    
+                    if (cleanLine.includes('venta 1') || cleanLine.includes('blanco') || cleanLine.includes('v1')) {
+                        if (cleanLine.includes('corte')) this.ventaCorteBlanco = value;
+                        else if (cleanLine.includes('pegado')) this.ventaPegadoBlanco = value;
+                        else this.ventaBlanco = value;
+                        foundAny = true;
+                    } 
+                    else if (cleanLine.includes('venta 2') || cleanLine.includes('negro') || cleanLine.includes('v2')) {
+                        if (cleanLine.includes('corte')) this.ventaCorteNegro = value;
+                        else if (cleanLine.includes('pegado')) this.ventaPegadoNegro = value;
+                        else this.ventaNegro = value;
+                        foundAny = true;
+                    }
+                    else if (cleanLine.includes('gastos') || cleanLine.includes('egresos') || cleanLine.includes('fijos')) {
+                        this.gastosTotales = value;
+                        foundAny = true;
+                    }
+                    else if (cleanLine.includes('pegados') || cleanLine.includes('cant pegado')) {
+                        this.cantPegadosBlanco = value;
+                        foundAny = true;
+                    }
+                });
+
+                if (foundAny) {
+                    this.showToast('✓ Resumen Gcom Procesado Correctamente');
+                    this.showImporter = false;
+                    this.pasteArea = '';
+                } else {
+                    alert('No se reconocieron variables válidas. Compruebe los términos e intente nuevamente.');
+                }
+            },
+
+            // Run math simulation month-by-month
+            runSimulation() {
+                const results = [];
+                let currentV1 = this.ventaBlanco;
+                let currentV2 = this.ventaNegro;
+                let currentGastos = this.gastosTotales;
+                
+                let accumVentas = 0;
+                let accumGastos = 0;
+                let accumNeto = 0;
+
+                for (let m = 1; m <= this.mesesProyeccion; m++) {
+                    const factorV = 1 + (this.crecimientoVentas / 100);
+                    const factorG = 1 + (this.inflacionGastos / 100);
+
+                    // Grow sales & expenses
+                    currentV1 = this.ventaBlanco * Math.pow(factorV, m);
+                    currentV2 = this.ventaNegro * Math.pow(factorV, m);
+                    currentGastos = this.gastosTotales * Math.pow(factorG, m);
+
+                    // Re-calculate margins with exact formulas
+                    const sinCorteV1 = Math.max(0, currentV1 - (this.ventaCorteBlanco * Math.pow(factorV, m)) - (this.ventaPegadoBlanco * Math.pow(factorV, m)));
+                    const margBlanco = sinCorteV1 * 0.23077;
+                    const margCorteBlanco = this.ventaCorteBlanco * Math.pow(factorV, m) * 0.80;
+                    const cPegadosBlanco = this.cantPegadosBlanco * Math.pow(factorV, m) * this.precioPegadoBlanco;
+                    const sPegadoBlanco = Math.max(0, (this.ventaPegadoBlanco * Math.pow(factorV, m)) - cPegadosBlanco);
+                    const margPegadoBlanco = cPegadosBlanco + (sPegadoBlanco * 0.285715);
+                    const gainV1 = margBlanco + margCorteBlanco + margPegadoBlanco;
+
+                    const sinCorteV2 = Math.max(0, currentV2 - (this.ventaCorteNegro * Math.pow(factorV, m)) - (this.ventaPegadoNegro * Math.pow(factorV, m)));
+                    const margNegro = sinCorteV2 * 0.23077;
+                    const margCorteNegro = this.ventaCorteNegro * Math.pow(factorV, m) * 1.0;
+                    const cPegadosNegro = this.cantPegadosNegro * Math.pow(factorV, m) * this.precioPegadoNegro;
+                    const sPegadoNegro = Math.max(0, (this.ventaPegadoNegro * Math.pow(factorV, m)) - cPegadosNegro);
+                    const margPegadoNegro = cPegadosNegro + (sPegadoNegro * 0.285715);
+                    const gainV2 = margNegro + margCorteNegro + margPegadoNegro;
+
+                    const monthGainTotal = gainV1 + gainV2;
+                    const monthNeto = monthGainTotal - currentGastos;
+
+                    accumVentas += (currentV1 + currentV2);
+                    accumGastos += currentGastos;
+                    accumNeto += monthNeto;
+
+                    results.push({
+                        mes: 'Mes ' + m,
+                        ventas: currentV1 + currentV2,
+                        gastos: currentGastos,
+                        netoAcumulado: accumNeto,
+                        ventasAcumuladas: accumVentas,
+                        gastosAcumulados: accumGastos
+                    });
+                }
+                return results;
+            },
+
+            // Initialize ApexChart
+            initChart() {
+                const data = this.runSimulation();
+                const categories = data.map(d => d.mes);
+                const seriesVentas = data.map(d => parseFloat(d.ventasAcumuladas.toFixed(0)));
+                const seriesGastos = data.map(d => parseFloat(d.gastosAcumuladas.toFixed(0)));
+                const seriesNeto = data.map(d => parseFloat(d.netoAcumulado.toFixed(0)));
+
+                const options = {
+                    chart: {
+                        type: 'area',
+                        height: 280,
+                        background: 'transparent',
+                        toolbar: { show: false },
+                        fontFamily: 'Inter, sans-serif'
+                    },
+                    theme: { mode: 'dark' },
+                    series: [
+                        { name: 'Ventas Acum.', data: seriesVentas },
+                        { name: 'Gastos Acum.', data: seriesGastos },
+                        { name: 'Ganancia Neta Acum.', data: seriesNeto }
+                    ],
+                    xaxis: {
+                        categories: categories,
+                        labels: { style: { colors: '#888', fontSize: '10px' } }
+                    },
+                    yaxis: {
+                        labels: {
+                            style: { colors: '#888', fontSize: '10px' },
+                            formatter: (val) => '$' + (val / 1000000).toFixed(1) + 'M'
+                        }
+                    },
+                    colors: ['#10b981', '#ef4444', '#3b82f6'],
+                    stroke: { curve: 'smooth', width: 2.5 },
+                    fill: {
+                        type: 'gradient',
+                        gradient: {
+                            opacityFrom: 0.25,
+                            opacityTo: 0.02,
+                            shadeIntensity: 0.5
+                        }
+                    },
+                    grid: { borderColor: '#222' },
+                    dataLabels: { enabled: false },
+                    tooltip: {
+                        y: { formatter: (val) => this.format(val) }
+                    }
+                };
+
+                this.chartInstance = new ApexCharts(document.getElementById('chart-calculadora-proyeccion'), options);
+                this.chartInstance.render();
+            },
+
+            // Update ApexChart series
+            updateChart() {
+                if (!this.chartInstance) return;
+                const data = this.runSimulation();
+                
+                const seriesVentas = data.map(d => parseFloat(d.ventasAcumuladas.toFixed(0)));
+                const seriesGastos = data.map(d => parseFloat(d.gastosAcumuladas.toFixed(0)));
+                const seriesNeto = data.map(d => parseFloat(d.netoAcumulado.toFixed(0)));
+                const categories = data.map(d => d.mes);
+
+                this.chartInstance.updateOptions({
+                    xaxis: { categories: categories }
+                });
+                
+                this.chartInstance.updateSeries([
+                    { name: 'Ventas Acum.', data: seriesVentas },
+                    { name: 'Gastos Acum.', data: seriesGastos },
+                    { name: 'Ganancia Neta Acum.', data: seriesNeto }
+                ]);
+            },
+
+            // Export to CSV
+            exportCSV() {
+                const data = this.runSimulation();
+                let csv = 'Mes,Ventas Proyectadas,Gastos Proyectados,Neto Acumulado\n';
+                data.forEach(row => {
+                    csv += `${row.mes},${row.ventas.toFixed(0)},${row.gastos.toFixed(0)},${row.netoAcumulado.toFixed(0)}\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute('download', 'Proyecciones_AlvarezPlacas.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                this.showToast('✓ CSV descargado correctamente');
+            },
+
+            // Sincronizar automáticamente con Operación Diaria (LocalStorage + API)
+            async syncFromDailyOps(silent = false, force = false) {
+                if (!force && !this.isLiveSync) return;
+                if (!this.fechaDesde || !this.fechaHasta) return;
+
+                let items = [];
+                try {
+                    const res = await fetch(`https://admin.alvarezplacas.com.ar/items/caja_movimientos?filter[fecha][_gte]=${this.fechaDesde}&filter[fecha][_lte]=${this.fechaHasta}&limit=5000`, {
+                        headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        items = data.data || [];
+                    }
+                } catch(e) {
+                    console.warn("Directus fetch failed in calculator sync:", e);
+                }
+
+                // Merge local storage
+                try {
+                    const localData = localStorage.getItem('caja_movimientos_local');
+                    const localMovs = localData ? JSON.parse(localData) : [];
+                    const filteredLocal = localMovs.filter(m => m && m.fecha && m.fecha >= this.fechaDesde && m.fecha <= this.fechaHasta);
+                    filteredLocal.forEach(lm => {
+                        const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
+                        if (!exists) {
+                            items.push(lm);
+                        }
+                    });
+                } catch(e) {
+                    console.error("Local storage merge failed in calculator sync:", e);
+                }
+
+                // Now calculate totals
+                let sumVentaBlanco = 0;
+                let sumVentaNegro = 0;
+                let sumGastos = 0;
+                let sumIvaVentas = 0;
+                let sumIvaCompras = 0;
+
+                items.forEach(m => {
+                    if (!m) return;
+                    const monto = parseFloat(m.monto) || 0;
+                    const tipo = (m.tipo || '').toLowerCase();
+                    const categoria = (m.categoria || '').toLowerCase();
+                    if (tipo === 'ingreso') {
+                        if (categoria === 'venta_blanco') {
+                            sumVentaBlanco += monto;
+                        } else if (categoria === 'venta_negro') {
+                            sumVentaNegro += monto;
+                        }
+                    } else if (tipo === 'egreso') {
+                        if (categoria.startsWith('gasto_fijo') || categoria.startsWith('gasto_variable')) {
+                            sumGastos += monto;
+                        } else if (categoria === 'impuestos') {
+                            // If they enter taxes as expenses...
+                        }
+                    }
+                });
+
+                // Update calculator state - reset all to synced values
+                this.ventaBlanco = sumVentaBlanco;
+                this.ventaNegro = sumVentaNegro;
+                this.gastosTotales = sumGastos;
+                this.ivaVentas = sumIvaVentas;
+
+                // Reset corte/pegado breakdown to 0 (must be entered manually per period)
+                // These cannot be derived from daily ops categories
+                this.ventaCorteBlanco = 0;
+                this.ventaPegadoBlanco = 0;
+                this.cantPegadosBlanco = 0;
+                this.ventaCorteNegro = 0;
+                this.ventaPegadoNegro = 0;
+                this.cantPegadosNegro = 0;
+
+                if (!silent) {
+                    const resumen = `V1: ${this.format(sumVentaBlanco)} | V2: ${this.format(sumVentaNegro)} | Gastos: ${this.format(sumGastos)}`;
+                    this.showToast('✓ Sincronizado (' + items.length + ' movs) → ' + resumen);
+                }
+            },
+
+            // LocalStorage helpers for projections
+            getLocalProyecciones() {
+                try {
+                    const data = localStorage.getItem('caja_proyecciones_local');
+                    return data ? JSON.parse(data) : [];
+                } catch(e) {
+                    return [];
+                }
+            },
+
+            saveLocalProyecciones(projs) {
+                try {
+                    localStorage.setItem('caja_proyecciones_local', JSON.stringify(projs));
+                } catch(e) {}
+            },
+
+            async loadSavedProyecciones() {
+                let items = [];
+                try {
+                    const res = await fetch(`https://admin.alvarezplacas.com.ar/items/caja_proyecciones?limit=100&sort=-date_created`, {
+                        headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        items = data.data || [];
+                    }
+                } catch(e) {
+                    console.warn("Directus projections fetch failed, loading local only:", e);
+                }
+
+                // Merge local
+                const localProjs = this.getLocalProyecciones();
+                localProjs.forEach(lp => {
+                    const exists = items.some(im => im && im.id && lp && lp.id && im.id.toString() === lp.id.toString());
+                    if (!exists) {
+                        items.push(lp);
+                    }
+                });
+
+                // Sort: newest first based on date_created (or id as fallback)
+                items.sort((a, b) => {
+                    const dateA = a && a.date_created ? new Date(a.date_created).getTime() : 0;
+                    const dateB = b && b.date_created ? new Date(b.date_created).getTime() : 0;
+                    if (dateA && dateB) return dateB - dateA;
+
+                    // Fallback to numeric or local id timestamp
+                    const idA = a && a.id ? a.id.toString() : '';
+                    const idB = b && b.id ? b.id.toString() : '';
+                    
+                    const numA = idA.startsWith('local_proj_') ? parseInt(idA.split('_')[2]) : parseInt(idA);
+                    const numB = idB.startsWith('local_proj_') ? parseInt(idB.split('_')[2]) : parseInt(idB);
+                    
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return numB - numA;
+                    }
+                    return idB.localeCompare(idA);
+                });
+                
+                this.savedProyecciones = items;
+                this.updateComparativaChart();
+            },
+
+            // Save Snapshot of projections to Directus + LocalStorage
+            async saveSnapshotToCEO(overwrite = false) {
+                let nombre = this.nombreProyeccion.trim();
+                if (!nombre) {
+                    const fDesdeStr = this.fechaDesde ? this.fechaDesde.split('-').reverse().join('/') : '';
+                    const fHastaStr = this.fechaHasta ? this.fechaHasta.split('-').reverse().join('/') : '';
+                    const defaultName = fDesdeStr && fHastaStr 
+                        ? `Cierre Proyectado ${fDesdeStr} a ${fHastaStr}`
+                        : `Cierre Proyectado ${new Date().toLocaleDateString('es-AR')}`;
+                    nombre = prompt("Ingrese un nombre descriptivo para esta proyección:", defaultName);
+                    if (!nombre) return;
+                    this.nombreProyeccion = nombre;
+                }
+
+                const isEdit = this.activeProyeccionId !== null && overwrite;
+                const tempId = isEdit ? this.activeProyeccionId : ('local_proj_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
+
+                const detalles = {
+                    nombre: nombre,
+                    fechaDesde: this.fechaDesde,
+                    fechaHasta: this.fechaHasta,
+                    periodoDias: this.periodoDias,
+                    ventaBlanco: this.ventaBlanco,
+                    ventaCorteBlanco: this.ventaCorteBlanco,
+                    ventaPegadoBlanco: this.ventaPegadoBlanco,
+                    cantPegadosBlanco: this.cantPegadosBlanco,
+                    precioPegadoBlanco: this.precioPegadoBlanco,
+                    ventaNegro: this.ventaNegro,
+                    ventaCorteNegro: this.ventaCorteNegro,
+                    ventaPegadoNegro: this.ventaPegadoNegro,
+                    cantPegadosNegro: this.cantPegadosNegro,
+                    precioPegadoNegro: this.precioPegadoNegro,
+                    gastosTotales: this.gastosTotales,
+                    ivaCompras: this.ivaCompras,
+                    ivaVentas: this.ivaVentas,
+                    mesesProyeccion: this.mesesProyeccion,
+                    crecimientoVentas: this.crecimientoVentas,
+                    inflacionGastos: this.inflacionGastos,
+                    netaProyectadaFinal: this.pCalculated.netaUltima
+                };
+
+                const payload = {
+                    id: tempId,
+                    vendedor_email: 'fernando@alvarezplacas.com.ar',
+                    fecha: this.fechaHasta || new Date().toISOString().split('T')[0],
+                    date_created: new Date().toISOString(),
+                    ventas_blanco: this.ventaBlanco,
+                    ventas_negro: this.ventaNegro,
+                    gastos_totales: this.gastosTotales,
+                    utilidad_acumulada: this.gananciaNetaAcumulada,
+                    detalles_simulacion: JSON.stringify(detalles),
+                    synced: false
+                };
+
+                // Save locally first
+                const localProjs = this.getLocalProyecciones();
+                if (isEdit) {
+                    const idx = localProjs.findIndex(p => p && p.id && tempId && p.id.toString() === tempId.toString());
+                    if (idx !== -1) {
+                        localProjs[idx] = payload;
+                    } else {
+                        localProjs.push(payload);
+                    }
+                } else {
+                    localProjs.push(payload);
+                }
+                this.saveLocalProyecciones(localProjs);
+
+                // Attempt Directus sync
+                try {
+                    let res;
+                    const apiPayload = {
+                        vendedor_email: payload.vendedor_email,
+                        fecha: payload.fecha,
+                        ventas_blanco: payload.ventas_blanco,
+                        ventas_negro: payload.ventas_negro,
+                        gastos_totales: payload.gastos_totales,
+                        utilidad_acumulada: payload.utilidad_acumulada,
+                        detalles_simulacion: payload.detalles_simulacion
+                    };
+
+                    if (isEdit && tempId && !tempId.toString().startsWith('local_')) {
+                        // UPDATE in Directus
+                        res = await fetch(`https://admin.alvarezplacas.com.ar/items/caja_proyecciones/${tempId}`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer alvarez-api-token-v16-2026`
+                            },
+                            body: JSON.stringify(apiPayload)
+                        });
+                    } else {
+                        // CREATE in Directus
+                        res = await fetch('https://admin.alvarezplacas.com.ar/items/caja_proyecciones', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer alvarez-api-token-v16-2026`
+                            },
+                            body: JSON.stringify(apiPayload)
+                        });
+                    }
+
+                    if (res.ok) {
+                        const apiRes = await res.json();
+                        const realId = apiRes.data.id;
+
+                        // Update local store with real ID and mark synced
+                        const updated = this.getLocalProyecciones();
+                        const idx = updated.findIndex(p => p && p.id && tempId && p.id.toString() === tempId.toString());
+                        if (idx !== -1) {
+                            updated[idx].id = realId;
+                            updated[idx].synced = true;
+                            this.saveLocalProyecciones(updated);
+                        }
+                        this.activeProyeccionId = realId;
+                        this.showToast('✓ Proyección guardada con éxito en la base centralizada');
+                    } else {
+                        if (!isEdit) {
+                            this.activeProyeccionId = tempId;
+                        }
+                        this.showToast('✓ Proyección registrada localmente (Directus fuera de línea)');
+                    }
+                } catch(e) {
+                    if (!isEdit) {
+                        this.activeProyeccionId = tempId;
+                    }
+                    this.showToast('✓ Proyección registrada localmente (Modo sin conexión)');
+                }
+
+                await this.loadSavedProyecciones();
+            },
+
+            // Reset active loaded state
+            nuevoCierre() {
+                this.activeProyeccionId = null;
+                this.nombreProyeccion = '';
+                this.showToast('✓ Modo nuevo cierre activado. Valores listos para nueva simulación.');
+            },
+
+            // Load projection snapshot inputs to Alpine reactive state
+            loadProyeccion(proj) {
+                // Desactivar sincronización en vivo para evitar que los watchers de fecha sobrescriban lo cargado
+                this.isLiveSync = false;
+                
+                let detalles = {};
+                try {
+                    detalles = typeof proj.detalles_simulacion === 'string' ? JSON.parse(proj.detalles_simulacion) : proj.detalles_simulacion;
+                } catch(e) {
+                    console.error("Error parsing projection details:", e);
+                    alert("No se pudieron cargar los detalles de esta proyección.");
+                    return;
+                }
+
+                // Restore all inputs
+                this.activeProyeccionId = proj.id;
+                this.nombreProyeccion = detalles.nombre || `Proyección ${proj.fecha}`;
+                
+                if (detalles.fechaDesde) this.fechaDesde = detalles.fechaDesde;
+                if (detalles.fechaHasta) this.fechaHasta = detalles.fechaHasta;
+                
+                this.ventaBlanco = detalles.ventaBlanco !== undefined ? detalles.ventaBlanco : proj.ventas_blanco;
+                this.ventaCorteBlanco = detalles.ventaCorteBlanco !== undefined ? detalles.ventaCorteBlanco : 0;
+                this.ventaPegadoBlanco = detalles.ventaPegadoBlanco !== undefined ? detalles.ventaPegadoBlanco : 0;
+                this.cantPegadosBlanco = detalles.cantPegadosBlanco !== undefined ? detalles.cantPegadosBlanco : 0;
+                this.precioPegadoBlanco = detalles.precioPegadoBlanco !== undefined ? detalles.precioPegadoBlanco : 1000;
+                
+                this.ventaNegro = detalles.ventaNegro !== undefined ? detalles.ventaNegro : proj.ventas_negro;
+                this.ventaCorteNegro = detalles.ventaCorteNegro !== undefined ? detalles.ventaCorteNegro : 0;
+                this.ventaPegadoNegro = detalles.ventaPegadoNegro !== undefined ? detalles.ventaPegadoNegro : 0;
+                this.cantPegadosNegro = detalles.cantPegadosNegro !== undefined ? detalles.cantPegadosNegro : 0;
+                this.precioPegadoNegro = detalles.precioPegadoNegro !== undefined ? detalles.precioPegadoNegro : 1000;
+                
+                this.gastosTotales = detalles.gastosTotales !== undefined ? detalles.gastosTotales : proj.gastos_totales;
+                this.ivaCompras = detalles.ivaCompras !== undefined ? detalles.ivaCompras : 0;
+                this.ivaVentas = detalles.ivaVentas !== undefined ? detalles.ivaVentas : 0;
+                
+                if (detalles.mesesProyeccion !== undefined) this.mesesProyeccion = detalles.mesesProyeccion;
+                if (detalles.crecimientoVentas !== undefined) this.crecimientoVentas = detalles.crecimientoVentas;
+                if (detalles.inflacionGastos !== undefined) this.inflacionGastos = detalles.inflacionGastos;
+
+                this.showToast(`✓ Cargada proyección: ${this.nombreProyeccion}`);
+                this.updateChart();
+            },
+
+            // Delete projection snapshot
+            async deleteProyeccion(proj) {
+                let nombre = 'Sin nombre';
+                try {
+                    const det = typeof proj.detalles_simulacion === 'string' ? JSON.parse(proj.detalles_simulacion) : proj.detalles_simulacion;
+                    nombre = det.nombre || proj.fecha;
+                } catch(e) {}
+
+                if (!confirm(`¿Eliminar la proyección "${nombre}"?`)) return;
+
+                const id = proj.id;
+                
+                // Delete locally first
+                const localProjs = this.getLocalProyecciones();
+                const filtered = localProjs.filter(p => p && p.id && id && p.id.toString() !== id.toString());
+                this.saveLocalProyecciones(filtered);
+
+                if (this.activeProyeccionId && id && this.activeProyeccionId.toString() === id.toString()) {
+                    this.activeProyeccionId = null;
+                    this.nombreProyeccion = '';
+                }
+
+                // Delete from Directus if synced/real ID
+                if (id && !id.toString().startsWith('local_')) {
+                    try {
+                        const res = await fetch(`https://admin.alvarezplacas.com.ar/items/caja_proyecciones/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+                        });
+                        if (res.ok) {
+                            this.showToast('✓ Proyección eliminada correctamente de Directus y LocalStorage');
+                        } else {
+                            this.showToast('✓ Proyección eliminada localmente (Error en Directus)');
+                        }
+                    } catch(e) {
+                        this.showToast('✓ Proyección eliminada localmente');
+                    }
+                } else {
+                    this.showToast('✓ Proyección eliminada localmente');
+                }
+
+                await this.loadSavedProyecciones();
+            },
+
+            // Initialize Comparative Scenario Chart
+            initComparativaChart() {
+                const options = {
+                    chart: {
+                        type: 'bar',
+                        height: 280,
+                        background: 'transparent',
+                        toolbar: { show: false },
+                        fontFamily: 'Inter, sans-serif'
+                    },
+                    theme: { mode: 'dark' },
+                    series: [{ name: 'Utilidad Neta', data: [] }],
+                    xaxis: {
+                        categories: [],
+                        labels: { style: { colors: '#888', fontSize: '9px' } }
+                    },
+                    yaxis: {
+                        labels: {
+                            style: { colors: '#888', fontSize: '10px' },
+                            formatter: (val) => this.format(val)
+                        }
+                    },
+                    colors: ['#3b82f6'],
+                    grid: { borderColor: '#222' },
+                    dataLabels: {
+                        enabled: true,
+                        formatter: (val) => '$' + (val / 1000).toFixed(0) + 'k',
+                        style: { fontSize: '9px' }
+                    },
+                    tooltip: {
+                        y: { formatter: (val) => this.format(val) }
+                    }
+                };
+
+                this.comparativaChartInstance = new ApexCharts(document.getElementById('chart-calculadora-comparativa'), options);
+                this.comparativaChartInstance.render();
+            },
+
+            // Update Comparative Scenario Chart
+            updateComparativaChart() {
+                if (!this.comparativaChartInstance) {
+                    this.$nextTick(() => {
+                        const el = document.getElementById('chart-calculadora-comparativa');
+                        if (el) {
+                            this.initComparativaChart();
+                            this.updateComparativaChart();
+                        }
+                    });
+                    return;
+                }
+
+                // Get latest 5 projections
+                const latestProjs = [...this.savedProyecciones].slice(0, 5).reverse();
+                
+                const categories = latestProjs.map(p => {
+                    let nombre = 'Sin nombre';
+                    try {
+                        const det = typeof p.detalles_simulacion === 'string' ? JSON.parse(p.detalles_simulacion) : p.detalles_simulacion;
+                        nombre = det.nombre || p.fecha;
+                    } catch(e) {}
+                    return nombre;
+                });
+                
+                const data = latestProjs.map(p => parseFloat(p.utilidad_acumulada || 0));
+
+                this.comparativaChartInstance.updateOptions({
+                    xaxis: { categories: categories }
+                });
+
+                this.comparativaChartInstance.updateSeries([{
+                    name: 'Utilidad Neta',
+                    data: data
+                }]);
+            }
+        }));
+    });
+</script>
+
+<style>
+    /* Styling sliders accent colors */
+    input[type="range"] {
+        height: 5px;
+        border-radius: 5px;
+        background: #252525;
+        outline: none;
+    }
+</style>
