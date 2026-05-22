@@ -96,9 +96,32 @@ if (!sellerId) {
                             </div>
                         </div>
                     </template>
+                            <!-- Logística e Insumos -->
+                <div class="radar-card">
+                    <div class="card-title">
+                        <i class="fas fa-truck-loading" style="color: #3b82f6;"></i> Insumos y Logística Local
+                    </div>
+                    <p class="card-desc">Monitoreo de materias primas para herrajes (Grupo Euro, Bronzen) y fletes de proveedores locales (Egger, Sadepan).</p>
+                    
+                    <div class="ticker-list">
+                        <template x-for="ticker in [ali, hrc, ypf]">
+                            <div class="ticker-item">
+                                <div class="t-name">
+                                    <strong x-text="ticker.name"></strong>
+                                    <span class="t-symbol" x-text="ticker.symbol"></span>
+                                </div>
+                                <div class="t-price" x-text="ticker.price.toFixed(2)"></div>
+                                <div class="t-change" :class="ticker.changePercent >= 0 ? 'text-danger' : 'text-success'">
+                                    <!-- Aca es inverso: si aluminio sube, es MALO (rojo) para nuestros costos -->
+                                    <i class="fas" :class="ticker.changePercent >= 0 ? 'fa-caret-up' : 'fa-caret-down'"></i>
+                                    <span x-text="Math.abs(ticker.changePercent).toFixed(2) + '%'"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
-            </div>
 
+            </div>
         </div>
     </div>
 </CajeroWorkspace>
@@ -225,6 +248,9 @@ if (!sellerId) {
             lumber: { name: '', symbol: '', price: 0, changePercent: 0 },
             oil: { name: '', symbol: '', price: 0, changePercent: 0 },
             eurusd: { name: '', symbol: '', price: 0, changePercent: 0 },
+            ali: { name: '', symbol: '', price: 0, changePercent: 0 },
+            hrc: { name: '', symbol: '', price: 0, changePercent: 0 },
+            ypf: { name: '', symbol: '', price: 0, changePercent: 0 },
             dolar: { blue: 0, mep: 0, ccl: 0 },
 
             async fetchData() {
@@ -239,6 +265,9 @@ if (!sellerId) {
                         this.lumber = json.data.lumber;
                         this.oil = json.data.oil;
                         this.eurusd = json.data.eurusd;
+                        this.ali = json.data.ali;
+                        this.hrc = json.data.hrc;
+                        this.ypf = json.data.ypf;
                         this.dolar = json.data.dolar;
                     }
                 } catch (e) {
@@ -259,6 +288,11 @@ if (!sellerId) {
                 // Si petroleo o madera suben > 2%, es malísimo para nuestros costos (+2)
                 if (this.oil.changePercent > 2) score += 2;
                 if (this.lumber.changePercent > 2) score += 2;
+                // Aluminio o Acero suben > 2%, herrajes más caros
+                if (this.ali.changePercent > 2) score += 1;
+                if (this.hrc.changePercent > 2) score += 1;
+                // Transporte local
+                if (this.ypf.changePercent > 2) score += 1;
                 // Si el euro se dispara > 1%, importa (+1)
                 if (this.eurusd.changePercent > 1) score += 1;
                 // Si Dexco (mercado muebles) cae fuerte > -3%, alerta de recesión (+1)
@@ -276,9 +310,9 @@ if (!sellerId) {
 
             getRiskText() {
                 const s = this.getRiskScore();
-                if (s >= 3) return 'ALTO RIESGO. Los commodities globales de madera y resinas están en alza. Posibles nuevas listas de precios inminentes de proveedores europeos y locales.';
-                if (s >= 1) return 'RIESGO MEDIO. Hay leve inestabilidad en algunos indicadores logísticos o de materia prima. Mantener atención a los precios de fletes y resinas.';
-                return 'RIESGO BAJO. Los mercados proveedores operan con normalidad. No se detectan presiones inflacionarias externas drásticas en el corto plazo.';
+                if (s >= 3) return 'ALTO RIESGO. Fuerte presión sobre commodities (Madera, Aluminio, Combustible). Altísimas chances de nuevas listas de precios de Faplac, Egger y Herrajes inminentemente.';
+                if (s >= 1) return 'RIESGO MEDIO. Inestabilidad en algunos indicadores logísticos o de materia prima. Mantener atención a los costos de Aluminio, Acero y transporte local.';
+                return 'RIESGO BAJO. Los mercados proveedores operan con normalidad. No se detectan presiones de costos en el corto plazo.';
             }
         }));
     });

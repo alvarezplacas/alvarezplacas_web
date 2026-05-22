@@ -15,11 +15,14 @@ export const GET: APIRoute = async ({ request, cookies }) => {
             lumber: { name: 'Futuros Madera (Lumber)', symbol: 'LBS=F', price: 0, change: 0, changePercent: 0 },
             oil: { name: 'Petróleo Brent (Químicos/Flete)', symbol: 'BZ=F', price: 0, change: 0, changePercent: 0 },
             eurusd: { name: 'Euro / Dólar (Importación)', symbol: 'EURUSD=X', price: 0, change: 0, changePercent: 0 },
+            ali: { name: 'Aluminio (Perfiles/Grupo Euro)', symbol: 'ALI=F', price: 0, change: 0, changePercent: 0 },
+            hrc: { name: 'Acero (Correderas/Bisagras)', symbol: 'HRC=F', price: 0, change: 0, changePercent: 0 },
+            ypf: { name: 'YPF S.A. (Flete Nacional/Egger)', symbol: 'YPFD.BA', price: 0, change: 0, changePercent: 0 },
             dolar: { blue: 0, mep: 0, ccl: 0 }
         };
 
         // Helper function to fetch Yahoo Finance Data safely
-        const fetchYahoo = async (symbol) => {
+        const fetchYahoo = async (symbol: string) => {
             try {
                 // We use Yahoo Finance API v8 chart endpoint
                 const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=1d`, {
@@ -46,7 +49,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         };
 
         // Fetch all symbols in parallel
-        const symbols = ['faplac', 'dexco', 'suzano', 'lumber', 'oil', 'eurusd'];
+        const symbols = ['faplac', 'dexco', 'suzano', 'lumber', 'oil', 'eurusd', 'ali', 'hrc', 'ypf'] as const;
         const promises = symbols.map(async (key) => {
             const data = await fetchYahoo(results[key].symbol);
             results[key].price = data.price;
