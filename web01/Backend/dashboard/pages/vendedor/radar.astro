@@ -215,7 +215,7 @@ if (!sellerId) {
     .text-danger { color: #ef4444; }
 </style>
 
-<script>
+<script is:inline>
     document.addEventListener('alpine:init', () => {
         window.Alpine.data('marketRadar', () => ({
             loading: true,
