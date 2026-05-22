@@ -545,7 +545,7 @@ if (!sellerId) {
             document.querySelectorAll('.ctab').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.ctab-panel').forEach(p => p.classList.add('hidden'));
             btn.classList.add('active');
-            const tabName = (btn as HTMLElement).dataset.ctab;
+            const tabName = btn.dataset.ctab;
             const panel = document.getElementById(`panel-${tabName}`);
             if (panel) panel.classList.remove('hidden');
         });
