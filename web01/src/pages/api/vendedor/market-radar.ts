@@ -3,7 +3,8 @@ import type { APIRoute } from 'astro';
 export const GET: APIRoute = async ({ request, cookies }) => {
     // 1. Verify Authentication
     const sellerSession = cookies.get('seller_session')?.value;
-    if (!sellerSession) {
+    const adminSession = cookies.get('admin_session')?.value;
+    if (!sellerSession && !adminSession) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
