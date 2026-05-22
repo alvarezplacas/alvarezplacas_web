@@ -2,14 +2,7 @@ import type { APIRoute } from 'astro';
 import { createDirectus, rest, readItems, createItem, staticToken, updateItem } from '@directus/sdk';
 import bcrypt from 'bcryptjs';
 import { registerSession } from '../../../session_store';
-
-const DIRECTUS_URL = import.meta.env.DIRECTUS_URL_INTERNAL || import.meta.env.DIRECTUS_URL || 'https://admin.alvarezplacas.com.ar';
-const STATIC_TOKEN = import.meta.env.DIRECTUS_TOKEN || 'sv47_8QErnkx0-EBKFBnAoBw433CJs13';
-
-// Inicialización del cliente de Directus
-const directusClient = createDirectus(DIRECTUS_URL)
-    .with(staticToken(STATIC_TOKEN))
-    .with(rest());
+import { directus } from '@conexiones/directus.js';
 
 export const GET: APIRoute = ({ redirect }) => {
     return redirect('/cliente/registro');
@@ -46,7 +39,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // 🔒 SEGURIDAD: Verificar que el email no pertenezca a un vendedor
         // Los vendedores SOLO se administran desde Directus, nunca desde el registro público
-        const existingVendedor = await directusClient.request(readItems('vendedores', {
+        const existingVendedor = await directus.request(readItems('vendedores', {
             filter: { email: { _eq: email.toLowerCase() } },
             limit: 1
         }));
@@ -59,7 +52,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         // 1. Verificar si el usuario ya existe en clientes
-        const existing = await directusClient.request(readItems('clientes', {
+        const existing = await directus.request(readItems('clientes', {
             filter: { email: { _eq: email.toLowerCase() } }
         }));
 
@@ -71,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
 
         // 2. Generar Número de Cliente (ALV-XXXX)
-        const lastClient = await directusClient.request(readItems('clientes', {
+        const lastClient = await directus.request(readItems('clientes', {
             sort: ['-id'],
             limit: 1,
             fields: ['client_number']
@@ -93,7 +86,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (!assignedSellerId || assignedSellerId === 'auto') {
             try {
                 // Obtener todos los vendedores
-                const allSellers = await directusClient.request(readItems('vendedores', {
+                const allSellers = await directus.request(readItems('vendedores', {
                     fields: ['id', 'name']
                 }));
                 
@@ -110,7 +103,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         console.log(`[Register] Creating client: ${email} (${client_number}) - Seller: ${assignedSellerId}`);
         
         try {
-            const newClient = await directusClient.request(createItem('clientes', {
+            const newClient = await directus.request(createItem('clientes', {
                 name,
                 email: email.toLowerCase().trim(),
                 phone: phone ? phone.replace(/\D/g, '') : '',
