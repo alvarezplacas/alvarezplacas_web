@@ -54,7 +54,10 @@ export default defineConfig({
       }
     },
     build: {
-      cssMinify: 'lightningcss'
+      cssMinify: 'lightningcss',
+      rollupOptions: {
+        external: ['imapflow']
+      }
     },
     ssr: {
       external: ['pg', 'imapflow']
