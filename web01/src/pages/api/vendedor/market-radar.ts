@@ -38,9 +38,9 @@ export const GET: APIRoute = async ({ request, cookies }) => {
                     const result = data.chart.result[0];
                     const meta = result.meta;
                     const price = meta.regularMarketPrice;
-                    const prevClose = meta.previousClose;
+                    const prevClose = meta.chartPreviousClose;
                     const change = price - prevClose;
-                    const changePercent = (change / prevClose) * 100;
+                    const changePercent = prevClose ? (change / prevClose) * 100 : 0;
 
                     return { price, change, changePercent };
                 }
