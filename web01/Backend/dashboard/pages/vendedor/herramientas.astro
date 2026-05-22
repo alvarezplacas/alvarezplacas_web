@@ -1,0 +1,686 @@
+---
+import CajeroWorkspace from '../../layouts/CajeroWorkspace.astro';
+import { directus, readItems } from '@conexiones/directus.js';
+
+let sellerId = Astro.cookies.get('seller_session')?.value;
+
+// Verificar que el usuario tiene acceso
+if (!sellerId) {
+    return Astro.redirect('/vendedor/login');
+}
+---
+
+<CajeroWorkspace title="Herramientas Financieras" vendedor_id={sellerId}>
+    <!-- TABS NAV -->
+    <div class="caja-tab-nav">
+        <button class="ctab active" data-ctab="financiacion">
+            <i class="fas fa-credit-card"></i> Financiación
+        </button>
+        <button class="ctab" data-ctab="placas">
+            <i class="fas fa-border-all"></i> Rendimiento Placas
+        </button>
+        <button class="ctab" data-ctab="facturacion">
+            <i class="fas fa-file-invoice"></i> Facturación (IVA)
+        </button>
+        <button class="ctab" data-ctab="margen">
+            <i class="fas fa-chart-line"></i> Margen Avanzado
+        </button>
+        <button class="ctab" data-ctab="ayuda" style="margin-left:auto; border-color:#3d79bf; color:#3b82f6;">
+            <i class="fas fa-question-circle"></i> Manual de Ayuda
+        </button>
+    </div>
+
+    <div x-data="herramientasData()">
+        
+        <!-- ============================================== -->
+        <!-- 1. FINANCIACIÓN -->
+        <!-- ============================================== -->
+        <div class="ctab-panel active" id="panel-financiacion">
+            <div class="tool-layout">
+                <div class="tool-card">
+                    <div class="card-header">
+                        <i class="fas fa-calculator" style="color:#10b981;"></i>
+                        <h3>Simulador de Financiación</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Monto Base a Cobrar ($)</label>
+                            <input type="number" class="ps-input text-large" x-model.number="fin_montoBase" @input="calcFinanciacion" placeholder="0.00" />
+                        </div>
+                        <div class="form-row" style="margin-top:15px;">
+                            <div class="form-group">
+                                <label>Descuento Efectivo (%)</label>
+                                <input type="number" class="ps-input" x-model.number="fin_descEfectivo" @input="calcFinanciacion" />
+                            </div>
+                            <div class="form-group">
+                                <label>Recargo Débito/Transf. (%)</label>
+                                <input type="number" class="ps-input" x-model.number="fin_recargoDebito" @input="calcFinanciacion" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tool-result-card">
+                    <div class="card-header">
+                        <i class="fas fa-list-ul" style="color:#3b82f6;"></i>
+                        <h3>Opciones de Pago para el Cliente</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="caja-table">
+                            <thead>
+                                <tr>
+                                    <th>Medio de Pago</th>
+                                    <th>Detalle</th>
+                                    <th class="text-right">Total Final</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Efectivo Billete</strong></td>
+                                    <td x-text="`- ${fin_descEfectivo}% Descuento`"></td>
+                                    <td class="text-right text-success fw-bold" x-text="fmt(fin_resEfectivo)"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Transferencia / Débito</strong></td>
+                                    <td x-text="fin_recargoDebito > 0 ? `+ ${fin_recargoDebito}% Recargo` : 'Sin recargo'"></td>
+                                    <td class="text-right fw-bold" x-text="fmt(fin_resDebito)"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tarjeta de Crédito (1 Pago)</strong></td>
+                                    <td>+ 8% Recargo Base</td>
+                                    <td class="text-right fw-bold" x-text="fmt(fin_resCredito1)"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tarjeta (3 Cuotas)</strong></td>
+                                    <td>+ 15% Recargo -> <span class="text-warning" x-text="`3 x ${fmt(fin_resCredito3 / 3)}`"></span></td>
+                                    <td class="text-right fw-bold" x-text="fmt(fin_resCredito3)"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tarjeta (6 Cuotas)</strong></td>
+                                    <td>+ 25% Recargo -> <span class="text-warning" x-text="`6 x ${fmt(fin_resCredito6 / 6)}`"></span></td>
+                                    <td class="text-right fw-bold" x-text="fmt(fin_resCredito6)"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tarjeta (12 Cuotas)</strong></td>
+                                    <td>+ 40% Recargo -> <span class="text-warning" x-text="`12 x ${fmt(fin_resCredito12 / 12)}`"></span></td>
+                                    <td class="text-right fw-bold" x-text="fmt(fin_resCredito12)"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 2. RENDIMIENTO PLACAS -->
+        <!-- ============================================== -->
+        <div class="ctab-panel hidden" id="panel-placas">
+            <div class="tool-layout">
+                <div class="tool-card">
+                    <div class="card-header">
+                        <i class="fas fa-border-all" style="color:#f59e0b;"></i>
+                        <h3>Calculadora de Rendimiento</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Metros Cuadrados Requeridos (m²)</label>
+                                <input type="number" class="ps-input text-large" x-model.number="pla_m2" @input="calcPlacas" placeholder="Ej: 15" />
+                            </div>
+                            <div class="form-group">
+                                <label>Desperdicio Estimado por Corte (%)</label>
+                                <input type="number" class="ps-input" x-model.number="pla_desperdicio" @input="calcPlacas" />
+                            </div>
+                        </div>
+                        <div class="form-row" style="margin-top:15px;">
+                            <div class="form-group">
+                                <label>Tamaño de Placa (Ancho en mts)</label>
+                                <input type="number" class="ps-input" x-model.number="pla_ancho" @input="calcPlacas" step="0.01" />
+                            </div>
+                            <div class="form-group">
+                                <label>Tamaño de Placa (Largo en mts)</label>
+                                <input type="number" class="ps-input" x-model.number="pla_largo" @input="calcPlacas" step="0.01" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tool-result-card">
+                    <div class="card-header">
+                        <i class="fas fa-box-open" style="color:#8b5cf6;"></i>
+                        <h3>Materiales Recomendados (Cross-Selling)</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="kpi-row" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
+                            <div class="kpi-card" style="background:#2d2d2d; border-color:#f59e0b;">
+                                <div class="kpi-info" style="align-items:center; width:100%;">
+                                    <span class="kpi-label">Placas Enteras a Vender</span>
+                                    <span class="kpi-value text-warning" style="font-size:32px;" x-text="pla_cantidadPlacas">0</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card" style="background:#2d2d2d;">
+                                <div class="kpi-info" style="align-items:center; width:100%;">
+                                    <span class="kpi-label">m² Totales a Entregar (con desp.)</span>
+                                    <span class="kpi-value" x-text="pla_m2Total.toFixed(2) + ' m²'">0 m²</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="font-size:11px; color:#888; text-transform:uppercase; margin-bottom:10px; font-weight:700;">Sugerencias para el Cliente:</p>
+                        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; font-size:13px; color:#ccc;">
+                            <li style="display:flex; justify-content:space-between; background:#1a1a1a; padding:10px; border-radius:6px; border:1px solid #333;">
+                                <span><i class="fas fa-tape" style="color:#3b82f6; margin-right:8px;"></i> Tapacantos (ml estimados):</span>
+                                <strong x-text="Math.ceil(pla_cantidadPlacas * 10) + ' ml'">0 ml</strong>
+                            </li>
+                            <li style="display:flex; justify-content:space-between; background:#1a1a1a; padding:10px; border-radius:6px; border:1px solid #333;">
+                                <span><i class="fas fa-fill-drip" style="color:#ef4444; margin-right:8px;"></i> Pegamento de contacto:</span>
+                                <strong x-text="Math.ceil(pla_cantidadPlacas * 0.5) + ' Lts'">0 Lts</strong>
+                            </li>
+                            <li style="display:flex; justify-content:space-between; background:#1a1a1a; padding:10px; border-radius:6px; border:1px solid #333;">
+                                <span><i class="fas fa-screwdriver" style="color:#10b981; margin-right:8px;"></i> Tornillos autoperforantes:</span>
+                                <strong x-text="(pla_cantidadPlacas * 50) + ' un.'">0 un.</strong>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 3. FACTURACIÓN INVERSA (IVA) -->
+        <!-- ============================================== -->
+        <div class="ctab-panel hidden" id="panel-facturacion">
+            <div class="tool-layout">
+                <div class="tool-card">
+                    <div class="card-header">
+                        <i class="fas fa-file-invoice" style="color:#3b82f6;"></i>
+                        <h3>Calculadora de IVA y Retenciones</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Monto a Procesar ($)</label>
+                            <input type="number" class="ps-input text-large" x-model.number="fac_monto" @input="calcFacturacion" placeholder="0.00" />
+                        </div>
+                        <div class="form-row" style="margin-top:15px;">
+                            <div class="form-group">
+                                <label>Alícuota IVA (%)</label>
+                                <select class="ps-input" x-model.number="fac_iva" @change="calcFacturacion">
+                                    <option value="21">21.0% (General)</option>
+                                    <option value="10.5">10.5% (Reducido)</option>
+                                    <option value="0">0.0% (Exento)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Percepciones / IIBB (%)</label>
+                                <input type="number" class="ps-input" x-model.number="fac_percepciones" @input="calcFacturacion" step="0.1" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tool-result-card">
+                    <div class="card-header">
+                        <i class="fas fa-exchange-alt" style="color:#10b981;"></i>
+                        <h3>Resultados Bidireccionales</h3>
+                    </div>
+                    <div class="card-body">
+                        <p style="font-size:11px; color:#888; text-transform:uppercase; margin-bottom:10px; font-weight:700;">Si el monto ingresado es NETO (Base):</p>
+                        <table class="caja-table" style="margin-bottom:20px;">
+                            <tbody>
+                                <tr><td>Monto Neto (Base)</td><td class="text-right" x-text="fmt(fac_monto)"></td></tr>
+                                <tr><td x-text="`+ IVA (${fac_iva}%)`"></td><td class="text-right text-warning" x-text="fmt(fac_ivaAdd)"></td></tr>
+                                <tr><td x-text="`+ Percepciones (${fac_percepciones}%)`"></td><td class="text-right text-warning" x-text="fmt(fac_percAdd)"></td></tr>
+                                <tr style="background:#2a2a2a;"><td><strong>Total a Facturar (Bruto)</strong></td><td class="text-right text-success fw-bold" style="font-size:16px;" x-text="fmt(fac_totalAdd)"></td></tr>
+                            </tbody>
+                        </table>
+
+                        <p style="font-size:11px; color:#888; text-transform:uppercase; margin-bottom:10px; font-weight:700;">Si el monto ingresado es FINAL (Facturado):</p>
+                        <table class="caja-table">
+                            <tbody>
+                                <tr><td>Total Facturado (Bruto)</td><td class="text-right" x-text="fmt(fac_monto)"></td></tr>
+                                <tr><td x-text="`- Percepciones Inversas`"></td><td class="text-right text-danger" x-text="fmt(fac_percSub)"></td></tr>
+                                <tr><td x-text="`- IVA Inverso`"></td><td class="text-right text-danger" x-text="fmt(fac_ivaSub)"></td></tr>
+                                <tr style="background:#2a2a2a;"><td><strong>Monto Neto de Bolsillo</strong></td><td class="text-right text-info fw-bold" style="font-size:16px;" x-text="fmt(fac_totalSub)"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 4. MARGEN AVANZADO -->
+        <!-- ============================================== -->
+        <div class="ctab-panel hidden" id="panel-margen">
+            <div class="tool-layout">
+                <div class="tool-card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line" style="color:#ef4444;"></i>
+                        <h3>Cálculo de Rentabilidad y Precios</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Costo Proveedor ($)</label>
+                                <input type="number" class="ps-input" x-model.number="mar_costo" @input="calcMargen" placeholder="0.00" />
+                            </div>
+                            <div class="form-group">
+                                <label>Costos Extra (Flete, etc) ($)</label>
+                                <input type="number" class="ps-input" x-model.number="mar_extra" @input="calcMargen" placeholder="0.00" />
+                            </div>
+                        </div>
+
+                        <hr style="border-color:#333; margin:20px 0;">
+
+                        <p style="font-size:11px; color:#888; margin-bottom:10px; text-transform:uppercase;">Elegí el modo de cálculo:</p>
+                        
+                        <div style="background:#1a1a1a; border:1px solid #333; padding:15px; border-radius:8px; margin-bottom:15px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#ccc;">
+                                <input type="radio" name="mar_mode" value="set_price" x-model="mar_mode" @change="calcMargen">
+                                Modo 1: Tengo el Precio de Venta
+                            </label>
+                            <div class="form-group" style="margin-top:10px;">
+                                <input type="number" class="ps-input" x-model.number="mar_precioVenta" @input="calcMargen" placeholder="Precio de Venta final..." :disabled="mar_mode !== 'set_price'" />
+                            </div>
+                        </div>
+
+                        <div style="background:#1a1a1a; border:1px solid #333; padding:15px; border-radius:8px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#ccc;">
+                                <input type="radio" name="mar_mode" value="set_margin" x-model="mar_mode" @change="calcMargen">
+                                Modo 2: Quiero aplicar un Margen (%)
+                            </label>
+                            <div class="form-group" style="margin-top:10px;">
+                                <input type="number" class="ps-input" x-model.number="mar_margenObjetivo" @input="calcMargen" placeholder="Ej: 30 para ganar el 30%..." :disabled="mar_mode !== 'set_margin'" />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="tool-result-card">
+                    <div class="card-header">
+                        <i class="fas fa-bullseye" style="color:#10b981;"></i>
+                        <h3>Análisis de Rentabilidad</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="kpi-row" style="grid-template-columns: 1fr; margin-bottom: 15px;">
+                            <div class="kpi-card" style="background:#2d2d2d; border-color:#10b981; justify-content:center; text-align:center;">
+                                <div class="kpi-info" style="align-items:center; width:100%;">
+                                    <span class="kpi-label">Precio de Venta Sugerido / Actual</span>
+                                    <span class="kpi-value text-success" style="font-size:38px;" x-text="fmt(mar_precioFinal)">$ 0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table class="caja-table">
+                            <tbody>
+                                <tr>
+                                    <td>Costo Total (Producto + Extras)</td>
+                                    <td class="text-right" x-text="fmt(mar_costoTotal)"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ganancia Neta (Bolsillo)</strong></td>
+                                    <td class="text-right text-info fw-bold" x-text="fmt(mar_ganancia)"></td>
+                                </tr>
+                                <tr style="background:#2a2a2a;">
+                                    <td>
+                                        <strong>Margen Bruto Real</strong><br>
+                                        <span style="font-size:9px; color:#888;">(Ganancia sobre Precio Venta)</span>
+                                    </td>
+                                    <td class="text-right text-warning fw-bold" style="font-size:18px;" x-text="mar_margenReal + '%'"></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Markup (Remarcación)</strong><br>
+                                        <span style="font-size:9px; color:#888;">(Recargo sobre el Costo)</span>
+                                    </td>
+                                    <td class="text-right" x-text="mar_markup + '%'"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 5. AYUDA / MANUAL -->
+        <!-- ============================================== -->
+        <div class="ctab-panel hidden" id="panel-ayuda">
+            <div style="background:#252525; border:1px solid #383838; border-radius:8px; padding:30px; max-width:800px; margin:0 auto;">
+                <h2 style="color:#fff; margin-bottom:20px; font-size:22px;"><i class="fas fa-book-open" style="color:#3b82f6; margin-right:10px;"></i> Manual de Ayuda - Herramientas Financieras</h2>
+                
+                <div style="margin-bottom:25px;">
+                    <h3 style="color:#10b981; font-size:16px; margin-bottom:10px;"><i class="fas fa-credit-card"></i> 1. Simulador de Financiación</h3>
+                    <p style="color:#bbb; font-size:13px; line-height:1.6; margin-bottom:10px;">Esta herramienta te permite cerrar ventas rápidamente mostrándole al cliente todas las opciones de pago. Ingresá el monto de lista y verás automáticamente:</p>
+                    <ul style="color:#888; font-size:12px; margin-left:20px; line-height:1.5;">
+                        <li><strong>Efectivo:</strong> Aplica el descuento parametrizado.</li>
+                        <li><strong>Transferencia:</strong> Calcula si hay recargos por impuestos al cheque/débito.</li>
+                        <li><strong>Tarjetas:</strong> Muestra el recargo total y el <strong>valor exacto de cada cuota</strong> para planes de 3, 6 y 12 cuotas.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:25px;">
+                    <h3 style="color:#f59e0b; font-size:16px; margin-bottom:10px;"><i class="fas fa-border-all"></i> 2. Rendimiento de Placas</h3>
+                    <p style="color:#bbb; font-size:13px; line-height:1.6; margin-bottom:10px;">Ideal para cuando el cliente viene con los metros cuadrados que necesita cubrir pero no sabe cuántas placas enteras llevar.</p>
+                    <ul style="color:#888; font-size:12px; margin-left:20px; line-height:1.5;">
+                        <li>Calcula la cantidad de placas enteras basándose en la medida estándar (1.83x2.75m por defecto).</li>
+                        <li>Agrega un porcentaje de desperdicio por cortes (ej: 15%).</li>
+                        <li><strong>Cross-Selling:</strong> Te sugiere automáticamente la cantidad de metros de tapacanto, litros de pegamento y tornillos que el cliente necesitará para esa cantidad de placas. ¡Ofrécelos para subir el ticket!</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:25px;">
+                    <h3 style="color:#3b82f6; font-size:16px; margin-bottom:10px;"><i class="fas fa-file-invoice"></i> 3. Facturación (IVA)</h3>
+                    <p style="color:#bbb; font-size:13px; line-height:1.6; margin-bottom:10px;">Resuelve los típicos problemas de facturación de mostrador. Funciona en dos direcciones:</p>
+                    <ul style="color:#888; font-size:12px; margin-left:20px; line-height:1.5;">
+                        <li><strong>Si el cliente pide precio Neto:</strong> Mirá la tabla de arriba. Le suma el 21% y percepciones para darte el total a facturar.</li>
+                        <li><strong>Si el cliente te da un presupuesto Final cerrado:</strong> Mirá la tabla de abajo. Le "quita" el IVA y percepciones para que sepas cuánto dinero limpio queda en la caja.</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom:25px;">
+                    <h3 style="color:#ef4444; font-size:16px; margin-bottom:10px;"><i class="fas fa-chart-line"></i> 4. Margen Avanzado</h3>
+                    <p style="color:#bbb; font-size:13px; line-height:1.6; margin-bottom:10px;">Usa esta calculadora para decidir precios de venta o analizar si un descuento es viable. Diferencia conceptos clave:</p>
+                    <ul style="color:#888; font-size:12px; margin-left:20px; line-height:1.5;">
+                        <li><strong>Margen Bruto (%):</strong> Cuánto de la venta total te queda como ganancia pura. (Ej: Si vendo a $100 y gano $30, el margen es 30%).</li>
+                        <li><strong>Markup (%):</strong> Cuánto le recargaste al costo. (Ej: Si cuesta $70 y le recargo 42.8%, el precio es $100).</li>
+                        <li>Puedes fijar un precio para ver qué margen te deja, o fijar el margen que quieres ganar para que te calcule el precio sugerido.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</CajeroWorkspace>
+
+<style>
+    /* === TABS NAV === */
+    .caja-tab-nav {
+        display: flex;
+        gap: 4px;
+        padding: 0 0 16px 0;
+        border-bottom: 1px solid #383838;
+        margin-bottom: 20px;
+    }
+
+    .ctab {
+        background: #252525;
+        color: #888;
+        border: 1px solid #383838;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .ctab:hover { background: #2d2d2d; color: #ccc; }
+    .ctab.active {
+        background: #2e609c;
+        color: #fff;
+        border-color: #3d79bf;
+    }
+
+    /* === PANELS === */
+    .ctab-panel { display: block; animation: fadeIn 0.3s ease; }
+    .ctab-panel.hidden { display: none !important; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === LAYOUT & CARDS === */
+    .tool-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .tool-card, .tool-result-card {
+        background: #252525;
+        border: 1px solid #383838;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #383838;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #2a2a2a;
+    }
+
+    .card-header h3 { color: #ccc; font-size: 14px; font-weight: 600; flex: 1; }
+    .card-header i { font-size: 16px; }
+
+    .card-body { padding: 20px; }
+    .card-body.p-0 { padding: 0; }
+
+    /* === FORMS === */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    
+    .ps-input {
+        background: #1e1e1e;
+        border: 1px solid #444;
+        color: #fff;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 14px;
+        outline: none;
+        width: 100%;
+        transition: all 0.2s;
+    }
+    .ps-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+    .ps-input:disabled { background: #111; color: #555; border-color: #222; cursor: not-allowed; }
+    
+    .ps-input.text-large {
+        font-size: 20px;
+        font-weight: 700;
+        padding: 12px 15px;
+        color: #3b82f6;
+    }
+
+    /* === TABLE === */
+    .caja-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .caja-table thead th {
+        background: #1e1e1e;
+        color: #888;
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 1px solid #383838;
+        text-transform: uppercase;
+        font-size: 11px;
+    }
+    .caja-table tbody td {
+        padding: 12px 16px;
+        color: #ccc;
+        border-bottom: 1px solid #2a2a2a;
+        vertical-align: middle;
+    }
+    .caja-table tbody tr:last-child td { border-bottom: none; }
+    .text-right { text-align: right; }
+    .fw-bold { font-weight: 700; }
+    .text-success { color: #10b981; }
+    .text-warning { color: #f59e0b; }
+    .text-danger { color: #ef4444; }
+    .text-info { color: #3b82f6; }
+
+    /* === KPIs === */
+    .kpi-row { display: grid; gap: 12px; }
+    .kpi-card {
+        background: #252525;
+        border: 1px solid #383838;
+        border-radius: 8px;
+        padding: 14px 16px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    .kpi-info { display: flex; flex-direction: column; }
+    .kpi-label { font-size: 11px; color: #888; margin-bottom: 4px; text-transform: uppercase; font-weight:600;}
+    .kpi-value { font-size: 20px; font-weight: 700; color: #fff; font-family: 'Roboto Mono', monospace; }
+</style>
+
+<script>
+    // Tab switching logic
+    document.querySelectorAll('.ctab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.ctab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.ctab-panel').forEach(p => p.classList.add('hidden'));
+            btn.classList.add('active');
+            const tabName = (btn as HTMLElement).dataset.ctab;
+            const panel = document.getElementById(`panel-${tabName}`);
+            if (panel) panel.classList.remove('hidden');
+        });
+    });
+
+    // Alpine.js Logic for Calculators
+    document.addEventListener('alpine:init', () => {
+        window.Alpine.data('herramientasData', () => ({
+            // Format helper
+            fmt(num) {
+                if(isNaN(num)) return '$ 0.00';
+                return '$ ' + parseFloat(num).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
+
+            // 1. Financiación
+            fin_montoBase: null,
+            fin_descEfectivo: 10,
+            fin_recargoDebito: 0,
+            
+            fin_resEfectivo: 0,
+            fin_resDebito: 0,
+            fin_resCredito1: 0,
+            fin_resCredito3: 0,
+            fin_resCredito6: 0,
+            fin_resCredito12: 0,
+
+            calcFinanciacion() {
+                const base = parseFloat(this.fin_montoBase) || 0;
+                this.fin_resEfectivo = base * (1 - (parseFloat(this.fin_descEfectivo)||0)/100);
+                this.fin_resDebito = base * (1 + (parseFloat(this.fin_recargoDebito)||0)/100);
+                this.fin_resCredito1 = base * 1.08;
+                this.fin_resCredito3 = base * 1.15;
+                this.fin_resCredito6 = base * 1.25;
+                this.fin_resCredito12 = base * 1.40;
+            },
+
+            // 2. Rendimiento Placas
+            pla_m2: null,
+            pla_desperdicio: 15,
+            pla_ancho: 1.83,
+            pla_largo: 2.75,
+            
+            pla_cantidadPlacas: 0,
+            pla_m2Total: 0,
+
+            calcPlacas() {
+                const m2Req = parseFloat(this.pla_m2) || 0;
+                const desp = parseFloat(this.pla_desperdicio) || 0;
+                const ancho = parseFloat(this.pla_ancho) || 0;
+                const largo = parseFloat(this.pla_largo) || 0;
+
+                if (ancho > 0 && largo > 0 && m2Req > 0) {
+                    const m2ConDesperdicio = m2Req * (1 + (desp/100));
+                    const areaPlaca = ancho * largo;
+                    this.pla_cantidadPlacas = Math.ceil(m2ConDesperdicio / areaPlaca);
+                    this.pla_m2Total = this.pla_cantidadPlacas * areaPlaca;
+                } else {
+                    this.pla_cantidadPlacas = 0;
+                    this.pla_m2Total = 0;
+                }
+            },
+
+            // 3. Facturación
+            fac_monto: null,
+            fac_iva: 21,
+            fac_percepciones: 3.5,
+
+            fac_ivaAdd: 0, fac_percAdd: 0, fac_totalAdd: 0,
+            fac_ivaSub: 0, fac_percSub: 0, fac_totalSub: 0,
+
+            calcFacturacion() {
+                const monto = parseFloat(this.fac_monto) || 0;
+                const ivaPct = parseFloat(this.fac_iva) || 0;
+                const percPct = parseFloat(this.fac_percepciones) || 0;
+
+                // Si es BASE (sumar impuestos)
+                this.fac_ivaAdd = monto * (ivaPct / 100);
+                this.fac_percAdd = monto * (percPct / 100);
+                this.fac_totalAdd = monto + this.fac_ivaAdd + this.fac_percAdd;
+
+                // Si es FINAL (restar impuestos) -> Final = Base * (1 + iva% + perc%)
+                // Base = Final / (1 + iva% + perc%)
+                const coeficiente = 1 + (ivaPct / 100) + (percPct / 100);
+                const baseReal = monto / coeficiente;
+                this.fac_totalSub = baseReal;
+                this.fac_ivaSub = baseReal * (ivaPct / 100);
+                this.fac_percSub = baseReal * (percPct / 100);
+            },
+
+            // 4. Margen Avanzado
+            mar_costo: null,
+            mar_extra: 0,
+            mar_mode: 'set_margin', // 'set_price' | 'set_margin'
+            mar_precioVenta: null,
+            mar_margenObjetivo: 30,
+
+            mar_costoTotal: 0,
+            mar_precioFinal: 0,
+            mar_ganancia: 0,
+            mar_margenReal: '0.00',
+            mar_markup: '0.00',
+
+            calcMargen() {
+                const costo = parseFloat(this.mar_costo) || 0;
+                const extra = parseFloat(this.mar_extra) || 0;
+                this.mar_costoTotal = costo + extra;
+
+                if (this.mar_costoTotal === 0) {
+                    this.mar_precioFinal = 0; this.mar_ganancia = 0; this.mar_margenReal = '0.00'; this.mar_markup = '0.00';
+                    return;
+                }
+
+                if (this.mar_mode === 'set_margin') {
+                    // Queremos un margen bruto del X%
+                    // Precio = Costo / (1 - Margen%)
+                    const margenObj = parseFloat(this.mar_margenObjetivo) || 0;
+                    if (margenObj >= 100) { this.mar_precioFinal = 0; return; } // Imposible
+                    this.mar_precioFinal = this.mar_costoTotal / (1 - (margenObj/100));
+                    this.mar_precioVenta = this.mar_precioFinal.toFixed(2);
+                } else {
+                    // Tenemos el precio de venta
+                    this.mar_precioFinal = parseFloat(this.mar_precioVenta) || 0;
+                }
+
+                // Calcular resultados
+                this.mar_ganancia = this.mar_precioFinal - this.mar_costoTotal;
+                
+                if (this.mar_precioFinal > 0) {
+                    this.mar_margenReal = ((this.mar_ganancia / this.mar_precioFinal) * 100).toFixed(2);
+                } else {
+                    this.mar_margenReal = '0.00';
+                }
+
+                this.mar_markup = ((this.mar_ganancia / this.mar_costoTotal) * 100).toFixed(2);
+            }
+        }));
+    });
+</script>
