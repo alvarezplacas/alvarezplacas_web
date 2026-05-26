@@ -856,7 +856,7 @@
                 const data = this.runSimulation();
                 const categories = data.map(d => d.mes);
                 const seriesVentas = data.map(d => parseFloat(d.ventasAcumuladas.toFixed(0)));
-                const seriesGastos = data.map(d => parseFloat(d.gastosAcumuladas.toFixed(0)));
+                const seriesGastos = data.map(d => parseFloat(d.gastosAcumulados.toFixed(0)));
                 const seriesNeto = data.map(d => parseFloat(d.netoAcumulado.toFixed(0)));
 
                 const options = {
@@ -910,7 +910,7 @@
                 const data = this.runSimulation();
                 
                 const seriesVentas = data.map(d => parseFloat(d.ventasAcumuladas.toFixed(0)));
-                const seriesGastos = data.map(d => parseFloat(d.gastosAcumuladas.toFixed(0)));
+                const seriesGastos = data.map(d => parseFloat(d.gastosAcumulados.toFixed(0)));
                 const seriesNeto = data.map(d => parseFloat(d.netoAcumulado.toFixed(0)));
                 const categories = data.map(d => d.mes);
 
