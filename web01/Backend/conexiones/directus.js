@@ -34,7 +34,7 @@ let finalUrl = URL_PUBLIC;
 if (typeof process !== 'undefined' && URL_INTERNAL) {
     // Si querés forzar el uso de la red interna de Docker, descomentá la línea de abajo.
     // Pero para máxima estabilidad, la URL pública es más segura si el DNS de Docker falla.
-    // finalUrl = URL_INTERNAL; 
+    finalUrl = URL_INTERNAL; 
 }
 
 const DIRECTUS_TOKEN = (typeof process !== 'undefined' && process.env?.DIRECTUS_TOKEN)
