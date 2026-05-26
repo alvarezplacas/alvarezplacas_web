@@ -273,14 +273,10 @@
                             </button>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-1 gap-2">
                             <div>
-                                <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Desde</label>
-                                <input type="date" x-model="fechaDesde" class="w-full bg-[#000] border border-white/10 rounded-xl px-2 py-2 text-white text-xs focus:border-blue-500 outline-none font-mono text-center" />
-                            </div>
-                            <div>
-                                <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Hasta</label>
-                                <input type="date" x-model="fechaHasta" class="w-full bg-[#000] border border-white/10 rounded-xl px-2 py-2 text-white text-xs focus:border-blue-500 outline-none font-mono text-center" />
+                                <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Fecha de Carga</label>
+                                <input type="date" x-model="fechaCarga" class="w-full bg-[#000] border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:border-blue-500 outline-none font-mono text-center font-bold" />
                             </div>
                         </div>
                         <div class="flex justify-between items-center text-xs bg-[#000]/40 p-2.5 rounded-xl border border-white/5 gap-2">
@@ -584,13 +580,15 @@
 
             recaudacion: 3700000,
             compraTotalReal: 2846151,
-            
-            fechaDesde: (() => {
-                const d = new Date();
-                d.setDate(d.getDate() - 30);
-                return d.toISOString().split('T')[0];
-            })(),
-            fechaHasta: new Date().toISOString().split('T')[0],
+            fechaCarga: new Date().toISOString().split('T')[0],
+            get fechaDesde() {
+                if (!this.fechaCarga) return '';
+                const parts = this.fechaCarga.split('-');
+                return `${parts[0]}-${parts[1]}-01`;
+            },
+            get fechaHasta() {
+                return this.fechaCarga || '';
+            },
             
             // Simulación variables
             mesesProyeccion: 12,
@@ -650,8 +648,7 @@
                 this.$watch('mesesProyeccion', () => this.updateChart());
                 this.$watch('crecimientoVentas', () => this.updateChart());
                 this.$watch('inflacionGastos', () => this.updateChart());
-                this.$watch('fechaDesde', () => { this.syncFromDailyOps(true, true); this.updateChart(); });
-                this.$watch('fechaHasta', () => { this.syncFromDailyOps(true, true); this.updateChart(); });
+                this.$watch('fechaCarga', () => { this.syncFromDailyOps(true, true); this.updateChart(); });
             },
 
             // Formula Getters Venta 1
@@ -930,9 +927,7 @@
 
                 let items = [];
                 try {
-                    const res = await fetch(`https://admin.alvarezplacas.com.ar/items/caja_movimientos?filter[fecha][_gte]=${this.fechaDesde}&filter[fecha][_lte]=${this.fechaHasta}&limit=5000`, {
-                        headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
-                    });
+                    const res = await fetch(`/api/caja/movimientos?fechaDesde=${this.fechaDesde}&fechaHasta=${this.fechaHasta}&limit=5000`);
                     if (res.ok) {
                         const data = await res.json();
                         items = data.data || [];
@@ -1023,9 +1018,7 @@
             async loadSavedProyecciones() {
                 let items = [];
                 try {
-                    const res = await fetch(`https://admin.alvarezplacas.com.ar/items/caja_proyecciones?limit=100&sort=-date_created`, {
-                        headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
-                    });
+                    const res = await fetch(`/api/caja/proyecciones?limit=100&sort=-date_created`);
                     if (res.ok) {
                         const data = await res.json();
                         items = data.data || [];
@@ -1148,22 +1141,20 @@
                     };
 
                     if (isEdit && tempId && !tempId.toString().startsWith('local_')) {
-                        // UPDATE in Directus
-                        res = await fetch(`https://admin.alvarezplacas.com.ar/items/caja_proyecciones/${tempId}`, {
+                        // UPDATE in server-side API
+                        res = await fetch(`/api/caja/proyecciones?id=${tempId}`, {
                             method: 'PATCH',
                             headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer alvarez-api-token-v16-2026`
+                                'Content-Type': 'application/json'
                             },
                             body: JSON.stringify(apiPayload)
                         });
                     } else {
-                        // CREATE in Directus
-                        res = await fetch('https://admin.alvarezplacas.com.ar/items/caja_proyecciones', {
+                        // CREATE in server-side API
+                        res = await fetch('/api/caja/proyecciones', {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer alvarez-api-token-v16-2026`
+                                'Content-Type': 'application/json'
                             },
                             body: JSON.stringify(apiPayload)
                         });
@@ -1224,8 +1215,7 @@
                 this.activeProyeccionId = proj.id;
                 this.nombreProyeccion = detalles.nombre || `Proyección ${proj.fecha}`;
                 
-                if (detalles.fechaDesde) this.fechaDesde = detalles.fechaDesde;
-                if (detalles.fechaHasta) this.fechaHasta = detalles.fechaHasta;
+                if (detalles.fechaHasta) this.fechaCarga = detalles.fechaHasta;
                 
                 this.ventaBlanco = detalles.ventaBlanco !== undefined ? detalles.ventaBlanco : proj.ventas_blanco;
                 this.ventaCorteBlanco = detalles.ventaCorteBlanco !== undefined ? detalles.ventaCorteBlanco : 0;
@@ -1276,9 +1266,8 @@
                 // Delete from Directus if synced/real ID
                 if (id && !id.toString().startsWith('local_')) {
                     try {
-                        const res = await fetch(`https://admin.alvarezplacas.com.ar/items/caja_proyecciones/${id}`, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+                        const res = await fetch(`/api/caja/proyecciones?id=${id}`, {
+                            method: 'DELETE'
                         });
                         if (res.ok) {
                             this.showToast('✓ Proyección eliminada correctamente de Directus y LocalStorage');

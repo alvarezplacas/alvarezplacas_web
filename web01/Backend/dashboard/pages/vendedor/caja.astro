@@ -314,26 +314,27 @@ try {
                 </div>
                 <div id="chart-ventas"></div>
             </div>
-        </div>
-    </div>
-
-    <!-- ============================ -->
+      <!-- ============================ -->
     <!-- SOLAPA 3: REPORTES HISTÓRICOS -->
     <!-- ============================ -->
     <div class="ctab-panel hidden" id="panel-historico">
 
         <div class="historico-controls">
-            <div class="form-row">
+            <div class="form-row" style="grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: flex-end;">
                 <div class="form-group">
-                    <label>Desde</label>
-                    <input type="date" id="hist-desde" class="ps-input" />
+                    <label>Fecha de Carga</label>
+                    <input type="date" id="hist-fecha-carga" class="ps-input" />
                 </div>
                 <div class="form-group">
-                    <label>Hasta</label>
-                    <input type="date" id="hist-hasta" class="ps-input" />
+                    <label>Frecuencia de Gastos</label>
+                    <select id="hist-agrupacion" class="ps-input">
+                        <option value="diario" selected>Diario (Mes Seleccionado)</option>
+                        <option value="mensual">Mensual (Año Seleccionado)</option>
+                        <option value="anual">Anual (Histórico)</option>
+                    </select>
                 </div>
-                <div class="form-group" style="align-self:flex-end;">
-                    <button class="btn-primary" id="btn-generar-reporte">
+                <div class="form-group">
+                    <button class="btn-primary" id="btn-generar-reporte" style="height: 38px;">
                         <i class="fas fa-search"></i> Generar Reporte
                     </button>
                 </div>
@@ -382,15 +383,25 @@ try {
 
         <div class="chart-card" id="hist-chart-card" style="display:none; margin-top:20px;">
             <div class="card-header">
-                <i class="fas fa-chart-line" style="color:#10b981;"></i>
-                <h3>Evolución de Ganancia Neta</h3>
+                <i class="fas fa-chart-line" style="color:#ef4444;"></i>
+                <h3 id="hist-chart-title">Evolución de Gastos (Egresos)</h3>
             </div>
             <div id="chart-historico"></div>
         </div>
         
+        <div class="chart-card" id="hist-egresos-card" style="display:none; margin-top:20px;">
+            <div class="card-header">
+                <i class="fas fa-list-ul" style="color:#ef4444;"></i>
+                <h3>Desglose Detallado de Egresos</h3>
+            </div>
+            <div id="hist-egresos-container" style="padding: 20px; max-height: 400px; overflow-y: auto;">
+                <!-- Cargando egresos... -->
+            </div>
+        </div>
+        
         <div id="hist-empty" style="display:flex; align-items:center; justify-content:center; height:300px; color:#888; flex-direction:column; gap:10px;">
             <i class="fas fa-filter" style="font-size:2rem; opacity:0.3;"></i>
-            <p>Selecciona un rango de fechas y presiona "Generar Reporte"</p>
+            <p>Selecciona una fecha de carga y presiona "Generar Reporte"</p>
         </div>
     </div>
 
@@ -793,11 +804,10 @@ try {
 
         // 2. Try POSTing to Directus
         try {
-            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos`, {
+            const res = await fetch(`/api/caja/movimientos`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer alvarez-api-token-v16-2026`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     id: payload.id,
@@ -867,9 +877,7 @@ try {
 
         // Try getting from Directus first
         try {
-            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos?filter[fecha][_eq]=${fecha}&sort=-date_created&limit=50`, {
-                headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
-            });
+            const res = await fetch(`/api/caja/movimientos?fecha=${fecha}&sort=-date_created&limit=50`);
             if (res.ok) {
                 const data = await res.json();
                 items = data.data || [];
@@ -938,9 +946,7 @@ try {
         let items: any[] = [];
 
         try {
-            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos?filter[fecha][_eq]=${fecha}&limit=1000`, {
-                headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
-            });
+            const res = await fetch(`/api/caja/movimientos?fecha=${fecha}&limit=1000`);
             if (res.ok) {
                 const data = await res.json();
                 items = data.data || [];
@@ -987,9 +993,8 @@ try {
         // Delete from Directus if synced/real ID
         if (!isLocalOnly) {
             try {
-                await fetch(`${DIRECTUS_URL}/items/caja_movimientos/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+                await fetch(`/api/caja/movimientos?id=${id}`, {
+                    method: 'DELETE'
                 });
             } catch(e) {
                 console.warn("Directus delete failed, item deleted locally only:", e);
@@ -1038,9 +1043,7 @@ try {
             let items: any[] = [];
 
             try {
-            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos?filter[fecha][_gte]=${desdeStr}&limit=1000&sort=fecha`, {
-                headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
-            });
+            const res = await fetch(`/api/caja/movimientos?fechaDesde=${desdeStr}&limit=1000&sort=fecha`);
             if (res.ok) {
                 const data = await res.json();
                 items = data.data || [];
@@ -1160,58 +1163,76 @@ try {
     let histChart: any = null;
 
     function initHistoricoDefaults() {
-        const hasta = new Date();
-        const desde = new Date();
-        desde.setMonth(desde.getMonth() - 6);
-        (document.getElementById('hist-hasta') as HTMLInputElement).value = toARDate(hasta);
-        (document.getElementById('hist-desde') as HTMLInputElement).value = toARDate(desde);
+        const el = document.getElementById('hist-fecha-carga') as HTMLInputElement;
+        if (el && !el.value) el.value = today();
     }
 
     document.getElementById('btn-generar-reporte')?.addEventListener('click', async () => {
         try {
-            const desde = (document.getElementById('hist-desde') as HTMLInputElement).value;
-            const hasta = (document.getElementById('hist-hasta') as HTMLInputElement).value;
-            if (!desde || !hasta) return;
+            const fechaCarga = (document.getElementById('hist-fecha-carga') as HTMLInputElement).value;
+            if (!fechaCarga) return;
+
+            const agrupacion = (document.getElementById('hist-agrupacion') as HTMLSelectElement).value;
+
+            const parts = fechaCarga.split('-');
+            const year = parts[0];
+            const month = parts[1];
+
+            let desde = '';
+            let hasta = '';
+
+            if (agrupacion === 'diario') {
+                desde = `${year}-${month}-01`;
+                hasta = fechaCarga;
+            } else if (agrupacion === 'mensual') {
+                desde = `${year}-01-01`;
+                hasta = `${year}-12-31`;
+            } else {
+                desde = `2024-01-01`;
+                hasta = `${year}-12-31`;
+            }
 
             document.getElementById('hist-empty')!.style.display = 'none';
-        document.getElementById('hist-kpis')!.style.display = 'grid';
-        document.getElementById('hist-chart-card')!.style.display = 'block';
+            document.getElementById('hist-kpis')!.style.display = 'grid';
+            document.getElementById('hist-chart-card')!.style.display = 'block';
 
-        let items: any[] = [];
-        try {
-            const res = await fetch(`${DIRECTUS_URL}/items/caja_movimientos?filter[fecha][_gte]=${desde}&filter[fecha][_lte]=${hasta}&limit=5000&sort=fecha`, {
-                headers: { 'Authorization': `Bearer alvarez-api-token-v16-2026` }
+            let items: any[] = [];
+            try {
+                const res = await fetch(`/api/caja/movimientos?fechaDesde=${desde}&fechaHasta=${hasta}&limit=5000&sort=fecha`);
+                if (res.ok) {
+                    const data = await res.json();
+                    items = data.data || [];
+                }
+            } catch(e) {
+                console.warn("Directus fetch failed for historical reports, loading local items only:", e);
+            }
+
+            // Merge from local storage
+            const localItems = getLocalMovimientos().filter(m => m.fecha >= desde && m.fecha <= hasta);
+            localItems.forEach(lm => {
+                const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
+                if (!exists) {
+                    items.push(lm);
+                }
             });
-            if (res.ok) {
-                const data = await res.json();
-                items = data.data || [];
-            }
-        } catch(e) {
-            console.warn("Directus fetch failed for historical reports, loading local items only:", e);
-        }
 
-        // Merge from local storage
-        const localItems = getLocalMovimientos().filter(m => m.fecha >= desde && m.fecha <= hasta);
-        localItems.forEach(lm => {
-            const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
-            if (!exists) {
-                items.push(lm);
-            }
-        });
+            // Sort items by date
+            items.sort((a, b) => a.fecha.localeCompare(b.fecha));
 
-        // Sort items by date
-        items.sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-        let totalIngresos = 0, totalEgresos = 0;
-            // Agrupación mensual para la línea temporal
+            let totalIngresos = 0, totalEgresos = 0;
             const byMonth: Record<string, {ingresos: number, egresos: number}> = {};
 
             items.forEach(m => {
-                const month = m.fecha.substring(0, 7);
-                if (!byMonth[month]) byMonth[month] = { ingresos: 0, egresos: 0 };
+                const mMonth = m.fecha.substring(0, 7);
+                if (!byMonth[mMonth]) byMonth[mMonth] = { ingresos: 0, egresos: 0 };
                 const monto = parseFloat(m.monto);
-                if (m.tipo === 'ingreso') { totalIngresos += monto; byMonth[month].ingresos += monto; }
-                else { totalEgresos += monto; byMonth[month].egresos += monto; }
+                if (m.tipo === 'ingreso') {
+                    totalIngresos += monto;
+                    byMonth[mMonth].ingresos += monto;
+                } else {
+                    totalEgresos += monto;
+                    byMonth[mMonth].egresos += monto;
+                }
             });
 
             const neto = totalIngresos - totalEgresos;
@@ -1222,27 +1243,198 @@ try {
             document.getElementById('hist-val-neto')!.style.color = neto >= 0 ? '#10b981' : '#ef4444';
             document.getElementById('hist-val-movs')!.textContent = items.length.toString();
 
-            const months = Object.keys(byMonth).sort();
-            const netoPorMes = months.map(m => parseFloat((byMonth[m].ingresos - byMonth[m].egresos).toFixed(2)));
+            // ========================
+            // LINE CHART: EXPENSES EVOLUTION (EGRESOS)
+            // ========================
+            const egresos = items.filter(m => m.tipo === 'egreso');
+            
+            // Set dynamic chart title and variables based on frequency selection
+            const titleEl = document.getElementById('hist-chart-title');
+            
+            let chartKeys: string[] = [];
+            let chartData: number[] = [];
+            let chartLabels: string[] = [];
+            let seriesName = '';
+
+            if (agrupacion === 'diario') {
+                if (titleEl) titleEl.textContent = `Evolución Diaria de Gastos (${month}/${year})`;
+                seriesName = 'Gastos Diarios';
+
+                const egresosByDate: Record<string, number> = {};
+                egresos.forEach(m => {
+                    const date = m.fecha;
+                    const monto = parseFloat(m.monto);
+                    egresosByDate[date] = (egresosByDate[date] || 0) + monto;
+                });
+
+                chartKeys = Object.keys(egresosByDate).sort();
+                chartData = chartKeys.map(k => parseFloat(egresosByDate[k].toFixed(2)));
+                chartLabels = chartKeys.map(fmtFecha);
+
+            } else if (agrupacion === 'mensual') {
+                if (titleEl) titleEl.textContent = `Evolución Mensual de Gastos (${year})`;
+                seriesName = 'Gastos Mensuales';
+
+                const egresosByMonth: Record<string, number> = {};
+                egresos.forEach(m => {
+                    const mMonth = m.fecha.substring(0, 7); // YYYY-MM
+                    const monto = parseFloat(m.monto);
+                    egresosByMonth[mMonth] = (egresosByMonth[mMonth] || 0) + monto;
+                });
+
+                chartKeys = Object.keys(egresosByMonth).sort();
+                chartData = chartKeys.map(k => parseFloat(egresosByMonth[k].toFixed(2)));
+                chartLabels = chartKeys.map(k => {
+                    const [y, mNum] = k.split('-');
+                    const monthsNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    return `${monthsNames[parseInt(mNum, 10) - 1]} ${y}`;
+                });
+
+            } else {
+                if (titleEl) titleEl.textContent = `Evolución Anual de Gastos (Histórico)`;
+                seriesName = 'Gastos Anuales';
+
+                const egresosByYear: Record<string, number> = {};
+                egresos.forEach(m => {
+                    const y = m.fecha.substring(0, 4); // YYYY
+                    const monto = parseFloat(m.monto);
+                    egresosByYear[y] = (egresosByYear[y] || 0) + monto;
+                });
+
+                chartKeys = Object.keys(egresosByYear).sort();
+                chartData = chartKeys.map(k => parseFloat(egresosByYear[k].toFixed(2)));
+                chartLabels = chartKeys;
+            }
 
             if (histChart) histChart.destroy();
             histChart = new ApexCharts(document.getElementById('chart-historico'), {
                 chart: { background: 'transparent', type: 'area', height: 300, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
                 theme: { mode: 'dark' },
-                series: [{ name: 'Ganancia Neta', data: netoPorMes }],
-                xaxis: { categories: months, labels: { style: { colors: '#888' } } },
+                series: [{ name: seriesName, data: chartData }],
+                xaxis: { categories: chartLabels, labels: { style: { colors: '#888' } } },
                 yaxis: { labels: { style: { colors: '#888' }, formatter: (v: number) => `$${v.toLocaleString('es-AR')}` } },
-                colors: ['#10b981'],
-                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
+                colors: ['#ef4444'], // Glowing red expenses line
+                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.02 } },
                 dataLabels: { enabled: false },
                 grid: { borderColor: '#383838' },
-                stroke: { curve: 'smooth', width: 2 },
+                stroke: { curve: 'smooth', width: 3 },
                 tooltip: { y: { formatter: (v: number) => fmt(v) } }
             });
             histChart.render();
+
+            // ========================
+            // DESGLOSE DE EGRESOS DETALLADO
+            // ========================
+            const container = document.getElementById('hist-egresos-container')!;
+            
+            if (egresos.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:#888; padding: 20px;">No se registraron egresos en el período seleccionado.</div>`;
+            } else {
+                const groups: Record<string, Record<string, any[]>> = {};
+
+                egresos.forEach(m => {
+                    const mMonth = m.fecha.substring(0, 7); // YYYY-MM
+                    const day = m.fecha; // YYYY-MM-DD
+                    const monto = parseFloat(m.monto);
+                    
+                    if (!groups[mMonth]) {
+                        groups[mMonth] = {};
+                    }
+                    if (!groups[mMonth][day]) {
+                        groups[mMonth][day] = [];
+                    }
+                    groups[mMonth][day].push({
+                        id: m.id,
+                        fecha: m.fecha,
+                        categoria: m.categoria,
+                        monto: monto,
+                        detalle: m.detalle || m.observaciones || 'Sin detalle'
+                    });
+                });
+
+                let html = '';
+                const sortedMonths = Object.keys(groups).sort();
+                
+                sortedMonths.forEach(mMonth => {
+                    const [y, monthNum] = mMonth.split('-');
+                    const monthNames = [
+                        'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+                        'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+                    ];
+                    const monthName = monthNames[parseInt(monthNum, 10) - 1] || 'MES';
+                    
+                    html += `
+                        <div class="month-group" style="margin-bottom: 24px;">
+                            <h4 style="color:#ffffff; font-size:13px; font-weight:700; border-bottom:1px solid #444; padding-bottom:6px; margin-bottom:12px; letter-spacing:0.5px; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
+                                <i class="fas fa-calendar-alt" style="color:#ef4444;"></i> ${monthName} ${y}
+                            </h4>
+                    `;
+                    
+                    const sortedDays = Object.keys(groups[mMonth]).sort();
+                    sortedDays.forEach(day => {
+                        const [,, dayNum] = day.split('-');
+                        const formattedDay = `${dayNum}/${monthNum}/${y}`;
+                        
+                        html += `
+                            <div class="day-group" style="margin-left: 12px; margin-bottom: 14px;">
+                                <h5 style="color:#a8a8a8; font-size:11px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
+                                    <i class="far fa-clock" style="color:#888;"></i> DÍA ${formattedDay}
+                                </h5>
+                                <ul style="list-style:none; padding-left:0; margin:0; display:flex; flex-direction:column; gap:8px;">
+                        `;
+                        
+                        groups[mMonth][day].forEach(eg => {
+                            const prettyCat = eg.categoria
+                                .replace(/_/g, ' ')
+                                .toUpperCase();
+                            
+                            html += `
+                                    <li style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#cccccc; background:rgba(255,255,255,0.02); padding:6px 10px; border-radius:4px; border-left:2px solid #ef4444; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
+                                        <span style="display:flex; align-items:center; gap:8px;">
+                                            <i class="fas fa-circle" style="color:#ef4444; font-size:6px;"></i>
+                                            <strong style="color:#f87171; font-size:10px; letter-spacing:0.3px;">[${prettyCat}]</strong>
+                                            <span>${eg.detalle}</span>
+                                        </span>
+                                        <span style="color:#ef4444; font-weight:600; font-family:'Roboto Mono', monospace;">-${fmt(eg.monto)}</span>
+                                    </li>
+                            `;
+                        });
+                        
+                        html += `
+                                </ul>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            }
+
+            document.getElementById('hist-egresos-card')!.style.display = 'block';
 
         } catch(e) {
             console.error("Error generating historical report:", e);
         }
     });
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
