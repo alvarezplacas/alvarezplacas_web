@@ -693,8 +693,8 @@
             get gananciaVentaNegro() { return currency(this.margenNegro).add(this.margenCorteNegro).add(this.margenPegadoNegro).value; },
 
             // Control Recaudacion y Compras Getters
-            get materiaPrimaBlanco() { return currency(this.ventaSinCorteBlanco).multiply(0.76923).value; },
-            get materiaPrimaNegro() { return currency(this.ventaSinCorteNegro).multiply(0.76923).value; },
+            get materiaPrimaBlanco() { return currency(this.ventaSinCorteBlanco).multiply(0.76923).divide(1.25).value; },
+            get materiaPrimaNegro() { return currency(this.ventaSinCorteNegro).multiply(0.76923).divide(1.105).value; },
             get materiaPrimaTotal() { return currency(this.materiaPrimaBlanco).add(this.materiaPrimaNegro).value; },
             get desvioDeCompra() { return currency(this.compraTotalReal).subtract(this.materiaPrimaTotal).value; },
             get recaudacionMenosVentas() { return currency(this.recaudacion).subtract(currency(this.ventaBlanco).add(this.ventaNegro).value).value; },
