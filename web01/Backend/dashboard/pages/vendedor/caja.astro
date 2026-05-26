@@ -759,8 +759,9 @@ try {
     // ========================
     const DIRECTUS_URL = 'https://admin.alvarezplacas.com.ar';
     
-    function fmt(num: number): string {
-        return '$ ' + num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function fmt(num: any): string {
+        const val = parseFloat(num) || 0;
+        return '$ ' + val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     function fmtFecha(fechaStr: string): string {
         if (!fechaStr) return '--';
