@@ -558,6 +558,29 @@
             </h4>
             <div id="chart-calculadora-comparativa" style="min-height: 280px; width: 100%;"></div>
  <script is:inline>
+    // Ultra-Robust CDN Fallbacks to prevent Alpine initialization crashes
+    if (typeof currency === 'undefined') {
+        window.currency = function(val) {
+            const value = parseFloat(val) || 0;
+            return {
+                value: value,
+                add: (x) => currency(value + (parseFloat(x && x.value !== undefined ? x.value : x) || 0)),
+                subtract: (x) => currency(value - (parseFloat(x && x.value !== undefined ? x.value : x) || 0)),
+                multiply: (x) => currency(value * (parseFloat(x && x.value !== undefined ? x.value : x) || 0)),
+                divide: (x) => currency(value / (parseFloat(x && x.value !== undefined ? x.value : x) || 1))
+            };
+        };
+    }
+    if (typeof ApexCharts === 'undefined') {
+        window.ApexCharts = class {
+            constructor() {}
+            render() {}
+            updateOptions() {}
+            updateSeries() {}
+            destroy() {}
+        };
+    }
+
     document.addEventListener('alpine:init', () => {
         Alpine.data('calculadora', () => ({
             // State variables

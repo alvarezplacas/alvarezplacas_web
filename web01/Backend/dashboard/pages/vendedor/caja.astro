@@ -676,6 +676,17 @@ try {
 </style>
 
 <script>
+    // Robust ApexCharts CDN Fallback
+    if (typeof window !== 'undefined' && typeof (window as any).ApexCharts === 'undefined') {
+        (window as any).ApexCharts = class {
+            constructor() {}
+            render() {}
+            updateOptions() {}
+            updateSeries() {}
+            destroy() {}
+        };
+    }
+
     // ========================
     // Tab switching logic
     // ========================
