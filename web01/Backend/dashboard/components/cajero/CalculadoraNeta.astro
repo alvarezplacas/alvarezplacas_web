@@ -581,7 +581,7 @@
         };
     }
 
-    document.addEventListener('alpine:init', () => {
+    const registerCalculadora = () => {
         Alpine.data('calculadora', () => ({
             // State variables
             isLiveSync: true,
@@ -1381,8 +1381,12 @@
                     data: data
                 }]);
             }
-        }));
-    });
+    };
+    if (typeof window.Alpine !== 'undefined') {
+        registerCalculadora();
+    } else {
+        document.addEventListener('alpine:init', registerCalculadora);
+    }
 </script>
 
 <style>
