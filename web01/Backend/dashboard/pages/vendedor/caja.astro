@@ -31,29 +31,7 @@ try {
 
 <CajeroWorkspace title="Caja" vendedor_id={sellerId}>
     
-    <!-- GLOBAL CLIENT-SIDE ERROR DEBUGGER -->
-    <script is:inline>
-        window.addEventListener('error', function(e) {
-            const errDiv = document.createElement('div');
-            errDiv.className = 'client-error-overlay';
-            errDiv.style.position = 'fixed';
-            errDiv.style.bottom = '20px';
-            errDiv.style.left = '20px';
-            errDiv.style.right = '20px';
-            errDiv.style.background = '#7f1d1d';
-            errDiv.style.color = '#fecaca';
-            errDiv.style.border = '2px solid #ef4444';
-            errDiv.style.padding = '20px';
-            errDiv.style.borderRadius = '12px';
-            errDiv.style.zIndex = '999999';
-            errDiv.style.fontFamily = 'monospace';
-            errDiv.style.fontSize = '12px';
-            errDiv.style.whiteSpace = 'pre-wrap';
-            errDiv.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.5)';
-            errDiv.textContent = '❌ ERROR DETECTADO EN PANTALLA:\n' + e.message + '\n\nUbicación:\n' + e.filename + ' [Línea: ' + e.lineno + ', Columna: ' + e.colno + ']\n\nStack Trace:\n' + (e.error ? e.error.stack : 'No disponible');
-            document.body.appendChild(errDiv);
-        });
-    </script>
+
     
     <!-- TABS NAV (dentro del canvas) -->
     <div class="caja-tab-nav">
