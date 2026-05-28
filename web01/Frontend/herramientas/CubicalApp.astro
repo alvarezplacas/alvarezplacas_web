@@ -1229,27 +1229,7 @@ const isLoggedIn = !!clientId;
                     carousel.scrollBy({ left: 344, behavior: 'smooth' });
                 });
                 
-                let autoScrollInterval = null;
-                const startAutoScroll = () => {
-                    autoScrollInterval = setInterval(() => {
-                        if (carousel.scrollLeft >= (carousel.scrollWidth - carousel.clientWidth - 5)) {
-                            carousel.scrollTo({ left: 0, behavior: 'smooth' });
-                        } else {
-                            carousel.scrollBy({ left: 1, behavior: 'auto' });
-                        }
-                    }, 40);
-                };
-                const stopAutoScroll = () => {
-                    if (autoScrollInterval) {
-                        clearInterval(autoScrollInterval);
-                        autoScrollInterval = null;
-                    }
-                };
-                startAutoScroll();
-                carousel.addEventListener('mouseenter', stopAutoScroll);
-                carousel.addEventListener('mouseleave', startAutoScroll);
-                carousel.addEventListener('touchstart', stopAutoScroll);
-                carousel.addEventListener('touchend', startAutoScroll);
+                // Auto-scroll eliminado porque entra en conflicto con CSS snap-x snap-mandatory
             }
 
             // Aplicar primer set de presets
