@@ -148,6 +148,7 @@ const isLoggedIn = !!clientId;
                             <option value="ALACENA">🪜 Alacena Superior</option>
                             <option value="BAJO_MESADA">🍽️ Bajo Mesada Cocina</option>
                             <option value="BIBLIOTECA">📚 Biblioteca Divisoria</option>
+                            <option value="ESCRITORIO">💻 Escritorio Trabajo</option>
                             <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
                         </select>
                     </div>
@@ -354,6 +355,7 @@ const isLoggedIn = !!clientId;
                             <option value="ALACENA">🪜 Alacena Superior</option>
                             <option value="BAJO_MESADA">🍽️ Bajo Mesada Cocina</option>
                             <option value="BIBLIOTECA">📚 Biblioteca Divisoria</option>
+                            <option value="ESCRITORIO">💻 Escritorio Trabajo</option>
                             <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
                         </select>
                     </div>
@@ -1517,6 +1519,9 @@ const isLoggedIn = !!clientId;
             } else if (type === 'BIBLIOTECA') {
                 shelvesInput.value = 4; drawersInput.value = 0; doorsInput.value = 0;
                 hInput.value = 1800; wInput.value = 800; pInput.value = 300;
+            } else if (type === 'ESCRITORIO') {
+                shelvesInput.value = 0; drawersInput.value = 4; doorsInput.value = 0;
+                hInput.value = 750; wInput.value = 1200; pInput.value = 600;
             } else {
                 shelvesInput.value = 0; drawersInput.value = 0; drawersInput.value = 0;
             }

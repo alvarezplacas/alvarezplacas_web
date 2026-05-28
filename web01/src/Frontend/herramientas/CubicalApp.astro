@@ -148,6 +148,7 @@ const isLoggedIn = !!clientId;
                             <option value="ALACENA">🪜 Alacena Superior</option>
                             <option value="BAJO_MESADA">🍽️ Bajo Mesada Cocina</option>
                             <option value="BIBLIOTECA">📚 Biblioteca Divisoria</option>
+                            <option value="ESCRITORIO">💻 Escritorio Trabajo</option>
                             <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
                         </select>
                     </div>
@@ -354,6 +355,7 @@ const isLoggedIn = !!clientId;
                             <option value="ALACENA">🪜 Alacena Superior</option>
                             <option value="BAJO_MESADA">🍽️ Bajo Mesada Cocina</option>
                             <option value="BIBLIOTECA">📚 Biblioteca Divisoria</option>
+                            <option value="ESCRITORIO">💻 Escritorio Trabajo</option>
                             <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
                         </select>
                     </div>
@@ -502,6 +504,17 @@ const isLoggedIn = !!clientId;
                         <button onclick="window.cubical.showConstructor()" class="px-8 py-5 bg-[var(--sc-surface)] border border-[var(--sc-border)] text-[var(--sc-text)] rounded font-black hover:bg-[var(--sc-surface-alt)] transition-all uppercase text-xs cursor-pointer">RE-EDITAR PLANO</button>
                     </div>
                 </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- INFORME DE ENSAMBLAJE (FULL WIDTH) -->
+        <div class="mt-8 bg-[var(--sc-surface)] border border-[var(--sc-border)] p-10 rounded-xl shadow-sm">
+            <h3 class="text-2xl font-black mb-6 uppercase italic text-[var(--sc-text)] flex items-center gap-3">
+                <i class="fas fa-tools text-[var(--alvarez-red)]"></i> INFORME DE ENSAMBLAJE PASO A PASO
+            </h3>
+            <div id="res-assembly-guide" class="space-y-4 text-sm text-[var(--sc-text-dim)]">
+                <!-- Dinámico -->
             </div>
         </div>
     </section>
@@ -998,17 +1011,69 @@ const isLoggedIn = !!clientId;
             const drawerFill = palette ? palette.drawerColor : (isDark ? '#3a3a3a' : '#e5e1d7');
             const doorFill   = palette ? palette.doorColor : (isDark ? '#3d3d3d' : '#ede9df');
             
+            if (opts.type === 'ESCRITORIO') {
+                // 1. TAPA SUPERIOR
+                this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top');
+                // 2. LATERAL IZQUIERDO
+                this.addBoxFaces(offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'left-side');
+                // 3. CAJONERA DERECHA (ancho 400)
+                this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side');
+                this.addBoxFaces(width - 400 + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'divider');
+                this.addBoxFaces(width - 400 + t + offsetX, 0, 0, 400 - 2 * t, t, depth, baseFill, lineColor, 'base-cajonera');
+                // 4. FALDÓN TRASERO
+                this.addBoxFaces(t + offsetX, height - t - 300, depth - t, width - 400 - t, 300, t, baseFill, lineColor, 'faldon');
+                // 5. BANDEJA TECLADO
+                this.addBoxFaces(t + 13 + offsetX, height - t - 100, 20, width - 400 - t - 26, t, depth - 40, shelfFill, lineColor, 'bandeja');
+                
+                // 6. CAJONES (en espacio de cajonera)
+                if (drawers > 0) {
+                    const hDisponible = height - t - t; // alto menos techo y piso
+                    const hSpace = hDisponible / drawers;
+                    for (let i = 0; i < drawers; i++) {
+                        const yBottom = t + (i * hSpace);
+                        this.addBoxFaces(width - 400 + t + 3 + offsetX, yBottom + 3, 0, 400 - 2*t - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer');
+                        const tcX = width - 400 + t + (400 - 2*t)/2 + offsetX;
+                        const tcY = yBottom + hSpace / 2;
+                        this.addBoxFaces(tcX - 45, tcY - 5, -10, 90, 10, 10, '#cccccc', lineColor, 'handle');
+                    }
+                }
+                
+                // Ordenar caras y renderizar (mismo proceso)
+                this.allFaces.sort((a, b) => b.avgZ - a.avgZ);
+                const _Lx = 0.45, _Ly = 0.75, _Lz = -0.48;
+                const _Ll = Math.sqrt(_Lx*_Lx + _Ly*_Ly + _Lz*_Lz);
+                const light = { x: _Lx/_Ll, y: _Ly/_Ll, z: _Lz/_Ll };
+                const ambient = 0.32;
+                ctx.lineWidth = 0.8; ctx.lineJoin = 'round'; ctx.lineCap  = 'round';
+                this.allFaces.forEach(f => {
+                    const rn = this.rotateNormal(f.normal.x, f.normal.y, f.normal.z);
+                    if (rn.z > 0.025) return;
+                    const diffuse = Math.max(0, rn.x*light.x + rn.y*light.y + rn.z*light.z);
+                    const lightLevel = ambient + (1 - ambient) * diffuse;
+                    ctx.beginPath(); ctx.moveTo(f.pts[0].x, f.pts[0].y);
+                    for (let i = 1; i < f.pts.length; i++) ctx.lineTo(f.pts[i].x, f.pts[i].y);
+                    ctx.closePath();
+                    ctx.fillStyle = f.fillColor; ctx.fill();
+                    const shadowAmt = Math.max(0, (1 - lightLevel) * 0.82);
+                    if (shadowAmt > 0.004) { ctx.fillStyle = `rgba(0,0,0,${shadowAmt.toFixed(3)})`; ctx.fill(); }
+                    const highlightAmt = Math.max(0, (lightLevel - 0.82) * 0.65);
+                    if (highlightAmt > 0.004) { ctx.fillStyle = `rgba(255,255,255,${highlightAmt.toFixed(3)})`; ctx.fill(); }
+                    ctx.strokeStyle = f.lineColor; ctx.stroke();
+                });
+                return;
+            }
+
             // 1. DIBUJAR FONDO/RESPALDO (3mm MDF) - Ubicado al fondo del mueble
             this.addBoxFaces(offsetX, 0, depth - 3, width, height, 3, baseFill, lineColor, 'backboard');
             
-            // 2. DIBUJAR LATERAL IZQUIERDO (18mm)
-            this.addBoxFaces(offsetX, 0, 0, t, height, depth, baseFill, lineColor, 'left-side');
+            // 2. DIBUJAR LATERAL IZQUIERDO (18mm) - Corregido para que termine bajo el techo
+            this.addBoxFaces(offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'left-side');
             
-            // 3. DIBUJAR LATERAL DERECHO (18mm)
-            this.addBoxFaces(width - t + offsetX, 0, 0, t, height, depth, baseFill, lineColor, 'right-side');
+            // 3. DIBUJAR LATERAL DERECHO (18mm) - Corregido para que termine bajo el techo
+            this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side');
             
-            // 4. DIBUJAR TECHO / TAPA SUPERIOR (18mm)
-            this.addBoxFaces(t + offsetX, height - t, 0, width - 2 * t, t, depth, baseFill, lineColor, 'top');
+            // 4. DIBUJAR TECHO / TAPA SUPERIOR (18mm) - Corregido para que cubra los laterales
+            this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top');
             
             // 5. DIBUJAR PISO / BASE INFERIOR (18mm) - Soporte para Zócalo si corresponde
             let zocaloH = 0;
@@ -1454,6 +1519,9 @@ const isLoggedIn = !!clientId;
             } else if (type === 'BIBLIOTECA') {
                 shelvesInput.value = 4; drawersInput.value = 0; doorsInput.value = 0;
                 hInput.value = 1800; wInput.value = 800; pInput.value = 300;
+            } else if (type === 'ESCRITORIO') {
+                shelvesInput.value = 0; drawersInput.value = 4; doorsInput.value = 0;
+                hInput.value = 750; wInput.value = 1200; pInput.value = 600;
             } else {
                 shelvesInput.value = 0; drawersInput.value = 0; drawersInput.value = 0;
             }
@@ -1823,6 +1891,7 @@ const isLoggedIn = !!clientId;
                     shelves: m.dims.n_estantes || 0,
                     drawers: m.dims.n_cajones || 0,
                     doors: m.dims.n_puertas || 0,
+                    type: m.type,
                     palette: palette
                 });
                 
@@ -1945,11 +2014,46 @@ const isLoggedIn = !!clientId;
             // Listado de herrajes
             document.getElementById('res-hardware-list').innerHTML = hw.map(h => `
                 <tr class="group hover:bg-[var(--sc-surface-alt)] transition-all">
-                    <td class="py-5 font-bold text-[var(--sc-text)] uppercase text-xs tracking-tight">${h.name}</td>
-                    <td class="py-5 text-right font-black text-[var(--alvarez-red)] text-lg">${h.qty}</td>
-                    <td class="py-5 text-right text-[var(--sc-text-dim)] text-[0.6rem] font-black uppercase tracking-widest">${h.unit}</td>
+                    <td class="py-4 font-bold text-[var(--sc-text)] text-xs border-b border-[var(--sc-border)] group-hover:pl-2 transition-all">${h.name}</td>
+                    <td class="py-4 font-black text-[var(--alvarez-red)] text-right border-b border-[var(--sc-border)]">${h.qty}</td>
+                    <td class="py-4 text-[0.65rem] font-bold text-[var(--sc-text-dim)] uppercase text-right border-b border-[var(--sc-border)]">${h.unit}</td>
                 </tr>
             `).join('');
+
+            // Informe de Ensamblaje Didáctico
+            let assemblyHTML = '';
+            this.state.modules.forEach(m => {
+                assemblyHTML += `<div class="p-6 bg-[var(--sc-surface-alt)] rounded-lg border border-[var(--sc-border)] mb-4">
+                    <h4 class="text-lg font-black text-[var(--alvarez-red)] uppercase mb-4">Módulo: ${m.name || m.type}</h4>
+                    <ul class="list-decimal pl-6 space-y-3 font-medium text-[var(--sc-text)]">`;
+                
+                if (m.type === 'ESCRITORIO') {
+                    assemblyHTML += `
+                        <li><strong>Estructura Base:</strong> Atornilla el Faldón Trasero (Modesty Panel) al Lateral Izquierdo y al Divisor Interno de la cajonera para darle rigidez.</li>
+                        <li><strong>Cajonera Derecha:</strong> Ensambla la estructura de la cajonera fijando el Piso entre el Divisor Interno y el Lateral Derecho.</li>
+                        <li><strong>Tapa:</strong> Coloca el Techo/Tapa apoyando horizontalmente <strong>sobre</strong> los laterales y atornilla desde abajo para que no se vean los tornillos Fix.</li>
+                        <li><strong>Correderas:</strong> Fija las correderas telescópicas (Greenway/Bronzen) en los laterales de la cajonera. Recuerda que ya descontamos 26mm al ancho del cajón interior.</li>
+                        <li><strong>Bandeja Teclado:</strong> Instala las guías de la bandeja debajo del techo en la sección izquierda.</li>
+                    `;
+                } else {
+                    assemblyHTML += `
+                        <li><strong>Armado de Carcasa:</strong> Atornilla los Laterales. Recuerda que el <strong>Techo siempre apoya sobre los laterales</strong> para descargar el peso al piso.</li>
+                        <li><strong>Escuadra:</strong> Presenta el Fondo de MDF de 3mm y clávalo para dar escuadra al módulo.</li>`;
+                    
+                    if (m.dims.n_cajones > 0) {
+                        assemblyHTML += `<li><strong>Cajones:</strong> Arma las cajas de los cajones. Las correderas telescópicas requieren 13mm libres por lado (26mm en total). Ya están calculadas en las medidas.</li>`;
+                    }
+                    if (m.dims.n_puertas > 0) {
+                        assemblyHTML += `<li><strong>Puertas:</strong> Instala las bisagras Codo 0 (Greenway/Bronzen) a 10cm de los extremos superior e inferior.</li>`;
+                    }
+                    if (m.type === 'BAJO_MESADA') {
+                        assemblyHTML += `<li><strong>Zócalo:</strong> Fija el zócalo base retranqueado para permitir el espacio de los pies (kicktoe).</li>`;
+                    }
+                }
+                assemblyHTML += `</ul></div>`;
+            });
+            
+            document.getElementById('res-assembly-guide').innerHTML = assemblyHTML;
         },
 
         renderDashboard: function() {
