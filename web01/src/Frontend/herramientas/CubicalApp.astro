@@ -30,35 +30,24 @@ const isLoggedIn = !!clientId;
         </div>
     </header>
 
-    <!-- PANTALLA 1: DASHBOARD -->
-    <section id="screen-dashboard" class="animate-fade-in">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="md:col-span-2">
-                <h2 class="text-5xl font-black mb-4 tracking-tighter text-[var(--sc-text)]">ESTACIÓN DE TRABAJO</h2>
-                <div class="w-20 h-1 bg-[var(--alvarez-red)] mb-8"></div>
-                <p class="text-[var(--sc-text-dim)] mb-12 max-w-xl text-lg font-medium">Gestiona tus proyectos de mobiliario a medida y obtén el despiece optimizado para producción.</p>
-                
-                <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Dinámico -->
-                    <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
-                    <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
-                </div>
-            </div>
-            
-            <div class="bg-[var(--sc-surface)] border-2 border-dashed border-[var(--sc-border)] p-12 rounded-xl flex flex-col items-center justify-center text-center">
-                <div class="w-24 h-24 bg-[var(--alvarez-red)] text-white rounded-xl flex items-center justify-center mb-8 rotate-3 shadow-xl">
-                    <i class="fas fa-plus text-4xl"></i>
-                </div>
-                <h3 class="text-2xl font-black mb-4 text-[var(--sc-text)] uppercase tracking-tighter">¿Nuevo Mueble?</h3>
-                <p class="text-[var(--sc-text-dim)] text-sm mb-10 font-medium">Calcula materiales y herrajes en segundos para tu próximo cliente.</p>
-                <button onclick="window.cubical.showSetup()" class="w-full py-5 bg-[var(--alvarez-red)] text-white font-black rounded-lg hover:scale-105 transition-all uppercase tracking-widest shadow-xl">NUEVO CÁLCULO</button>
+    <!-- PANTALLA 1: DASHBOARD (Ahora centrado en Plantillas) -->
+    <section id="screen-dashboard" class="animate-fade-in pt-8">
+        <!-- SE ELIMINÓ EL BOTÓN 'NUEVO PROYECTO' A PEDIDO DEL USUARIO PARA PRIORIZAR LAS PLANTILLAS -->
+        <div class="mt-16 border-t border-[var(--sc-border)] pt-12" style={!isLoggedIn ? 'display:none;' : ''}>
+            <h3 class="text-3xl font-black mb-4 tracking-tighter text-[var(--sc-text)]">TUS PROYECTOS GUARDADOS</h3>
+            <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Dinámico -->
+                <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
+                <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
+                <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
             </div>
         </div>
 
-        <!-- CATÁLOGO DE PLANTILLAS RÁPIDAS -->
-        <div class="mt-16 border-t border-[var(--sc-border)] pt-12">
-            <h3 class="text-3xl font-black mb-2 tracking-tighter text-[var(--sc-text)] uppercase italic">CATÁLOGO DE PLANTILLAS</h3>
-            <p class="text-[var(--sc-text-dim)] mb-8 max-w-xl text-sm font-medium">Inicia tu diseño al instante seleccionando un módulo estándar preconfigurado de nuestro catálogo.</p>
+        <!-- CATÁLOGO DE PLANTILLAS RÁPIDAS (AHORA ES LO PRINCIPAL) -->
+        <div class="mb-16">
+            <h2 class="text-5xl font-black mb-4 tracking-tighter text-[var(--sc-text)] uppercase italic">EXPLORA NUESTROS MODELOS</h2>
+            <div class="w-20 h-1 bg-[var(--alvarez-red)] mb-8"></div>
+            <p class="text-[var(--sc-text-dim)] mb-8 max-w-xl text-lg font-medium">Inicia tu diseño al instante seleccionando un módulo estándar preconfigurado de nuestro catálogo interactivo.</p>
             
             <div class="relative group mt-8 px-4">
                 <!-- Botón Izquierda -->
@@ -1909,6 +1898,16 @@ const isLoggedIn = !!clientId;
 
         generateResults: async function() {
             if (this.state.modules.length === 0) { alert("⚠️ Añade al menos un módulo al plano."); return; }
+            
+            const rootEl = document.getElementById('cubical-app-root');
+            const userIsLoggedIn = rootEl && rootEl.dataset.isLoggedIn === 'true';
+            
+            if (!userIsLoggedIn) {
+                alert("🔒 ACCESO RESTRINGIDO\n\nPara obtener el despiece exacto para producción, la lista de herrajes optimizada y la guía de ensamblaje paso a paso, necesitas tener una cuenta en Álvarez Placas.\n\nPor favor, inicia sesión para continuar.");
+                window.location.href = "/cliente/login";
+                return;
+            }
+
             this.showScreen('results');
             
             try {
