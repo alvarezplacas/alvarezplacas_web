@@ -74,7 +74,14 @@ export const PATCH: APIRoute = async ({ request, locals, url }) => {
             return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
         }
 
-        const id = url.pathname.split('/').pop() || url.searchParams.get('id');
+        let id = url.searchParams.get('id');
+        if (!id) {
+            const popped = url.pathname.split('/').pop();
+            if (popped && popped !== 'proyecciones') {
+                id = popped;
+            }
+        }
+
         if (!id) {
             return new Response(JSON.stringify({ error: 'Falta ID' }), { status: 400 });
         }
@@ -120,7 +127,14 @@ export const DELETE: APIRoute = async ({ url, locals }) => {
             return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
         }
 
-        const id = url.pathname.split('/').pop() || url.searchParams.get('id');
+        let id = url.searchParams.get('id');
+        if (!id) {
+            const popped = url.pathname.split('/').pop();
+            if (popped && popped !== 'proyecciones') {
+                id = popped;
+            }
+        }
+
         if (!id) {
             return new Response(JSON.stringify({ error: 'Falta ID' }), { status: 400 });
         }

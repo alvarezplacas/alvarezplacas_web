@@ -1091,6 +1091,17 @@ try {
         background: #282828;
         color: #ccc;
     }
+
+    /* RESPONSIVE LAYOUT MOBILE */
+    @media (max-width: 768px) {
+        .workspace-body { flex-direction: column-reverse; }
+        .toolbar { width: 100%; height: 60px; flex-direction: row; border-right: none; border-top: 1px solid #111; padding: 0 8px; justify-content: space-around; }
+        .toolbar-top { flex-direction: row; gap: 8px; flex: 1; align-items: center; justify-content: center; }
+        .toolbar-bottom { padding-bottom: 0; padding-left: 8px; flex-direction: row; align-items: center; justify-content: center; }
+        .toolbar-sep { width: 1px; height: 24px; margin: 0 4px; }
+        .right-panel { display: none !important; }
+        .status-bar { display: none !important; }
+    }
 </style>
 
 <script>

@@ -13,7 +13,9 @@ const UPLOAD_DIR = '/app/private/facturas';
 // Helper to format Spanish dates (DD/MM/YY or DD/MM/YYYY) to standard SQL YYYY-MM-DD
 function parseSpanishDate(dateStr: string): string {
     try {
-        const parts = dateStr.split('/');
+        // Clean up spaces and hyphens
+        const cleanStr = dateStr.replace(/\s+/g, '').replace(/-/g, '/');
+        const parts = cleanStr.split('/');
         if (parts.length === 3) {
             let day = parts[0].padStart(2, '0');
             let month = parts[1].padStart(2, '0');
@@ -26,7 +28,7 @@ function parseSpanishDate(dateStr: string): string {
     } catch (e) {
         console.error('Error parsing date:', dateStr, e);
     }
-    return new Date().toISOString().split('T')[0];
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
 }
 
 // Helper to convert Argentinian decimal notation (e.g. 305.700,00) to standard float
@@ -138,20 +140,20 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         // 6.2 Extract Date: e.g. FECHA: 03/01/26 or standard DD/MM/YYYY dates
-        let docDate = new Date().toISOString().split('T')[0];
-        const dateMatch = textContent.match(/FECHA:\s*([0-9\/]+)/i);
-        const dateMatchEmission = textContent.match(/Fecha\s+de\s+Emisión\s*:\s*([0-9\/]+)/i)
-            || textContent.match(/Fecha\s*:\s*([0-9\/]+)/i);
+        let docDate = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+        const dateMatch = textContent.match(/FECHA:\s*([0-9\/\-\s]{8,14})/i);
+        const dateMatchEmission = textContent.match(/Fecha\s+de\s+Emisi(?:o|ó)n\s*:\s*([0-9\/\-\s]{8,14})/i)
+            || textContent.match(/Fecha\s*:\s*([0-9\/\-\s]{8,14})/i);
         
         // Find any standard DD/MM/YYYY date in the text as a backup
-        const genericDateMatch = textContent.match(/\b\d{2}\/\d{2}\/\d{2,4}\b/);
+        const genericDateMatch = textContent.match(/\b(\d{2}[\/\-\s]+\d{2}[\/\-\s]+\d{2,4})\b/);
 
-        if (dateMatch) {
-            docDate = parseSpanishDate(dateMatch[1]);
-        } else if (dateMatchEmission) {
+        if (dateMatchEmission) {
             docDate = parseSpanishDate(dateMatchEmission[1]);
+        } else if (dateMatch) {
+            docDate = parseSpanishDate(dateMatch[1]);
         } else if (genericDateMatch) {
-            docDate = parseSpanishDate(genericDateMatch[0]);
+            docDate = parseSpanishDate(genericDateMatch[1]);
         }
 
         // 6.3 Extract Customer Account and Name
@@ -220,7 +222,14 @@ export const POST: APIRoute = async ({ request }) => {
             || textContent.match(/CUIT\s*(\d{2}-\d{8}-\d|\d{11})/i);
             
         if (cuitMatch) {
-            clientCuit = cuitMatch[1].trim();
+            let extracted = cuitMatch[1].trim();
+            // clean up if it contains extra text, e.g. "CONSUMIDOR FINAL DNI 30576088"
+            const justNumbers = extracted.match(/\b(\d{2}-\d{8}-\d|\d{11}|\d{7,8})\b/);
+            if (justNumbers) {
+                clientCuit = justNumbers[1];
+            } else {
+                clientCuit = extracted;
+            }
         } else {
             // Find any CUIT in the text (format XX-XXXXXXXX-X or 11 digits)
             const cuits = textContent.match(/\b\d{2}-\d{8}-\d\b|\b\d{11}\b/g) || [];

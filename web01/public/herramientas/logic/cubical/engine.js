@@ -8,7 +8,8 @@ export const MODULE_TYPES = {
     PLACARD: 'PLACARD',
     BIBLIOTECA: 'BIBLIOTECA',
     BAJO_MESADA: 'BAJO_MESADA',
-    ALACENA: 'ALACENA'
+    ALACENA: 'ALACENA',
+    ESCRITORIO: 'ESCRITORIO'
 };
 
 /**
@@ -21,18 +22,52 @@ export function calculateModulePieces(type, dims, thickness = 18) {
     const { alto, ancho, prof, n_cajones, n_estantes, n_puertas } = dims;
     let pieces = [];
 
-    // Laterales (2 unidades)
-    pieces.push({ name: 'Lateral de Carcasa', h: alto, w: prof, qty: 2 });
+    if (type === MODULE_TYPES.ESCRITORIO) {
+        // Lógica Especial de Escritorio Juvenil
+        pieces.push({ name: 'Techo de Escritorio', h: ancho, w: prof, qty: 1 });
+        pieces.push({ name: 'Lateral Izquierdo', h: alto - thickness, w: prof, qty: 1 });
+        
+        // Cajonera derecha (ancho fijo 400)
+        pieces.push({ name: 'Lateral Derecho (Cajonera)', h: alto - thickness, w: prof, qty: 1 });
+        pieces.push({ name: 'Divisor Interno (Cajonera)', h: alto - thickness, w: prof, qty: 1 });
+        pieces.push({ name: 'Piso Cajonera', h: 400 - (thickness * 2), w: prof, qty: 1 });
+        
+        pieces.push({ name: 'Faldón (Modesty Panel)', h: 300, w: ancho - 400 - thickness, qty: 1 });
+        pieces.push({ name: 'Bandeja Teclado', h: prof - 100, w: ancho - 400 - thickness - 26, qty: 1 });
+        
+        // 4 Cajones
+        if (n_cajones > 0) {
+            const hFrente = Math.floor((alto - thickness - 80) / n_cajones);
+            for (let i = 0; i < n_cajones; i++) {
+                pieces.push({ name: `Frente Cajón ${i+1}`, h: hFrente, w: 400 - 4, qty: 1, isFront: true });
+                const hCajonInterno = Math.min(150, Math.max(100, Math.floor(hFrente - 50)));
+                pieces.push({ name: `Lateral Cajón ${i+1}`, h: hCajonInterno, w: prof - 50, qty: 2 });
+                pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: 400 - (thickness * 2) - 26 - (thickness * 2), qty: 2 });
+                pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: 400 - (thickness * 2) - 26, qty: 1, isBackground: true });
+            }
+        }
+        return pieces;
+    }
 
-    // Techo y Base (o amarres para Bajo Mesada)
+    // Laterales (2 unidades)
+    pieces.push({ name: 'Lateral de Carcasa', h: alto - thickness, w: prof, qty: 2 });
+
+    // Techo
+    pieces.push({ name: 'Techo de Carcasa', h: ancho, w: prof, qty: 1 });
+
+    // Base (o amarres para Bajo Mesada)
     if (type === MODULE_TYPES.BAJO_MESADA) {
         pieces.push({ name: 'Piso de Carcasa', h: ancho - (thickness * 2), w: prof, qty: 1 });
         pieces.push({ name: 'Faja Superior (Amarre)', h: ancho - (thickness * 2), w: 100, qty: 2 });
+        pieces.push({ name: 'Zócalo Base Bajo Mesada', h: ancho - (thickness * 2), w: 120, qty: 2 });
     } else {
-        pieces.push({ name: 'Techo/Base de Carcasa', h: ancho - (thickness * 2), w: prof, qty: 2 });
+        pieces.push({ name: 'Base de Carcasa', h: ancho - (thickness * 2), w: prof, qty: 1 });
+        if (type === MODULE_TYPES.CAJONERA) {
+            pieces.push({ name: 'Zócalo Base Chifonier', h: ancho - (thickness * 2), w: 80, qty: 2 });
+        }
     }
 
-    // Fondo Trasero (MDF 3mm) - Se asume siempre a menos que sea una biblioteca abierta sin nada
+    // Fondo Trasero (MDF 3mm)
     const tieneContenido = n_cajones > 0 || n_estantes > 0 || n_puertas > 0;
     if (type !== MODULE_TYPES.BIBLIOTECA || tieneContenido) {
         pieces.push({ name: 'Fondo MDF 3mm', h: alto - 10, w: ancho - 10, qty: 1, isBackground: true });
@@ -45,7 +80,13 @@ export function calculateModulePieces(type, dims, thickness = 18) {
 
     // Cajones (Cajonera interna)
     if (n_cajones > 0) {
-        const hDisponible = type === MODULE_TYPES.BAJO_MESADA ? (alto - 120) : alto; // Descontar zócalo si es bajo mesada
+        let hDisponible = alto - thickness;
+        if (type === MODULE_TYPES.CAJONERA) {
+            hDisponible = alto - thickness - 80 - thickness; // Descontar zócalo y piso
+        } else if (type === MODULE_TYPES.BAJO_MESADA) {
+            hDisponible = alto - thickness - 120 - thickness; // Descontar zócalo y piso/fajas
+        }
+        
         const hFrente = Math.floor((hDisponible - (n_cajones * 4)) / n_cajones);
         
         for (let i = 0; i < n_cajones; i++) {

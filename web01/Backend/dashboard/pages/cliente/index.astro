@@ -90,7 +90,20 @@ try {
     console.error("[Client Dashboard Error]:", e);
 }
 
-// 4. Lógica de Rango de Fidelidad (Gamificación)
+// 4. Avisos Generales (Requiere colección "avisos_generales" en Directus con campos: titulo, mensaje)
+let generalNotices = [];
+try {
+    const allNotices = await directus.request(readItems('avisos_generales')) as any[];
+    // Filtramos manualmente para soportar si status es un array (checkbox) o string (dropdown)
+    generalNotices = allNotices.filter(n => {
+        if (!n.status) return false;
+        return Array.isArray(n.status) ? n.status.includes('published') : n.status === 'published';
+    });
+} catch (e) {
+    console.warn("[Avisos] Falló la carga de avisos:", e.message);
+}
+
+// 5. Lógica de Rango de Fidelidad (Gamificación)
 const score = clientData.scoring || 0;
 let memberLevel = { 
     name: 'NIVEL BRONCE', 
@@ -138,27 +151,64 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
     <div id="theme-wrapper" class="theme-light transition-colors duration-300 w-full min-h-screen text-[var(--text-main)]" aria-live="polite">
         
         <!-- 🧭 ACCESIBILIDAD Y CABECERA DEL SISTEMA -->
-        <header class="flex justify-between items-center mb-6 px-6 py-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-card)] shadow-sm transition-colors duration-300" aria-label="Barra de herramientas superior">
-            <div class="flex items-center gap-2 text-xs font-mono text-[var(--text-muted)]">
+        <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 px-6 py-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-card)] shadow-sm transition-colors duration-300" aria-label="Barra de herramientas superior">
+            <div class="hidden md:flex items-center gap-2 text-xs font-mono text-[var(--text-muted)]">
                 <span class="w-2.5 h-2.5 rounded-full bg-[oklch(0.7_0.2_140)] animate-pulse" aria-hidden="true"></span>
                 SISTEMA EN LÍNEA | MODALIDAD: CLIENTE PROFESIONAL
             </div>
             
-            <!-- Botón de Alternancia de Tema (☀️/🌙) con Etiquetas ARIA -->
-            <button 
-                id="theme-toggle-btn" 
-                class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border-card)] bg-[var(--bg-main)] hover:opacity-85 text-xs font-mono font-bold cursor-pointer transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--alvarez-blue)]"
-                aria-label="Cambiar tema de pantalla"
-                aria-pressed="false"
-            >
-                <span id="theme-icon" aria-hidden="true">☀️</span>
-                <span id="theme-text">MODO CLARO (PAPEL HUESO)</span>
-            </button>
+            <div class="flex items-center justify-between w-full md:w-auto gap-4">
+                <div class="flex items-center gap-2">
+                    <!-- Pedidos Activos -->
+                    <div class="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-main)] border border-[var(--border-card)] rounded-full shadow-sm" title="Pedidos Activos">
+                        <span class="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest hidden sm:inline">Pedidos:</span>
+                        <i class="fas fa-box-open text-[var(--text-muted)] text-[10px] sm:hidden"></i>
+                        <span class="text-[12px] font-black text-[var(--text-main)]">{recentOrders.filter(o => o.status !== 'entregado').length}</span>
+                    </div>
+
+                    <!-- Puntos (Moneda de Oro) -->
+                    <div class="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-main)] border border-[var(--border-card)] rounded-full shadow-sm" title="Puntos Acumulados">
+                        <div class="w-5 h-5 rounded-full bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-600 border border-yellow-200 shadow-[inset_0_-1px_1px_rgba(0,0,0,0.4),0_1px_2px_rgba(0,0,0,0.2)] flex items-center justify-center relative overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent"></div>
+                            <i class="fas fa-star text-[9px] text-yellow-50 drop-shadow-md z-10"></i>
+                        </div>
+                        <span class="text-[12px] font-black text-[var(--text-main)]">{score} <span class="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider hidden sm:inline">Pts</span></span>
+                    </div>
+                </div>
+
+                <!-- Botón de Alternancia de Tema (☀️/🌙) con Etiquetas ARIA -->
+                <button 
+                    id="theme-toggle-btn" 
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border-card)] bg-[var(--bg-main)] hover:opacity-85 text-xs font-mono font-bold cursor-pointer transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--alvarez-blue)]"
+                    aria-label="Cambiar tema de pantalla"
+                    aria-pressed="false"
+                >
+                    <span id="theme-icon" aria-hidden="true">☀️</span>
+                    <span id="theme-text" class="hidden sm:inline">MODO CLARO</span>
+                </button>
+            </div>
         </header>
 
         <!-- 🚀 CONTENIDO PRINCIPAL -->
         <main class="w-full">
             
+            <!-- ⚠️ AVISOS GENERALES -->
+            {generalNotices && generalNotices.length > 0 && (
+                <div class="mb-6 space-y-4">
+                    {generalNotices.map((notice: any) => (
+                        <div class="bg-[oklch(0.85_0.18_90)] text-[oklch(0.25_0.1_90)] border-2 border-[oklch(0.75_0.15_90)] rounded-[2rem] p-6 shadow-md flex items-start gap-4 transition-all">
+                            <div class="text-3xl mt-0.5 opacity-80" aria-hidden="true">
+                                <i class="fas fa-bullhorn"></i>
+                            </div>
+                            <div>
+                                {notice.titulo && <h4 class="font-black uppercase text-[12px] tracking-[0.2em] mb-1">{notice.titulo}</h4>}
+                                <div class="text-[13px] font-bold leading-relaxed opacity-90 [&>p]:mb-2 [&>strong]:text-[var(--text-main)]" set:html={notice.mensaje} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <!-- GLASS HERO SECTION - FIDELIDAD DEL CLIENTE -->
             <section class={`relative mb-10 p-10 md:p-12 rounded-[2.5rem] overflow-hidden bg-gradient-to-br ${memberLevel.heroGradient} bg-[var(--bg-card)] border border-[var(--border-card)] shadow-md transition-all duration-300`} aria-labelledby="hero-title">
                 <div class="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 pointer-events-none" aria-hidden="true">
@@ -183,18 +233,6 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                         Bienvenido a tu suite profesional de Alvarez Placas. Desde aquí puedes gestionar tus proyectos, optimizar cortes y realizar un seguimiento preciso de tus pedidos industriales.
                     </p>
 
-                    <div class="flex flex-wrap gap-4">
-                        <div class="bg-[var(--bg-main)] border border-[var(--border-card)] px-8 py-4 rounded-2xl shadow-sm">
-                            <h2 class="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Puntos Acumulados</h2>
-                            <p class={`text-3xl font-black ${memberLevel.scoringText} leading-none`}>{score}</p>
-                        </div>
-                        <div class="bg-[var(--bg-main)] border border-[var(--border-card)] px-8 py-4 rounded-2xl shadow-sm">
-                            <h2 class="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Pedidos Activos</h2>
-                            <p class="text-3xl font-black text-[var(--text-main)] leading-none">
-                                {recentOrders.filter(o => o.status !== 'entregado').length}
-                            </p>
-                        </div>
-                    </div>
                 </div>
             </section>
 

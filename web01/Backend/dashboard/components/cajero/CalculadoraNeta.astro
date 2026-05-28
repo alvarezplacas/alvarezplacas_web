@@ -25,6 +25,9 @@
             <button class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-emerald-500/30" @click="saveSnapshotToCEO()">
                 <i class="fas fa-cloud-upload-alt"></i> Registrar Cierre Proyectado
             </button>
+            <button class="bg-purple-600/20 text-purple-400 hover:bg-purple-600 hover:text-white transition-all px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-purple-500/30" @click="openCalculadoraManual()">
+                <i class="fas fa-book"></i> 📖 Ayuda Fórmulas
+            </button>
         </div>
     </div>
 
@@ -557,6 +560,10 @@
                 <i class="fas fa-chart-bar text-purple-500"></i> Comparativa Estratégica (Utilidad Neta)
             </h4>
             <div id="chart-calculadora-comparativa" style="min-height: 280px; width: 100%;"></div>
+        </div>
+    </div>
+</div>
+
  <script is:inline>
     // Ultra-Robust CDN Fallbacks to prevent Alpine initialization crashes
     if (typeof currency === 'undefined') {
@@ -584,7 +591,7 @@
     const registerCalculadora = () => {
         Alpine.data('calculadora', () => ({
             // State variables
-            isLiveSync: true,
+            isLiveSync: false,
             ventaBlanco: 1500000,
             ventaCorteBlanco: 150000,
             ventaPegadoBlanco: 60000,
@@ -648,6 +655,14 @@
                     this.syncFromDailyOps(true, true);
                 });
 
+                window.addEventListener('load-projection-by-id', (e) => {
+                    const id = e.detail.id;
+                    const proj = this.savedProyecciones.find(p => p.id.toString() === id.toString());
+                    if (proj) {
+                        this.loadProyeccion(proj);
+                    }
+                });
+
                 // Polling interval (real-time sync when tab is active)
                 setInterval(() => {
                     const panel = document.getElementById('panel-calculadora');
@@ -675,26 +690,26 @@
             },
 
             // Formula Getters Venta 1
-            get ventaSinCorteBlanco() { return Math.max(0, currency(this.ventaBlanco).subtract(this.ventaCorteBlanco).subtract(this.ventaPegadoBlanco).value); },
+            get ventaSinCorteBlanco() { return currency(this.ventaBlanco).subtract(this.ventaCorteBlanco).subtract(this.ventaPegadoBlanco).value; },
             get margenBlanco() { return currency(this.ventaSinCorteBlanco).multiply(0.23077).value; },
             get margenCorteBlanco() { return currency(this.ventaCorteBlanco).multiply(0.80).value; },
             get costoPegadoBlanco() { return currency(this.cantPegadosBlanco).multiply(this.precioPegadoBlanco).value; },
-            get servPegadoBlanco() { return Math.max(0, currency(this.ventaPegadoBlanco).subtract(this.costoPegadoBlanco).value); },
+            get servPegadoBlanco() { return currency(this.ventaPegadoBlanco).subtract(this.costoPegadoBlanco).value; },
             get margenPegadoBlanco() { return currency(this.costoPegadoBlanco).add(currency(this.servPegadoBlanco).multiply(0.285715)).value; },
             get gananciaVentaBlanco() { return currency(this.margenBlanco).add(this.margenCorteBlanco).add(this.margenPegadoBlanco).value; },
 
             // Formula Getters Venta 2
-            get ventaSinCorteNegro() { return Math.max(0, currency(this.ventaNegro).subtract(this.ventaCorteNegro).subtract(this.ventaPegadoNegro).value); },
+            get ventaSinCorteNegro() { return currency(this.ventaNegro).subtract(this.ventaCorteNegro).subtract(this.ventaPegadoNegro).value; },
             get margenNegro() { return currency(this.ventaSinCorteNegro).multiply(0.23077).value; },
             get margenCorteNegro() { return currency(this.ventaCorteNegro).multiply(1.0).value; },
             get costoPegadoNegro() { return currency(this.cantPegadosNegro).multiply(this.precioPegadoNegro).value; },
-            get servPegadoNegro() { return Math.max(0, currency(this.ventaPegadoNegro).subtract(this.costoPegadoNegro).value); },
+            get servPegadoNegro() { return currency(this.ventaPegadoNegro).subtract(this.costoPegadoNegro).value; },
             get margenPegadoNegro() { return currency(this.costoPegadoNegro).add(currency(this.servPegadoNegro).multiply(0.285715)).value; },
             get gananciaVentaNegro() { return currency(this.margenNegro).add(this.margenCorteNegro).add(this.margenPegadoNegro).value; },
 
             // Control Recaudacion y Compras Getters
-            get materiaPrimaBlanco() { return currency(this.ventaSinCorteBlanco).multiply(0.76923).divide(1.25).value; },
-            get materiaPrimaNegro() { return currency(this.ventaSinCorteNegro).multiply(0.76923).divide(1.105).value; },
+            get materiaPrimaBlanco() { return currency(this.ventaSinCorteBlanco).subtract(this.margenBlanco).divide(1.25).value; },
+            get materiaPrimaNegro() { return currency(this.ventaSinCorteNegro).subtract(this.margenNegro).divide(1.105).value; },
             get materiaPrimaTotal() { return currency(this.materiaPrimaBlanco).add(this.materiaPrimaNegro).value; },
             get desvioDeCompra() { return currency(this.compraTotalReal).subtract(this.materiaPrimaTotal).value; },
             get recaudacionMenosVentas() { return currency(this.recaudacion).subtract(currency(this.ventaBlanco).add(this.ventaNegro).value).value; },
@@ -747,6 +762,13 @@
                     this.syncFromDailyOps(false, true);
                 } else {
                     this.showToast('✓ Sincronización en vivo desactivada (Modo Manual)');
+                }
+            },
+
+            openCalculadoraManual() {
+                const manualTabBtn = document.querySelector('.ctab[data-ctab="manual-calculadora"]');
+                if (manualTabBtn) {
+                    manualTabBtn.click();
                 }
             },
 
@@ -1381,6 +1403,7 @@
                     data: data
                 }]);
             }
+        }));
     };
     if (typeof window.Alpine !== 'undefined') {
         registerCalculadora();

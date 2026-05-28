@@ -122,9 +122,12 @@ const data = pedido.datos_optimizacion;
             <p style="font-size: 0.6rem; font-weight: 800; letter-spacing: 2px;">INDUSTRIAL SOLUTIONS</p>
         </div>
         <div class="order-info">
-            <h2>REPORTE DE CORREO #${pedido.id}</h2>
+            <h2>REPORTE DE CORTE #${pedido.id}</h2>
             <p>FECHA: ${new Date(pedido.fecha_pedido).toLocaleDateString('es-AR')}</p>
             <p>ESTADO: ${pedido.status.toUpperCase()}</p>
+            <p style="color: var(--alvarez-red); font-weight: 900; font-size: 0.85rem; margin-top: 5px; text-transform: uppercase;">
+                ENTREGA SOLICITADA: ${data?.fecha_entrega_requerida ? new Date(data.fecha_entrega_requerida).toLocaleDateString('es-AR') : 'A CONFIRMAR'}
+            </p>
         </div>
     </header>
 

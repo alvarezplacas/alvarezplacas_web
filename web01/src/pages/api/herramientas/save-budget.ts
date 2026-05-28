@@ -25,14 +25,30 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             }), { status: 400 });
         }
 
-        // Obtener vendedor asignado al cliente
+        // Obtener datos del cliente y su vendedor asignado
         let sellerId = null;
+        let clientName = `Cliente #${cliente_id}`;
+        let sellerName = 'Braian';
         try {
             const clientData = await directus.request(readItem('clientes', cliente_id, {
-                fields: ['id', 'vendedor_id']
+                fields: ['id', 'name', 'nombre_empresa', 'vendedor_id']
             })) as any;
-            if (clientData?.vendedor_id) {
-                sellerId = typeof clientData.vendedor_id === 'object' ? clientData.vendedor_id.id : clientData.vendedor_id;
+            
+            if (clientData) {
+                clientName = clientData.nombre_empresa || clientData.name || clientName;
+                if (clientData.vendedor_id) {
+                    sellerId = typeof clientData.vendedor_id === 'object' ? clientData.vendedor_id.id : clientData.vendedor_id;
+                    try {
+                        const sellerData = await directus.request(readItem('vendedores', sellerId, {
+                            fields: ['name']
+                        })) as any;
+                        if (sellerData?.name) {
+                            sellerName = sellerData.name;
+                        }
+                    } catch (err) {
+                        console.error('[SmartCut] Error fetching seller name:', err);
+                    }
+                }
             }
         } catch (err) {
             console.error('[SmartCut] Error fetching client assigned seller:', err);
@@ -48,9 +64,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             fecha_pedido: new Date().toISOString(),
             resumen_visible: true,
             total_m2: data.projects.reduce((acc, p) => acc + (p.stats?.totalM2 || 0), 0)
-        }));
+        })) as any;
 
         console.log(`[SmartCut] Presupuesto generado ID: ${result.id} para cliente: ${cliente_id}, vendedor asignado: ${sellerId}`);
+
+        // 💬 DISPARADOR DE NOTIFICACIÓN DE WHATSAPP AL VENDEDOR (+54116141842)
+        const totalPlates = data.projects.reduce((acc: number, p: any) => acc + (p.stats?.totalPlates || 0), 0);
+        const reqDateStr = data.fecha_entrega_requerida 
+            ? new Date(data.fecha_entrega_requerida).toLocaleDateString('es-AR') 
+            : 'A confirmar';
+        const msg = `${sellerName}, acabas de recibir un pedido de corte de parte de ${clientName} a través de nuestro sitio web! 📝 Placas: ${totalPlates} unidades. Fecha de entrega requerida: ${reqDateStr}.`;
+        
+        console.log(`[SmartCut Notification Dispatch] Enviando WhatsApp a +54116141842: "${msg}"`);
+        
+        try {
+            await fetch('https://admin.alvarezplacas.com.ar/api/notifications/whatsapp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer alvarez-api-token-v16-2026' },
+                body: JSON.stringify({
+                    phone: '+54116141842',
+                    message: msg
+                })
+            });
+        } catch (wppErr: any) {
+            console.error('[SmartCut] Error enviando WhatsApp al vendedor:', wppErr.message);
+        }
 
         return new Response(JSON.stringify({ 
             success: true, 

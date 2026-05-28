@@ -62,6 +62,15 @@ try {
         </button>
         <button 
             class="px-6 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[var(--alvarez-blue)]"
+            :class="tab === 'tapas' ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-md' : 'bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-muted)] hover:opacity-85'"
+            @click="tab = 'tapas'"
+            aria-controls="panel-tapas"
+            :aria-selected="tab === 'tapas'"
+        >
+            <i class="fas fa-tags mr-2 text-orange-500"></i> Tapas y Saldos
+        </button>
+        <button 
+            class="px-6 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[var(--alvarez-blue)]"
             :class="tab === 'sostenibilidad' ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-md' : 'bg-[var(--bg-card)] border border-[var(--border-card)] text-[var(--text-muted)] hover:opacity-85'"
             @click="tab = 'sostenibilidad'"
             aria-controls="panel-sostenibilidad"
@@ -81,19 +90,81 @@ try {
                         MDF <span class="text-[10px] font-bold text-[var(--text-muted)] border border-[var(--border-card)] px-2 py-1 rounded-full">Medium Density Fiberboard</span>
                     </h2>
                     <p class="text-sm text-[var(--text-muted)] mb-6 leading-relaxed font-medium">
-                        El MDF se compone de finas fibras de madera prensadas. Su densidad homogénea lo convierte en el sustrato perfecto para **lacados, moldurados profundos y mecanizados**.
+                        El MDF se compone de finas fibras de madera prensadas. Su densidad homogénea lo convierte en el sustrato perfecto para <strong class="text-[var(--text-main)]">lacados, moldurados profundos y mecanizados</strong>.
                     </p>
                     <ul class="space-y-4 mb-8">
                         <li class="flex items-start gap-3">
-                            <i class="fas fa-check-circle text-emerald-500 mt-1"></i>
-                            <p class="text-xs text-[var(--text-main)]"><strong class="font-black">Standard:</strong> Alta densidad superficial, ideal para pintura.</p>
+                            <i class="fas fa-weight-hanging text-blue-600 mt-1"></i>
+                            <p class="text-xs text-[var(--text-main)]"><strong class="font-black">MDF vs Aglomerado (MDP):</strong> El MDF es significativamente <strong class="text-red-600 dark:text-red-400">más pesado</strong> y denso que el aglomerado tradicional, lo que le otorga mayor resistencia estructural y terminación perfecta en los cantos.</p>
                         </li>
                         <li class="flex items-start gap-3">
-                            <i class="fas fa-check-circle text-emerald-500 mt-1"></i>
-                            <p class="text-xs text-[var(--text-main)]"><strong class="font-black">Ultraliviano:</strong> Facilita el trabajo manual y aligera muebles sin perder calidad.</p>
+                            <i class="fas fa-ruler-combined text-blue-600 mt-1"></i>
+                            <div class="text-xs text-[var(--text-main)] w-full">
+                                <strong class="font-black">Fichas Técnicas por Marca (Placas 18mm):</strong>
+                                <div x-data="{ brandTab: 'faplac' }" class="mt-3 w-full">
+                                    <div class="flex p-0.5 bg-[var(--bg-main)] border border-[var(--border-card)] rounded-xl gap-1 mb-4 w-fit shadow-inner">
+                                        <button @click="brandTab = 'faplac'" :class="brandTab === 'faplac' ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--border-card)]/30'" class="py-1.5 px-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 focus:outline-none">Faplac</button>
+                                        <button @click="brandTab = 'egger'" :class="brandTab === 'egger' ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--border-card)]/30'" class="py-1.5 px-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 focus:outline-none">Egger</button>
+                                        <button @click="brandTab = 'sadepan'" :class="brandTab === 'sadepan' ? 'bg-[var(--text-main)] text-[var(--bg-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--border-card)]/30'" class="py-1.5 px-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 focus:outline-none">Sadepan</button>
+                                    </div>
+                                    
+                                    <!-- Faplac -->
+                                    <ul x-show="brandTab === 'faplac'" 
+                                        x-transition:enter="transition ease-out duration-300 transform"
+                                        x-transition:enter-start="opacity-0 translate-y-2 scale-[0.98]"
+                                        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                        class="space-y-2 text-[var(--text-muted)] bg-[var(--bg-main)] p-4 rounded-xl border border-[var(--border-card)]">
+                                        <li class="flex justify-between items-center border-b border-[var(--border-card)] pb-2">
+                                            <span>Dimensiones</span> <strong class="text-[var(--text-main)] text-right">2.75m x 1.83m<br><span class="text-[9px] font-normal">(5.03 m²)</span></strong>
+                                        </li>
+                                        <li class="flex justify-between items-center border-b border-[var(--border-card)] pb-2">
+                                            <span>Peso Placa MDF</span> <strong class="text-[var(--text-main)]">~68 kg</strong>
+                                        </li>
+                                        <li class="flex justify-between items-center">
+                                            <span>Peso Placa Aglomerado</span> <strong class="text-[var(--text-main)]">~59 kg</strong>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Egger -->
+                                    <ul x-show="brandTab === 'egger'" 
+                                        x-transition:enter="transition ease-out duration-300 transform"
+                                        x-transition:enter-start="opacity-0 translate-y-2 scale-[0.98]"
+                                        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                        style="display:none;" 
+                                        class="space-y-2 text-[var(--text-muted)] bg-[var(--bg-main)] p-4 rounded-xl border border-[var(--border-card)]">
+                                        <li class="flex justify-between items-center border-b border-[var(--border-card)] pb-2">
+                                            <span>Dimensiones</span> <strong class="text-[var(--text-main)] text-right">2.60m x 1.83m<br><span class="text-[9px] font-normal">(4.75 m²)</span></strong>
+                                        </li>
+                                        <li class="flex justify-between items-center border-b border-[var(--border-card)] pb-2">
+                                            <span>Peso Placa MDF</span> <strong class="text-[var(--text-main)]">~64 kg</strong>
+                                        </li>
+                                        <li class="flex justify-between items-center">
+                                            <span>Peso Placa Aglomerado</span> <strong class="text-[var(--text-main)]">~56 kg</strong>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Sadepan -->
+                                    <ul x-show="brandTab === 'sadepan'" 
+                                        x-transition:enter="transition ease-out duration-300 transform"
+                                        x-transition:enter-start="opacity-0 translate-y-2 scale-[0.98]"
+                                        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                        style="display:none;" 
+                                        class="space-y-2 text-[var(--text-muted)] bg-[var(--bg-main)] p-4 rounded-xl border border-[var(--border-card)]">
+                                        <li class="flex justify-between items-center border-b border-[var(--border-card)] pb-2">
+                                            <span>Dimensiones</span> <strong class="text-[var(--text-main)] text-right">2.82m x 1.83m<br><span class="text-[9px] font-normal">(5.16 m²)</span></strong>
+                                        </li>
+                                        <li class="flex justify-between items-center border-b border-[var(--border-card)] pb-2">
+                                            <span>Peso Placa MDF</span> <strong class="text-[var(--text-main)]">~70 kg</strong>
+                                        </li>
+                                        <li class="flex justify-between items-center">
+                                            <span>Peso Placa Aglomerado</span> <strong class="text-[var(--text-main)]">~60 kg</strong>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </li>
                     </ul>
-                    <a href="/catalogo?categoria=mdf" class="inline-flex items-center gap-2 bg-[var(--alvarez-blue)] hover:opacity-85 text-white font-black uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl transition-all shadow-md focus:ring-2 focus:ring-[var(--alvarez-blue)] focus:ring-offset-2 focus:ring-offset-[var(--bg-main)]">
+                    <a href="/catalogo?categoria=mdf" class="inline-flex items-center gap-2 bg-[var(--text-main)] hover:opacity-85 text-[var(--bg-main)] font-black uppercase text-[10px] tracking-widest px-6 py-3 rounded-xl transition-all shadow-md focus:ring-2 focus:ring-[var(--text-main)] focus:ring-offset-2 focus:ring-offset-[var(--bg-main)]">
                         Ver MDF en Catálogo <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -127,7 +198,7 @@ try {
                             <!-- Escenario 3D (Canvas CSS) -->
                             <div class="projector-stage relative w-full h-full flex items-center justify-center perspective-[1000px]">
                                 <!-- Foco de luz -->
-                                <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-[200%] h-[150%] bg-gradient-to-b from-[var(--alvarez-blue)]/10 via-white/5 to-transparent rounded-[100%] blur-[50px] pointer-events-none transform -rotate-12 opacity-50 transition-opacity duration-500"></div>
+                                <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-[200%] h-[150%] bg-gradient-to-b from-blue-600/10 via-white/5 to-transparent rounded-[100%] blur-[50px] pointer-events-none transform -rotate-12 opacity-50 transition-opacity duration-500"></div>
                                 
                                 <!-- Tablero 3D -->
                                 <div class="board-3d relative w-64 h-64 md:w-80 md:h-80 shadow-2xl transition-all duration-700 ease-in-out transform hover:scale-105"
@@ -161,7 +232,7 @@ try {
                             <!-- Información de la muestra seleccionada -->
                             <div class="w-full bg-[var(--bg-main)]/80 backdrop-blur border border-[var(--border-card)] rounded-2xl p-5 relative z-20 mt-6 shadow-xl transform translate-y-0 transition-all">
                                 <div class="flex justify-between items-start mb-2">
-                                    <span class="bg-[var(--alvarez-blue)] text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg" x-text="samples[activeSample].brand"></span>
+                                    <span class="bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg" x-text="samples[activeSample].brand"></span>
                                     <p class="text-[10px] text-[var(--text-muted)] font-mono uppercase bg-[var(--bg-card)] px-2 py-1 rounded" x-text="'SKU: ' + samples[activeSample].sku"></p>
                                 </div>
                                 <h3 class="text-2xl font-black text-[var(--text-main)] italic uppercase leading-none" x-text="samples[activeSample].name"></h3>
@@ -186,13 +257,13 @@ try {
                                 <button 
                                     @click="activeSample = index"
                                     class="relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300 focus:outline-none"
-                                    :class="activeSample === index ? 'border-[var(--alvarez-blue)] scale-[1.02] shadow-lg shadow-[var(--alvarez-blue)]/20 z-10' : 'border-transparent hover:border-[var(--border-card)] opacity-80 hover:opacity-100'"
+                                    :class="activeSample === index ? 'border-blue-600 scale-[1.02] shadow-lg shadow-blue-600/20 z-10' : 'border-transparent hover:border-[var(--border-card)] opacity-80 hover:opacity-100'"
                                 >
                                     <img :src="sample.image" class="absolute inset-0 w-full h-full object-cover" :alt="sample.name">
                                     <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-left">
                                         <p class="text-[8px] font-black text-white uppercase truncate" x-text="sample.name"></p>
                                     </div>
-                                    <div x-show="activeSample === index" class="absolute inset-0 ring-inset ring-2 ring-[var(--alvarez-blue)] rounded-xl pointer-events-none"></div>
+                                    <div x-show="activeSample === index" class="absolute inset-0 ring-inset ring-2 ring-blue-600 rounded-xl pointer-events-none"></div>
                                 </button>
                             </template>
                         </div>
@@ -201,6 +272,43 @@ try {
                     <a href="/catalogo?categoria=melamina" class="bg-[var(--text-main)] hover:opacity-85 text-[var(--bg-main)] font-black uppercase text-[10px] tracking-widest px-6 py-4 rounded-[1.5rem] transition-all shadow-md text-center flex items-center justify-center gap-2">
                         Explorar Catálogo Completo <i class="fas fa-arrow-right"></i>
                     </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL: TAPAS -->
+        <section id="panel-tapas" x-show="tab === 'tapas'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;" aria-labelledby="title-tapas">
+            <div class="bg-gradient-to-br from-[var(--bg-card)] to-orange-50 dark:to-orange-950/20 border border-orange-500/20 p-8 md:p-12 rounded-[2rem] shadow-sm relative overflow-hidden">
+                <i class="fas fa-box-open absolute -right-10 -bottom-10 text-[200px] text-orange-500/10 pointer-events-none"></i>
+                
+                <h2 id="title-tapas" class="text-2xl font-black text-[var(--text-main)] uppercase tracking-widest mb-6 relative z-10">
+                    Oportunidades: <span class="text-orange-500">Tapas de Paquete</span>
+                </h2>
+                
+                <p class="text-sm text-[var(--text-muted)] max-w-3xl mb-8 leading-relaxed font-medium relative z-10">
+                    Muchos clientes consultan por opciones más económicas para estructuras no visibles o talleres. Las <strong class="text-[var(--text-main)]">TAPAS</strong> son tableros de segunda calidad que vienen como cubiertas protectoras en los pallets de fábrica (una arriba y otra abajo del lote).
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                    <article class="bg-[var(--bg-main)]/80 backdrop-blur border border-[var(--border-card)] p-6 rounded-2xl">
+                        <header class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500"><i class="fas fa-exclamation-triangle"></i></div>
+                            <h3 class="font-black uppercase tracking-widest text-[11px] text-[var(--text-main)]">Condición del Material</h3>
+                        </header>
+                        <p class="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed">
+                            Al ser cubiertas protectoras, suelen estar rayadas en al menos una de sus caras o presentar pequeños desperfectos (ej. despuntes en los bordes). Sin embargo, <strong class="text-[var(--text-main)]">estructuralmente son totalmente utilizables</strong> de todas maneras.
+                        </p>
+                    </article>
+                    
+                    <article class="bg-[var(--bg-main)]/80 backdrop-blur border border-[var(--border-card)] p-6 rounded-2xl">
+                        <header class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500"><i class="fas fa-tags"></i></div>
+                            <h3 class="font-black uppercase tracking-widest text-[11px] text-[var(--text-main)]">Precios Económicos</h3>
+                        </header>
+                        <p class="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed">
+                            Se venden como saldo a un costo mucho más barato, dependiendo exclusivamente de su estado al llegar de fábrica. Ideal consultar el stock y la disponibilidad en el momento.
+                        </p>
+                    </article>
                 </div>
             </div>
         </section>

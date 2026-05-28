@@ -159,6 +159,37 @@ if (resolvedSellerId) {
         .tool-btn.active { background-color: var(--ps-panel-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
         .toolbar-sep { width: 24px; height: 1px; background-color: var(--ps-toolbar-border); margin: 8px 0; }
 
+        /* Buscador OCR Button */
+        .tool-btn--buscador {
+            color: #ef4444 !important;
+            position: relative;
+            flex-direction: column;
+            gap: 2px;
+            height: auto !important;
+            min-height: 36px;
+            padding: 5px 0;
+        }
+        .tool-btn--buscador i {
+            font-size: 15px;
+            filter: drop-shadow(0 0 5px rgba(239,68,68,0.6));
+        }
+        .tool-btn--buscador:hover {
+            background-color: rgba(239,68,68,0.15) !important;
+            color: #ef4444 !important;
+        }
+        .tool-btn--buscador.active {
+            background-color: rgba(239,68,68,0.25) !important;
+            box-shadow: inset 0 0 10px rgba(239,68,68,0.3), 0 0 8px rgba(239,68,68,0.4);
+        }
+        .tool-ocr-badge {
+            font-size: 7px;
+            font-weight: 900;
+            color: #ef4444;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
         /* Main Canvas */
         .canvas-area {
             flex: 1;
@@ -265,6 +296,16 @@ if (resolvedSellerId) {
         }
         .tooltip.visible { opacity: 1; }
 
+        /* RESPONSIVE LAYOUT MOBILE */
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column-reverse; }
+            .toolbar { width: 100%; height: 60px; flex-direction: row; border-right: none; border-top: 1px solid var(--ps-toolbar-border); padding: 0 8px; justify-content: space-around; }
+            .toolbar-top { flex-direction: row; gap: 8px; flex: 1; align-items: center; justify-content: center; }
+            .toolbar-bottom { padding-bottom: 0; padding-left: 8px; flex-direction: row; align-items: center; justify-content: center; }
+            .toolbar-sep { width: 1px; height: 24px; margin: 0 4px; }
+            .right-panel { display: none !important; }
+        }
+
     </style>
 </head>
 <body>
@@ -285,9 +326,7 @@ if (resolvedSellerId) {
         <div style="display: flex; align-items: center; gap: 20px;">
             <BusinessHoursCounter />
             <div class="macro-ticker" id="macro-ticker">
-                <span>Dólar Blue: <span id="dolar-blue">--</span></span> |
-                <span>Dólar MEP: <span id="dolar-mep">--</span></span> |
-                <span style="color:#f59e0b;">Riesgo País: <span id="riesgo-pais">--</span></span>
+                <!-- Carga dinámica para evitar ceros y CORS -->
             </div>
             
             <div style="width: 1px; height: 24px; background: #333;"></div>
@@ -316,6 +355,10 @@ if (resolvedSellerId) {
                 </a>
                 <a href={title === 'Caja' ? 'javascript:void(0)' : '/vendedor/caja'} class="tool-btn tooltip-trigger" data-tab="tab-historico" data-tooltip="Reportes Históricos">
                     <i class="fas fa-chart-line"></i>
+                </a>
+                <a href={title === 'Caja' ? 'javascript:void(0)' : '/vendedor/caja'} class="tool-btn tooltip-trigger tool-btn--buscador" data-tab="tab-buscador" data-tooltip="Buscador Inteligente de Facturas (OCR)" id="tool-buscador-btn">
+                    <i class="fas fa-search"></i>
+                    <span class="tool-ocr-badge">OCR</span>
                 </a>
                 <div class="toolbar-sep"></div>
                 <a href="/vendedor/herramientas" class={`tool-btn tooltip-trigger ${title === 'Herramientas Financieras' ? 'active' : ''}`} data-tooltip="Herramientas Financieras">
@@ -530,24 +573,33 @@ if (resolvedSellerId) {
             window.location.href = '/vendedor/login';
         });
 
-        // Fetch Dolar & Riesgo Pais
+        // Fetch Dolar & Riesgo Pais dynamically from internal API (CORS-free)
         async function loadMacroData() {
             try {
-                // Dolar Blue
-                const resBlue = await fetch('https://dolarapi.com/v1/dolares/blue');
-                const dataBlue = await resBlue.json();
-                document.getElementById('dolar-blue')!.textContent = `$${dataBlue.venta}`;
+                const res = await fetch('/api/vendedor/market-radar');
+                const json = await res.json();
+                if (json.success && json.data) {
+                    const data = json.data;
+                    const items = [];
 
-                // Dolar MEP
-                const resMep = await fetch('https://dolarapi.com/v1/dolares/mep');
-                const dataMep = await resMep.json();
-                document.getElementById('dolar-mep')!.textContent = `$${dataMep.venta}`;
+                    if (data.dolar?.blue?.val && data.dolar.blue.val > 0) {
+                        items.push(`<span>Dólar Blue: <span style="color: #10b981; font-weight: bold;">$${data.dolar.blue.val}</span></span>`);
+                    }
+                    if (data.dolar?.mep?.val && data.dolar.mep.val > 0) {
+                        items.push(`<span>Dólar MEP: <span style="color: #10b981; font-weight: bold;">$${data.dolar.mep.val}</span></span>`);
+                    }
+                    if (data.dolar?.ccl?.val && data.dolar.ccl.val > 0) {
+                        items.push(`<span>Dólar CCL: <span style="color: #10b981; font-weight: bold;">$${data.dolar.ccl.val}</span></span>`);
+                    }
+                    if (data.riesgoPais && data.riesgoPais > 0) {
+                        items.push(`<span style="color:#f59e0b;">Riesgo País: <span style="font-weight: bold;">${data.riesgoPais} pts</span></span>`);
+                    }
 
-                // Riesgo Pais
-                const resRiesgo = await fetch('https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo');
-                const dataRiesgo = await resRiesgo.json();
-                document.getElementById('riesgo-pais')!.textContent = `${dataRiesgo.valor} pts`;
-
+                    const tickerEl = document.getElementById('macro-ticker');
+                    if (tickerEl) {
+                        tickerEl.innerHTML = items.join('<span style="color: #444; margin: 0 8px;">|</span>');
+                    }
+                }
             } catch(e) {
                 console.error("Error loading macro data", e);
             }

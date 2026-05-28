@@ -12,58 +12,70 @@ export const MODULE_TYPES = {
 };
 
 /**
- * Calcula las piezas necesarias para un módulo específico.
- * @param {string} type Tipo de módulo (MODULE_TYPES)
+ * Calcula las piezas necesarias para un módulo específico de manera dinámica.
+ * @param {string} type Tipo de módulo
  * @param {object} dims {alto, ancho, prof, n_cajones, n_puertas, n_estantes}
  * @param {number} thickness Espesor de la placa (default 18mm)
  */
 export function calculateModulePieces(type, dims, thickness = 18) {
-    const { alto, ancho, prof } = dims;
+    const { alto, ancho, prof, n_cajones, n_estantes, n_puertas } = dims;
     let pieces = [];
 
-    // Lógica base: Cuerpo del mueble (Carcasa)
-    if (type !== MODULE_TYPES.BIBLIOTECA) {
-        // Laterales (2 unidades)
-        pieces.push({ name: 'Lateral', h: alto, w: prof, qty: 2 });
-        // Techo y Base (2 unidades) - Van por dentro de los laterales
-        pieces.push({ name: 'Techo/Base', h: ancho - (thickness * 2), w: prof, qty: 2 });
-        // Fondo (1 unidad) - Suele ser de 3mm o 5.5mm, pero aquí calculamos área
-        pieces.push({ name: 'Fondo Trasero', h: alto - thickness, w: ancho - thickness, qty: 1, isBackground: true });
+    // Laterales (2 unidades)
+    pieces.push({ name: 'Lateral de Carcasa', h: alto, w: prof, qty: 2 });
+
+    // Techo y Base (o amarres para Bajo Mesada)
+    if (type === MODULE_TYPES.BAJO_MESADA) {
+        pieces.push({ name: 'Piso de Carcasa', h: ancho - (thickness * 2), w: prof, qty: 1 });
+        pieces.push({ name: 'Faja Superior (Amarre)', h: ancho - (thickness * 2), w: 100, qty: 2 });
+        pieces.push({ name: 'Zócalo Base Bajo Mesada', h: ancho - (thickness * 2), w: 120, qty: 2 });
     } else {
-        // Biblioteca (Sin fondo a veces, o con estantes fijos)
-        pieces.push({ name: 'Lateral', h: alto, w: prof, qty: 2 });
-        pieces.push({ name: 'Estante Fijo (Sup/Inf)', h: ancho - (thickness * 2), w: prof, qty: 2 });
+        pieces.push({ name: 'Techo/Base de Carcasa', h: ancho - (thickness * 2), w: prof, qty: 2 });
+        if (type === MODULE_TYPES.CAJONERA) {
+            pieces.push({ name: 'Zócalo Base Chifonier', h: ancho - (thickness * 2), w: 80, qty: 2 });
+        }
     }
 
-    // Lógica específica por tipo
-    switch (type) {
-        case MODULE_TYPES.CAJONERA:
-            const nCajones = dims.n_cajones || 1;
-            const hFrente = Math.floor(alto / nCajones) - 4; // 4mm de huelgo entre frentes
-            
-            for (let i = 0; i < nCajones; i++) {
-                // Frente visible
-                pieces.push({ name: `Frente Cajón ${i+1}`, h: hFrente, w: ancho - 4, qty: 1, isFront: true });
-                // Laterales cajón (2 por cajón) - 50mm menos que la profundidad del mueble
-                pieces.push({ name: `Lateral Cajón ${i+1}`, h: 150, w: prof - 50, qty: 2 });
-                // Frente/Trasero cajón (2 por cajón)
-                pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: 150, w: ancho - (thickness * 2) - 26 - (thickness * 2), qty: 2 });
-                // Fondo cajón
-                pieces.push({ name: `Fondo Cajón ${i+1}`, h: prof - 50, w: ancho - (thickness * 2) - 26, qty: 1, isBackground: true });
-            }
-            break;
+    // Fondo Trasero (MDF 3mm) - Se asume siempre a menos que sea una biblioteca abierta sin nada
+    const tieneContenido = n_cajones > 0 || n_estantes > 0 || n_puertas > 0;
+    if (type !== MODULE_TYPES.BIBLIOTECA || tieneContenido) {
+        pieces.push({ name: 'Fondo MDF 3mm', h: alto - 10, w: ancho - 10, qty: 1, isBackground: true });
+    }
 
-        case MODULE_TYPES.PLACARD:
-        case MODULE_TYPES.BAJO_MESADA:
-        case MODULE_TYPES.ALACENA:
-            const nPuertas = dims.n_puertas || 1;
-            const wPuerta = Math.floor(ancho / nPuertas) - 4;
-            pieces.push({ name: 'Puerta', h: alto - 4, w: wPuerta, qty: nPuertas, isFront: true });
-            
-            if (dims.n_estantes) {
-                pieces.push({ name: 'Estante Regulable', h: ancho - (thickness * 2) - 2, w: prof - 20, qty: dims.n_estantes });
-            }
-            break;
+    // Estantes Regulables
+    if (n_estantes > 0) {
+        pieces.push({ name: 'Estante Regulable', h: ancho - (thickness * 2) - 2, w: prof - 20, qty: n_estantes });
+    }
+
+    // Cajones (Cajonera interna)
+    if (n_cajones > 0) {
+        let hDisponible = alto;
+        if (type === MODULE_TYPES.CAJONERA) {
+            hDisponible = alto - 80 - (thickness * 2); // Descontar zócalo y piso
+        } else if (type === MODULE_TYPES.BAJO_MESADA) {
+            hDisponible = alto - 120 - (thickness * 2); // Descontar zócalo y piso/fajas
+        }
+        
+        const hFrente = Math.floor((hDisponible - (n_cajones * 4)) / n_cajones);
+        
+        for (let i = 0; i < n_cajones; i++) {
+            // Frente visible
+            pieces.push({ name: `Frente Cajón ${i+1}`, h: hFrente, w: ancho - 4, qty: 1, isFront: true });
+            // Laterales de cajón (150mm alto estándar)
+            const hCajonInterno = Math.min(150, Math.max(100, Math.floor(hFrente - 50)));
+            pieces.push({ name: `Lateral Cajón ${i+1}`, h: hCajonInterno, w: prof - 50, qty: 2 });
+            // Contra-frente cajón (interior)
+            pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: ancho - (thickness * 2) - 26 - (thickness * 2), qty: 2 });
+            // Fondo de cajón (MDF 3mm)
+            pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: ancho - (thickness * 2) - 26, qty: 1, isBackground: true });
+        }
+    }
+
+    // Puertas
+    if (n_puertas > 0) {
+        const wPuerta = Math.floor((ancho - (n_puertas * 2)) / n_puertas) - 2;
+        const hPuerta = type === MODULE_TYPES.BAJO_MESADA ? (alto - 120) : (alto - 4);
+        pieces.push({ name: 'Puerta', h: hPuerta, w: wPuerta, qty: n_puertas, isFront: true });
     }
 
     return pieces;

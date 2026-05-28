@@ -1,5 +1,74 @@
 export const gecomManualData = [
   {
+    title: `Manual de Calculadora Proyectada`,
+    content: `MANUAL DE LA CALCULADORA PROYECTADA AVANZADA (CENTRO OPERATIVO FINANCIERO)
+==========================================================================
+
+Este manual detalla las funciones, fórmulas y flujos del simulador y centro operativo financiero de Alvarez Placas.
+
+1. ESTRUCTURA CENTRAL DEL PANEL
+--------------------------------
+El módulo está dividido en 4 columnas principales que reflejan la estructura y lógica de la planilla Excel:
+
+A. COLUMNA 1: OPERACIONES VENTA 1 (BLANCO)
+   * Venta 1 Bruta: Facturación bruta total del canal Blanco (Melamina Blanca).
+   * Servicio de Corte V1: Subtotal facturado puramente por servicio de optimización y corte.
+   * Servicio de Pegado V1: Subtotal facturado por pegado de cantos.
+   * Cant. Pegados y Valor Unitario: Detalles de cantidad de pegados y costo por pegado (por defecto $1.000).
+   * Fórmulas Aplicadas:
+     - Melaminas Base: Venta 1 Bruta - Servicio Corte V1 - Servicio Pegado V1.
+     - Margen Melaminas Base: Melaminas Base x 23.077%.
+     - Margen Servicio Corte: Servicio Corte V1 x 80%.
+     - Costo Interno Pegado: Cantidad de Pegados x Precio Unitario.
+     - Pegado Excedente: Servicio Pegado V1 - Costo Interno.
+     - Margen Excedente Pegado: Pegado Excedente x 28.5715%.
+     - Utilidad Venta 1: Margen Melaminas + Margen Corte + Costo Interno + Margen Excedente Pegado.
+
+B. COLUMNA 2: OPERACIONES VENTA 2 (NEGRO)
+   * Mismas variables y desglose que Venta 1, pero aplicado al canal Negro.
+   * Diferencia clave en fórmula:
+     - Margen Servicio Corte: En Venta 2 (Negro), el servicio de corte tiene un margen del 100% (coincidiendo con Excel).
+
+C. COLUMNA 3: DEDUCCIONES y GASTOS
+   * Gastos Operativos (Fijos + Variables): Egresos operativos totales del mes.
+   * IVA Ventas y IVA Compras: Subtotales para el cálculo tributario.
+   * Sincronización en Vivo: Toggle interactivo para enlazar el panel a la base de datos de movimientos diarios.
+   * Fórmulas Aplicadas:
+     - IVA a Pagar: IVA Ventas - IVA Compras.
+     - Utilidad Bruta Total: Utilidad Venta 1 + Utilidad Venta 2.
+     - NETO PERIODO ACTUAL: Utilidad Bruta Total - Gastos Operativos.
+
+D. COLUMNA 4: CONTROL DE RECAUDACIÓN Y COMPRAS
+   * Recaudación Real: Dinero real de caja al final del periodo.
+   * Compra Total Real: Facturas de compra de materias primas del periodo.
+   * Fórmulas Aplicadas:
+     - Recaudación menos Ventas: Recaudación Real - (Venta 1 Bruta + Venta 2 Bruta).
+     - Materia Prima Blanco: (Melaminas Base Blanco - Margen Blanco) / 1.25.
+     - Materia Prima Negro: (Melaminas Base Negro - Margen Negro) / 1.105.
+     - Materia Prima Total: Materia Prima Blanco + Materia Prima Negro.
+     - DESVÍO DE COMPRA: Compra Total Real - Materia Prima Total (El desvío indica si las compras reales del mes exceden el costo de reposición teórico. Si es positivo es un desvío desfavorable, si es negativo es favorable).
+
+2. IMPORTACIÓN INTELIGENTE GCOM EXPRESS
+--------------------------------------
+Permite pegar directamente el texto copiado de comprobantes o resúmenes de Gecom/Excel. El motor inteligente lee y autocompleta automáticamente campos de ventas de melamina, corte, pegado y gastos fijos para ahorrar tiempo.
+
+3. SIMULACIÓN ESTRATÉGICA (ESCENARIOS)
+--------------------------------------
+En la sección central se encuentra el simulador reactivo:
+   * Sliders de Crecimiento de Ventas e Inflación de Egresos.
+   * Permite proyectar el comportamiento neto acumulativo a 3, 6 o 12 meses.
+   * El gráfico dinámico muestra la trayectoria proyectada de ingresos vs costos.
+
+4. FLUJO DE PERSISTENCIA Y COMPARACIÓN HISTÓRICA
+------------------------------------------------
+A. Guardar Captura (Snapshot):
+   Fernando presiona "Registrar Cierre Proyectado" en la calculadora para guardar la proyección actual de forma persistente. Puede asignarle un nombre descriptivo (ej: "Cierre Mayo 2026").
+B. Análisis Histórico:
+   En la solapa "Reportes Históricos", se pueden consultar estas capturas en frecuencias Diaria, Mensual, Semestral y Anual. El gráfico muestra la tendencia real acumulada del negocio y se expone la lista de tarjetas expandibles con el desglose centesimal.
+C. Edición de Ajuste:
+   Para ajustar una proyección antigua, se presiona "⚡ Cargar / Editar en Calculadora" en la tarjeta histórica. Esto restaura todos los datos en la calculadora activa y habilita el banner de edición. Al modificar cualquier valor, Fernando puede hacer clic en "Guardar Cambios" para sobrescribir y actualizar los datos persistentes en la base centralizada.`
+  },
+  {
     title: `Anulacion de factura`,
     content: `Anulacion de factura
 

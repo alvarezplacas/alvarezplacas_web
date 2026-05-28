@@ -1,0 +1,457 @@
+---
+import CeoWorkspace from '../../layouts/CeoWorkspace.astro';
+
+let sellerId = Astro.cookies.get('seller_session')?.value;
+if (!sellerId) {
+    return Astro.redirect('/ceo'); // Redirigir a login u home del CEO
+}
+---
+
+<CeoWorkspace title="Finanzas" vendedor_id={sellerId}>
+    <div class="view-panel" style="padding: 20px;">
+        <div class="card-header" style="background: transparent; border-bottom: none; margin-bottom: 10px;">
+            <i class="fas fa-chart-line" style="color: #3b82f6; font-size: 24px;"></i>
+            <h2 style="font-size: 20px; margin-left: 10px;">Dashboard Financiero</h2>
+        </div>
+
+        <!-- Filtro de período -->
+        <div class="period-selector" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+            <span class="period-label" style="color: #888; font-weight: bold; font-size: 11px; text-transform: uppercase;">Período Histórico:</span>
+            <button class="period-btn active" data-period="30">30 Días</button>
+            <button class="period-btn" data-period="60">60 Días</button>
+            <button class="period-btn" data-period="90">90 Días</button>
+            <button class="period-btn" data-period="180">6 Meses</button>
+            <button class="period-btn" data-period="365">1 Año</button>
+        </div>
+
+        <!-- KPIs del período -->
+        <div class="kpi-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            <div class="kpi-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; padding: 14px 16px; display: flex; gap: 12px; align-items: center;">
+                <div class="kpi-icon" style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background:rgba(239,68,68,0.15); color:#ef4444; flex-shrink: 0;">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="kpi-info" style="display: flex; flex-direction: column;">
+                    <span class="kpi-label" style="font-size: 11px; color: #888; margin-bottom: 3px;">
+                        Total Egresos <i class="fas fa-circle-question" title="Suma total de todos los gastos operativos, fijos e impuestos asentados en la caja." style="cursor:help; margin-left:3px; opacity:0.8;"></i>
+                    </span>
+                    <span class="kpi-value" id="ejec-egresos" style="font-size: 18px; font-weight: 600; color: #fff; font-family: 'Roboto Mono', monospace;">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; padding: 14px 16px; display: flex; gap: 12px; align-items: center;">
+                <div class="kpi-icon" style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background:rgba(59,130,246,0.15); color:#3b82f6; flex-shrink: 0;">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div class="kpi-info" style="display: flex; flex-direction: column;">
+                    <span class="kpi-label" style="font-size: 11px; color: #888; margin-bottom: 3px;">
+                        Gastos Fijos <i class="fas fa-circle-question" title="Gastos recurrentes de la empresa (ej: Alquileres, Sueldos, ARCA, Servicios)." style="cursor:help; margin-left:3px; opacity:0.8;"></i>
+                    </span>
+                    <span class="kpi-value" id="ejec-fijos" style="font-size: 18px; font-weight: 600; color: #fff; font-family: 'Roboto Mono', monospace;">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; padding: 14px 16px; display: flex; gap: 12px; align-items: center;">
+                <div class="kpi-icon" style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background:rgba(245,158,11,0.15); color:#f59e0b; flex-shrink: 0;">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="kpi-info" style="display: flex; flex-direction: column;">
+                    <span class="kpi-label" style="font-size: 11px; color: #888; margin-bottom: 3px;">
+                        Gastos Variables <i class="fas fa-circle-question" title="Gastos diarios u ocasionales (ej: Combustibles, Limpieza, Viáticos)." style="cursor:help; margin-left:3px; opacity:0.8;"></i>
+                    </span>
+                    <span class="kpi-value" id="ejec-variables" style="font-size: 18px; font-weight: 600; color: #fff; font-family: 'Roboto Mono', monospace;">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; padding: 14px 16px; display: flex; gap: 12px; align-items: center;">
+                <div class="kpi-icon" style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background:rgba(16,185,129,0.15); color:#10b981; flex-shrink: 0;">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="kpi-info" style="display: flex; flex-direction: column;">
+                    <span class="kpi-label" style="font-size: 11px; color: #888; margin-bottom: 3px;">
+                        Impuestos / IVA <i class="fas fa-circle-question" title="Carga impositiva registrada." style="cursor:help; margin-left:3px; opacity:0.8;"></i>
+                    </span>
+                    <span class="kpi-value" id="ejec-impuestos" style="font-size: 18px; font-weight: 600; color: #fff; font-family: 'Roboto Mono', monospace;">$ --</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts grid -->
+        <div class="charts-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="chart-card chart-large" style="grid-column: 1 / -1; background: #252525; border: 1px solid #383838; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                <div class="card-header" style="justify-content: space-between; display: flex; align-items: center; width: 100%; padding: 12px 16px; border-bottom: 1px solid #383838; background: #2a2a2a;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-arrow-up" style="color:#10b981;"></i>
+                        <h3 style="color: #ccc; font-size: 13px; font-weight: 600;">Evolución y Tendencia de Ingresos (Facturación PDF)</h3>
+                        <i class="fas fa-circle-question" title="Gráfico calculado automáticamente leyendo el texto (OCR) de las facturas y notas de crédito en PDF subidas por la empresa." style="color:#888; cursor:help; font-size:12px;"></i>
+                    </div>
+                    <div class="filter-controls" style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
+                        <span style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Agrupar por:</span>
+                        <select id="ejec-ingreso-agrupacion" class="ps-input-sm" style="background:#1e1e1e; border:1px solid #444; color:#ccc; padding:3px 8px; border-radius:4px; font-size:11px; outline: none; cursor: pointer;">
+                            <option value="diario" selected>Diario</option>
+                            <option value="mensual">Mensual</option>
+                            <option value="semestral">Semestral</option>
+                            <option value="anual">Anual</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="chart-ingresos" style="min-height: 280px;"></div>
+            </div>
+
+            <div class="chart-card chart-large" style="grid-column: 1 / -1; background: #252525; border: 1px solid #383838; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                <div class="card-header" style="justify-content: space-between; display: flex; align-items: center; width: 100%; padding: 12px 16px; border-bottom: 1px solid #383838; background: #2a2a2a;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-chart-line" style="color:#ef4444;"></i>
+                        <h3 style="color: #ccc; font-size: 13px; font-weight: 600;">Evolución y Tendencia de Gastos (Egresos)</h3>
+                        <i class="fas fa-circle-question" title="Visualiza la distribución temporal de la salida de dinero a lo largo del tiempo agrupada por categoría." style="color:#888; cursor:help; font-size:12px;"></i>
+                    </div>
+                    <div class="filter-controls" style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
+                        <span style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Agrupar por:</span>
+                        <select id="ejec-gasto-agrupacion" class="ps-input-sm" style="background:#1e1e1e; border:1px solid #444; color:#ccc; padding:3px 8px; border-radius:4px; font-size:11px; outline: none; cursor: pointer;">
+                            <option value="diario" selected>Diario</option>
+                            <option value="mensual">Mensual</option>
+                            <option value="semestral">Semestral</option>
+                            <option value="anual">Anual</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="chart-barras" style="min-height: 280px;"></div>
+            </div>
+
+            <div class="chart-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; overflow: hidden;">
+                <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid #383838; background: #2a2a2a; display: flex; gap: 8px; align-items: center;">
+                    <i class="fas fa-chart-pie" style="color:#3b82f6;"></i>
+                    <h3 style="color: #ccc; font-size: 13px; font-weight: 600;">Gastos Fijos por Categoría</h3>
+                    <i class="fas fa-circle-question" title="Porcentaje de impacto de cada Gasto Fijo sobre el total de fijos del período." style="color:#888; cursor:help; font-size:12px; margin-left:auto;"></i>
+                </div>
+                <div id="chart-torta" style="min-height: 280px;"></div>
+            </div>
+
+            <div class="chart-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; overflow: hidden;">
+                <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid #383838; background: #2a2a2a; display: flex; gap: 8px; align-items: center;">
+                    <i class="fas fa-chart-pie" style="color:#f59e0b;"></i>
+                    <h3 style="color: #ccc; font-size: 13px; font-weight: 600;">Gastos Variables por Categoría</h3>
+                    <i class="fas fa-circle-question" title="Porcentaje de impacto de cada Gasto Variable sobre el total de variables del período." style="color:#888; cursor:help; font-size:12px; margin-left:auto;"></i>
+                </div>
+                <div id="chart-torta-variables" style="min-height: 280px;"></div>
+            </div>
+        </div>
+    </div>
+</CeoWorkspace>
+
+<style>
+    .period-btn {
+        background: #252525;
+        border: 1px solid #383838;
+        color: #888;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .period-btn:hover { background: #2d2d2d; color: #ccc; }
+    .period-btn.active {
+        background: #2e609c;
+        color: #fff;
+        border-color: #3d79bf;
+    }
+</style>
+
+<script>
+    const fmt = (v: number) => '$ ' + v.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const toARDate = (d: Date) => d.toISOString().split('T')[0];
+    const today = () => new Date().toISOString().split('T')[0];
+
+    let currentPeriod = 30;
+    let barChart: any = null, tortaFijosChart: any = null, tortaVariablesChart: any = null, ingresosChart: any = null;
+
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentPeriod = parseInt((btn as HTMLElement).dataset.period!);
+            initCharts(currentPeriod);
+        });
+    });
+
+    function getFriendlyCategoryName(catId: string): string {
+        const mapping: Record<string, string> = {
+            gasto_fijo_agua_calle: 'Agua de Calle',
+            gasto_fijo_alquiler: 'Alquiler',
+            gasto_fijo_arca: 'ARCA',
+            gasto_fijo_arba_iibb: 'ARBA IIBB',
+            gasto_fijo_comisiones_bancarias: 'Comisiones Bancarias',
+            gasto_fijo_contadora: 'Contadora',
+            gasto_fijo_faecys: 'FAECYS',
+            gasto_fijo_gecom: 'GECOM',
+            gasto_fijo_luz: 'Luz',
+            gasto_fijo_monitoreo_alarmas: 'Monitoreo Alarmas',
+            gasto_fijo_municipalidad: 'Municipalidad',
+            gasto_fijo_sec: 'SEC',
+            gasto_fijo_seguridad_higiene: 'Seguridad e Higiene',
+            gasto_fijo_seguro_camion: 'Seguro Camión',
+            gasto_fijo_seguros_galpon: 'Seguros Galpón',
+            gasto_fijo_servidor: 'Servidor',
+            gasto_fijo_sueldos_2026: 'Sueldos 2026',
+            gasto_fijo_telefonos_internet: 'Teléfonos / Internet',
+            gasto_variable_agua_ivess_dani: 'Agua Ivess/Dani',
+            gasto_variable_arreglos_maquinaria_camion: 'Arreglos Maquinaria/Camión',
+            gasto_variable_bomberos: 'Bomberos',
+            gasto_variable_combustible_guille_facu_agus: 'Combustible Guille/Facu/Agus',
+            gasto_variable_combustible_maquinaria: 'Combustible Maquinaria',
+            gasto_variable_consumibles: 'Consumibles',
+            gasto_variable_devoluciones_clientes_sf_caja: 'Devoluciones / SF Caja',
+            gasto_variable_electricidad_ezequiel: 'Electricidad Ezequiel',
+            gasto_variable_gastos_administrativos_prestamos: 'Gastos Adm. Préstamos',
+            gasto_variable_gastos_varios_administracion: 'Gastos Varios Adm.',
+            gasto_variable_gastos_varios_produccion: 'Gastos Varios Prod.',
+            gasto_variable_libreria: 'Librería',
+            gasto_variable_limpieza: 'Limpieza',
+            gasto_variable_merma_mercaderia: 'Merma Mercadería',
+            gasto_variable_pegamento_maquina: 'Pegamento Máquina',
+            gasto_variable_plan_arca: 'Plan ARCA',
+            gasto_variable_publicidad: 'Publicidad',
+            gasto_variable_refrigerios: 'Refrigerios',
+            gasto_variable_refrigerios_facu_agus_guille: 'Refrigerios Facu/Agus/Guille',
+            gasto_variable_viaticos: 'Viáticos',
+            gasto_variable_volquete: 'Volquete',
+            impuestos: 'Impuestos / IVA'
+        };
+        return mapping[catId] || catId.replace('gasto_fijo_', '').replace('gasto_variable_', '').replace(/_/g, ' ').toUpperCase();
+    }
+
+    async function initCharts(days: number) {
+        try {
+            const desde = new Date();
+            desde.setDate(desde.getDate() - days);
+            const desdeStr = toARDate(desde);
+
+            let items: any[] = [];
+
+            try {
+                const res = await fetch(`/api/caja/movimientos?fechaDesde=${desdeStr}&limit=1000&sort=fecha`);
+                if (res.ok) {
+                    const data = await res.json();
+                    items = data.data || [];
+                }
+            } catch(e) {
+                console.error("Fetch failed:", e);
+            }
+
+            items.sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+            const agrupacion = (document.getElementById('ejec-gasto-agrupacion') as HTMLSelectElement)?.value || 'diario';
+
+            let totalIngresos = 0, totalEgresos = 0;
+            let gastoFijo = 0, gastoVar = 0, impuestos = 0;
+            let ventaBlanco = 0, ventaNegro = 0;
+
+            const egresosByCat: Record<string, Record<string, number>> = {};
+            const fijosBreakdown: Record<string, number> = {};
+            const variablesBreakdown: Record<string, number> = {};
+            const intervalsSet = new Set<string>();
+
+            items.forEach(m => {
+                const monto = parseFloat(m.monto) || 0;
+                const dateStr = m.fecha;
+
+                if (m.tipo === 'ingreso') {
+                    totalIngresos += monto;
+                    if (m.categoria === 'venta_blanco') ventaBlanco += monto;
+                    else if (m.categoria === 'venta_negro') ventaNegro += monto;
+                } else {
+                    totalEgresos += monto;
+                    const friendlyName = getFriendlyCategoryName(m.categoria);
+                    if (m.categoria.startsWith('gasto_fijo')) {
+                        gastoFijo += monto;
+                        fijosBreakdown[friendlyName] = (fijosBreakdown[friendlyName] || 0) + monto;
+                    } else if (m.categoria.startsWith('gasto_variable')) {
+                        gastoVar += monto;
+                        variablesBreakdown[friendlyName] = (variablesBreakdown[friendlyName] || 0) + monto;
+                    } else if (m.categoria === 'impuestos') {
+                        impuestos += monto;
+                    }
+                    
+                    let interval = dateStr;
+                    if (agrupacion === 'mensual') {
+                        interval = dateStr.substring(0, 7);
+                    } else if (agrupacion === 'semestral') {
+                        const parts = dateStr.split('-');
+                        const month = parseInt(parts[1] || '1');
+                        const semester = month <= 6 ? 'Semestre 1' : 'Semestre 2';
+                        interval = `${parts[0]} - ${semester}`;
+                    } else if (agrupacion === 'anual') {
+                        interval = dateStr.substring(0, 4);
+                    }
+                    intervalsSet.add(interval);
+
+                    if (!egresosByCat[friendlyName]) {
+                        egresosByCat[friendlyName] = {};
+                    }
+                    egresosByCat[friendlyName][interval] = (egresosByCat[friendlyName][interval] || 0) + monto;
+                }
+            });
+
+            document.getElementById('ejec-egresos')!.textContent = fmt(totalEgresos);
+            document.getElementById('ejec-fijos')!.textContent = fmt(gastoFijo);
+            document.getElementById('ejec-variables')!.textContent = fmt(gastoVar);
+            document.getElementById('ejec-impuestos')!.textContent = fmt(impuestos);
+
+            const dates = Array.from(intervalsSet).sort();
+            if (dates.length === 0) dates.push(today());
+
+            const series: any[] = [];
+            const activeCategories = Object.keys(egresosByCat);
+
+            activeCategories.forEach(cat => {
+                const data = dates.map(d => parseFloat((egresosByCat[cat][d] || 0).toFixed(2)));
+                if (data.some(v => v > 0)) {
+                    series.push({ name: cat, data: data });
+                }
+            });
+
+            if (series.length === 0) {
+                series.push({ name: 'Sin Gastos', data: dates.map(() => 0) });
+            }
+
+            // @ts-ignore
+            const ApexCharts = window.ApexCharts;
+            if (!ApexCharts) return;
+
+            const apexOpts = {
+                chart: { background: 'transparent', toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+                theme: { mode: 'dark' },
+                dataLabels: { enabled: false },
+                grid: { borderColor: '#383838' }
+            };
+
+            if (barChart) barChart.destroy();
+            barChart = new ApexCharts(document.getElementById('chart-barras'), {
+                ...apexOpts,
+                chart: { ...apexOpts.chart, type: 'line', height: 280 },
+                series: series,
+                xaxis: { 
+                    categories: dates, 
+                    labels: { rotate: -45, style: { colors: '#888', fontSize: '10px' } } 
+                },
+                yaxis: { 
+                    labels: { style: { colors: '#888' }, formatter: (v: number) => `$${v.toLocaleString('es-AR')}` } 
+                },
+                stroke: { curve: 'smooth', width: 3 },
+                markers: { size: 5, hover: { size: 7 } },
+                legend: { show: true, position: 'bottom', labels: { colors: '#888' } },
+                colors: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4', '#14b8a6', '#f97316', '#84cc16'],
+                tooltip: { y: { formatter: (v: number) => fmt(v) } }
+            });
+            barChart.render();
+
+            const fijosLabels = Object.keys(fijosBreakdown);
+            const fijosSeries = Object.values(fijosBreakdown);
+
+            if (tortaFijosChart) tortaFijosChart.destroy();
+            tortaFijosChart = new ApexCharts(document.getElementById('chart-torta'), {
+                ...apexOpts,
+                chart: { ...apexOpts.chart, type: 'donut', height: 280 },
+                series: fijosSeries.length > 0 ? fijosSeries : [0],
+                labels: fijosLabels.length > 0 ? fijosLabels : ['Sin Datos'],
+                colors: ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#f43f5e', '#06b6d4', '#6366f1', '#ec4899', '#14b8a6', '#84cc16', '#f97316', '#a78bfa', '#38bdf8', '#34d399', '#e11d48'],
+                legend: { show: true, position: 'bottom', labels: { colors: '#888' } },
+                tooltip: { y: { formatter: (v: number) => fmt(v) } }
+            });
+            tortaFijosChart.render();
+
+            const variablesLabels = Object.keys(variablesBreakdown);
+            const variablesSeries = Object.values(variablesBreakdown);
+
+            if (tortaVariablesChart) tortaVariablesChart.destroy();
+            tortaVariablesChart = new ApexCharts(document.getElementById('chart-torta-variables'), {
+                ...apexOpts,
+                chart: { ...apexOpts.chart, type: 'donut', height: 280 },
+                series: variablesSeries.length > 0 ? variablesSeries : [0],
+                labels: variablesLabels.length > 0 ? variablesLabels : ['Sin Datos'],
+                colors: ['#f97316', '#06b6d4', '#84cc16', '#7c3aed', '#10b981', '#d946ef', '#f59e0b', '#2563eb', '#f43f5e', '#0d9488', '#0ea5e9', '#dc2626', '#ca8a04', '#db2777', '#4f46e5'],
+                legend: { show: true, position: 'bottom', labels: { colors: '#888' } },
+                tooltip: { y: { formatter: (v: number) => fmt(v) } }
+            });
+            tortaVariablesChart.render();
+
+            // Ingresos OCR PDF Chart
+            try {
+                const resIng = await fetch(`/api/documentos/ingresos-chart`);
+                if (resIng.ok) {
+                    const dataIng = await resIng.json();
+                    if (dataIng.success && dataIng.data) {
+                        const agrupacionIngresos = (document.getElementById('ejec-ingreso-agrupacion') as HTMLSelectElement)?.value || 'diario';
+                        let ingresosMap: Record<string, number> = {};
+                        
+                        // Filter by date
+                        const filteredData = dataIng.data.filter((row: any) => row.fecha >= desdeStr);
+
+                        filteredData.forEach((row: any) => {
+                            const dateStr = (row.fecha || '').split('T')[0];
+                            let interval = dateStr;
+                            if (agrupacionIngresos === 'mensual') {
+                                interval = dateStr.substring(0, 7);
+                            } else if (agrupacionIngresos === 'semestral') {
+                                const parts = dateStr.split('-');
+                                const month = parseInt(parts[1] || '1');
+                                const semester = month <= 6 ? 'Semestre 1' : 'Semestre 2';
+                                interval = `${parts[0]} - ${semester}`;
+                            } else if (agrupacionIngresos === 'anual') {
+                                interval = dateStr.substring(0, 4);
+                            } else {
+                                const parts = dateStr.split('-');
+                                if (parts.length >= 3) {
+                                    interval = `${parts[2]}/${parts[1]}`;
+                                }
+                            }
+                            ingresosMap[interval] = (ingresosMap[interval] || 0) + parseFloat(row.ingresos || 0);
+                        });
+
+                        const ingresosDates = Object.keys(ingresosMap).sort();
+                        const ingresosSeriesData = ingresosDates.map(d => parseFloat(ingresosMap[d].toFixed(2)));
+
+                        if (ingresosChart) ingresosChart.destroy();
+                        ingresosChart = new ApexCharts(document.getElementById('chart-ingresos'), {
+                            ...apexOpts,
+                            chart: { ...apexOpts.chart, type: 'area', height: 280 },
+                            series: [{ name: 'Ingresos (OCR)', data: ingresosSeriesData }],
+                            xaxis: { 
+                                categories: ingresosDates, 
+                                labels: { rotate: -45, style: { colors: '#888', fontSize: '10px' } } 
+                            },
+                            yaxis: { 
+                                labels: { style: { colors: '#888' }, formatter: (v: number) => `$${v.toLocaleString('es-AR')}` } 
+                            },
+                            stroke: { curve: 'smooth', width: 3 },
+                            colors: ['#10b981'],
+                            fill: { type: 'gradient', gradient: { shadeIntensity: 0.5, opacityFrom: 0.25, opacityTo: 0.02 } },
+                            tooltip: { y: { formatter: (v: number) => fmt(v) } }
+                        });
+                        ingresosChart.render();
+                    }
+                }
+            } catch (e) {
+                console.error("Error loading ingresos chart:", e);
+            }
+
+        } catch(e) {
+            console.error("Error initializing charts:", e);
+        }
+    }
+
+    document.getElementById('ejec-gasto-agrupacion')?.addEventListener('change', () => {
+        initCharts(currentPeriod);
+    });
+
+    document.getElementById('ejec-ingreso-agrupacion')?.addEventListener('change', () => {
+        initCharts(currentPeriod);
+    });
+
+    // Wait for ApexCharts to load
+    const checkApex = setInterval(() => {
+        // @ts-ignore
+        if (window.ApexCharts) {
+            clearInterval(checkApex);
+            initCharts(currentPeriod);
+        }
+    }, 100);
+
+</script>

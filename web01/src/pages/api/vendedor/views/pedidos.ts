@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ cookies }) => {
             filter: { vendedor_id: { _eq: sellerId } },
             sort: ['-fecha_pedido'],
             limit: 50,
-            fields: ['id', 'status', 'total_m2', 'total_precio', 'fecha_pedido', { cliente_id: ['name', 'nombre_empresa'] }]
+            fields: ['id', 'status', 'total_m2', 'total_precio', 'fecha_pedido', 'datos_optimizacion', { cliente_id: ['name', 'nombre_empresa'] }]
         })) as any[];
     } catch (e: any) {
         console.error('Error cargando pedidos:', e.message);
@@ -66,6 +66,12 @@ export const GET: APIRoute = async ({ cookies }) => {
             const sc = statusConfig[p.status] || { label: p.status, color: '#666' };
             const cliente = p.cliente_id?.nombre_empresa || p.cliente_id?.name || 'Cliente Particular';
             const fecha = p.fecha_pedido ? new Date(p.fecha_pedido).toLocaleDateString('es-AR') : '—';
+            
+            // Extraer la fecha solicitada de entrega desde el JSON de optimización
+            const reqDate = p.datos_optimizacion?.fecha_entrega_requerida
+                ? new Date(p.datos_optimizacion.fecha_entrega_requerida).toLocaleDateString('es-AR')
+                : 'A CONFIRMAR';
+            
             const opts = Object.entries(statusConfig).map(([val, cfg]) =>
                 `<option value="${val}" ${p.status === val ? 'selected' : ''}>${cfg.label}</option>`
             ).join('');
@@ -76,7 +82,10 @@ export const GET: APIRoute = async ({ cookies }) => {
             <p class="pedido-cliente">${cliente}</p>
             <p class="pedido-sub">Interno #${p.id}</p>
           </td>
-          <td class="pedido-date">${fecha}</td>
+          <td class="pedido-date">
+            ${fecha}
+            <span style="display:block; font-size:9px; color:#ff2800; font-weight:900; margin-top:3px; text-transform:uppercase; white-space:nowrap;">Entrega: ${reqDate}</span>
+          </td>
           <td class="pedido-total">${p.total_m2 || 0} m²</td>
           <td>
             <select class="status-select" data-id="${p.id}" style="--sc: ${sc.color}">

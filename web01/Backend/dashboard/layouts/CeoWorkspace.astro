@@ -275,9 +275,7 @@ if (resolvedSellerId) {
         <div style="display: flex; align-items: center; gap: 20px;">
             <BusinessHoursCounter />
             <div class="macro-ticker" id="macro-ticker">
-                <span>Dólar Blue: <span id="dolar-blue">--</span></span> |
-                <span>Dólar MEP: <span id="dolar-mep">--</span></span> |
-                <span style="color:#f59e0b;">Riesgo País: <span id="riesgo-pais">--</span></span>
+                <!-- Carga dinámica para evitar ceros y CORS -->
             </div>
         </div>
     </header>
@@ -295,6 +293,10 @@ if (resolvedSellerId) {
 
                 <a href="/ceo/facturas" class="tool-btn ${Astro.url.pathname === '/ceo/facturas' ? 'active' : ''}" data-tooltip="Buscador de Facturas">
                     <i class="fas fa-file-invoice" style="color: #ef4444;"></i>
+                </a>
+
+                <a href="/ceo/finanzas" class="tool-btn ${Astro.url.pathname === '/ceo/finanzas' ? 'active' : ''}" data-tooltip="Dashboard Financiero">
+                    <i class="fas fa-chart-line" style="color: #3b82f6;"></i>
                 </a>
                 <div class="toolbar-sep"></div>
                 
@@ -543,24 +545,33 @@ if (resolvedSellerId) {
             window.location.href = '/login';
         });
 
-        // Fetch Dolar & Riesgo Pais
+        // Fetch Dolar & Riesgo Pais dynamically from internal API (CORS-free)
         async function loadMacroData() {
             try {
-                // Dolar Blue
-                const resBlue = await fetch('https://dolarapi.com/v1/dolares/blue');
-                const dataBlue = await resBlue.json();
-                document.getElementById('dolar-blue')!.textContent = `$${dataBlue.venta}`;
+                const res = await fetch('/api/vendedor/market-radar');
+                const json = await res.json();
+                if (json.success && json.data) {
+                    const data = json.data;
+                    const items = [];
 
-                // Dolar MEP
-                const resMep = await fetch('https://dolarapi.com/v1/dolares/mep');
-                const dataMep = await resMep.json();
-                document.getElementById('dolar-mep')!.textContent = `$${dataMep.venta}`;
+                    if (data.dolar?.blue?.val && data.dolar.blue.val > 0) {
+                        items.push(`<span>Dólar Blue: <span style="color: #10b981; font-weight: bold;">$${data.dolar.blue.val}</span></span>`);
+                    }
+                    if (data.dolar?.mep?.val && data.dolar.mep.val > 0) {
+                        items.push(`<span>Dólar MEP: <span style="color: #10b981; font-weight: bold;">$${data.dolar.mep.val}</span></span>`);
+                    }
+                    if (data.dolar?.ccl?.val && data.dolar.ccl.val > 0) {
+                        items.push(`<span>Dólar CCL: <span style="color: #10b981; font-weight: bold;">$${data.dolar.ccl.val}</span></span>`);
+                    }
+                    if (data.riesgoPais && data.riesgoPais > 0) {
+                        items.push(`<span style="color:#f59e0b;">Riesgo País: <span style="font-weight: bold;">${data.riesgoPais} pts</span></span>`);
+                    }
 
-                // Riesgo Pais
-                const resRiesgo = await fetch('https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo');
-                const dataRiesgo = await resRiesgo.json();
-                document.getElementById('riesgo-pais')!.textContent = `${dataRiesgo.valor} pts`;
-
+                    const tickerEl = document.getElementById('macro-ticker');
+                    if (tickerEl) {
+                        tickerEl.innerHTML = items.join('<span style="color: #444; margin: 0 8px;">|</span>');
+                    }
+                }
             } catch(e) {
                 console.error("Error loading macro data", e);
             }

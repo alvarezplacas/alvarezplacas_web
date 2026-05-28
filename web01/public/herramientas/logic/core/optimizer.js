@@ -25,6 +25,7 @@ export class SmartCutEngine {
         this.edgeWaste = (Number(config.edgeWaste) || 18) / 100;
         this.profile = config.profile || 'MAX_EFF';
         this.iterations = (this.profile === 'MAX_EFF') ? 15000 : 1500;
+        this.mode = config.mode || 'MIXED'; // 'MIXED', 'H', 'V'
         console.log(`%c TREE LOOK-AHEAD v11.2 %c Buscando Placa Única (95%+)`, "background: #000; color: #00ff00; font-weight: bold; border: 1px solid #00ff00;", "background: #00ff00; color: #000;");
     }
 
@@ -124,12 +125,17 @@ export class SmartCutEngine {
         const fullW = pW + this.kerf;
         const fullH = pH + this.kerf;
 
-        // Simular ambos cortes
-        const scoreV = this._evaluateSplit(node, fullW, fullH, pW, pH, true, nextPiece);
-        const scoreH = this._evaluateSplit(node, fullW, fullH, pW, pH, false, nextPiece);
-
-        // Elegir el mejor (menor score = mejor encaje BSSF para la siguiente pieza)
-        const verticalFirst = (scoreV <= scoreH);
+        let verticalFirst;
+        if (this.mode === 'V') {
+            verticalFirst = true;
+        } else if (this.mode === 'H') {
+            verticalFirst = false;
+        } else {
+            // MIXED - Simular ambos cortes y elegir el mejor look-ahead
+            const scoreV = this._evaluateSplit(node, fullW, fullH, pW, pH, true, nextPiece);
+            const scoreH = this._evaluateSplit(node, fullW, fullH, pW, pH, false, nextPiece);
+            verticalFirst = (scoreV <= scoreH);
+        }
 
         if (verticalFirst) {
             node.left = new GuillotineNode(node.x + fullW, node.y, node.w - fullW, node.h);

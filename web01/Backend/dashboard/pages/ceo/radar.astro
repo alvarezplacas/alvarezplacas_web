@@ -11,15 +11,14 @@ if (!adminSession && !sellerSession) {
 ---
 
 <CeoWorkspace title="Radar Global de Mercado" vendedor_id={adminSession || sellerSession}>
-    <div class="radar-header">
-        <h2><i class="fas fa-satellite-dish" style="color: #3b82f6;"></i> Radar Global Predictivo</h2>
-        <p>Monitoreo de la cadena de valor global para prever aumentos en listas de precios de tableros y herrajes.</p>
-        <button class="btn-refresh" @click="$dispatch('refresh-radar')">
-            <i class="fas fa-sync-alt"></i> Actualizar Ahora
-        </button>
-    </div>
-
-    <div x-data="marketRadar()" @refresh-radar.window="fetchData()" x-init="fetchData()">
+    <div x-data="marketRadar()" x-init="fetchData()">
+        <div class="radar-header">
+            <h2><i class="fas fa-satellite-dish" style="color: #3b82f6;"></i> Radar Global Predictivo</h2>
+            <p>Monitoreo de la cadena de valor global para prever aumentos en listas de precios de tableros y herrajes.</p>
+            <button class="btn-refresh" @click="fetchData(true)" :disabled="loading">
+                <i class="fas fa-sync-alt" :class="loading ? 'fa-spin' : ''"></i> Actualizar Ahora
+            </button>
+        </div>
         
         <div x-show="loading" class="loading-state">
             <i class="fas fa-spinner fa-spin"></i> Estableciendo conexión con los mercados...
@@ -287,10 +286,11 @@ if (!adminSession && !sellerSession) {
             dolar: { blue: { val: 0, var: 0 }, mep: { val: 0, var: 0 }, ccl: { val: 0, var: 0 } },
             riesgoPais: 0,
 
-            async fetchData() {
+            async fetchData(force = false) {
                 this.loading = true;
                 try {
-                    const res = await fetch('/api/vendedor/market-radar');
+                    const url = force ? '/api/vendedor/market-radar?force=true' : '/api/vendedor/market-radar';
+                    const res = await fetch(url);
                     const json = await res.json();
                     if (json.success) {
                         this.faplac = json.data.faplac;

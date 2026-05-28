@@ -1,11 +1,27 @@
 import type { APIRoute } from 'astro';
 
+// In-memory cache for macro indicators
+let cachedData: any = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 export const GET: APIRoute = async ({ request, cookies }) => {
     // 1. Verify Authentication
     const sellerSession = cookies.get('seller_session')?.value;
     const adminSession = cookies.get('admin_session')?.value;
     if (!sellerSession && !adminSession) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const force = url.searchParams.get('force') === 'true';
+
+    // Return cached data if valid and not forced
+    if (!force && cachedData && (Date.now() - lastFetchTime < CACHE_DURATION)) {
+        return new Response(JSON.stringify({ success: true, data: cachedData }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 
     try {
@@ -86,6 +102,10 @@ export const GET: APIRoute = async ({ request, cookies }) => {
         );
 
         await Promise.all(promises);
+
+        // Update in-memory cache
+        cachedData = results;
+        lastFetchTime = Date.now();
 
         return new Response(JSON.stringify({ success: true, data: results }), {
             status: 200,

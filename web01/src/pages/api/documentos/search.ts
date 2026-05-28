@@ -26,31 +26,58 @@ export const GET: APIRoute = async ({ url }) => {
             `;
             dbResult = await query(queryText, [limit, offset]);
         } else {
-            // Intelligent full-text and field-based search
+            const likeParam = `%${searchQuery}%`;
+            
+            // Multi-layer search:
+            // 1. Full-text search via plainto_tsquery (handles product names, brands, any words)
+            // 2. Exact field matches (doc_number, client_name, client_cuit, client_cta)
+            // Removed raw ILIKE on doc_text to prevent slow full table scans
             const sqlQuery = `
                 SELECT 
                     id, filename, doc_type, pos_number, doc_number, doc_date,
                     client_cta, client_name, client_cuit, total_amount, seller_code,
                     created_at,
                     count(*) OVER() AS full_count,
-                    ts_rank(fts_doc, websearch_to_tsquery('spanish', $1)) as rank
+                    CASE
+                        WHEN doc_number ILIKE $2 THEN 3.0
+                        WHEN client_name ILIKE $2 THEN 2.5
+                        WHEN client_cuit ILIKE $2 THEN 2.0
+                        WHEN client_cta ILIKE $2 THEN 1.8
+                        ELSE 0.5
+                    END AS rank
                 FROM documentos_facturacion
                 WHERE 
-                    fts_doc @@ websearch_to_tsquery('spanish', $1)
-                    OR doc_number ILIKE $2
+                    doc_number ILIKE $2
                     OR client_name ILIKE $2
                     OR client_cuit ILIKE $2
                     OR client_cta ILIKE $2
-                ORDER BY 
-                    (CASE WHEN doc_number ILIKE $2 THEN 2.0 ELSE 0.0 END) + 
-                    (CASE WHEN client_name ILIKE $2 THEN 1.5 ELSE 0.0 END) +
-                    ts_rank(fts_doc, websearch_to_tsquery('spanish', $1)) DESC,
-                    doc_date ${order}
+                    OR (fts_doc IS NOT NULL AND fts_doc @@ plainto_tsquery('spanish', $1))
+                ORDER BY rank DESC, doc_date ${order}
                 LIMIT $3 OFFSET $4;
             `;
             
-            const likeParam = `%${searchQuery}%`;
-            dbResult = await query(sqlQuery, [searchQuery, likeParam, limit, offset]);
+            try {
+                dbResult = await query(sqlQuery, [searchQuery, likeParam, limit, offset]);
+            } catch (ftsErr: any) {
+                // Fallback: pure ILIKE search if FTS fails (e.g., special characters, numeric-only queries)
+                console.warn('FTS search failed, falling back to ILIKE:', ftsErr.message);
+                const fallbackQuery = `
+                    SELECT 
+                        id, filename, doc_type, pos_number, doc_number, doc_date,
+                        client_cta, client_name, client_cuit, total_amount, seller_code,
+                        created_at,
+                        count(*) OVER() AS full_count
+                    FROM documentos_facturacion
+                    WHERE 
+                        doc_number ILIKE $1
+                        OR client_name ILIKE $1
+                        OR client_cuit ILIKE $1
+                        OR client_cta ILIKE $1
+                    ORDER BY doc_date ${order}
+                    LIMIT $2 OFFSET $3;
+                `;
+                dbResult = await query(fallbackQuery, [likeParam, limit, offset]);
+            }
         }
 
         if (dbResult.rows.length > 0) {
@@ -64,7 +91,7 @@ export const GET: APIRoute = async ({ url }) => {
             limit: limit,
             totalPages: Math.ceil(totalCount / limit),
             results: dbResult.rows.map((r: any) => {
-                const { full_count, ...cleanRow } = r;
+                const { full_count, rank, ...cleanRow } = r;
                 return cleanRow;
             })
         }), {

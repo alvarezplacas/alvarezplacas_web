@@ -33,14 +33,27 @@ export const HARDWARE_RULES = {
      * @param {number} height Altura de la puerta (mm)
      * @param {number} doorQty Cantidad de puertas
      */
-    getHinges: (height, doorQty) => {
+    /**
+     * Calcula cantidad de bisagras según la altura de la puerta y tipo de montaje (codo).
+     * @param {number} height Altura de la puerta (mm)
+     * @param {number} doorQty Cantidad de puertas
+     * @param {string} hingeType Tipo de bisagra: 'codo_0', 'codo_9', 'codo_18'
+     */
+    getHinges: (height, doorQty, hingeType = 'codo_0') => {
         let perDoor = 2;
         if (height > 900) perDoor = 3;
         if (height > 1500) perDoor = 4;
         if (height > 2100) perDoor = 5;
 
+        let name = 'Bisagra Cazoleta Clip-on 35mm - Codo 0 (Superpuesta)';
+        if (hingeType === 'codo_9') {
+            name = 'Bisagra Cazoleta Clip-on 35mm - Codo 9 (Semi-superpuesta)';
+        } else if (hingeType === 'codo_18') {
+            name = 'Bisagra Cazoleta Clip-on 35mm - Codo 18 (Embutida)';
+        }
+
         return {
-            name: 'Bisagra Clip-on 35mm (Estándar)',
+            name,
             qty: perDoor * doorQty,
             unit: 'Unidad'
         };
@@ -63,7 +76,7 @@ export const HARDWARE_RULES = {
 
 /**
  * Genera la lista completa de herrajes para un conjunto de módulos.
- * @param {Array} modules Array de {type, dims}
+ * @param {Array} modules Array de {type, dims, hingeType}
  */
 export function calculateTotalHardware(modules) {
     let hardwareList = {};
@@ -83,24 +96,25 @@ export function calculateTotalHardware(modules) {
         add({ name: HARDWARE_RULES.SCREWS.CONFIRMAT.name, qty: 16, unit: 'Unidad' });
         add({ name: HARDWARE_RULES.SCREWS.AGLOMERADO.name, qty: 24, unit: 'Unidad' });
 
-        if (type === 'CAJONERA') {
+        if (dims.n_cajones > 0) {
             const slides = HARDWARE_RULES.getSlides(dims.prof, dims.n_cajones);
             add(slides);
             const pulls = HARDWARE_RULES.getPulls(dims.ancho, dims.n_cajones);
             add(pulls);
         }
 
-        if (['PLACARD', 'BAJO_MESADA', 'ALACENA'].includes(type)) {
-            const hinges = HARDWARE_RULES.getHinges(dims.alto, dims.n_puertas);
+        if (dims.n_puertas > 0) {
+            const hinges = HARDWARE_RULES.getHinges(dims.alto, dims.n_puertas, m.hingeType || 'codo_0');
             add(hinges);
             const pulls = HARDWARE_RULES.getPulls(dims.ancho, dims.n_puertas);
             add(pulls);
         }
 
-        if (dims.n_estantes) {
+        if (dims.n_estantes > 0) {
             add({ name: 'Soporte Estante Ø5mm (Taco)', qty: dims.n_estantes * 4, unit: 'Unidad' });
         }
     });
 
     return Object.values(hardwareList);
 }
+

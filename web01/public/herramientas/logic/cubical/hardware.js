@@ -22,7 +22,7 @@ export const HARDWARE_RULES = {
         const finalLength = Math.max(250, Math.min(600, length));
         
         return {
-            name: `Corredera Telescópica ${finalLength}mm`,
+            name: `Corredera Telescópica ${finalLength}mm (Greenway/Bronzen)`,
             qty: qty, // 1 par por cajón (se cuenta como unidad de 'par' o 2 unidades)
             unit: 'Par'
         };
@@ -33,14 +33,27 @@ export const HARDWARE_RULES = {
      * @param {number} height Altura de la puerta (mm)
      * @param {number} doorQty Cantidad de puertas
      */
-    getHinges: (height, doorQty) => {
+    /**
+     * Calcula cantidad de bisagras según la altura de la puerta y tipo de montaje (codo).
+     * @param {number} height Altura de la puerta (mm)
+     * @param {number} doorQty Cantidad de puertas
+     * @param {string} hingeType Tipo de bisagra: 'codo_0', 'codo_9', 'codo_18'
+     */
+    getHinges: (height, doorQty, hingeType = 'codo_0') => {
         let perDoor = 2;
         if (height > 900) perDoor = 3;
         if (height > 1500) perDoor = 4;
         if (height > 2100) perDoor = 5;
 
+        let name = 'Bisagra Cazoleta 35mm Codo 0 - Superpuesta (Greenway/Bronzen)';
+        if (hingeType === 'codo_9') {
+            name = 'Bisagra Cazoleta 35mm Codo 9 - Semi-superpuesta (Greenway/Bronzen)';
+        } else if (hingeType === 'codo_18') {
+            name = 'Bisagra Cazoleta 35mm Codo 18 - Embutida (Greenway/Bronzen)';
+        }
+
         return {
-            name: 'Bisagra Clip-on 35mm (Estándar)',
+            name,
             qty: perDoor * doorQty,
             unit: 'Unidad'
         };
@@ -54,7 +67,7 @@ export const HARDWARE_RULES = {
     getPulls: (width, qty) => {
         const perFront = width > 700 ? 2 : 1;
         return {
-            name: 'Tirador Aluminio L-Type (200mm)',
+            name: 'Tirador Clásico Atornillable (Bronzen)',
             qty: perFront * qty,
             unit: 'Unidad'
         };
@@ -63,7 +76,7 @@ export const HARDWARE_RULES = {
 
 /**
  * Genera la lista completa de herrajes para un conjunto de módulos.
- * @param {Array} modules Array de {type, dims}
+ * @param {Array} modules Array de {type, dims, hingeType}
  */
 export function calculateTotalHardware(modules) {
     let hardwareList = {};
@@ -91,7 +104,7 @@ export function calculateTotalHardware(modules) {
         }
 
         if (dims.n_puertas > 0) {
-            const hinges = HARDWARE_RULES.getHinges(dims.alto, dims.n_puertas);
+            const hinges = HARDWARE_RULES.getHinges(dims.alto, dims.n_puertas, m.hingeType || 'codo_0');
             add(hinges);
             const pulls = HARDWARE_RULES.getPulls(dims.ancho, dims.n_puertas);
             add(pulls);
@@ -100,7 +113,20 @@ export function calculateTotalHardware(modules) {
         if (dims.n_estantes > 0) {
             add({ name: 'Soporte Estante Ø5mm (Taco)', qty: dims.n_estantes * 4, unit: 'Unidad' });
         }
+        if (type === 'ESCRITORIO') {
+            // Bandeja de teclado requiere correderas extra
+            const traySlides = HARDWARE_RULES.getSlides(dims.prof, 1);
+            add(traySlides);
+        }
+
+        if (type === 'ALACENA' && dims.n_puertas > 0) {
+            // Asumimos puertas elevables (Pistón a gas)
+            const wPuerta = Math.floor((dims.ancho - (dims.n_puertas * 2)) / dims.n_puertas);
+            const pistonsPerDoor = wPuerta > 600 ? 2 : 1;
+            add({ name: 'Pistón a Gas 80N (Bronzen/Greenway)', qty: pistonsPerDoor * dims.n_puertas, unit: 'Unidad' });
+        }
     });
 
     return Object.values(hardwareList);
 }
+

@@ -24,7 +24,7 @@ echo 3. Limpieza profunda y extraccion en VPS...
 ssh -i "%KEY%" -o StrictHostKeyChecking=no %REMOTE_USER%@%REMOTE_IP% "cd %REMOTE_PATH% && rm -rf dist .astro && tar -xzf site_update.tar.gz && rm site_update.tar.gz"
 
 echo 4. Compilando aplicacion en contenedor (Build Limpio)...
-ssh -i "%KEY%" -o StrictHostKeyChecking=no %REMOTE_USER%@%REMOTE_IP% "docker exec alvarezplacas_web sh -c 'npm run build'"
+ssh -i "%KEY%" -o StrictHostKeyChecking=no %REMOTE_USER%@%REMOTE_IP% "docker run --rm -v /opt/alvarez_v16/web01/site/web01:/app -w /app node:22-alpine sh -c 'npm install && npm run build'"
 
 echo 5. Reiniciando contenedor...
 ssh -i "%KEY%" -o StrictHostKeyChecking=no %REMOTE_USER%@%REMOTE_IP% "cd /opt/alvarez_v16/web01 && docker compose -f docker-compose.vps.yml restart alvarezplacas_web"
@@ -36,6 +36,8 @@ echo.
 echo ==================================================
 echo ✅ DESPLIEGUE FORZADO V5.1 COMPLETADO
 echo Por favor, pulsa CTRL + F5 en tu navegador.
-echo URL: https://alvarezplacas.com.ar/herramientas/beta-optimizado
+echo URLs de Acceso:
+echo - Vendedor: https://alvarezplacas.com.ar/vendedor
+echo - Cliente:  https://alvarezplacas.com.ar/cliente
 echo ==================================================
-pause
+echo ==================================================

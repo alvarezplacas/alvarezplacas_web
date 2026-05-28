@@ -1,0 +1,340 @@
+---
+/**
+ * ManualCalculadora.astro
+ * Libro de Ayuda específico para la Calculadora Neta Proyectada
+ */
+---
+
+<div class="h-full flex flex-col md:flex-row bg-[#111] rounded-2xl border border-white/5 overflow-hidden" x-data="{ activeSec: 'introduccion' }">
+    <!-- Sidebar -->
+    <div class="w-full md:w-1/3 bg-[#161616] border-r border-white/5 overflow-y-auto max-h-[650px] custom-scrollbar">
+        <div class="p-4 border-b border-white/5 bg-black/20">
+            <h3 class="text-white font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+                <i class="fas fa-calculator text-purple-500"></i> Manual Calculadora Neta
+            </h3>
+            <p class="text-xs text-gray-500 mt-1">Estructura, lógica de datos y fórmulas</p>
+        </div>
+        <div class="p-2 space-y-1">
+            <button 
+                @click="activeSec = 'introduccion'"
+                :class="activeSec === 'introduccion' ? 'bg-purple-600/20 border-purple-500/50 text-white' : 'bg-transparent border-transparent text-gray-400 hover:bg-white/5'"
+                class="w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center justify-between group"
+            >
+                <span class="text-xs font-semibold tracking-wide">1. Introducción y Propósito</span>
+                <i class="fas fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </button>
+            <button 
+                @click="activeSec = 'col1'"
+                :class="activeSec === 'col1' ? 'bg-purple-600/20 border-purple-500/50 text-white' : 'bg-transparent border-transparent text-gray-400 hover:bg-white/5'"
+                class="w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center justify-between group"
+            >
+                <span class="text-xs font-semibold tracking-wide">2. Columna 1: Venta 1 (Blanco)</span>
+                <i class="fas fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </button>
+            <button 
+                @click="activeSec = 'col2'"
+                :class="activeSec === 'col2' ? 'bg-purple-600/20 border-purple-500/50 text-white' : 'bg-transparent border-transparent text-gray-400 hover:bg-white/5'"
+                class="w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center justify-between group"
+            >
+                <span class="text-xs font-semibold tracking-wide">3. Columna 2: Venta 2 (Negro)</span>
+                <i class="fas fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </button>
+            <button 
+                @click="activeSec = 'col3'"
+                :class="activeSec === 'col3' ? 'bg-purple-600/20 border-purple-500/50 text-white' : 'bg-transparent border-transparent text-gray-400 hover:bg-white/5'"
+                class="w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center justify-between group"
+            >
+                <span class="text-xs font-semibold tracking-wide">4. Columna 3: Egresos e IVA</span>
+                <i class="fas fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </button>
+            <button 
+                @click="activeSec = 'col4'"
+                :class="activeSec === 'col4' ? 'bg-purple-600/20 border-purple-500/50 text-white' : 'bg-transparent border-transparent text-gray-400 hover:bg-white/5'"
+                class="w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center justify-between group"
+            >
+                <span class="text-xs font-semibold tracking-wide">5. Columna 4: Caja y Desvíos</span>
+                <i class="fas fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </button>
+            <button 
+                @click="activeSec = 'simulacion'"
+                :class="activeSec === 'simulacion' ? 'bg-purple-600/20 border-purple-500/50 text-white' : 'bg-transparent border-transparent text-gray-400 hover:bg-white/5'"
+                class="w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center justify-between group"
+            >
+                <span class="text-xs font-semibold tracking-wide">6. Simulador y Cierres Históricos</span>
+                <i class="fas fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="w-full md:w-2/3 p-8 bg-gradient-to-br from-[#111] to-[#0a0a0a] overflow-y-auto max-h-[650px] custom-scrollbar relative">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-900/10 via-transparent to-transparent pointer-events-none"></div>
+        
+        <!-- SECCIÓN 1: INTRODUCCIÓN -->
+        <div x-show="activeSec === 'introduccion'" x-transition:enter="transition ease-out duration-300" class="relative z-10 space-y-6">
+            <h2 class="text-2xl font-black text-white uppercase tracking-tight border-b border-white/10 pb-4 flex items-center gap-2">
+                <i class="fas fa-info-circle text-purple-500"></i> Introducción y Propósito
+            </h2>
+            <div class="text-gray-300 text-sm leading-relaxed space-y-4">
+                <p>
+                    La **Calculadora Neta Proyectada** es el núcleo analítico-financiero del panel. Diseñada a imagen y semejanza de la planilla Excel de control de Fernando, permite al cajero asentar las cifras comerciales de melamina y simular escenarios de crecimiento e inflación.
+                </p>
+                <p>
+                    A diferencia del registro de movimientos diarios (exclusivo para registrar egresos detallados), la calculadora neta opera a nivel **mensual o por período configurable**. Recopila las facturaciones brutas por canal, calcula los costos de reposición teóricos y deduce los gastos operativos acumulados para obtener la **utilidad real neta** del negocio.
+                </p>
+                <div class="bg-[#1e1e1e] border border-purple-500/20 p-4 rounded-xl space-y-2">
+                    <h4 class="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fas fa-star text-yellow-500"></i> Objetivos Fundamentales
+                    </h4>
+                    <ul class="list-disc pl-5 space-y-1 text-xs text-gray-400">
+                        <li>**Separar la utilidad** en dos canales independientes: Venta 1 (Blanco) y Venta 2 (Negro).</li>
+                        <li>**Conciliar la caja comercial** (Recaudación Real vs Venta Bruta Registrada).</li>
+                        <li>**Calcular desvíos de compra** comparando las compras reales del período con la materia prima consumida teóricamente.</li>
+                        <li>**Simular la evolución financiera** proyectada a 3, 6 y 12 meses bajo inflación y crecimiento estratégico.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: COLUMNA 1: VENTA 1 (BLANCO) -->
+        <div x-show="activeSec === 'col1'" style="display: none;" x-transition:enter="transition ease-out duration-300" class="relative z-10 space-y-6">
+            <h2 class="text-2xl font-black text-white uppercase tracking-tight border-b border-white/10 pb-4 flex items-center gap-2">
+                <i class="fas fa-file-invoice text-blue-500"></i> Columna 1: Operaciones Venta 1 (Blanco)
+            </h2>
+            <div class="text-gray-300 text-sm leading-relaxed space-y-4">
+                <p>
+                    Esta columna analiza y calcula la utilidad neta originada por las ventas de **Melamina Blanca** (Canal Blanco).
+                </p>
+                <div class="space-y-4">
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-blue-400 font-bold text-xs uppercase mb-2">1. Melaminas Base</h4>
+                        <p class="text-xs text-gray-400 mb-2">Representa la venta pura de placas de melamina blanca, excluyendo los servicios adicionales de corte y pegado.</p>
+                        <div class="bg-black/60 p-2 rounded font-mono text-xs text-gray-300">
+                            Fórmula: Melaminas Base = Venta 1 Bruta - Servicio Corte V1 - Servicio Pegado V1
+                        </div>
+                    </div>
+
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-blue-400 font-bold text-xs uppercase mb-2">2. Margen de Melaminas Base</h4>
+                        <p class="text-xs text-gray-400 mb-2">Se le aplica un margen del **23.077%** sobre las ventas base, equivalente al margen corporativo de placas blancas en la planilla Excel.</p>
+                        <div class="bg-black/60 p-2 rounded font-mono text-xs text-gray-300">
+                            Fórmula: Margen Melaminas = Melaminas Base × 0.23077
+                        </div>
+                    </div>
+
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-blue-400 font-bold text-xs uppercase mb-2">3. Margen Servicio de Corte V1</h4>
+                        <p class="text-xs text-gray-400 mb-2">El servicio de optimización y corte tiene una rentabilidad del **80%** en este canal.</p>
+                        <div class="bg-black/60 p-2 rounded font-mono text-xs text-gray-300">
+                            Fórmula: Margen Corte V1 = Servicio de Corte V1 × 0.80
+                        </div>
+                    </div>
+
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-blue-400 font-bold text-xs uppercase mb-2">4. Margen Servicio de Pegado V1</h4>
+                        <p class="text-xs text-gray-400 mb-2">Se calcula deduciendo el costo unitario de los insumos del servicio cobrado al cliente. Los pegados excedentes tienen un margen de **28.5715%**. El costo interno se añade en su totalidad a la utilidad.</p>
+                        <div class="space-y-1">
+                            <div class="bg-black/60 p-2 rounded font-mono text-[11px] text-gray-300">
+                                Costo Interno = Cant. Pegados × Precio Unitario (Defecto: $1.000)
+                            </div>
+                            <div class="bg-black/60 p-2 rounded font-mono text-[11px] text-gray-300">
+                                Pegado Excedente = Servicio Pegado V1 - Costo Interno
+                            </div>
+                            <div class="bg-black/60 p-2 rounded font-mono text-[11px] text-gray-300">
+                                Margen Pegado V1 = Costo Interno + (Pegado Excedente × 0.285715)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-600/10 border border-blue-500/20 p-4 rounded-xl">
+                        <span class="text-white font-bold text-xs uppercase">Utilidad Canal Blanco (V1 Total):</span>
+                        <p class="text-[11px] text-gray-400 mt-1">Es la suma totalizada de los márgenes parciales del canal:</p>
+                        <div class="bg-black/40 p-2.5 rounded font-mono text-xs text-blue-400 font-bold mt-2">
+                            Ganancia V1 = Margen Melaminas + Margen Corte V1 + Margen Pegado V1
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3: COLUMNA 2: VENTA 2 (NEGRO) -->
+        <div x-show="activeSec === 'col2'" style="display: none;" x-transition:enter="transition ease-out duration-300" class="relative z-10 space-y-6">
+            <h2 class="text-2xl font-black text-white uppercase tracking-tight border-b border-white/10 pb-4 flex items-center gap-2">
+                <i class="fas fa-wallet text-purple-500"></i> Columna 2: Operaciones Venta 2 (Negro)
+            </h2>
+            <div class="text-gray-300 text-sm leading-relaxed space-y-4">
+                <p>
+                    Esta columna analiza y calcula la utilidad neta originada por las ventas de **Melamina de Color o Negro** (Canal Negro).
+                </p>
+                <div class="space-y-4">
+                    <p class="text-gray-400 text-xs">
+                        La lógica y las fórmulas para el cálculo de Melaminas Base y Pegados son idénticas a las de Venta 1 (Blanco). Sin embargo, existe una **diferencia clave de rentabilidad** en el servicio de corte:
+                    </p>
+
+                    <div class="bg-purple-600/10 border border-purple-500/20 p-4 rounded-xl space-y-2">
+                        <h4 class="text-white font-bold text-xs uppercase flex items-center gap-1.5">
+                            <i class="fas fa-exclamation-triangle text-yellow-500"></i> Diferencia de Margen en Servicio de Corte V2
+                        </h4>
+                        <p class="text-xs text-gray-400">
+                            En el canal Negro (Venta 2), el servicio de corte tiene un margen de rentabilidad del **100%** de acuerdo con la planilla Excel oficial, en contraste con el 80% del canal Blanco.
+                        </p>
+                        <div class="bg-black/60 p-2.5 rounded font-mono text-xs text-purple-400 font-bold">
+                            Fórmula: Margen Corte V2 = Servicio de Corte V2 × 1.0 (100%)
+                        </div>
+                    </div>
+
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-purple-400 font-bold text-xs uppercase mb-2">Utilidad Canal Negro (V2 Total)</h4>
+                        <div class="bg-black/60 p-2.5 rounded font-mono text-xs text-gray-300">
+                            Ganancia V2 = Margen Melaminas Negro + Margen Corte V2 + Margen Pegado V2
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 4: COLUMNA 3: EGRESOS E IVA -->
+        <div x-show="activeSec === 'col3'" style="display: none;" x-transition:enter="transition ease-out duration-300" class="relative z-10 space-y-6">
+            <h2 class="text-2xl font-black text-white uppercase tracking-tight border-b border-white/10 pb-4 flex items-center gap-2">
+                <i class="fas fa-chart-pie text-red-500"></i> Columna 3: Deducciones, Gastos e IVA
+            </h2>
+            <div class="text-gray-300 text-sm leading-relaxed space-y-4">
+                <p>
+                    La tercera columna consolida los márgenes de utilidad de ambos canales, deduce el total de egresos operativos reales y calcula la carga impositiva neta (IVA).
+                </p>
+                
+                <div class="space-y-4">
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-red-400 font-bold text-xs uppercase mb-2">1. Gastos Operativos (Fijos + Variables)</h4>
+                        <p class="text-xs text-gray-400 mb-2">
+                            Representa los egresos acumulados del negocio. Al activar la **Sincronización en Vivo**, esta cifra se alimenta en tiempo real con la suma de todos los movimientos diarios de gastos registrados para el rango de fechas seleccionado.
+                        </p>
+                    </div>
+
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-red-400 font-bold text-xs uppercase mb-2">2. IVA Neto a Pagar</h4>
+                        <p class="text-xs text-gray-400 mb-2">Se calcula restando el IVA soportado por compras al IVA facturado por ventas comerciales.</p>
+                        <div class="bg-black/60 p-2 rounded font-mono text-xs text-gray-300">
+                            Fórmula: IVA a Pagar = IVA Ventas - IVA Compras
+                        </div>
+                    </div>
+
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-red-400 font-bold text-xs uppercase mb-2">3. Utilidad Bruta Total</h4>
+                        <p class="text-xs text-gray-400 mb-2">La consolidación neta de las utilidades de ambos canales antes de gastos operativos.</p>
+                        <div class="bg-black/60 p-2 rounded font-mono text-xs text-gray-300">
+                            Fórmula: Utilidad Bruta Total = Utilidad V1 + Utilidad V2
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-600/10 border border-emerald-500/20 p-4 rounded-xl">
+                        <span class="text-white font-bold text-xs uppercase">Neto del Período Actual (Resultado Final):</span>
+                        <p class="text-[11px] text-gray-400 mt-1">Es la ganancia o pérdida final pura obtenida tras deducir los costos operativos:</p>
+                        <div class="bg-black/40 p-2.5 rounded font-mono text-xs text-emerald-400 font-black mt-2">
+                            NETO PERIODO = Utilidad Bruta Total - Gastos Operativos
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 5: COLUMNA 4: CAJA Y DESVÍOS -->
+        <div x-show="activeSec === 'col4'" style="display: none;" x-transition:enter="transition ease-out duration-300" class="relative z-10 space-y-6">
+            <h2 class="text-2xl font-black text-white uppercase tracking-tight border-b border-white/10 pb-4 flex items-center gap-2">
+                <i class="fas fa-cash-register text-amber-500"></i> Columna 4: Caja, Materia Prima y Desvíos
+            </h2>
+            <div class="text-gray-300 text-sm leading-relaxed space-y-4">
+                <p>
+                    La cuarta columna funciona como un panel de **auditoría financiera**. Permite detectar faltantes de caja y determinar si las compras reales de materia prima coinciden con el gasto de reposición teórico.
+                </p>
+                
+                <div class="space-y-4">
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-amber-400 font-bold text-xs uppercase mb-2">1. Recaudación Menos Ventas (Diferencia de Caja)</h4>
+                        <p class="text-xs text-gray-400 mb-2">
+                            Compara el efectivo/banco real de caja frente a las ventas comerciales asentadas. Un valor negativo indica un faltante de caja o cobranzas pendientes de asentar.
+                        </p>
+                        <div class="bg-black/60 p-2 rounded font-mono text-xs text-gray-300">
+                            Fórmula: Diferencia Caja = Recaudación Real - (Venta 1 Bruta + Venta 2 Bruta)
+                        </div>
+                    </div>
+
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-amber-400 font-bold text-xs uppercase mb-2">2. Costo Teórico de Materia Prima (Consumo de Stock)</h4>
+                        <p class="text-xs text-gray-400 mb-2">
+                            Calcula el costo teórico de reposición de las placas melamínicas vendidas restando el margen y dividiendo por los coeficientes específicos por canal de la planilla Excel:
+                        </p>
+                        <div class="space-y-2">
+                            <div class="bg-black/60 p-2 rounded font-mono text-[11px] text-gray-300">
+                                MP Blanco = (Melaminas Base Blanco - Margen Blanco) / 1.25
+                            </div>
+                            <div class="bg-black/60 p-2 rounded font-mono text-[11px] text-gray-300">
+                                MP Negro = (Melaminas Base Negro - Margen Negro) / 1.105
+                            </div>
+                            <div class="bg-black/60 p-2 rounded font-mono text-[11px] text-gray-300">
+                                Materia Prima Total = MP Blanco + MP Negro
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-red-600/10 border border-red-500/20 p-4 rounded-xl">
+                        <span class="text-white font-bold text-xs uppercase">Desvío de Compra:</span>
+                        <p class="text-[11px] text-gray-400 mt-1">Compara el total facturado real en compras contra la materia prima teórica consumida. Un desvío positivo indica ineficiencias de compra, desperdicios de material o variaciones desfavorables de precios.</p>
+                        <div class="bg-black/40 p-2.5 rounded font-mono text-xs text-red-400 font-bold mt-2">
+                            DESVÍO DE COMPRA = Compra Total Real - Materia Prima Total
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 6: SIMULADOR Y HISTORIAL -->
+        <div x-show="activeSec === 'simulacion'" style="display: none;" x-transition:enter="transition ease-out duration-300" class="relative z-10 space-y-6">
+            <h2 class="text-2xl font-black text-white uppercase tracking-tight border-b border-white/10 pb-4 flex items-center gap-2">
+                <i class="fas fa-magic text-purple-500"></i> Simulador y Proyecciones Históricas
+            </h2>
+            <div class="text-gray-300 text-sm leading-relaxed space-y-4">
+                <p>
+                    Además del cálculo del mes en curso, el panel cuenta con herramientas predictivas y de persistencia:
+                </p>
+                
+                <div class="space-y-4">
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-purple-400 font-bold text-xs uppercase mb-2">1. Simulador Reactivo (Sliders)</h4>
+                        <p class="text-xs text-gray-400 mb-2">
+                            Al ajustar los controles deslizantes de **Crecimiento de Ventas** e **Inflación de Egresos**, la calculadora realiza de forma inmediata una proyección geométrica del balance acumulativo mensual en un horizonte de 3, 6 o 12 meses, renderizando la curva financiera del negocio en el gráfico predictivo interactivo.
+                        </p>
+                    </div>
+
+                    <div class="bg-black/40 border border-white/5 rounded-xl p-4">
+                        <h4 class="text-purple-400 font-bold text-xs uppercase mb-2">2. Registro de Cierres (Snapshots)</h4>
+                        <p class="text-xs text-gray-400 mb-2">
+                            Fernando puede guardar la proyección calculada haciendo clic en el botón **"Registrar Cierre Proyectado"**. Esto almacena permanentemente todas las variables y el estado exacto de la simulación en la base de datos centralizada de Directus bajo un nombre personalizado (ej: "Balance Final Mayo 2026").
+                        </p>
+                    </div>
+
+                    <div class="bg-purple-600/10 border border-purple-500/20 p-4 rounded-xl">
+                        <span class="text-white font-bold text-xs uppercase">3. Flujo de Ajuste y Edición Activa</span>
+                        <p class="text-[11px] text-gray-400 mt-1">
+                            Si se requiere reajustar una proyección histórica guardada:
+                        </p>
+                        <ol class="list-decimal pl-5 mt-2 space-y-1 text-xs text-gray-300">
+                            <li>Vaya a la solapa **Reportes Históricos**.</li>
+                            <li>Localice el balance y presione **⚡ Cargar / Editar en Calculadora**.</li>
+                            <li>La app restaurará el 100% de los datos históricos en la calculadora y activará un banner azul de edición.</li>
+                            <li>Realice los ajustes necesarios y presione **"Guardar Cambios"** para actualizar permanentemente el registro original en la base de datos central.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+</style>

@@ -10,6 +10,26 @@ export class SmartCutVisualizer {
         this.padding = 40;
         this.dragState = { dragging: false, item: null, plate: null, offset: { x: 0, y: 0 }, lastPos: { x: 0, y: 0 } };
         this.snapThreshold = 15; // Sensibilidad del imán
+        
+        // Estado de selección para tooltip y rotación
+        this.selectedItem = null;
+        this.selectedPlate = null;
+        this.selectedCanvas = null;
+        this.onUpdateCallback = null;
+
+        // Escucha global de teclado para rotar pieza seleccionada
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && this.selectedItem) {
+                // Verificar que el canvas seleccionado siga en el DOM (evita memory leaks de instancias huérfanas)
+                if (this.selectedCanvas && !document.body.contains(this.selectedCanvas)) {
+                    this.selectedItem = null;
+                    return;
+                }
+                // Evitar el desplazamiento de la página por la barra espaciadora
+                e.preventDefault();
+                this.rotateSelectedItem();
+            }
+        });
     }
 
     setContainer(containerId) {
@@ -19,6 +39,7 @@ export class SmartCutVisualizer {
     render(result, plateW, plateH, onUpdate) {
         this.plates = result.plates;
         this.container.innerHTML = '';
+        this.onUpdateCallback = onUpdate;
         
         this.plates.forEach((plate, idx) => {
             const wrap = document.createElement('div');
@@ -63,9 +84,11 @@ export class SmartCutVisualizer {
         const x = (e.clientX - rect.left) / this.scale;
         const y = (e.clientY - rect.top) / this.scale;
 
+        let clickedItem = null;
         for (const strip of plate.strips) {
             for (const item of strip.items) {
                 if (x >= item.x && x <= item.x + item.l && y >= item.y && y <= item.y + item.h) {
+                    clickedItem = item;
                     this.dragState = {
                         dragging: true,
                         item,
@@ -76,10 +99,24 @@ export class SmartCutVisualizer {
                         originalStrip: strip
                     };
                     canvas.style.cursor = 'grabbing';
-                    return;
+                    break;
                 }
             }
+            if (clickedItem) break;
         }
+
+        // Selección activa
+        this.selectedItem = clickedItem;
+        this.selectedPlate = clickedItem ? plate : null;
+        this.selectedCanvas = clickedItem ? canvas : null;
+
+        // Refrescar todos los tableros para actualizar tooltip de selección única
+        this.plates.forEach((p, idx) => {
+            const pCanvas = document.getElementById(`canvas-plate-${idx}`);
+            if (pCanvas) {
+                this.refreshCanvas(pCanvas, p);
+            }
+        });
     }
 
     handleMouseMove(e, onUpdate) {
@@ -90,35 +127,45 @@ export class SmartCutVisualizer {
         let newX = (e.clientX - rect.left) / this.scale - offset.x;
         let newY = (e.clientY - rect.top) / this.scale - offset.y;
 
-        // LÓGICA MAGNÉTICA (SNAPPING)
-        const snap = this.calculateSnap(newX, newY, item, plate);
-        item.x = snap.x;
-        item.y = snap.y;
+        const pw = (canvas.width / this.scale) - 100;
+        const ph = (canvas.height / this.scale) - 100;
+
+        // LÓGICA MAGNÉTICA (SNAPPING MULTI-BORDES Y ALINEACIÓN)
+        const snap = this.calculateSnap(newX, newY, item, plate, pw, ph);
+        
+        // Clampeado dentro de los límites del plano (permite arrastrar libremente por encima)
+        item.x = Math.max(0, Math.min(snap.x, pw - item.l));
+        item.y = Math.max(0, Math.min(snap.y, ph - item.h));
 
         this.refreshCanvas(canvas, plate);
     }
 
-    calculateSnap(x, y, currentItem, plate) {
+    calculateSnap(x, y, currentItem, plate, pw, ph) {
         let snappedX = x;
         let snappedY = y;
-        let isSnapped = false;
 
-        // Bordes de la placa (Límites)
-        if (Math.abs(x) < this.snapThreshold) { snappedX = 0; isSnapped = true; }
-        if (Math.abs(y) < this.snapThreshold) { snappedY = 0; isSnapped = true; }
+        // Snapping con los 4 bordes exteriores de la placa (Límites)
+        if (Math.abs(x) < this.snapThreshold) snappedX = 0;
+        if (Math.abs(y) < this.snapThreshold) snappedY = 0;
+        if (Math.abs((x + currentItem.l) - pw) < this.snapThreshold) snappedX = pw - currentItem.l;
+        if (Math.abs((y + currentItem.h) - ph) < this.snapThreshold) snappedY = ph - currentItem.h;
 
-        // Snapping contra otras piezas
+        // Snapping contra otras piezas (Contacto y Alineación de bordes)
         plate.strips.forEach(strip => {
             strip.items.forEach(other => {
                 if (other === currentItem) return;
 
-                // X snapping (Izquierda o Derecha)
+                // 1. Pegado de contacto (Adyacencia)
                 if (Math.abs(x - (other.x + other.l)) < this.snapThreshold) snappedX = other.x + other.l;
                 if (Math.abs((x + currentItem.l) - other.x) < this.snapThreshold) snappedX = other.x - currentItem.l;
-
-                // Y snapping (Arriba o Abajo)
                 if (Math.abs(y - (other.y + other.h)) < this.snapThreshold) snappedY = other.y + other.h;
                 if (Math.abs((y + currentItem.h) - other.y) < this.snapThreshold) snappedY = other.y - currentItem.h;
+
+                // 2. Alineación técnica (Alineado en el mismo eje)
+                if (Math.abs(x - other.x) < this.snapThreshold) snappedX = other.x;
+                if (Math.abs((x + currentItem.l) - (other.x + other.l)) < this.snapThreshold) snappedX = other.x + other.l - currentItem.l;
+                if (Math.abs(y - other.y) < this.snapThreshold) snappedY = other.y;
+                if (Math.abs((y + currentItem.h) - (other.y + other.h)) < this.snapThreshold) snappedY = other.y + other.h - currentItem.h;
             });
         });
 
@@ -129,19 +176,254 @@ export class SmartCutVisualizer {
         if (!this.dragState.dragging) return;
         
         const { item, plate, lastPos, canvas } = this.dragState;
-        
-        // Verificación de Colisión Final
-        const hasCollision = this.checkCollision(item, plate);
-        if (hasCollision) {
-            // "Rebote" si hay colisión (No permite montar una sobre otra)
+
+        const pw = (canvas.width / this.scale) - 100;
+        const ph = (canvas.height / this.scale) - 100;
+
+        // Respaldar todas las posiciones originales de la placa
+        const backups = [];
+        plate.strips.forEach(s => s.items.forEach(i => {
+            backups.push({ item: i, x: i.x, y: i.y });
+        }));
+
+        // Intentar resolver colisiones mediante empuje
+        const success = this.resolveCollisionsAndPush(item, plate, pw, ph);
+
+        if (!success) {
+            // Rebotar al lugar de origen: restaurar backups
+            backups.forEach(b => {
+                b.item.x = b.x;
+                b.item.y = b.y;
+            });
+            // Asegurar que el item arrastrado vuelva a su posición original
             item.x = lastPos.x;
             item.y = lastPos.y;
+            console.log("[SmartCut] No hay espacio libre disponible. La pieza vuelve a su posición original.");
         }
 
         this.dragState.dragging = false;
         canvas.style.cursor = 'grab';
+
+        // Actualizar estadísticas al soltar
+        this.renderStats(this.plates.indexOf(plate), plate, pw, ph);
+
         this.refreshCanvas(canvas, plate);
         if (onUpdate) onUpdate(this.getResult());
+        if (this.onUpdateCallback) this.onUpdateCallback(this.getResult());
+    }
+
+    resolveCollisionsAndPush(item, plate, pw, ph) {
+        // Encontrar todas las piezas que colisionan con item
+        let collidingItems = [];
+        plate.strips.forEach(strip => {
+            strip.items.forEach(other => {
+                if (other === item) return;
+                // Verificar intersección
+                if (item.x < other.x + other.l && item.x + item.l > other.x &&
+                    item.y < other.y + other.h && item.y + item.h > other.y) {
+                    collidingItems.push(other);
+                }
+            });
+        });
+
+        if (collidingItems.length === 0) return true; // No hay colisión, todo ok!
+
+        // Intentar desplazar las piezas colisionadas
+        for (const other of collidingItems) {
+            // Calcular las 4 opciones de empuje posibles
+            const pushRight = item.x + item.l;
+            const pushLeft = item.x - other.l;
+            const pushDown = item.y + item.h;
+            const pushUp = item.y - other.h;
+
+            const options = [];
+
+            // Opción 1: Empujar a la derecha
+            if (pushRight + other.l <= pw) {
+                options.push({ x: pushRight, y: other.y, dist: Math.abs(pushRight - other.x) });
+            }
+            // Opción 2: Empujar a la izquierda
+            if (pushLeft >= 0) {
+                options.push({ x: pushLeft, y: other.y, dist: Math.abs(pushLeft - other.x) });
+            }
+            // Opción 3: Empujar hacia abajo
+            if (pushDown + other.h <= ph) {
+                options.push({ x: other.x, y: pushDown, dist: Math.abs(pushDown - other.y) });
+            }
+            // Opción 4: Empujar hacia arriba
+            if (pushUp >= 0) {
+                options.push({ x: other.x, y: pushUp, dist: Math.abs(pushUp - other.y) });
+            }
+
+            // Ordenar opciones por menor desplazamiento (para empujar lo mínimo indispensable)
+            options.sort((a, b) => a.dist - b.dist);
+
+            let pushed = false;
+            const originalOtherX = other.x;
+            const originalOtherY = other.y;
+
+            for (const opt of options) {
+                other.x = opt.x;
+                other.y = opt.y;
+
+                // Verificar si esta nueva posición de other causa colisión con CUALQUIER OTRA pieza
+                // (excluyendo item y ella misma)
+                let collisionWithOthers = false;
+                for (const s of plate.strips) {
+                    for (const check of s.items) {
+                        if (check === other || check === item) continue;
+                        if (other.x < check.x + check.l && other.x + other.l > check.x &&
+                            other.y < check.y + check.h && other.y + other.h > check.y) {
+                            collisionWithOthers = true;
+                            break;
+                        }
+                    }
+                    if (collisionWithOthers) break;
+                }
+
+                if (!collisionWithOthers) {
+                    pushed = true;
+                    break; // Empuje exitoso!
+                }
+            }
+
+            if (!pushed) {
+                // Restaurar posición y abortar (indica que no se pudo empujar)
+                other.x = originalOtherX;
+                other.y = originalOtherY;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    rotateSelectedItem() {
+        const item = this.selectedItem;
+        const plate = this.selectedPlate;
+        const canvas = this.selectedCanvas;
+        if (!item || !plate || !canvas) return;
+
+        const pw = (canvas.width / this.scale) - 100;
+        const ph = (canvas.height / this.scale) - 100;
+
+        // Respaldar estado original para reversión limpia si falla la ubicación
+        const originalL = item.l;
+        const originalH = item.h;
+        const originalNomL = item.nominalL;
+        const originalNomH = item.nominalH;
+        const originalX = item.x;
+        const originalY = item.y;
+        const originalEdges = item.edges ? { ...item.edges } : null;
+
+        // Intercambiar dimensiones geométricas y nominales
+        item.l = originalH;
+        item.h = originalL;
+        item.nominalL = originalNomH;
+        item.nominalH = originalNomL;
+
+        // Rotar los tapacantos 90 grados en sentido horario
+        if (item.edges) {
+            item.edges.t = originalEdges.l;
+            item.edges.r = originalEdges.t;
+            item.edges.b = originalEdges.r;
+            item.edges.l = originalEdges.b;
+        }
+
+        // Mantener dentro del plano del tablero
+        item.x = Math.max(0, Math.min(item.x, pw - item.l));
+        item.y = Math.max(0, Math.min(item.y, ph - item.h));
+
+        // Verificar colisión
+        let hasCollision = this.checkCollision(item, plate);
+        if (hasCollision) {
+            // Respaldar todas las posiciones originales de la placa por si falla el empuje
+            const backups = [];
+            plate.strips.forEach(s => s.items.forEach(i => {
+                backups.push({ item: i, x: i.x, y: i.y });
+            }));
+
+            // Usar la nueva lógica de empuje industrial
+            const success = this.resolveCollisionsAndPush(item, plate, pw, ph);
+
+            if (!success) {
+                // Revertir el empuje
+                backups.forEach(b => {
+                    b.item.x = b.x;
+                    b.item.y = b.y;
+                });
+
+                // Revertir la rotación de la pieza
+                item.l = originalL;
+                item.h = originalH;
+                item.nominalL = originalNomL;
+                item.nominalH = originalNomH;
+                item.x = originalX;
+                item.y = originalY;
+                if (item.edges && originalEdges) {
+                    item.edges.t = originalEdges.t;
+                    item.edges.r = originalEdges.r;
+                    item.edges.b = originalEdges.b;
+                    item.edges.l = originalEdges.l;
+                }
+                console.log("[SmartCut] No hay espacio libre disponible para girar la pieza.");
+                return;
+            }
+        }
+
+        // Refrescar y notificar cambio global de metros y totales
+        this.refreshCanvas(canvas, plate);
+        this.renderStats(this.plates.indexOf(plate), plate, pw, ph);
+        if (this.onUpdateCallback) {
+            this.onUpdateCallback(this.getResult());
+        }
+    }
+
+    drawRotationTooltip(ctx, item, pw, ph) {
+        ctx.save();
+        
+        const text = "⎵ BARRA ESPACIADORA para girar";
+        const fontSizeOnCanvas = 11 / this.scale;
+        ctx.font = `bold ${fontSizeOnCanvas}px Inter`;
+        const textWidth = ctx.measureText(text).width;
+        
+        const padX = 12 / this.scale;
+        const padY = 6 / this.scale;
+        const bgW = textWidth + padX * 2;
+        const bgH = 24 / this.scale;
+        
+        // Posicionar arriba, o abajo si toca el borde superior
+        let tx = item.x + item.l / 2 - bgW / 2;
+        let ty = item.y - bgH - (10 / this.scale);
+        
+        if (ty < 10 / this.scale) {
+            ty = item.y + item.h + (10 / this.scale);
+        }
+        
+        // Mantener dentro del eje X
+        tx = Math.max(10 / this.scale, Math.min(tx, pw - bgW - 10 / this.scale));
+        
+        const isLightMode = document.body.getAttribute('data-theme') !== 'dark';
+        
+        // Fondo elegante en alto contraste
+        ctx.fillStyle = isLightMode ? 'rgba(10, 10, 12, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 12 * this.scale;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4 * this.scale;
+        
+        ctx.beginPath();
+        ctx.roundRect(tx, ty, bgW, bgH, 6 / this.scale);
+        ctx.fill();
+        
+        // Texto
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = isLightMode ? '#ffffff' : '#0a0a0c';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, tx + bgW / 2, ty + bgH / 2);
+        
+        ctx.restore();
     }
 
     checkCollision(item, plate) {
@@ -193,6 +475,12 @@ export class SmartCutVisualizer {
                 this.drawItem(ctx, item, isLightMode);
             });
         });
+
+        // Dibujar tooltip de rotación en pieza seleccionada
+        if (this.selectedItem && this.selectedPlate === plate) {
+            this.drawRotationTooltip(ctx, this.selectedItem, pw, ph);
+        }
+
         ctx.restore();
     }
 
@@ -251,16 +539,19 @@ export class SmartCutVisualizer {
 
     drawItem(ctx, item, isLightMode) {
         const isDragging = this.dragState.dragging && this.dragState.item === item;
+        const isSelected = this.selectedItem === item;
         
         // Cuerpo de la pieza
         if (isLightMode) {
-            ctx.fillStyle = isDragging ? 'rgba(0,0,0,0.05)' : '#ffffff';
-            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = isDragging ? 'rgba(0,0,0,0.05)' : (isSelected ? 'rgba(37, 211, 102, 0.1)' : '#ffffff');
+            ctx.strokeStyle = isSelected ? '#25d366' : '#000000';
+            ctx.lineWidth = isSelected ? 2 : 1;
         } else {
-            ctx.fillStyle = isDragging ? 'oklch(62.8% 0.25 29.23 / 40%)' : 'oklch(20% 0.01 280)';
-            ctx.strokeStyle = isDragging ? 'oklch(62.8% 0.25 29.23)' : 'oklch(100% 0 0 / 15%)';
+            ctx.fillStyle = isDragging ? 'oklch(62.8% 0.25 29.23 / 40%)' : (isSelected ? 'oklch(62.8% 0.25 29.23 / 15%)' : 'oklch(20% 0.01 280)');
+            ctx.strokeStyle = isSelected ? 'oklch(62.8% 0.25 29.23)' : 'oklch(100% 0 0 / 15%)';
+            ctx.lineWidth = isSelected ? 2 : 1;
         }
-        ctx.lineWidth = 1;
+        ctx.lineWidth = isSelected ? 2 : 1;
         
         ctx.beginPath();
         ctx.roundRect(item.x, item.y, item.l, item.h, 2);

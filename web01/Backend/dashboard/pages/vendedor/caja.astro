@@ -3,6 +3,7 @@ import CajeroWorkspace from '../../layouts/CajeroWorkspace.astro';
 import { directus, readItems } from '@conexiones/directus.js';
 import CalculadoraNeta from '../../components/cajero/CalculadoraNeta.astro';
 import ManualGecom from '../../components/cajero/ManualGecom.astro';
+import ManualCalculadora from '../../components/cajero/ManualCalculadora.astro';
 
 let sellerId = Astro.cookies.get('seller_session')?.value;
 
@@ -27,38 +28,28 @@ try {
 } catch(e) {
     console.error("[Caja] Error verifying user:", e);
 }
+
+let buscadorHtml = '';
+try {
+    const baseUrl = Astro.url.origin;
+    const response = await fetch(`${baseUrl}/api/vendedor/views/buscador`);
+    if (response.ok) {
+        buscadorHtml = await response.text();
+    } else {
+        buscadorHtml = '<div style="color:red; padding: 20px;">Error cargando buscador API. ('+response.status+')</div>';
+    }
+} catch (e: any) {
+    buscadorHtml = `<div style="color:red; padding: 20px;">Error al conectar con API buscador: ${e.message}</div>`;
+}
 ---
 
 <CajeroWorkspace title="Caja" vendedor_id={sellerId}>
     
-    <!-- GLOBAL CLIENT-SIDE ERROR DEBUGGER -->
-    <script is:inline>
-        window.addEventListener('error', function(e) {
-            const errDiv = document.createElement('div');
-            errDiv.className = 'client-error-overlay';
-            errDiv.style.position = 'fixed';
-            errDiv.style.bottom = '20px';
-            errDiv.style.left = '20px';
-            errDiv.style.right = '20px';
-            errDiv.style.background = '#7f1d1d';
-            errDiv.style.color = '#fecaca';
-            errDiv.style.border = '2px solid #ef4444';
-            errDiv.style.padding = '20px';
-            errDiv.style.borderRadius = '12px';
-            errDiv.style.zIndex = '999999';
-            errDiv.style.fontFamily = 'monospace';
-            errDiv.style.fontSize = '12px';
-            errDiv.style.whiteSpace = 'pre-wrap';
-            errDiv.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.5)';
-            errDiv.textContent = '❌ ERROR DETECTADO EN PANTALLA:\n' + e.message + '\n\nUbicación:\n' + e.filename + ' [Línea: ' + e.lineno + ', Columna: ' + e.colno + ']\n\nStack Trace:\n' + (e.error ? e.error.stack : 'No disponible');
-            document.body.appendChild(errDiv);
-        });
-    </script>
-    
+
 
     
     <!-- TABS NAV (dentro del canvas) -->
-    <div class="caja-tab-nav">
+    <nav class="caja-tab-nav">
         <button class="ctab active" data-ctab="diario">
             <i class="fas fa-file-invoice-dollar"></i> Operación Diaria
         </button>
@@ -68,30 +59,27 @@ try {
         <button class="ctab" data-ctab="historico">
             <i class="fas fa-chart-line"></i> Reportes Históricos
         </button>
+        <button class="ctab" data-ctab="buscador">
+            <i class="fas fa-file-invoice" style="color: #ef4444;"></i> Buscador de Facturas
+        </button>
         <button class="ctab" data-ctab="calculadora">
             <i class="fas fa-calculator"></i> Calculadora Neta
         </button>
         <button class="ctab" data-ctab="manual">
             <i class="fas fa-book"></i> Libro de Ayuda
         </button>
-    </div>
+        <button class="ctab" data-ctab="manual-calculadora">
+            <i class="fas fa-question-circle"></i> Manual Calculadora Neta
+        </button>
+    </nav>
 
     <!-- ========================= -->
     <!-- SOLAPA 1: OPERACIÓN DIARIA -->
     <!-- ========================= -->
-    <div class="ctab-panel active" id="panel-diario">
+    <section class="ctab-panel active" id="panel-diario">
 
         <!-- KPIs del día -->
         <div class="kpi-row" id="kpi-row">
-            <div class="kpi-card" id="kpi-ingresos">
-                <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:#10b981;">
-                    <i class="fas fa-arrow-up"></i>
-                </div>
-                <div class="kpi-info">
-                    <span class="kpi-label">Ingresos Hoy</span>
-                    <span class="kpi-value" id="val-ingresos">$ --</span>
-                </div>
-            </div>
             <div class="kpi-card" id="kpi-egresos">
                 <div class="kpi-icon" style="background:rgba(239,68,68,0.15); color:#ef4444;">
                     <i class="fas fa-arrow-down"></i>
@@ -119,6 +107,16 @@ try {
                     <span class="kpi-value" id="val-movs">--</span>
                 </div>
             </div>
+            <div class="kpi-card" id="kpi-facturado" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.03);">
+                <div class="kpi-icon" style="background:rgba(239, 68, 68, 0.15); color:#ef4444;">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Facturado Hoy (OCR)</span>
+                    <span class="kpi-value" id="val-facturado" style="font-size: 13px; font-weight: 900; color: #fff;">$ --</span>
+                    <span class="kpi-subtext" id="cnt-facturado" style="font-size: 9px; color: #888; font-weight: 500;">0 facturas (FA)</span>
+                </div>
+            </div>
         </div>
 
         <!-- Form + Table layout -->
@@ -139,11 +137,10 @@ try {
                         </div>
                         <div class="form-group">
                             <label>Tipo</label>
-                            <select id="mov-tipo" class="ps-input" required>
-                                <option value="">Seleccionar...</option>
-                                <option value="ingreso">🟢 Ingreso</option>
-                                <option value="egreso">🔴 Egreso</option>
-                            </select>
+                            <div style="background: #1e1e1e; border: 1px solid #444; color: #ccc; padding: 7px 10px; border-radius: 4px; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                                <span style="color: #ef4444;">🔴</span> Egreso (Gasto)
+                            </div>
+                            <input type="hidden" id="mov-tipo" value="egreso" />
                         </div>
                     </div>
 
@@ -151,10 +148,6 @@ try {
                         <label>Categoría</label>
                         <select id="mov-categoria" class="ps-input" required>
                             <option value="">Seleccionar...</option>
-                            <optgroup label="Ventas">
-                                <option value="venta_blanco">Venta 1</option>
-                                <option value="venta_negro">Venta 2</option>
-                            </optgroup>
                             <optgroup label="Gastos Fijos">
                                 <option value="gasto_fijo_agua_calle">AGUA DE CALLE</option>
                                 <option value="gasto_fijo_alquiler">ALQUILER</option>
@@ -260,12 +253,12 @@ try {
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- ============================ -->
     <!-- SOLAPA 2: DASHBOARD EJECUTIVO -->
     <!-- ============================ -->
-    <div class="ctab-panel hidden" id="panel-ejecutivo">
+    <section class="ctab-panel hidden" id="panel-ejecutivo">
 
         <!-- Filtro de período -->
         <div class="period-selector">
@@ -278,15 +271,6 @@ try {
         <!-- KPIs del período -->
         <div class="kpi-row">
             <div class="kpi-card">
-                <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:#10b981;">
-                    <i class="fas fa-hand-holding-usd"></i>
-                </div>
-                <div class="kpi-info">
-                    <span class="kpi-label">Total Ingresos</span>
-                    <span class="kpi-value" id="ejec-ingresos">$ --</span>
-                </div>
-            </div>
-            <div class="kpi-card">
                 <div class="kpi-icon" style="background:rgba(239,68,68,0.15); color:#ef4444;">
                     <i class="fas fa-shopping-cart"></i>
                 </div>
@@ -296,21 +280,30 @@ try {
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:#10b981;">
-                    <i class="fas fa-chart-bar"></i>
+                <div class="kpi-icon" style="background:rgba(59,130,246,0.15); color:#3b82f6;">
+                    <i class="fas fa-building"></i>
                 </div>
                 <div class="kpi-info">
-                    <span class="kpi-label">Ganancia Neta</span>
-                    <span class="kpi-value" id="ejec-neto">$ --</span>
+                    <span class="kpi-label">Gastos Fijos</span>
+                    <span class="kpi-value" id="ejec-fijos">$ --</span>
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-icon" style="background:rgba(139,92,246,0.15); color:#8b5cf6;">
-                    <i class="fas fa-percentage"></i>
+                <div class="kpi-icon" style="background:rgba(245,158,11,0.15); color:#f59e0b;">
+                    <i class="fas fa-truck"></i>
                 </div>
                 <div class="kpi-info">
-                    <span class="kpi-label">Margen Neto</span>
-                    <span class="kpi-value" id="ejec-margen">--%</span>
+                    <span class="kpi-label">Gastos Variables</span>
+                    <span class="kpi-value" id="ejec-variables">$ --</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(16,185,129,0.15); color:#10b981;">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Impuestos / IVA</span>
+                    <span class="kpi-value" id="ejec-impuestos">$ --</span>
                 </div>
             </div>
         </div>
@@ -318,32 +311,65 @@ try {
         <!-- Charts grid -->
         <div class="charts-grid">
             <div class="chart-card chart-large">
-                <div class="card-header">
-                    <i class="fas fa-chart-bar" style="color:#3b82f6;"></i>
-                    <h3>Ingresos vs Egresos</h3>
+                <div class="card-header" style="justify-content: space-between; display: flex; align-items: center; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-chart-line" style="color:#ef4444;"></i>
+                        <h3>Evolución y Tendencia de Gastos (Egresos)</h3>
+                    </div>
+                    <div class="filter-controls" style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
+                        <span style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Agrupar por:</span>
+                        <select id="ejec-gasto-agrupacion" class="ps-input-sm" style="background:#1e1e1e; border:1px solid #444; color:#ccc; padding:3px 8px; border-radius:4px; font-size:11px; outline: none; cursor: pointer;">
+                            <option value="diario" selected>Diario</option>
+                            <option value="mensual">Mensual</option>
+                            <option value="semestral">Semestral</option>
+                            <option value="anual">Anual</option>
+                        </select>
+                    </div>
                 </div>
                 <div id="chart-barras"></div>
             </div>
 
+            <div class="chart-card chart-large" style="margin-top: 20px;">
+                <div class="card-header" style="justify-content: space-between; display: flex; align-items: center; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-arrow-up" style="color:#10b981;"></i>
+                        <h3>Evolución y Tendencia de Ingresos (Facturación PDF)</h3>
+                    </div>
+                    <div class="filter-controls" style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
+                        <span style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Agrupar por:</span>
+                        <select id="ejec-ingreso-agrupacion" class="ps-input-sm" style="background:#1e1e1e; border:1px solid #444; color:#ccc; padding:3px 8px; border-radius:4px; font-size:11px; outline: none; cursor: pointer;">
+                            <option value="diario" selected>Diario</option>
+                            <option value="mensual">Mensual</option>
+                            <option value="semestral">Semestral</option>
+                            <option value="anual">Anual</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="chart-ingresos"></div>
+            </div>
+
             <div class="chart-card">
                 <div class="card-header">
-                    <i class="fas fa-chart-pie" style="color:#8b5cf6;"></i>
-                    <h3>Composición de Gastos</h3>
+                    <i class="fas fa-chart-pie" style="color:#3b82f6;"></i>
+                    <h3>Gastos Fijos por Categoría</h3>
                 </div>
                 <div id="chart-torta"></div>
             </div>
 
             <div class="chart-card">
                 <div class="card-header">
-                    <i class="fas fa-layer-group" style="color:#f59e0b;"></i>
-                    <h3>Ventas: Venta 1 vs Venta 2</h3>
+                    <i class="fas fa-chart-pie" style="color:#f59e0b;"></i>
+                    <h3>Gastos Variables por Categoría</h3>
                 </div>
-                <div id="chart-ventas"></div>
+                <div id="chart-torta-variables"></div>
             </div>
-      <!-- ============================ -->
+        </div>
+    </section>
+
+    <!-- ============================ -->
     <!-- SOLAPA 3: REPORTES HISTÓRICOS -->
     <!-- ============================ -->
-    <div class="ctab-panel hidden" id="panel-historico">
+    <section class="ctab-panel hidden" id="panel-historico">
 
         <div class="historico-controls">
             <div class="form-row" style="grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: flex-end;">
@@ -356,6 +382,7 @@ try {
                     <select id="hist-agrupacion" class="ps-input">
                         <option value="diario" selected>Diario (Mes Seleccionado)</option>
                         <option value="mensual">Mensual (Año Seleccionado)</option>
+                        <option value="semestral">Semestral (Año Seleccionado)</option>
                         <option value="anual">Anual (Histórico)</option>
                     </select>
                 </div>
@@ -397,11 +424,11 @@ try {
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-icon" style="background:rgba(139,92,246,0.15); color:#8b5cf6;">
+                <div class="kpi-icon" style="background:rgba(245,158,11,0.15); color:#f59e0b;">
                     <i class="fas fa-receipt"></i>
                 </div>
                 <div class="kpi-info">
-                    <span class="kpi-label">Total Movimientos</span>
+                    <span class="kpi-label">Reportes Guardados</span>
                     <span class="kpi-value" id="hist-val-movs">--</span>
                 </div>
             </div>
@@ -409,19 +436,19 @@ try {
 
         <div class="chart-card" id="hist-chart-card" style="display:none; margin-top:20px;">
             <div class="card-header">
-                <i class="fas fa-chart-line" style="color:#ef4444;"></i>
-                <h3 id="hist-chart-title">Evolución de Gastos (Egresos)</h3>
+                <i class="fas fa-chart-line" style="color:#10b981;"></i>
+                <h3 id="hist-chart-title">Evolución de Balance Proyectado</h3>
             </div>
             <div id="chart-historico"></div>
         </div>
         
         <div class="chart-card" id="hist-egresos-card" style="display:none; margin-top:20px;">
             <div class="card-header">
-                <i class="fas fa-list-ul" style="color:#ef4444;"></i>
-                <h3>Desglose Detallado de Egresos</h3>
+                <i class="fas fa-calculator" style="color:#10b981;"></i>
+                <h3>Desglose de Balances Guardados (Calculadora Neta)</h3>
             </div>
-            <div id="hist-egresos-container" style="padding: 20px; max-height: 400px; overflow-y: auto;">
-                <!-- Cargando egresos... -->
+            <div id="hist-egresos-container" style="padding: 20px; max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+                <!-- Cargando balances... -->
             </div>
         </div>
         
@@ -429,21 +456,35 @@ try {
             <i class="fas fa-filter" style="font-size:2rem; opacity:0.3;"></i>
             <p>Selecciona una fecha de carga y presiona "Generar Reporte"</p>
         </div>
-    </div>
+    </section>
 
     <!-- ============================ -->
     <!-- SOLAPA 4: CALCULADORA NETA -->
     <!-- ============================ -->
-    <div class="ctab-panel hidden" id="panel-calculadora">
+    <section class="ctab-panel hidden" id="panel-calculadora">
         <CalculadoraNeta />
-    </div>
+    </section>
 
     <!-- ============================ -->
     <!-- SOLAPA 5: MANUAL GECOM -->
     <!-- ============================ -->
-    <div class="ctab-panel hidden" id="panel-manual">
+    <section class="ctab-panel hidden" id="panel-manual">
         <ManualGecom />
-    </div>
+    </section>
+
+    <!-- ============================ -->
+    <!-- SOLAPA 6: MANUAL CALCULADORA NETA -->
+    <!-- ============================ -->
+    <section class="ctab-panel hidden" id="panel-manual-calculadora">
+        <ManualCalculadora />
+    </section>
+
+    <!-- ============================ -->
+    <!-- SOLAPA 7: BUSCADOR DE FACTURAS -->
+    <!-- ============================ -->
+    <section class="ctab-panel hidden" id="panel-buscador">
+        <Fragment set:html={buscadorHtml} />
+    </section>
 
 </CajeroWorkspace>
 
@@ -486,7 +527,7 @@ try {
     /* === KPI CARDS === */
     .kpi-row {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         gap: 12px;
         margin-bottom: 20px;
     }
@@ -716,6 +757,19 @@ try {
     // ========================
     // Tab switching logic
     // ========================
+    function syncToolbarActive(ctabName: string) {
+        document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+        const reverseMap: Record<string, string> = {
+            'diario': 'tab-diario', 'ejecutivo': 'tab-ejecutivo',
+            'historico': 'tab-historico', 'buscador': 'tab-buscador'
+        };
+        const tabId = reverseMap[ctabName];
+        if (tabId) {
+            const toolBtn = document.querySelector(`[data-tab="${tabId}"]`);
+            if (toolBtn) toolBtn.classList.add('active');
+        }
+    }
+
     document.querySelectorAll('.ctab').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.ctab').forEach(b => b.classList.remove('active'));
@@ -725,10 +779,21 @@ try {
             const panel = document.getElementById(`panel-${tabName}`);
             if (panel) panel.classList.remove('hidden');
             
+            // Sync toolbar active state
+            syncToolbarActive(tabName);
+            
             // Update tab name in tabs bar
-            const tabLabel = { diario: 'Operacion_Diaria.xls', ejecutivo: 'Dashboard_Ejecutivo.psd', historico: 'Reportes_Historicos.xls', calculadora: 'Calculadora_Neta.xls', manual: 'Manual_Gecom.pdf' };
+            const tabLabel: Record<string, string> = { 
+                diario: 'Operacion_Diaria.xls', 
+                ejecutivo: 'Dashboard_Ejecutivo.psd', 
+                historico: 'Reportes_Historicos.xls', 
+                calculadora: 'Calculadora_Neta.xls', 
+                manual: 'Manual_Gecom.pdf',
+                'manual-calculadora': 'Manual_Calculadora.pdf',
+                buscador: 'Buscador_Facturas.psd'
+            };
             const tabEl = document.getElementById('active-tab-name');
-            if (tabEl) tabEl.textContent = tabLabel[tabName] || title;
+            if (tabEl) tabEl.textContent = tabLabel[tabName] || '';
 
             // Init charts when executive tab opens
             if (tabName === 'ejecutivo') initCharts(currentPeriod);
@@ -745,7 +810,12 @@ try {
     document.querySelectorAll('[data-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
             const tabName = (btn as HTMLElement).dataset.tab;
-            const ctabMap = { 'tab-diario': 'diario', 'tab-ejecutivo': 'ejecutivo', 'tab-historico': 'historico' };
+            const ctabMap = { 
+                'tab-diario': 'diario', 
+                'tab-ejecutivo': 'ejecutivo', 
+                'tab-historico': 'historico',
+                'tab-buscador': 'buscador'
+            };
             const ctabName = ctabMap[tabName];
             if (ctabName) {
                 const ctab = document.querySelector(`.ctab[data-ctab="${ctabName}"]`);
@@ -753,6 +823,9 @@ try {
             }
         });
     });
+
+    // Mark diario as active in toolbar on load
+    syncToolbarActive('diario');
 
     // ========================
     // Directus API
@@ -827,7 +900,7 @@ try {
             id: generateUUID(),
             date_created: new Date().toISOString(),
             fecha: (document.getElementById('mov-fecha') as HTMLInputElement).value,
-            tipo: (document.getElementById('mov-tipo') as HTMLSelectElement).value,
+            tipo: (document.getElementById('mov-tipo') as HTMLInputElement).value,
             categoria: (document.getElementById('mov-categoria') as HTMLSelectElement).value,
             monto: parseFloat((document.getElementById('mov-monto') as HTMLInputElement).value),
             detalle: (document.getElementById('mov-detalle') as HTMLInputElement).value,
@@ -1010,11 +1083,30 @@ try {
 
         const neto = ingresos - egresos;
 
-        document.getElementById('val-ingresos')!.textContent = fmt(ingresos);
+        const elIngresos = document.getElementById('val-ingresos');
+        if (elIngresos) elIngresos.textContent = fmt(ingresos);
         document.getElementById('val-egresos')!.textContent = fmt(egresos);
         document.getElementById('val-neto')!.textContent = fmt(neto);
         document.getElementById('val-neto')!.style.color = neto >= 0 ? '#10b981' : '#ef4444';
         document.getElementById('val-movs')!.textContent = items.length.toString();
+
+        // === KPI: Facturado Hoy (OCR) via /api/documentos/stats ===
+        try {
+            const statsRes = await fetch(`/api/documentos/stats?fecha=${fecha}`);
+            if (statsRes.ok) {
+                const statsData = await statsRes.json();
+                if (statsData.success) {
+                    const totalFmt = '$ ' + (statsData.total || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const countFmt = `${statsData.count || 0} factura${statsData.count !== 1 ? 's' : ''} (FA)`;
+                    const valEl = document.getElementById('val-facturado');
+                    const cntEl = document.getElementById('cnt-facturado');
+                    if (valEl) valEl.textContent = totalFmt;
+                    if (cntEl) cntEl.textContent = countFmt;
+                }
+            }
+        } catch(e) {
+            console.warn('Error loading invoice stats:', e);
+        }
     }
 
     // Delete movement
@@ -1061,7 +1153,7 @@ try {
     // ========================
     let currentPeriod = 30;
     let chartsInitialized = false;
-    let barChart: any = null, tortaChart: any = null, ventasChart: any = null;
+    let barChart: any = null, tortaFijosChart: any = null, tortaVariablesChart: any = null, ingresosChart: any = null;
 
     document.querySelectorAll('.period-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1072,6 +1164,52 @@ try {
         });
     });
 
+    function getFriendlyCategoryName(catId: string): string {
+        const mapping: Record<string, string> = {
+            gasto_fijo_agua_calle: 'Agua de Calle',
+            gasto_fijo_alquiler: 'Alquiler',
+            gasto_fijo_arca: 'ARCA',
+            gasto_fijo_arba_iibb: 'ARBA IIBB',
+            gasto_fijo_comisiones_bancarias: 'Comisiones Bancarias',
+            gasto_fijo_contadora: 'Contadora',
+            gasto_fijo_faecys: 'FAECYS',
+            gasto_fijo_gecom: 'GECOM',
+            gasto_fijo_luz: 'Luz',
+            gasto_fijo_monitoreo_alarmas: 'Monitoreo Alarmas',
+            gasto_fijo_municipalidad: 'Municipalidad',
+            gasto_fijo_sec: 'SEC',
+            gasto_fijo_seguridad_higiene: 'Seguridad e Higiene',
+            gasto_fijo_seguro_camion: 'Seguro Camión',
+            gasto_fijo_seguros_galpon: 'Seguros Galpón',
+            gasto_fijo_servidor: 'Servidor',
+            gasto_fijo_sueldos_2026: 'Sueldos 2026',
+            gasto_fijo_telefonos_internet: 'Teléfonos / Internet',
+            gasto_variable_agua_ivess_dani: 'Agua Ivess/Dani',
+            gasto_variable_arreglos_maquinaria_camion: 'Arreglos Maquinaria/Camión',
+            gasto_variable_bomberos: 'Bomberos',
+            gasto_variable_combustible_guille_facu_agus: 'Combustible Guille/Facu/Agus',
+            gasto_variable_combustible_maquinaria: 'Combustible Maquinaria',
+            gasto_variable_consumibles: 'Consumibles',
+            gasto_variable_devoluciones_clientes_sf_caja: 'Devoluciones / SF Caja',
+            gasto_variable_electricidad_ezequiel: 'Electricidad Ezequiel',
+            gasto_variable_gastos_administrativos_prestamos: 'Gastos Adm. Préstamos',
+            gasto_variable_gastos_varios_administracion: 'Gastos Varios Adm.',
+            gasto_variable_gastos_varios_produccion: 'Gastos Varios Prod.',
+            gasto_variable_libreria: 'Librería',
+            gasto_variable_limpieza: 'Limpieza',
+            gasto_variable_merma_mercaderia: 'Merma Mercadería',
+            gasto_variable_pegamento_maquina: 'Pegamento Máquina',
+            gasto_variable_plan_arca: 'Plan ARCA',
+            gasto_variable_publicidad: 'Publicidad',
+            gasto_variable_refrigerios: 'Refrigerios',
+            gasto_variable_refrigerios_facu_agus_guille: 'Refrigerios Facu/Agus/Guille',
+            gasto_variable_viaticos: 'Viáticos',
+            gasto_variable_volquete: 'Volquete',
+            impuestos: 'Impuestos / IVA'
+        };
+        return mapping[catId] || catId.replace('gasto_fijo_', '').replace('gasto_variable_', '').replace(/_/g, ' ').toUpperCase();
+    }
+
     async function initCharts(days: number) {
         try {
             const desde = new Date();
@@ -1081,65 +1219,111 @@ try {
             let items: any[] = [];
 
             try {
-            const res = await fetch(`/api/caja/movimientos?fechaDesde=${desdeStr}&limit=1000&sort=fecha`);
-            if (res.ok) {
-                const data = await res.json();
-                items = data.data || [];
+                const res = await fetch(`/api/caja/movimientos?fechaDesde=${desdeStr}&limit=1000&sort=fecha`);
+                if (res.ok) {
+                    const data = await res.json();
+                    items = data.data || [];
+                }
+            } catch(e) {
+                console.error("Directus charts fetch failed, falling back to local:", e);
             }
-        } catch(e) {
-            console.error("Directus charts fetch failed, falling back to local:", e);
-        }
 
-        // Merge local
-        const localItems = getLocalMovimientos().filter(m => m.fecha >= desdeStr);
-        localItems.forEach(lm => {
-            const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
-            if (!exists) {
-                items.push(lm);
-            }
-        });
+            // Merge local
+            const localItems = getLocalMovimientos().filter(m => m.fecha >= desdeStr);
+            localItems.forEach(lm => {
+                const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
+                if (!exists) {
+                    items.push(lm);
+                }
+            });
 
-        // Sort items by date
-        items.sort((a, b) => a.fecha.localeCompare(b.fecha));
+            // Sort items by date
+            items.sort((a, b) => a.fecha.localeCompare(b.fecha));
 
-        let totalIngresos = 0, totalEgresos = 0;
-        let gastoFijo = 0, gastoVar = 0, impuestos = 0;
-        let ventaBlanco = 0, ventaNegro = 0;
+            const agrupacion = (document.getElementById('ejec-gasto-agrupacion') as HTMLSelectElement)?.value || 'diario';
 
-        // Agrupación por fecha para chart de barras
-        const byDate: Record<string, {ingresos: number, egresos: number}> = {};
+            let totalIngresos = 0, totalEgresos = 0;
+            let gastoFijo = 0, gastoVar = 0, impuestos = 0;
+            let ventaBlanco = 0, ventaNegro = 0;
+
+            const egresosByCat: Record<string, Record<string, number>> = {};
+            const fijosBreakdown: Record<string, number> = {};
+            const variablesBreakdown: Record<string, number> = {};
+            const intervalsSet = new Set<string>();
 
             items.forEach(m => {
-                const date = m.fecha;
-                if (!byDate[date]) byDate[date] = { ingresos: 0, egresos: 0 };
-                
-                const monto = parseFloat(m.monto);
+                const monto = parseFloat(m.monto) || 0;
+                const dateStr = m.fecha;
+
                 if (m.tipo === 'ingreso') {
                     totalIngresos += monto;
-                    byDate[date].ingresos += monto;
                     if (m.categoria === 'venta_blanco') ventaBlanco += monto;
                     else if (m.categoria === 'venta_negro') ventaNegro += monto;
                 } else {
                     totalEgresos += monto;
-                    byDate[date].egresos += monto;
-                    if (m.categoria === 'gasto_fijo') gastoFijo += monto;
-                    else if (m.categoria === 'gasto_variable') gastoVar += monto;
-                    else if (m.categoria === 'impuestos') impuestos += monto;
+                    const friendlyName = getFriendlyCategoryName(m.categoria);
+                    if (m.categoria.startsWith('gasto_fijo')) {
+                        gastoFijo += monto;
+                        fijosBreakdown[friendlyName] = (fijosBreakdown[friendlyName] || 0) + monto;
+                    } else if (m.categoria.startsWith('gasto_variable')) {
+                        gastoVar += monto;
+                        variablesBreakdown[friendlyName] = (variablesBreakdown[friendlyName] || 0) + monto;
+                    } else if (m.categoria === 'impuestos') {
+                        impuestos += monto;
+                    }
+                    
+                    // Grouping for line chart
+                    let interval = dateStr;
+                    if (agrupacion === 'mensual') {
+                        interval = dateStr.substring(0, 7); // YYYY-MM
+                    } else if (agrupacion === 'semestral') {
+                        const parts = dateStr.split('-');
+                        const month = parseInt(parts[1] || '1');
+                        const semester = month <= 6 ? 'Semestre 1' : 'Semestre 2';
+                        interval = `${parts[0]} - ${semester}`;
+                    } else if (agrupacion === 'anual') {
+                        interval = dateStr.substring(0, 4); // YYYY
+                    }
+                    intervalsSet.add(interval);
+
+                    if (!egresosByCat[friendlyName]) {
+                        egresosByCat[friendlyName] = {};
+                    }
+                    egresosByCat[friendlyName][interval] = (egresosByCat[friendlyName][interval] || 0) + monto;
                 }
             });
 
-            const neto = totalIngresos - totalEgresos;
-            const margen = totalIngresos > 0 ? ((neto / totalIngresos) * 100).toFixed(1) : '0';
-
-            document.getElementById('ejec-ingresos')!.textContent = fmt(totalIngresos);
             document.getElementById('ejec-egresos')!.textContent = fmt(totalEgresos);
-            document.getElementById('ejec-neto')!.textContent = fmt(neto);
-            document.getElementById('ejec-neto')!.style.color = neto >= 0 ? '#10b981' : '#ef4444';
-            document.getElementById('ejec-margen')!.textContent = `${margen}%`;
+            document.getElementById('ejec-fijos')!.textContent = fmt(gastoFijo);
+            document.getElementById('ejec-variables')!.textContent = fmt(gastoVar);
+            document.getElementById('ejec-impuestos')!.textContent = fmt(impuestos);
 
-            const dates = Object.keys(byDate).sort();
-            const ingresosArr = dates.map(d => parseFloat(byDate[d].ingresos.toFixed(2)));
-            const egresosArr = dates.map(d => parseFloat(byDate[d].egresos.toFixed(2)));
+            const dates = Array.from(intervalsSet).sort();
+            if (dates.length === 0) {
+                dates.push(today());
+            }
+
+            const series: any[] = [];
+            const activeCategories = Object.keys(egresosByCat);
+
+            activeCategories.forEach(cat => {
+                const data = dates.map(d => {
+                    return parseFloat((egresosByCat[cat][d] || 0).toFixed(2));
+                });
+                if (data.some(v => v > 0)) {
+                    series.push({
+                        name: cat,
+                        data: data
+                    });
+                }
+            });
+
+            if (series.length === 0) {
+                series.push({
+                    name: 'Sin Gastos',
+                    data: dates.map(() => 0)
+                });
+            }
 
             const apexOpts = {
                 chart: { background: 'transparent', toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
@@ -1148,52 +1332,162 @@ try {
                 grid: { borderColor: '#383838' }
             };
 
-            // Barras
+            // Egresos Line Chart
             if (barChart) barChart.destroy();
             barChart = new ApexCharts(document.getElementById('chart-barras'), {
                 ...apexOpts,
-                chart: { ...apexOpts.chart, type: 'bar', height: 280 },
-                series: [
-                    { name: 'Ingresos', data: ingresosArr },
-                    { name: 'Egresos', data: egresosArr }
+                chart: { ...apexOpts.chart, type: 'line', height: 280 },
+                series: series,
+                xaxis: { 
+                    categories: dates, 
+                    labels: { 
+                        rotate: -45, 
+                        style: { colors: '#888', fontSize: '10px' } 
+                    } 
+                },
+                yaxis: { 
+                    labels: { 
+                        style: { colors: '#888' }, 
+                        formatter: (v: number) => `$${v.toLocaleString('es-AR')}` 
+                    } 
+                },
+                stroke: { curve: 'smooth', width: 3 },
+                markers: { size: 5, hover: { size: 7 } },
+                legend: { 
+                    show: true,
+                    position: 'bottom',
+                    labels: { colors: '#888' }
+                },
+                colors: [
+                    '#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', 
+                    '#ec4899', '#06b6d4', '#14b8a6', '#f97316', '#84cc16'
                 ],
-                xaxis: { categories: dates, labels: { rotate: -45, style: { colors: '#888', fontSize: '10px' } } },
-                yaxis: { labels: { style: { colors: '#888' }, formatter: (v: number) => `$${v.toLocaleString('es-AR')}` } },
-                colors: ['#10b981', '#ef4444'],
                 tooltip: { y: { formatter: (v: number) => fmt(v) } }
             });
             barChart.render();
 
-            // Torta (Composición de Gastos)
-            if (tortaChart) tortaChart.destroy();
-            tortaChart = new ApexCharts(document.getElementById('chart-torta'), {
+            // Torta Fijos (Composición de Gastos Fijos)
+            const fijosLabels = Object.keys(fijosBreakdown);
+            const fijosSeries = Object.values(fijosBreakdown);
+
+            if (tortaFijosChart) tortaFijosChart.destroy();
+            tortaFijosChart = new ApexCharts(document.getElementById('chart-torta'), {
                 ...apexOpts,
                 chart: { ...apexOpts.chart, type: 'donut', height: 280 },
-                series: [gastoFijo, gastoVar, impuestos].filter(v => v > 0),
-                labels: ['Gastos Fijos', 'Gastos Variables', 'Impuestos'],
-                colors: ['#3b82f6', '#f59e0b', '#ef4444'],
-                legend: { labels: { colors: '#888' } },
+                series: fijosSeries.length > 0 ? fijosSeries : [0],
+                labels: fijosLabels.length > 0 ? fijosLabels : ['Sin Datos'],
+                colors: [
+                    '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#f43f5e', 
+                    '#06b6d4', '#6366f1', '#ec4899', '#14b8a6', '#84cc16', 
+                    '#f97316', '#a78bfa', '#38bdf8', '#34d399', '#e11d48'
+                ],
+                legend: { 
+                    show: true,
+                    position: 'bottom',
+                    labels: { colors: '#888' }
+                },
                 tooltip: { y: { formatter: (v: number) => fmt(v) } }
             });
-            tortaChart.render();
+            tortaFijosChart.render();
 
-            // Ventas Blanco vs Negro
-            if (ventasChart) ventasChart.destroy();
-            ventasChart = new ApexCharts(document.getElementById('chart-ventas'), {
+            // Torta Variables (Composición de Gastos Variables)
+            const variablesLabels = Object.keys(variablesBreakdown);
+            const variablesSeries = Object.values(variablesBreakdown);
+
+            if (tortaVariablesChart) tortaVariablesChart.destroy();
+            tortaVariablesChart = new ApexCharts(document.getElementById('chart-torta-variables'), {
                 ...apexOpts,
-                chart: { ...apexOpts.chart, type: 'pie', height: 280 },
-                series: [ventaBlanco, ventaNegro].filter(v => v > 0),
-                labels: ['Venta 1', 'Venta 2'],
-                colors: ['#10b981', '#8b5cf6'],
-                legend: { labels: { colors: '#888' } },
+                chart: { ...apexOpts.chart, type: 'donut', height: 280 },
+                series: variablesSeries.length > 0 ? variablesSeries : [0],
+                labels: variablesLabels.length > 0 ? variablesLabels : ['Sin Datos'],
+                colors: [
+                    '#f97316', '#06b6d4', '#84cc16', '#7c3aed', '#10b981', 
+                    '#d946ef', '#f59e0b', '#2563eb', '#f43f5e', '#0d9488', 
+                    '#0ea5e9', '#dc2626', '#ca8a04', '#db2777', '#4f46e5'
+                ],
+                legend: { 
+                    show: true,
+                    position: 'bottom',
+                    labels: { colors: '#888' }
+                },
                 tooltip: { y: { formatter: (v: number) => fmt(v) } }
             });
-            ventasChart.render();
+            tortaVariablesChart.render();
+
+            // Fetch e inicialización del Gráfico de Ingresos (Facturación PDF)
+            try {
+                const resIng = await fetch(`/api/documentos/ingresos-chart`);
+                if (resIng.ok) {
+                    const dataIng = await resIng.json();
+                    if (dataIng.success && dataIng.data) {
+                        const agrupacionIngresos = (document.getElementById('ejec-ingreso-agrupacion') as HTMLSelectElement)?.value || 'diario';
+                        let ingresosMap: Record<string, number> = {};
+                        
+                        dataIng.data.forEach((row: any) => {
+                            const dateStr = (row.fecha || '').split('T')[0]; // YYYY-MM-DD
+                            let interval = dateStr;
+                            if (agrupacionIngresos === 'mensual') {
+                                interval = dateStr.substring(0, 7);
+                            } else if (agrupacionIngresos === 'semestral') {
+                                const parts = dateStr.split('-');
+                                const month = parseInt(parts[1] || '1');
+                                const semester = month <= 6 ? 'Semestre 1' : 'Semestre 2';
+                                interval = `${parts[0]} - ${semester}`;
+                            } else if (agrupacionIngresos === 'anual') {
+                                interval = dateStr.substring(0, 4);
+                            } else {
+                                // diario
+                                const parts = dateStr.split('-');
+                                if (parts.length >= 3) {
+                                    interval = `${parts[2]}/${parts[1]}`;
+                                }
+                            }
+                            ingresosMap[interval] = (ingresosMap[interval] || 0) + parseFloat(row.ingresos || 0);
+                        });
+
+                        const ingresosDates = Object.keys(ingresosMap).sort();
+                        const ingresosSeriesData = ingresosDates.map(d => parseFloat(ingresosMap[d].toFixed(2)));
+
+                        if (ingresosChart) ingresosChart.destroy();
+                        ingresosChart = new ApexCharts(document.getElementById('chart-ingresos'), {
+                            ...apexOpts,
+                            chart: { ...apexOpts.chart, type: 'area', height: 280 },
+                            series: [{ name: 'Ingresos (OCR)', data: ingresosSeriesData }],
+                            xaxis: { 
+                                categories: ingresosDates, 
+                                labels: { rotate: -45, style: { colors: '#888', fontSize: '10px' } } 
+                            },
+                            yaxis: { 
+                                labels: { style: { colors: '#888' }, formatter: (v: number) => `$${v.toLocaleString('es-AR')}` } 
+                            },
+                            stroke: { curve: 'smooth', width: 3 },
+                            colors: ['#10b981'],
+                            fill: { 
+                                type: 'gradient', 
+                                gradient: { shadeIntensity: 0.5, opacityFrom: 0.25, opacityTo: 0.02 } 
+                            },
+                            tooltip: { y: { formatter: (v: number) => fmt(v) } }
+                        });
+                        ingresosChart.render();
+                    }
+                }
+            } catch (e) {
+                console.error("Error loading ingresos chart:", e);
+            }
 
         } catch(e) {
             console.error("Error initializing charts:", e);
         }
     }
+
+    // Temporal aggregation change listener
+    document.getElementById('ejec-gasto-agrupacion')?.addEventListener('change', () => {
+        initCharts(currentPeriod);
+    });
+
+    document.getElementById('ejec-ingreso-agrupacion')?.addEventListener('change', () => {
+        initCharts(currentPeriod);
+    });
 
     // ========================
     // HISTORICO
@@ -1204,6 +1498,14 @@ try {
         const el = document.getElementById('hist-fecha-carga') as HTMLInputElement;
         if (el && !el.value) el.value = today();
     }
+
+    (window as any).loadProjectionToCalculator = (id: string) => {
+        window.dispatchEvent(new CustomEvent('load-projection-by-id', { detail: { id: id } }));
+        const tabBtn = document.querySelector(`.ctab[data-ctab="calculadora"]`);
+        if (tabBtn) {
+            (tabBtn as HTMLElement).click();
+        }
+    };
 
     document.getElementById('btn-generar-reporte')?.addEventListener('click', async () => {
         try {
@@ -1216,235 +1518,316 @@ try {
             const year = parts[0];
             const month = parts[1];
 
-            let desde = '';
-            let hasta = '';
-
-            if (agrupacion === 'diario') {
-                desde = `${year}-${month}-01`;
-                hasta = fechaCarga;
-            } else if (agrupacion === 'mensual') {
-                desde = `${year}-01-01`;
-                hasta = `${year}-12-31`;
-            } else {
-                desde = `2024-01-01`;
-                hasta = `${year}-12-31`;
-            }
-
             document.getElementById('hist-empty')!.style.display = 'none';
             document.getElementById('hist-kpis')!.style.display = 'grid';
-            document.getElementById('hist-chart-card')!.style.display = 'block';
 
-            let items: any[] = [];
+            let projs: any[] = [];
             try {
-                const res = await fetch(`/api/caja/movimientos?fechaDesde=${desde}&fechaHasta=${hasta}&limit=5000&sort=fecha`);
+                const res = await fetch(`/api/caja/proyecciones?limit=500&sort=fecha`);
                 if (res.ok) {
                     const data = await res.json();
-                    items = data.data || [];
+                    projs = data.data || [];
                 }
             } catch(e) {
-                console.warn("Directus fetch failed for historical reports, loading local items only:", e);
+                console.warn("Directus fetch failed for historical reports:", e);
             }
 
-            // Merge from local storage
-            const localItems = getLocalMovimientos().filter(m => m.fecha >= desde && m.fecha <= hasta);
-            localItems.forEach(lm => {
-                const exists = items.some(im => (im && im.id && lm && lm.id && im.id.toString() === lm.id.toString()) || (im && lm && im.fecha === lm.fecha && parseFloat(im.monto) === parseFloat(lm.monto) && im.categoria === lm.categoria && im.tipo === lm.tipo));
-                if (!exists) {
-                    items.push(lm);
-                }
-            });
+            // Merge local storage proyecciones
+            try {
+                const localData = localStorage.getItem('caja_proyecciones_local');
+                const localProjs = localData ? JSON.parse(localData) : [];
+                localProjs.forEach((lp: any) => {
+                    if (lp) {
+                        const exists = projs.some(im => im && im.id && lp && lp.id && im.id.toString() === lp.id.toString());
+                        if (!exists) {
+                            projs.push(lp);
+                        }
+                    }
+                });
+            } catch(e) {}
 
-            // Sort items by date
-            items.sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-            let totalIngresos = 0, totalEgresos = 0;
-            const byMonth: Record<string, {ingresos: number, egresos: number}> = {};
-
-            items.forEach(m => {
-                const mMonth = m.fecha.substring(0, 7);
-                if (!byMonth[mMonth]) byMonth[mMonth] = { ingresos: 0, egresos: 0 };
-                const monto = parseFloat(m.monto);
-                if (m.tipo === 'ingreso') {
-                    totalIngresos += monto;
-                    byMonth[mMonth].ingresos += monto;
-                } else {
-                    totalEgresos += monto;
-                    byMonth[mMonth].egresos += monto;
-                }
-            });
-
-            const neto = totalIngresos - totalEgresos;
-
-            document.getElementById('hist-val-ingresos')!.textContent = fmt(totalIngresos);
-            document.getElementById('hist-val-egresos')!.textContent = fmt(totalEgresos);
-            document.getElementById('hist-val-neto')!.textContent = fmt(neto);
-            document.getElementById('hist-val-neto')!.style.color = neto >= 0 ? '#10b981' : '#ef4444';
-            document.getElementById('hist-val-movs')!.textContent = items.length.toString();
-
-            // ========================
-            // LINE CHART: EXPENSES EVOLUTION (EGRESOS)
-            // ========================
-            const egresos = items.filter(m => m.tipo === 'egreso');
-            
-            // Set dynamic chart title and variables based on frequency selection
-            const titleEl = document.getElementById('hist-chart-title');
-            
-            let chartKeys: string[] = [];
-            let chartData: number[] = [];
-            let chartLabels: string[] = [];
-            let seriesName = '';
+            let filteredProjs: any[] = [];
 
             if (agrupacion === 'diario') {
-                if (titleEl) titleEl.textContent = `Evolución Diaria de Gastos (${month}/${year})`;
-                seriesName = 'Gastos Diarios';
+                filteredProjs = projs.filter(p => p && p.fecha && p.fecha.startsWith(`${year}-${month}`));
+            } else if (agrupacion === 'mensual' || agrupacion === 'semestral') {
+                filteredProjs = projs.filter(p => p && p.fecha && p.fecha.startsWith(year));
+            } else {
+                filteredProjs = [...projs].filter(p => p && p.fecha);
+            }
 
-                const egresosByDate: Record<string, number> = {};
-                egresos.forEach(m => {
-                    const date = m.fecha;
-                    const monto = parseFloat(m.monto);
-                    egresosByDate[date] = (egresosByDate[date] || 0) + monto;
-                });
+            // Sort chronologically
+            filteredProjs.sort((a, b) => a.fecha.localeCompare(b.fecha));
 
-                chartKeys = Object.keys(egresosByDate).sort();
-                chartData = chartKeys.map(k => parseFloat(egresosByDate[k].toFixed(2)));
-                chartLabels = chartKeys.map(fmtFecha);
-
+            // Temporal aggregations
+            let displayProjs: any[] = [];
+            if (agrupacion === 'diario') {
+                displayProjs = filteredProjs;
             } else if (agrupacion === 'mensual') {
-                if (titleEl) titleEl.textContent = `Evolución Mensual de Gastos (${year})`;
-                seriesName = 'Gastos Mensuales';
-
-                const egresosByMonth: Record<string, number> = {};
-                egresos.forEach(m => {
-                    const mMonth = m.fecha.substring(0, 7); // YYYY-MM
-                    const monto = parseFloat(m.monto);
-                    egresosByMonth[mMonth] = (egresosByMonth[mMonth] || 0) + monto;
+                const byMonth: Record<string, any> = {};
+                filteredProjs.forEach(p => {
+                    const mMonth = p.fecha.substring(0, 7);
+                    byMonth[mMonth] = p; // latest
                 });
+                displayProjs = Object.values(byMonth);
+            } else if (agrupacion === 'semestral') {
+                const bySemester: Record<string, any> = {};
+                filteredProjs.forEach(p => {
+                    const parts = p.fecha.split('-');
+                    const m = parseInt(parts[1]);
+                    const sem = m <= 6 ? 'S1' : 'S2';
+                    const key = `${parts[0]}-${sem}`;
+                    bySemester[key] = p; // latest
+                });
+                displayProjs = Object.values(bySemester);
+            } else {
+                const byYear: Record<string, any> = {};
+                filteredProjs.forEach(p => {
+                    const y = p.fecha.substring(0, 4);
+                    byYear[y] = p; // latest
+                });
+                displayProjs = Object.values(byYear);
+            }
 
-                chartKeys = Object.keys(egresosByMonth).sort();
-                chartData = chartKeys.map(k => parseFloat(egresosByMonth[k].toFixed(2)));
-                chartLabels = chartKeys.map(k => {
-                    const [y, mNum] = k.split('-');
+            // Render KPIs
+            if (displayProjs.length === 0) {
+                document.getElementById('hist-val-ingresos')!.textContent = fmt(0);
+                document.getElementById('hist-val-egresos')!.textContent = fmt(0);
+                document.getElementById('hist-val-neto')!.textContent = fmt(0);
+                document.getElementById('hist-val-neto')!.style.color = '#fff';
+                document.getElementById('hist-val-movs')!.textContent = '0';
+            } else {
+                const latestProj = displayProjs[displayProjs.length - 1];
+                const totalVentas = parseFloat(latestProj.ventas_blanco || 0) + parseFloat(latestProj.ventas_negro || 0);
+                const totalGastos = parseFloat(latestProj.gastos_totales || 0);
+                const neto = parseFloat(latestProj.utilidad_acumulada || 0);
+
+                document.getElementById('hist-val-ingresos')!.textContent = fmt(totalVentas);
+                document.getElementById('hist-val-egresos')!.textContent = fmt(totalGastos);
+                document.getElementById('hist-val-neto')!.textContent = fmt(neto);
+                document.getElementById('hist-val-neto')!.style.color = neto >= 0 ? '#10b981' : '#ef4444';
+                document.getElementById('hist-val-movs')!.textContent = displayProjs.length.toString();
+            }
+
+            // Render Chart
+            const titleEl = document.getElementById('hist-chart-title')!;
+            
+            const chartLabels = displayProjs.map(p => {
+                if (agrupacion === 'diario') {
+                    return fmtFecha(p.fecha);
+                } else if (agrupacion === 'mensual') {
+                    const [y, mNum] = p.fecha.substring(0, 7).split('-');
                     const monthsNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
                     return `${monthsNames[parseInt(mNum, 10) - 1]} ${y}`;
-                });
+                } else if (agrupacion === 'semestral') {
+                    const parts = p.fecha.split('-');
+                    const m = parseInt(parts[1]);
+                    return m <= 6 ? `1º Semestre ${parts[0]}` : `2º Semestre ${parts[0]}`;
+                } else {
+                    return p.fecha.substring(0, 4);
+                }
+            });
 
+            const seriesVentas = displayProjs.map(p => parseFloat((parseFloat(p.ventas_blanco || 0) + parseFloat(p.ventas_negro || 0)).toFixed(0)));
+            const seriesGastos = displayProjs.map(p => parseFloat(parseFloat(p.gastos_totales || 0).toFixed(0)));
+            const seriesNeto = displayProjs.map(p => parseFloat(parseFloat(p.utilidad_acumulada || 0).toFixed(0)));
+
+            if (agrupacion === 'diario') {
+                titleEl.textContent = `Progreso Diario de Proyecciones Netas (${month}/${year})`;
+            } else if (agrupacion === 'mensual') {
+                titleEl.textContent = `Progreso Mensual de Proyecciones Netas (${year})`;
+            } else if (agrupacion === 'semestral') {
+                titleEl.textContent = `Evolución Semestral de Proyecciones (${year})`;
             } else {
-                if (titleEl) titleEl.textContent = `Evolución Anual de Gastos (Histórico)`;
-                seriesName = 'Gastos Anuales';
-
-                const egresosByYear: Record<string, number> = {};
-                egresos.forEach(m => {
-                    const y = m.fecha.substring(0, 4); // YYYY
-                    const monto = parseFloat(m.monto);
-                    egresosByYear[y] = (egresosByYear[y] || 0) + monto;
-                });
-
-                chartKeys = Object.keys(egresosByYear).sort();
-                chartData = chartKeys.map(k => parseFloat(egresosByYear[k].toFixed(2)));
-                chartLabels = chartKeys;
+                titleEl.textContent = `Trayectoria Histórica de Proyecciones Anuales`;
             }
 
             if (histChart) histChart.destroy();
-            histChart = new ApexCharts(document.getElementById('chart-historico'), {
-                chart: { background: 'transparent', type: 'area', height: 300, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-                theme: { mode: 'dark' },
-                series: [{ name: seriesName, data: chartData }],
-                xaxis: { categories: chartLabels, labels: { style: { colors: '#888' } } },
-                yaxis: { labels: { style: { colors: '#888' }, formatter: (v: number) => `$${v.toLocaleString('es-AR')}` } },
-                colors: ['#ef4444'], // Glowing red expenses line
-                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.02 } },
-                dataLabels: { enabled: false },
-                grid: { borderColor: '#383838' },
-                stroke: { curve: 'smooth', width: 3 },
-                tooltip: { y: { formatter: (v: number) => fmt(v) } }
-            });
-            histChart.render();
 
-            // ========================
-            // DESGLOSE DE EGRESOS DETALLADO
-            // ========================
+            if (displayProjs.length === 0) {
+                document.getElementById('hist-chart-card')!.style.display = 'none';
+            } else {
+                document.getElementById('hist-chart-card')!.style.display = 'block';
+                histChart = new ApexCharts(document.getElementById('chart-historico'), {
+                    chart: { 
+                        background: 'transparent', 
+                        type: 'area', 
+                        height: 300, 
+                        toolbar: { show: false }, 
+                        fontFamily: 'Inter, sans-serif' 
+                    },
+                    theme: { mode: 'dark' },
+                    series: [
+                        { name: 'Ventas Totales', data: seriesVentas },
+                        { name: 'Egresos Totales', data: seriesGastos },
+                        { name: 'Ganancia Neta', data: seriesNeto }
+                    ],
+                    xaxis: { categories: chartLabels, labels: { style: { colors: '#888' } } },
+                    yaxis: { labels: { style: { colors: '#888' }, formatter: (v: number) => `$${v.toLocaleString('es-AR')}` } },
+                    colors: ['#10b981', '#ef4444', '#3b82f6'], 
+                    fill: { 
+                        type: 'gradient', 
+                        gradient: { 
+                            shadeIntensity: 0.5, 
+                            opacityFrom: 0.25, 
+                            opacityTo: 0.02 
+                        } 
+                    },
+                    stroke: { curve: 'smooth', width: 2.5 },
+                    dataLabels: { enabled: false },
+                    grid: { borderColor: '#222' },
+                    tooltip: { y: { formatter: (v: number) => fmt(v) } }
+                });
+                histChart.render();
+            }
+
+            // Render Detailed Snapshots Breakdown
             const container = document.getElementById('hist-egresos-container')!;
             
-            if (egresos.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color:#888; padding: 20px;">No se registraron egresos en el período seleccionado.</div>`;
+            if (displayProjs.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:#888; padding: 20px;">No se registraron proyecciones guardadas en el período seleccionado.</div>`;
             } else {
-                const groups: Record<string, Record<string, any[]>> = {};
-
-                egresos.forEach(m => {
-                    const mMonth = m.fecha.substring(0, 7); // YYYY-MM
-                    const day = m.fecha; // YYYY-MM-DD
-                    const monto = parseFloat(m.monto);
-                    
-                    if (!groups[mMonth]) {
-                        groups[mMonth] = {};
-                    }
-                    if (!groups[mMonth][day]) {
-                        groups[mMonth][day] = [];
-                    }
-                    groups[mMonth][day].push({
-                        id: m.id,
-                        fecha: m.fecha,
-                        categoria: m.categoria,
-                        monto: monto,
-                        detalle: m.detalle || m.observaciones || 'Sin detalle'
-                    });
-                });
-
                 let html = '';
-                const sortedMonths = Object.keys(groups).sort();
+                const listProjs = [...displayProjs].reverse();
                 
-                sortedMonths.forEach(mMonth => {
-                    const [y, monthNum] = mMonth.split('-');
-                    const monthNames = [
-                        'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-                        'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
-                    ];
-                    const monthName = monthNames[parseInt(monthNum, 10) - 1] || 'MES';
-                    
+                listProjs.forEach((p, idx) => {
+                    let det: any = {};
+                    try {
+                        det = typeof p.detalles_simulacion === 'string' ? JSON.parse(p.detalles_simulacion) : p.detalles_simulacion;
+                    } catch(e) {
+                        det = {};
+                    }
+
+                    const projId = p.id;
+                    const nombre = det.nombre || p.fecha;
+                    const fechaStr = fmtFecha(p.fecha);
+                    const isSynced = p.synced !== false;
+
+                    const v1 = parseFloat(det.ventaBlanco || p.ventas_blanco || 0);
+                    const v1Corte = parseFloat(det.ventaCorteBlanco || 0);
+                    const v1Pegado = parseFloat(det.ventaPegadoBlanco || 0);
+                    const v1SinCorte = v1 - v1Corte - v1Pegado;
+                    const marg1 = v1SinCorte * 0.23077;
+                    const gain1 = marg1 + (v1Corte * 0.8) + (parseFloat(det.cantPegadosBlanco || 0) * parseFloat(det.precioPegadoBlanco || 1000)) + (Math.max(0, v1Pegado - parseFloat(det.cantPegadosBlanco || 0) * parseFloat(det.precioPegadoBlanco || 1000)) * 0.285715);
+
+                    const v2 = parseFloat(det.ventaNegro || p.ventas_negro || 0);
+                    const v2Corte = parseFloat(det.ventaCorteNegro || 0);
+                    const v2Pegado = parseFloat(det.ventaPegadoNegro || 0);
+                    const v2SinCorte = v2 - v2Corte - v2Pegado;
+                    const marg2 = v2SinCorte * 0.23077;
+                    const gain2 = marg2 + v2Corte + (parseFloat(det.cantPegadosNegro || 0) * parseFloat(det.precioPegadoNegro || 1000)) + (Math.max(0, v2Pegado - parseFloat(det.cantPegadosNegro || 0) * parseFloat(det.precioPegadoNegro || 1000)) * 0.285715);
+
+                    const ganTotal = gain1 + gain2;
+                    const gastos = parseFloat(det.gastosTotales || p.gastos_totales || 0);
+                    const neto = parseFloat(p.utilidad_acumulada || 0);
+
+                    const mpBlanco = v1SinCorte * 0.76923 / 1.25;
+                    const mpNegro = v2SinCorte * 0.76923 / 1.105;
+                    const mpTotal = mpBlanco + mpNegro;
+                    const compraReal = parseFloat(det.compraTotalReal || 0);
+                    const desvioCompra = compraReal - mpTotal;
+
+                    const recaudacion = parseFloat(det.recaudacion || 0);
+                    const desvioRecaudacion = recaudacion - (v1 + v2);
+
+                    const ivaV = parseFloat(det.ivaVentas || 0);
+                    const ivaC = parseFloat(det.ivaCompras || 0);
+                    const ivaPagar = ivaV - ivaC;
+
+                    const collapseId = `proj-collapse-${idx}`;
+
                     html += `
-                        <div class="month-group" style="margin-bottom: 24px;">
-                            <h4 style="color:#ffffff; font-size:13px; font-weight:700; border-bottom:1px solid #444; padding-bottom:6px; margin-bottom:12px; letter-spacing:0.5px; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
-                                <i class="fas fa-calendar-alt" style="color:#ef4444;"></i> ${monthName} ${y}
-                            </h4>
-                    `;
-                    
-                    const sortedDays = Object.keys(groups[mMonth]).sort();
-                    sortedDays.forEach(day => {
-                        const [,, dayNum] = day.split('-');
-                        const formattedDay = `${dayNum}/${monthNum}/${y}`;
-                        
-                        html += `
-                            <div class="day-group" style="margin-left: 12px; margin-bottom: 14px;">
-                                <h5 style="color:#a8a8a8; font-size:11px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
-                                    <i class="far fa-clock" style="color:#888;"></i> DÍA ${formattedDay}
-                                </h5>
-                                <ul style="list-style:none; padding-left:0; margin:0; display:flex; flex-direction:column; gap:8px;">
-                        `;
-                        
-                        groups[mMonth][day].forEach(eg => {
-                            const prettyCat = eg.categoria
-                                .replace(/_/g, ' ')
-                                .toUpperCase();
-                            
-                            html += `
-                                    <li style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#cccccc; background:rgba(255,255,255,0.02); padding:6px 10px; border-radius:4px; border-left:2px solid #ef4444; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
-                                        <span style="display:flex; align-items:center; gap:8px;">
-                                            <i class="fas fa-circle" style="color:#ef4444; font-size:6px;"></i>
-                                            <strong style="color:#f87171; font-size:10px; letter-spacing:0.3px;">[${prettyCat}]</strong>
-                                            <span>${eg.detalle}</span>
-                                        </span>
-                                        <span style="color:#ef4444; font-weight:600; font-family:'Roboto Mono', monospace;">-${fmt(eg.monto)}</span>
-                                    </li>
-                            `;
-                        });
-                        
-                        html += `
-                                </ul>
+                        <div class="proj-card" style="background:#1e1e1e; border:1px solid #333; border-radius:10px; margin-bottom:14px; overflow:hidden; transition:all 0.2s;">
+                            <div onclick="document.getElementById('${collapseId}').classList.toggle('hidden')" style="padding:14px 18px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; background:#252525; user-select:none;">
+                                <div style="display:flex; flex-direction:column; gap:4px;">
+                                    <span style="font-weight:bold; color:#fff; font-size:13px; display:flex; align-items:center; gap:8px;">
+                                        <i class="fas fa-calculator" style="color:#10b981;"></i>
+                                        ${nombre}
+                                        ${!isSynced ? '<span class="badge" style="background:rgba(245,158,11,0.15); color:#f59e0b;">Local</span>' : ''}
+                                    </span>
+                                    <span style="font-size:10px; color:#888;">Fecha de Carga: ${fechaStr} | Periodo: ${det.periodoDias || 30} días</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:16px;">
+                                    <div style="text-align:right;">
+                                        <span style="font-size:9px; color:#888; text-transform:uppercase; font-weight:bold;">Neto Periodo</span>
+                                        <div style="font-family:'Roboto Mono', monospace; font-weight:900; font-size:15px; color:${neto >= 0 ? '#10b981' : '#ef4444'};">${fmt(neto)}</div>
+                                    </div>
+                                    <i class="fas fa-chevron-down" style="color:#666; font-size:12px;"></i>
+                                </div>
                             </div>
-                        `;
-                    });
-                    
-                    html += `
+
+                            <div id="${collapseId}" class="hidden" style="border-top:1px solid #2e2e2e; padding:18px; background:#181818; transition:all 0.2s;">
+                                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-bottom:18px;">
+                                    <div style="background:#222; padding:12px; border-radius:8px; border-left:3px solid #3b82f6;">
+                                        <h5 style="color:#3b82f6; font-size:11px; text-transform:uppercase; font-weight:bold; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                            <i class="fas fa-check-circle"></i> Venta 1 (Blanco)
+                                        </h5>
+                                        <div style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#aaa;">
+                                            <div style="display:flex; justify-content:space-between;"><span>Venta Bruta:</span><span style="font-family:monospace; color:#fff;">${fmt(v1)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>Servicio Corte:</span><span style="font-family:monospace;">${fmt(v1Corte)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>Servicio Pegado:</span><span style="font-family:monospace;">${fmt(v1Pegado)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>Melaminas Base:</span><span style="font-family:monospace;">${fmt(v1SinCorte)}</span></div>
+                                            <div style="display:flex; justify-content:space-between; margin-top:4px; border-top:1px solid #333; padding-top:4px; font-weight:bold;">
+                                                <span style="color:#3b82f6;">Utilidad Canal:</span>
+                                                <span style="font-family:monospace; color:#3b82f6;">${fmt(gain1)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="background:#222; padding:12px; border-radius:8px; border-left:3px solid #a855f7;">
+                                        <h5 style="color:#a855f7; font-size:11px; text-transform:uppercase; font-weight:bold; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                            <i class="fas fa-check-circle"></i> Venta 2 (Negro)
+                                        </h5>
+                                        <div style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#aaa;">
+                                            <div style="display:flex; justify-content:space-between;"><span>Venta Bruta:</span><span style="font-family:monospace; color:#fff;">${fmt(v2)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>Servicio Corte:</span><span style="font-family:monospace;">${fmt(v2Corte)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>Servicio Pegado:</span><span style="font-family:monospace;">${fmt(v2Pegado)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>Melaminas Base:</span><span style="font-family:monospace;">${fmt(v2SinCorte)}</span></div>
+                                            <div style="display:flex; justify-content:space-between; margin-top:4px; border-top:1px solid #333; padding-top:4px; font-weight:bold;">
+                                                <span style="color:#a855f7;">Utilidad Canal:</span>
+                                                <span style="font-family:monospace; color:#a855f7;">${fmt(gain2)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="background:#222; padding:12px; border-radius:8px; border-left:3px solid #f59e0b;">
+                                        <h5 style="color:#f59e0b; font-size:11px; text-transform:uppercase; font-weight:bold; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                            <i class="fas fa-shield-alt"></i> Caja & Compras
+                                        </h5>
+                                        <div style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#aaa;">
+                                            <div style="display:flex; justify-content:space-between;"><span>Recaudación Real:</span><span style="font-family:monospace; color:#fff;">${fmt(recaudacion)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>Recaudación - Vtas:</span><span style="font-family:monospace; color:${desvioRecaudacion >= 0 ? '#10b981' : '#ef4444'};">${fmt(desvioRecaudacion)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>Compra Total Real:</span><span style="font-family:monospace; color:#fff;">${fmt(compraReal)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>Materia Prima Total:</span><span style="font-family:monospace;">${fmt(mpTotal)}</span></div>
+                                            <div style="display:flex; justify-content:space-between; margin-top:4px; border-top:1px solid #333; padding-top:4px; font-weight:bold;">
+                                                <span style="color:#f59e0b;">Desvío Compra:</span>
+                                                <span style="font-family:monospace; color:${desvioCompra > 0 ? '#ef4444' : '#10b981'};">${fmt(desvioCompra)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="background:#222; padding:12px; border-radius:8px; border-left:3px solid #10b981;">
+                                        <h5 style="color:#10b981; font-size:11px; text-transform:uppercase; font-weight:bold; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                            <i class="fas fa-percentage"></i> Deducciones & Gastos
+                                        </h5>
+                                        <div style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#aaa;">
+                                            <div style="display:flex; justify-content:space-between;"><span>Gastos Operativos:</span><span style="font-family:monospace; color:#fff;">${fmt(gastos)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>IVA Ventas:</span><span style="font-family:monospace;">${fmt(ivaV)}</span></div>
+                                            <div style="display:flex; justify-content:space-between;"><span>IVA Compras:</span><span style="font-family:monospace;">${fmt(ivaC)}</span></div>
+                                            <div style="display:flex; justify-content:space-between; margin-top:4px; border-top:1px solid #333; padding-top:4px; font-weight:bold;">
+                                                <span style="color:#10b981;">IVA Neto a Pagar:</span>
+                                                <span style="font-family:monospace; color:#10b981;">${fmt(ivaPagar)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; justify-content:flex-end; gap:8px; border-top:1px solid #2a2a2a; padding-top:12px; margin-top:4px;">
+                                    <button onclick="loadProjectionToCalculator('${projId}')" class="btn-primary" style="padding:6px 12px; font-size:11px; border-radius:4px; height:auto; background:#1d4ed8;">
+                                        <i class="fas fa-edit mr-1"></i> ⚡ Cargar / Editar en Calculadora
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     `;
                 });

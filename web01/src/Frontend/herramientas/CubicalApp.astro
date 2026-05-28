@@ -7,12 +7,12 @@ const { clientId } = Astro.props;
 const isLoggedIn = !!clientId;
 ---
 
-<div id="cubical-app-root" class="cubical-container mx-auto max-w-[1600px] px-4 py-8" data-is-logged-in={isLoggedIn}>
+<div id="cubical-app-root" class="cubical-container mx-auto max-w-[1600px] px-4 py-8" data-is-logged-in={isLoggedIn} data-client-id={clientId}>
     <!-- BARRA SUPERIOR -->
     <header class="flex justify-between items-center mb-12 bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-lg shadow-sm">
         <div class="flex items-center gap-6">
-             <a href="/" class="nav-link-sc">
-                <i class="fas fa-home"></i> INICIO
+             <a href="/cliente" class="nav-link-sc">
+                <i class="fas fa-arrow-left"></i> VOLVER AL PANEL
             </a>
             <div style="width: 1px; height: 20px; background: var(--sc-border);"></div>
             <div>
@@ -52,6 +52,30 @@ const isLoggedIn = !!clientId;
                 <h3 class="text-2xl font-black mb-4 text-[var(--sc-text)] uppercase tracking-tighter">¿Nuevo Mueble?</h3>
                 <p class="text-[var(--sc-text-dim)] text-sm mb-10 font-medium">Calcula materiales y herrajes en segundos para tu próximo cliente.</p>
                 <button onclick="window.cubical.showSetup()" class="w-full py-5 bg-[var(--alvarez-red)] text-white font-black rounded-lg hover:scale-105 transition-all uppercase tracking-widest shadow-xl">NUEVO CÁLCULO</button>
+            </div>
+        </div>
+
+        <!-- CATÁLOGO DE PLANTILLAS RÁPIDAS -->
+        <div class="mt-16 border-t border-[var(--sc-border)] pt-12">
+            <h3 class="text-3xl font-black mb-2 tracking-tighter text-[var(--sc-text)] uppercase italic">CATÁLOGO DE PLANTILLAS</h3>
+            <p class="text-[var(--sc-text-dim)] mb-8 max-w-xl text-sm font-medium">Inicia tu diseño al instante seleccionando un módulo estándar preconfigurado de nuestro catálogo.</p>
+            
+            <div class="relative group mt-8 px-4">
+                <!-- Botón Izquierda -->
+                <button id="carousel-btn-left" class="absolute left-0 top-1/2 translate-y-[-50%] w-10 h-10 rounded-full bg-[var(--sc-surface)] border border-[var(--sc-border)] text-[var(--sc-text)] flex items-center justify-center hover:bg-[var(--sc-surface-alt)] hover:border-[var(--alvarez-red)] hover:text-[var(--alvarez-red)] transition-all z-10 shadow-md cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-300">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                
+                <!-- Contenedor del Carrusel -->
+                <!-- Carrusel renderizado dinámicamente desde /herramientas/logic/cubical/templates/templates.js -->
+                <div id="templates-carousel" class="flex overflow-x-auto gap-6 pb-6 scroll-smooth snap-x snap-mandatory scrollbar-none [&::-webkit-scrollbar]:hidden" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    <!-- Las tarjetas de plantillas se insertan aquí por window.cubical.renderTemplateCarousel() -->
+                </div>
+                
+                <!-- Botón Derecha -->
+                <button id="carousel-btn-right" class="absolute right-0 top-1/2 translate-y-[-50%] w-10 h-10 rounded-full bg-[var(--sc-surface)] border border-[var(--sc-border)] text-[var(--sc-text)] flex items-center justify-center hover:bg-[var(--sc-surface-alt)] hover:border-[var(--alvarez-red)] hover:text-[var(--alvarez-red)] transition-all z-10 shadow-md cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-300">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
             </div>
         </div>
     </section>
@@ -104,137 +128,332 @@ const isLoggedIn = !!clientId;
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- PANEL IZQUIERDO: FORMULARIO -->
-            <div class="lg:col-span-4 space-y-6">
-                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-8 rounded-xl shadow-sm">
-                    <h3 class="text-xs font-black text-[var(--alvarez-red)] uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                        <i class="fas fa-cubes"></i> AÑADIR MÓDULO AL PLANO
+        <!-- VISTA DE ESCRITORIO (PHOTOSHOP 3-COLUMN WORKSPACE) & MÓVIL DUAL -->
+        <div class="hidden lg:grid grid-cols-12 gap-8">
+            <!-- 1. COLUMNA IZQUIERDA: HERRAMIENTAS Y CAPAS (3 COLS) -->
+            <div class="col-span-3 space-y-6">
+                <!-- PREAJUSTES RÁPIDOS / TOOLBOX -->
+                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-xl shadow-sm">
+                    <h3 class="text-xs font-black text-[var(--alvarez-red)] uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                        <i class="fas fa-tools"></i> CAJA DE HERRAMIENTAS
                     </h3>
-                    
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="col-span-3">
-                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Tipo de Módulo</label>
-                            <select id="mod-type" onchange="window.cubical.autoSetPresets()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-bold">
-                                <option value="CAJONERA">🗄️ Cajonera Estándar</option>
-                                <option value="PLACARD">🚪 Placard / Ropero</option>
-                                <option value="ALACENA">🪜 Alacena Superior</option>
-                                <option value="BAJO_MESADA">🍽️ Bajo Mesada</option>
-                                <option value="BIBLIOTECA">📚 Biblioteca / Estantería</option>
-                                <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Alto (mm)</label>
-                            <input type="number" id="mod-h" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
-                        </div>
-                        <div>
-                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Ancho (mm)</label>
-                            <input type="number" id="mod-w" value="600" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
-                        </div>
-                        <div>
-                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Prof. (mm)</label>
-                            <input type="number" id="mod-p" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
-                        </div>
-                        <div>
-                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Estantes</label>
-                            <input type="number" id="mod-shelves" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
-                        </div>
-                        <div>
-                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Cajones</label>
-                            <input type="number" id="mod-drawers" value="3" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
-                        </div>
-                        <div>
-                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-2">Puertas</label>
-                            <input type="number" id="mod-doors" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-mono font-bold">
-                        </div>
+                    <div class="space-y-3">
+                        <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Nombre del Módulo</label>
+                        <input type="text" id="mod-name" oninput="window.cubical.updateActiveModule()" placeholder="Ej: Modulo A1" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-bold mb-2" value="Modulo A1" />
+
+                        <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Elegir Módulo Base</label>
+                        <select id="mod-type" onchange="window.cubical.autoSetPresets(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-4 rounded text-sm font-bold">
+                            <option value="CAJONERA">🗄️ Cajonera Estándar</option>
+                            <option value="PLACARD">🚪 Ropero / Vestidor</option>
+                            <option value="ALACENA">🪜 Alacena Superior</option>
+                            <option value="BAJO_MESADA">🍽️ Bajo Mesada Cocina</option>
+                            <option value="BIBLIOTECA">📚 Biblioteca Divisoria</option>
+                            <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
+                        </select>
                     </div>
-                    
-                    <button onclick="window.cubical.addModule()" class="w-full mt-8 py-5 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR A LA LISTA</button>
                 </div>
 
-                <div class="bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] p-6 rounded-xl">
-                    <h3 class="text-xs font-black text-[var(--sc-text-dim)] uppercase tracking-widest mb-6">Módulos del Proyecto</h3>
+                <!-- CAPAS DEL PROYECTO (LISTADO DE MÓDULOS) -->
+                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-xl shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xs font-black text-[var(--sc-text-dim)] uppercase tracking-widest flex items-center gap-3">
+                            <i class="fas fa-layer-group"></i> CAPAS / MÓDULOS
+                        </h3>
+                        <span id="stat-total-mods" class="text-xs font-black bg-[var(--sc-surface-alt)] px-2 py-1 rounded text-[var(--alvarez-red)] border border-[var(--sc-border)]">0</span>
+                    </div>
                     <div id="module-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                         <!-- Dinámico -->
                     </div>
                 </div>
             </div>
 
-            <!-- PANEL CENTRAL: VISUALIZADOR 3D INTERACTIVO -->
-            <div class="lg:col-span-8 flex flex-col gap-6">
-                <div class="bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded-xl min-h-[500px] flex items-center justify-center relative overflow-hidden shadow-inner">
+            <!-- 2. COLUMNA CENTRAL: CANVAS BLUEPRINT 3D (6 COLS) -->
+            <div class="col-span-6 flex flex-col gap-6">
+                <div class="bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded-xl min-h-[500px] flex items-center justify-center relative overflow-hidden shadow-inner flex-grow">
                     <div class="absolute top-8 left-10 text-[0.65rem] font-black text-[var(--sc-text-dim)] uppercase tracking-[0.5em] opacity-30">PROYECCIÓN TÉCNICA 3D (CAD BLUEPRINT)</div>
                     
                     <!-- TOOLBAR 3D INTERACTIVA CON TOOLTIPS -->
                     <div class="absolute top-6 right-6 flex items-center gap-2 bg-[var(--sc-surface)]/85 border border-[var(--sc-border)] px-3 py-2 rounded-lg shadow-lg backdrop-blur-md z-10">
-                        <!-- Vista Perspectiva (Reset) -->
                         <div class="relative group">
-                            <button onclick="window.cubical.reset3DView()" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                            <button onclick="window.cubical.reset3DView()" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm">
                                 <i class="fas fa-sync-alt text-xs"></i>
                             </button>
-                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
-                                Restaurar Vista 3D
-                            </div>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">Restaurar Vista 3D</div>
                         </div>
-                        
-                        <!-- Vista Frontal -->
                         <div class="relative group">
-                            <button onclick="window.cubical.set3DView('front')" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                            <button onclick="window.cubical.set3DView('front')" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm">
                                 <i class="fas fa-square text-xs"></i>
                             </button>
-                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
-                                Vista Frontal
-                            </div>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">Vista Frontal</div>
                         </div>
-
-                        <!-- Vista Superior -->
                         <div class="relative group">
-                            <button onclick="window.cubical.set3DView('top')" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                            <button onclick="window.cubical.set3DView('top')" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm">
                                 <i class="fas fa-border-all text-xs"></i>
                             </button>
-                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
-                                Vista Superior
-                            </div>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">Vista Superior</div>
                         </div>
-
-                        <!-- Separador -->
                         <div class="w-[1px] h-6 bg-[var(--sc-border)] mx-1"></div>
-
-                        <!-- Zoom In -->
                         <div class="relative group">
-                            <button onclick="window.cubical.zoom3D(1.15)" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                            <button onclick="window.cubical.zoom3D(1.15)" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm">
                                 <i class="fas fa-search-plus text-xs"></i>
                             </button>
-                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
-                                Acercar (+)
-                            </div>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">Acercar (+)</div>
                         </div>
-
-                        <!-- Zoom Out -->
                         <div class="relative group">
-                            <button onclick="window.cubical.zoom3D(0.85)" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm" style="transition: all 0.2s ease;">
+                            <button onclick="window.cubical.zoom3D(0.85)" class="w-8 h-8 rounded bg-[var(--sc-surface-alt)] hover:bg-[var(--alvarez-red)] hover:text-white text-[var(--sc-text-dim)] flex items-center justify-center transition-all shadow-sm">
                                 <i class="fas fa-search-minus text-xs"></i>
                             </button>
-                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">
-                                Alejar (-)
-                            </div>
+                            <div class="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[0.55rem] font-black uppercase text-[var(--sc-text)] py-1.5 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-md tracking-wider">Alejar (-)</div>
                         </div>
                     </div>
 
                     <canvas id="canvas-preview" class="w-full h-full max-h-[600px] cursor-grab active:cursor-grabbing" style="min-height:500px; display:block;"></canvas>
                 </div>
-                
+
                 <div class="flex justify-between items-center bg-[var(--sc-surface)] p-6 rounded-xl border border-[var(--sc-border)]">
-                    <div class="flex gap-4">
-                        <div class="bg-[var(--sc-surface-alt)] px-8 py-4 rounded-lg border border-[var(--sc-border)]">
-                            <div class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase mb-1">Módulos Totales</div>
-                            <div id="stat-total-mods" class="text-3xl font-black text-[var(--alvarez-red)]">0</div>
-                        </div>
-                    </div>
-                    <button onclick="window.cubical.generateResults()" class="px-16 py-6 bg-[var(--alvarez-red)] text-white font-black rounded hover:scale-105 transition-all uppercase tracking-[0.2em] flex items-center gap-4">
+                    <button onclick="window.cubical.generateResults()" class="w-full py-5 bg-[var(--alvarez-red)] text-white font-black rounded hover:scale-105 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-lg">
                         OPTIMIZAR CÁLCULO <i class="fas fa-microchip"></i>
                     </button>
+                </div>
+            </div>
+
+            <!-- 3. COLUMNA DERECHA: PARAMETROS DE PRECISIÓN Y EDUCACIÓN (3 COLS) -->
+            <div class="col-span-3 space-y-6">
+                <!-- PARÁMETROS -->
+                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-xl shadow-sm">
+                    <h3 class="text-xs font-black text-[var(--sc-text-dim)] uppercase tracking-widest mb-6 flex items-center gap-3">
+                        <i class="fas fa-sliders-h"></i> PROPIEDADES DE MÓDULO
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Alto (mm)</label>
+                            <input type="number" id="mod-h" oninput="window.cubical.updateActiveModule()" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Ancho (mm)</label>
+                            <input type="number" id="mod-w" oninput="window.cubical.updateActiveModule()" value="600" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Prof. (mm)</label>
+                            <input type="number" id="mod-p" oninput="window.cubical.updateActiveModule()" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Estantes</label>
+                            <input type="number" id="mod-shelves" oninput="window.cubical.updateActiveModule()" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Cajones</label>
+                            <input type="number" id="mod-drawers" value="3" min="0" oninput="window.cubical.updateDrawerEducation(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Puertas</label>
+                            <input type="number" id="mod-doors" value="0" min="0" oninput="window.cubical.updateHingeVisibility(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        
+                        <!-- Dynamic Hinge Selector -->
+                        <div id="group-hinge-type" class="col-span-2 hidden">
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1 flex justify-between items-center">
+                                Bisagra (Codo)
+                                <span class="text-[0.55rem] text-[var(--alvarez-blue)] cursor-pointer hover:underline" onclick="window.cubical.openMobileSheet('guide')"><i class="fas fa-info-circle"></i> ¿Cuál?</span>
+                            </label>
+                            <select id="mod-hinge-type" onchange="window.cubical.updateHingeEducation(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold">
+                                <option value="codo_0">Bisagra Codo 0 (Superpuesta)</option>
+                                <option value="codo_9">Bisagra Codo 9 (Semi-superpuesta)</option>
+                                <option value="codo_18">Bisagra Codo 18 (Embutida)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-span-2">
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Diseño de Melamina (Faplac/Egger/Sadepan)</label>
+                            <select id="mod-melamina" onchange="window.cubical.changeMelamina()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
+                                <optgroup label="FAPLAC (Premium)">
+                                    <option value="faplac_roble" selected>🌳 Faplac Roble Americano</option>
+                                    <option value="faplac_seda">🧵 Faplac Seda Giorno</option>
+                                    <option value="faplac_nogal">🪵 Faplac Nogal Habano</option>
+                                    <option value="faplac_gris">🪨 Faplac Gris Humo</option>
+                                </optgroup>
+                                <optgroup label="EGGER (Scandi Style)">
+                                    <option value="egger_helsinki">🌲 Egger Helsinki Birch</option>
+                                    <option value="egger_arcilla">🏺 Egger Gris Arcilla</option>
+                                    <option value="egger_ceniza">💨 Egger Ceniza Egger</option>
+                                </optgroup>
+                                <optgroup label="SADEPAN (Classic)">
+                                    <option value="sadepan_cerezo">🍒 Sadepan Cerezo</option>
+                                    <option value="sadepan_haya">🌾 Sadepan Haya</option>
+                                    <option value="sadepan_grafito">🕶️ Sadepan Grafito Sadepan</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button onclick="window.cubical.addModule()" class="w-full mt-6 py-4 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR A LA LISTA</button>
+                </div>
+
+                <!-- PANEL DIDÁCTICO / INTERACTIVO -->
+                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-xl shadow-sm text-xs space-y-4">
+                    <h3 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-graduation-cap text-[var(--alvarez-red)]"></i> ASISTENTE DIDÁCTICO
+                    </h3>
+                    
+                    <div id="edu-drawer-tip" class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-[var(--alvarez-blue)] rounded">
+                        <strong class="uppercase text-[0.6rem] block mb-1">💡 Holgura de Correderas</strong>
+                        Para colocar correderas telescópicas se descuentan exactamente <strong>26 mm</strong> (13 mm por lado) del ancho interno. ¡CubiCal ya lo calculó!
+                    </div>
+
+                    <div id="edu-hinge-tip" class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-[var(--alvarez-red)] rounded hidden">
+                        <strong class="uppercase text-[0.6rem] block mb-1">🚪 Tipo de Bisagra Codo 0</strong>
+                        <span id="edu-hinge-text">Ideal para puertas exteriores individuales. Cubre todo el canto frontal del lateral.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA MÓVIL PORTRAIT (CANVAS 100% + BOTTOM ACTION BAR + BOTTOM SHEETS) -->
+        <div class="lg:hidden flex flex-col relative w-full h-[65vh] border border-[var(--sc-border)] rounded-xl overflow-hidden bg-[var(--sc-surface-alt)]">
+            <!-- CANVAS MÓVIL -->
+            <div class="w-full h-full relative">
+                <div class="absolute top-4 left-4 text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase tracking-widest opacity-40">CAD 3D MOBILE</div>
+                
+                <!-- Botón de Calcular en Mobile overlayed -->
+                <button onclick="window.cubical.generateResults()" class="absolute bottom-4 right-4 py-3 px-6 bg-[var(--alvarez-red)] text-white text-xs font-black rounded-full shadow-2xl flex items-center gap-2 z-10">
+                    CALCULAR <i class="fas fa-chevron-right"></i>
+                </button>
+                
+                <canvas id="canvas-preview-mobile" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+            </div>
+
+            <!-- BARRA DE ACCIÓN FLOTANTE INFERIOR MÓVIL -->
+            <div class="bottom-action-bar">
+                <div onclick="window.cubical.openMobileSheet('parameters')" class="bottom-action-btn" id="mbtn-parameters">
+                    <i class="fas fa-sliders-h"></i><span>Propiedades</span>
+                </div>
+                <div onclick="window.cubical.openMobileSheet('layers')" class="bottom-action-btn" id="mbtn-layers">
+                    <i class="fas fa-layer-group"></i><span>Capas</span>
+                </div>
+                <div onclick="window.cubical.openMobileSheet('guide')" class="bottom-action-btn" id="mbtn-guide">
+                    <i class="fas fa-book-open"></i><span>Guía</span>
+                </div>
+            </div>
+
+            <!-- HOJA DESLIZABLE 1: PARÁMETROS -->
+            <div id="sheet-parameters" class="bottom-sheet">
+                <div class="bottom-sheet-handle" onclick="window.cubical.closeMobileSheets()"></div>
+                <h4 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider mb-4">Añadir / Editar Módulo</h4>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Nombre del Módulo</label>
+                        <input type="text" id="mod-name-mobile" oninput="window.cubical.updateActiveModule(true)" placeholder="Ej: Modulo A1" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold mb-2" value="Modulo A1" />
+                    </div>
+
+                    <div>
+                        <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Módulo Base</label>
+                        <select id="mod-type-mobile" onchange="window.cubical.autoSetPresets(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold">
+                            <option value="CAJONERA">🗄️ Cajonera Estándar</option>
+                            <option value="PLACARD">🚪 Ropero / Vestidor</option>
+                            <option value="ALACENA">🪜 Alacena Superior</option>
+                            <option value="BAJO_MESADA">🍽️ Bajo Mesada Cocina</option>
+                            <option value="BIBLIOTECA">📚 Biblioteca Divisoria</option>
+                            <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Alto (mm)</label>
+                            <input type="number" id="mod-h-mobile" oninput="window.cubical.updateActiveModule(true)" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Ancho (mm)</label>
+                            <input type="number" id="mod-w-mobile" oninput="window.cubical.updateActiveModule(true)" value="600" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Prof. (mm)</label>
+                            <input type="number" id="mod-p-mobile" oninput="window.cubical.updateActiveModule(true)" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Estantes</label>
+                            <input type="number" id="mod-shelves-mobile" oninput="window.cubical.updateActiveModule(true)" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Cajones</label>
+                            <input type="number" id="mod-drawers-mobile" value="3" min="0" oninput="window.cubical.updateDrawerEducation(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Puertas</label>
+                            <input type="number" id="mod-doors-mobile" value="0" min="0" oninput="window.cubical.updateHingeVisibility(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+
+                        <div id="group-hinge-type-mobile" class="col-span-3 hidden">
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Bisagra (Codo)</label>
+                            <select id="mod-hinge-type-mobile" onchange="window.cubical.updateHingeEducation(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold">
+                                <option value="codo_0">Bisagra Codo 0 (Superpuesta)</option>
+                                <option value="codo_9">Bisagra Codo 9 (Semi-superpuesta)</option>
+                                <option value="codo_18">Bisagra Codo 18 (Embutida)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-span-3 mt-1">
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Diseño de Melamina</label>
+                            <select id="mod-melamina-mobile" onchange="window.cubical.changeMelamina(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
+                                <optgroup label="FAPLAC (Premium)">
+                                    <option value="faplac_roble" selected>🌳 Faplac Roble Americano</option>
+                                    <option value="faplac_seda">🧵 Faplac Seda Giorno</option>
+                                    <option value="faplac_nogal">🪵 Faplac Nogal Habano</option>
+                                    <option value="faplac_gris">🪨 Faplac Gris Humo</option>
+                                </optgroup>
+                                <optgroup label="EGGER (Scandi Style)">
+                                    <option value="egger_helsinki">🌲 Egger Helsinki Birch</option>
+                                    <option value="egger_arcilla">🏺 Egger Gris Arcilla</option>
+                                    <option value="egger_ceniza">💨 Egger Ceniza Egger</option>
+                                </optgroup>
+                                <optgroup label="SADEPAN (Classic)">
+                                    <option value="sadepan_cerezo">🍒 Sadepan Cerezo</option>
+                                    <option value="sadepan_haya">🌾 Sadepan Haya</option>
+                                    <option value="sadepan_grafito">🕶️ Sadepan Grafito Sadepan</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="window.cubical.addModule(true)" class="w-full py-4 bg-[var(--alvarez-red)] text-white text-xs font-black uppercase rounded shadow-lg">AÑADIR AL PLANO</button>
+                </div>
+            </div>
+
+            <!-- HOJA DESLIZABLE 2: CAPAS / LISTADO -->
+            <div id="sheet-layers" class="bottom-sheet">
+                <div class="bottom-sheet-handle" onclick="window.cubical.closeMobileSheets()"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider">Capas / Módulos en el plano</h4>
+                    <span id="stat-total-mods-mobile" class="text-xs font-bold text-[var(--alvarez-red)]">0</span>
+                </div>
+                <div id="module-list-mobile" class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <!-- HOJA DESLIZABLE 3: GUÍA DIDÁCTICA -->
+            <div id="sheet-guide" class="bottom-sheet">
+                <div class="bottom-sheet-handle" onclick="window.cubical.closeMobileSheets()"></div>
+                <h4 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider mb-4"><i class="fas fa-graduation-cap text-[var(--alvarez-red)]"></i> Guía Rápida de Herrajes</h4>
+                
+                <div class="space-y-4 text-xs text-[var(--sc-text-dim)]">
+                    <div class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-[var(--alvarez-blue)] rounded">
+                        <strong class="uppercase text-[0.6rem] block mb-1 text-[var(--sc-text)]">💡 Correderas Telescópicas</strong>
+                        Tienen una tolerancia estricta de **26mm** en total (13mm por lado). CubiCal calcula esta holgura automáticamente en tus cajones.
+                    </div>
+                    <div class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-[var(--alvarez-red)] rounded">
+                        <strong class="uppercase text-[0.6rem] block mb-1 text-[var(--sc-text)]">🚪 Bisagra Codo 0 (Superpuesta)</strong>
+                        La puerta cubre todo el espesor del lateral (18mm). Es la bisagra normal para extremos del mueble.
+                    </div>
+                    <div class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-amber-500 rounded">
+                        <strong class="uppercase text-[0.6rem] block mb-1 text-[var(--sc-text)]">🚪 Bisagra Codo 9 (Semi-superpuesta)</strong>
+                        La puerta cubre solo medio lateral (9mm). Se usa cuando dos puertas consecutivas comparten el lateral central.
+                    </div>
+                    <div class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-emerald-500 rounded">
+                        <strong class="uppercase text-[0.6rem] block mb-1 text-[var(--sc-text)]">🚪 Bisagra Codo 18 (Embutida)</strong>
+                        La puerta queda adentro del mueble, al ras de los laterales. Estética de diseño minimalista.
+                    </div>
                 </div>
             </div>
         </div>
@@ -274,9 +493,14 @@ const isLoggedIn = !!clientId;
                     </table>
                 </div>
                 
-                <div class="flex gap-4 p-4 bg-[var(--sc-surface-alt)] rounded-xl border border-[var(--sc-border)]">
-                    <button onclick="window.cubical.saveProject(true)" class="flex-1 py-6 bg-[var(--alvarez-red)] text-white font-black rounded hover:scale-105 transition-all uppercase tracking-widest shadow-xl">ENVIAR A PRODUCCIÓN</button>
-                    <button onclick="window.cubical.showConstructor()" class="px-10 py-6 bg-[var(--sc-surface)] border border-[var(--sc-border)] text-[var(--sc-text)] rounded border-none font-black hover:bg-[var(--sc-surface-alt)] transition-all uppercase text-xs">RE-EDITAR PLANO</button>
+                <div class="flex flex-col gap-4 p-4 bg-[var(--sc-surface-alt)] rounded-xl border border-[var(--sc-border)]">
+                    <button onclick="window.cubical.exportToSmartCut()" class="w-full py-6 bg-[var(--alvarez-blue)] text-white font-black rounded hover:scale-[1.02] transition-all uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 cursor-pointer">
+                        <i class="fas fa-cut"></i> EXPORTAR A OPTIMIZADOR SMARTCUT
+                    </button>
+                    <div class="flex gap-4 w-full">
+                        <button onclick="window.cubical.saveProject(true)" class="flex-1 py-5 bg-[var(--alvarez-red)] text-white font-black rounded hover:scale-105 transition-all uppercase tracking-widest shadow-lg cursor-pointer">ENVIAR A PRODUCCIÓN</button>
+                        <button onclick="window.cubical.showConstructor()" class="px-8 py-5 bg-[var(--sc-surface)] border border-[var(--sc-border)] text-[var(--sc-text)] rounded font-black hover:bg-[var(--sc-surface-alt)] transition-all uppercase text-xs cursor-pointer">RE-EDITAR PLANO</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -308,7 +532,7 @@ const isLoggedIn = !!clientId;
         --alvarez-border: oklch(100% 0 0 / 15%);
     }
 
-    /* 📐 AutoCAD Precisión Industrial para todos los Inputs/Selects y Colores Explícitos */
+    /* 📐 AutoCAD & Photoshop Precisión Industrial para todos los Inputs/Selects y Colores Explícitos */
     .cubical-container input,
     .cubical-container select,
     .cubical-container textarea {
@@ -344,9 +568,80 @@ const isLoggedIn = !!clientId;
     .animate-fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
-    .hidden { display: none !important; }
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--sc-border); border-radius: 10px; }
+
+    /* ============================================================== */
+    /* 📱 DISEÑO MÓVIL ESTILO PHOTOSHOP & SKETCHUP WEB (BOTTOM SHEETS) */
+    /* ============================================================== */
+    .bottom-action-bar {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        background: var(--sc-surface);
+        border-top: 1px solid var(--sc-border);
+        padding: 12px 0;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 40;
+        box-shadow: 0 -3px 15px rgba(0,0,0,0.1);
+    }
+    .bottom-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: var(--sc-text-dim);
+        font-size: 0.55rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex: 1;
+        text-align: center;
+    }
+    .bottom-action-btn:hover,
+    .bottom-action-btn.active {
+        color: var(--alvarez-red);
+    }
+    .bottom-action-btn i {
+        font-size: 1.1rem;
+        margin-bottom: 2px;
+    }
+
+    /* Bottom Sheets Overlay */
+    .bottom-sheet {
+        position: absolute;
+        bottom: 55px; /* Altura de la barra inferior */
+        left: 0;
+        right: 0;
+        background: var(--sc-surface);
+        border-top: 2px solid var(--alvarez-red);
+        border-radius: 16px 16px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 50;
+        padding: 20px;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
+        max-height: 80%;
+        overflow-y: auto;
+    }
+    .bottom-sheet.active {
+        transform: translateY(0);
+    }
+    .bottom-sheet-handle {
+        width: 36px;
+        height: 4px;
+        background: var(--sc-text-dim);
+        opacity: 0.3;
+        border-radius: 2px;
+        margin: 0 auto 15px auto;
+        cursor: pointer;
+    }
+
 </style>
 
 <script is:inline>
@@ -364,7 +659,90 @@ const isLoggedIn = !!clientId;
         }
     })();
 
-    const CLIENT_ID = "{clientId}";
+    const CLIENT_ID = document.getElementById('cubical-app-root')?.dataset.clientId || '0';
+
+    const MELAMINA_PALETTES = {
+        faplac_roble: {
+            name: "Faplac Roble Americano",
+            lineColor: "#222222",
+            fillColor: "oklch(60% 0.12 72)", // Solid, opaque warm oak
+            shelfColor: "oklch(56% 0.12 72)",
+            drawerColor: "oklch(53% 0.12 72)",
+            doorColor: "oklch(63% 0.12 72)"
+        },
+        faplac_seda: {
+            name: "Faplac Seda Giorno",
+            lineColor: "#222222",
+            fillColor: "oklch(82% 0.04 85)", // Solid warm off-white linen
+            shelfColor: "oklch(78% 0.04 85)",
+            drawerColor: "oklch(75% 0.04 85)",
+            doorColor: "oklch(85% 0.04 85)"
+        },
+        faplac_nogal: {
+            name: "Faplac Nogal Habano",
+            lineColor: "#222222",
+            fillColor: "oklch(38% 0.08 55)", // Solid deep dark brown walnut
+            shelfColor: "oklch(34% 0.08 55)",
+            drawerColor: "oklch(31% 0.08 55)",
+            doorColor: "oklch(42% 0.08 55)"
+        },
+        faplac_gris: {
+            name: "Faplac Gris Humo",
+            lineColor: "#222222",
+            fillColor: "oklch(60% 0.01 240)", // Solid modern medium gray
+            shelfColor: "oklch(56% 0.01 240)",
+            drawerColor: "oklch(53% 0.01 240)",
+            doorColor: "oklch(63% 0.01 240)"
+        },
+        egger_helsinki: {
+            name: "Egger Helsinki Birch",
+            lineColor: "#222222",
+            fillColor: "oklch(88% 0.06 90)", // Solid light birch
+            shelfColor: "oklch(84% 0.06 90)",
+            drawerColor: "oklch(81% 0.06 90)",
+            doorColor: "oklch(91% 0.06 90)"
+        },
+        egger_arcilla: {
+            name: "Egger Gris Arcilla",
+            lineColor: "#222222",
+            fillColor: "oklch(68% 0.03 70)", // Solid warm clay grey
+            shelfColor: "oklch(64% 0.03 70)",
+            drawerColor: "oklch(61% 0.03 70)",
+            doorColor: "oklch(71% 0.03 70)"
+        },
+        egger_ceniza: {
+            name: "Egger Ceniza Egger",
+            lineColor: "#222222",
+            fillColor: "oklch(75% 0.03 80)", // Solid light ash grey
+            shelfColor: "oklch(71% 0.03 80)",
+            drawerColor: "oklch(68% 0.03 80)",
+            doorColor: "oklch(78% 0.03 80)"
+        },
+        sadepan_cerezo: {
+            name: "Sadepan Cerezo",
+            lineColor: "#222222",
+            fillColor: "oklch(52% 0.15 48)", // Solid warm cherry
+            shelfColor: "oklch(48% 0.15 48)",
+            drawerColor: "oklch(45% 0.15 48)",
+            doorColor: "oklch(56% 0.15 48)"
+        },
+        sadepan_haya: {
+            name: "Sadepan Haya",
+            lineColor: "#222222",
+            fillColor: "oklch(80% 0.10 75)", // Solid warm beech wood
+            shelfColor: "oklch(76% 0.10 75)",
+            drawerColor: "oklch(73% 0.10 75)",
+            doorColor: "oklch(83% 0.10 75)"
+        },
+        sadepan_grafito: {
+            name: "Sadepan Grafito Sadepan",
+            lineColor: "#222222",
+            fillColor: "oklch(30% 0.02 260)", // Solid dark graphite charcoal
+            shelfColor: "oklch(26% 0.02 260)",
+            drawerColor: "oklch(23% 0.02 260)",
+            doorColor: "oklch(33% 0.02 260)"
+        }
+    };
 
     class Cabinet3DRenderer {
         constructor(canvasId) {
@@ -373,6 +751,10 @@ const isLoggedIn = !!clientId;
             this.angleY = -0.6; // Ángulo de rotación por defecto
             this.angleX = 0.3;  // Ángulo de inclinación por defecto
             this.scale = 0.35;
+            this.panX = 0;      // Desplazamiento X para Paneo (Barra espaciadora + Mouse)
+            this.panY = 0;      // Desplazamiento Y para Paneo
+            this.spacePressed = false;   // Estado de la barra espaciadora
+            this.autoScalePending = true;  // Auto-ajustar escala al primer render
             this.setupInteraction();
         }
         
@@ -384,15 +766,28 @@ const isLoggedIn = !!clientId;
                 isDragging = true;
                 lastX = x;
                 lastY = y;
+                if (this.spacePressed) {
+                    this.canvas.style.cursor = 'grabbing';
+                }
             };
             
             const dragMove = (x, y) => {
                 if (!isDragging) return;
                 const dx = x - lastX;
                 const dy = y - lastY;
-                this.angleY += dx * 0.007;
-                this.angleX += dy * 0.007;
-                this.angleX = Math.max(-Math.PI/3, Math.min(Math.PI/3, this.angleX)); // Evitar dar la vuelta
+                
+                if (this.spacePressed) {
+                    // Mover/Panear el mueble por el plano
+                    this.panX += dx;
+                    this.panY += dy;
+                    this.canvas.style.cursor = 'grabbing';
+                } else {
+                    // Rotar el mueble sobre sus ejes
+                    this.angleY += dx * 0.007;
+                    this.angleX += dy * 0.007;
+                    this.angleX = Math.max(-Math.PI/3, Math.min(Math.PI/3, this.angleX)); // Evitar dar la vuelta
+                }
+                
                 lastX = x;
                 lastY = y;
                 if (window.cubical && typeof window.cubical.renderPreview === 'function') {
@@ -400,11 +795,42 @@ const isLoggedIn = !!clientId;
                 }
             };
             
-            const stopDrag = () => { isDragging = false; };
+            const stopDrag = () => { 
+                isDragging = false; 
+                if (this.spacePressed) {
+                    this.canvas.style.cursor = 'grab';
+                } else {
+                    this.canvas.style.cursor = 'default';
+                }
+            };
             
             this.canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
             this.canvas.addEventListener('mousemove', (e) => dragMove(e.clientX, e.clientY));
             window.addEventListener('mouseup', stopDrag);
+            
+            // Listeners de Teclado Globales para barra espaciadora (evitando conflicto si escribe en inputs)
+            window.addEventListener('keydown', (e) => {
+                const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
+                    return; // Ignorar si el usuario está tipeando en un formulario
+                }
+                if (e.code === 'Space') {
+                    e.preventDefault(); // Evitar scroll de la página
+                    this.spacePressed = true;
+                    this.canvas.style.cursor = 'grab';
+                }
+            });
+            
+            window.addEventListener('keyup', (e) => {
+                const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
+                    return;
+                }
+                if (e.code === 'Space') {
+                    this.spacePressed = false;
+                    this.canvas.style.cursor = 'default';
+                }
+            });
             
             this.canvas.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
@@ -438,217 +864,269 @@ const isLoggedIn = !!clientId;
             const ry2 = py * cosX - rz1 * sinX;
             const rz2 = py * sinX + rz1 * cosX;
             
-            const sx = screenWidth / 2 + rx1 * this.scale;
-            const sy = screenHeight / 2 - ry2 * this.scale;
+            // Distancia de la cámara para proyección cónica realista (punto de fuga)
+            const d = 1500;
+            const perspectiveFactor = d / (d + rz2);
+            
+            // Se suman panX y panY para permitir arrastrar libremente el mueble por la pantalla
+            const sx = screenWidth / 2 + rx1 * this.scale * perspectiveFactor + this.panX;
+            const sy = screenHeight / 2 - ry2 * this.scale * perspectiveFactor + this.panY;
             
             return { x: sx, y: sy, z: rz2 };
+        }
+
+        // Rota una normal de espacio-modelo al espacio de cámara
+        // (misma secuencia Y→X que project, pero sin perspectiva ni traslación)
+        rotateNormal(nx, ny, nz) {
+            const cosY = Math.cos(this.angleY), sinY = Math.sin(this.angleY);
+            const rx  = nx * cosY - nz * sinY;
+            const rz1 = nx * sinY + nz * cosY;
+            const cosX = Math.cos(this.angleX), sinX = Math.sin(this.angleX);
+            const ry  = ny * cosX - rz1 * sinX;
+            const rz  = ny * sinX + rz1 * cosX;
+            return { x: rx, y: ry, z: rz };
+        }
+
+        // Calcula la escala necesaria para que el modelo quepa en el 80% del canvas
+        computeAutoScale(width, height, depth) {
+            const sw = this.canvas.width, sh = this.canvas.height;
+            const cx = width/2, cy = height/2, cz = depth/2;
+            const cosY = Math.cos(this.angleY), sinY = Math.sin(this.angleY);
+            const cosX = Math.cos(this.angleX), sinX = Math.sin(this.angleX);
+            const D = 1500;
+            const corners = [
+                [0,0,0],[width,0,0],[width,height,0],[0,height,0],
+                [0,0,depth],[width,0,depth],[width,height,depth],[0,height,depth]
+            ];
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            corners.forEach(([X,Y,Z]) => {
+                const px=X-cx, py=Y-cy, pz=Z-cz;
+                const rx  = px*cosY - pz*sinY;
+                const rz1 = px*sinY + pz*cosY;
+                const ry  = py*cosX - rz1*sinX;
+                const rz  = py*sinX + rz1*cosX;
+                const pf  = D/(D+rz);
+                minX = Math.min(minX, rx*pf);  maxX = Math.max(maxX, rx*pf);
+                minY = Math.min(minY, -ry*pf); maxY = Math.max(maxY, -ry*pf);
+            });
+            const pad = 0.80;
+            const sX = (sw*pad) / Math.max(1, maxX - minX);
+            const sY = (sh*pad) / Math.max(1, maxY - minY);
+            return Math.min(sX, sY);
+        }
+
+        addBoxFaces(x, y, z, w, h, d, fillColor, lineColor, name = 'board') {
+            const sw = this.canvas.width;
+            const sh = this.canvas.height;
+            
+            // 8 vértices de un prisma rectangular
+            const vertices = [
+                {x: x,     y: y,     z: z},     // 0 (Frente, Abajo, Izquierda)
+                {x: x + w, y: y,     z: z},     // 1 (Frente, Abajo, Derecha)
+                {x: x + w, y: y + h, z: z},     // 2 (Frente, Arriba, Derecha)
+                {x: x,     y: y + h, z: z},     // 3 (Frente, Arriba, Izquierda)
+                {x: x,     y: y,     z: z + d}, // 4 (Atrás, Abajo, Izquierda)
+                {x: x + w, y: y,     z: z + d}, // 5 (Atrás, Abajo, Derecha)
+                {x: x + w, y: y + h, z: z + d}, // 6 (Atrás, Arriba, Derecha)
+                {x: x,     y: y + h, z: z + d}  // 7 (Atrás, Arriba, Izquierda)
+            ];
+            
+            // Proyectar todos los vértices a la pantalla 2D
+            const proj = vertices.map(v => {
+                return this.project(v.x, v.y, v.z, this.currentModDims.ancho, this.currentModDims.alto, this.currentModDims.prof, sw, sh);
+            });
+            
+            // 6 caras con normales en espacio-modelo (top/bottom corregidos)
+            const boxFaces = [
+                { indices: [0, 1, 2, 3], faceName: 'front',  normal: { x:  0, y:  0, z: -1 } },
+                { indices: [5, 4, 7, 6], faceName: 'back',   normal: { x:  0, y:  0, z:  1 } },
+                { indices: [4, 0, 3, 7], faceName: 'left',   normal: { x: -1, y:  0, z:  0 } },
+                { indices: [1, 5, 6, 2], faceName: 'right',  normal: { x:  1, y:  0, z:  0 } },
+                { indices: [3, 2, 6, 7], faceName: 'top',    normal: { x:  0, y:  1, z:  0 } }, // y=h: TAPA SUPERIOR
+                { indices: [4, 5, 1, 0], faceName: 'bottom', normal: { x:  0, y: -1, z:  0 } }  // y=0: PISO
+            ];
+            
+            boxFaces.forEach(f => {
+                const avgZ = f.indices.reduce((sum, idx) => sum + proj[idx].z, 0) / 4;
+                const pts  = f.indices.map(idx => proj[idx]);
+                this.allFaces.push({
+                    pts, avgZ, fillColor, lineColor,
+                    faceName: f.faceName,
+                    normal:   f.normal,
+                    boardName: name
+                });
+            });
         }
         
         drawBox(width, height, depth, opts = {}) {
             const {
                 offsetX = 0,
-                color = '#ff4d4d',
-                fillColor = 'rgba(255, 77, 77, 0.05)',
-                lineWidth = 2,
+                color = '#000000',
+                fillColor = '#ffffff',
+                lineWidth = 1.0,
                 drawPanelThickness = true,
                 shelves = 0,
                 drawers = 0,
-                doors = 0
+                doors = 0,
+                palette = null
             } = opts;
             
             const sw = this.canvas.width;
             const sh = this.canvas.height;
             const ctx = this.ctx;
-            const t = 18; // 18mm espesor madera
+            const t = 18; // 18mm de espesor de melamina
             
-            const vertices = [
-                {x: 0,     y: 0,      z: 0},
-                {x: width, y: 0,      z: 0},
-                {x: width, y: height, z: 0},
-                {x: 0,     y: height, z: 0},
-                {x: 0,     y: 0,      z: depth},
-                {x: width, y: 0,      z: depth},
-                {x: width, y: height, z: depth},
-                {x: 0,     y: height, z: depth}
-            ];
+            // Guardar las dimensiones del módulo actual para que project() las use como centro de rotación y perspectiva
+            this.currentModDims = { ancho: width, alto: height, prof: depth };
             
-            const proj = vertices.map(v => this.project(v.x + offsetX, v.y, v.z, width, height, depth, sw, sh));
-            
-            const line = (p1, p2, dotted = false) => {
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                if (dotted) {
-                    ctx.setLineDash([4, 4]);
-                } else {
-                    ctx.setLineDash([]);
-                }
-                ctx.stroke();
-            };
-            
-            const fillFace = (indices, fill) => {
-                ctx.beginPath();
-                ctx.moveTo(proj[indices[0]].x, proj[indices[0]].y);
-                for(let i = 1; i < indices.length; i++) {
-                    ctx.lineTo(proj[indices[i]].x, proj[indices[i]].y);
-                }
-                ctx.closePath();
-                ctx.fillStyle = fill;
-                ctx.fill();
-            };
-            
-            ctx.strokeStyle = color;
-            ctx.lineWidth = lineWidth;
-            
-            // Relleno semi-transparente de las caras exteriores
-            fillFace([4, 5, 6, 7], fillColor);
-            fillFace([0, 1, 5, 4], fillColor);
-            fillFace([2, 3, 7, 6], fillColor);
-            fillFace([0, 3, 7, 4], fillColor);
-            fillFace([1, 2, 6, 5], fillColor);
-            
-            // Dibujar estructura trasera en líneas de proyección técnica
-            line(proj[4], proj[5], true);
-            line(proj[5], proj[6], true);
-            line(proj[6], proj[7], true);
-            line(proj[7], proj[4], true);
-            
-            // Diagonales de profundidad
-            line(proj[0], proj[4], true);
-            line(proj[1], proj[5], true);
-            line(proj[2], proj[6], true);
-            line(proj[3], proj[7], true);
-            
-            // Dibujar marco frontal sólido
-            fillFace([0, 1, 2, 3], 'rgba(255,255,255,0.01)');
-            line(proj[0], proj[1]);
-            line(proj[1], proj[2]);
-            line(proj[2], proj[3]);
-            line(proj[3], proj[0]);
-            
-            // Espesores de Carcasa 3D (CAD Style)
-            if (drawPanelThickness) {
-                ctx.strokeStyle = document.body.getAttribute('data-theme') === 'dark' || document.body.classList.contains('body-theme-dark')
-                    ? 'rgba(255,255,255,0.15)'
-                    : 'rgba(0,0,0,0.15)';
-                ctx.lineWidth = 1;
-                
-                // Lateral izquierdo
-                const lLeft = this.project(t + offsetX, 0, 0, width, height, depth, sw, sh);
-                const rLeft = this.project(t + offsetX, height, 0, width, height, depth, sw, sh);
-                const lLeftBack = this.project(t + offsetX, 0, depth, width, height, depth, sw, sh);
-                const rLeftBack = this.project(t + offsetX, height, depth, width, height, depth, sw, sh);
-                line(lLeft, rLeft, true);
-                line(lLeft, lLeftBack, true);
-                line(rLeft, rLeftBack, true);
-                
-                // Lateral derecho
-                const lRight = this.project(width - t + offsetX, 0, 0, width, height, depth, sw, sh);
-                const rRight = this.project(width - t + offsetX, height, 0, width, height, depth, sw, sh);
-                const lRightBack = this.project(width - t + offsetX, 0, depth, width, height, depth, sw, sh);
-                const rRightBack = this.project(width - t + offsetX, height, depth, width, height, depth, sw, sh);
-                line(lRight, rRight, true);
-                line(lRight, lRightBack, true);
-                line(rRight, rRightBack, true);
+            // Reiniciar el listado global de caras para el Algoritmo del Pintor
+            this.allFaces = [];
+
+            // Auto-escalar para que el módulo siempre quepa en el canvas
+            if (this.autoScalePending) {
+                this.scale = this.computeAutoScale(width, height, depth);
+                this.autoScalePending = false;
             }
             
-            // Estantes Regulables (Si posee contenido)
+            // Delineado técnico ultra-fino dinámico de alta definición
+            const isDark = document.body.getAttribute('data-theme') === 'dark' || document.body.classList.contains('body-theme-dark');
+            const lineColor = isDark ? '#e5e5e5' : '#1e1e1e';
+            
+            // Seleccionar rellenos opacos de melamina
+            const baseFill   = palette ? palette.fillColor : (isDark ? '#2e2e2e' : '#f4f1ea');
+            const shelfFill  = palette ? palette.shelfColor : (isDark ? '#363636' : '#ebe7dd');
+            const drawerFill = palette ? palette.drawerColor : (isDark ? '#3a3a3a' : '#e5e1d7');
+            const doorFill   = palette ? palette.doorColor : (isDark ? '#3d3d3d' : '#ede9df');
+            
+            // 1. DIBUJAR FONDO/RESPALDO (3mm MDF) - Ubicado al fondo del mueble
+            this.addBoxFaces(offsetX, 0, depth - 3, width, height, 3, baseFill, lineColor, 'backboard');
+            
+            // 2. DIBUJAR LATERAL IZQUIERDO (18mm)
+            this.addBoxFaces(offsetX, 0, 0, t, height, depth, baseFill, lineColor, 'left-side');
+            
+            // 3. DIBUJAR LATERAL DERECHO (18mm)
+            this.addBoxFaces(width - t + offsetX, 0, 0, t, height, depth, baseFill, lineColor, 'right-side');
+            
+            // 4. DIBUJAR TECHO / TAPA SUPERIOR (18mm)
+            this.addBoxFaces(t + offsetX, height - t, 0, width - 2 * t, t, depth, baseFill, lineColor, 'top');
+            
+            // 5. DIBUJAR PISO / BASE INFERIOR (18mm) - Soporte para Zócalo si corresponde
+            let zocaloH = 0;
+            if (height >= 800 && drawers > 0) zocaloH = 80;  // Zócalo de 80mm en cajoneras
+            if (height === 850 && doors > 0) zocaloH = 120;  // Zócalo de 120mm en bajos mesada
+            
+            if (zocaloH > 0) {
+                // Dibujar Zócalo frontal retranqueado (retrocede 20mm del frente Z = 20)
+                this.addBoxFaces(t + offsetX, 0, 20, width - 2 * t, zocaloH, t, baseFill, lineColor, 'zocalo');
+                // Piso del mueble sobre el zócalo
+                this.addBoxFaces(t + offsetX, zocaloH, 0, width - 2 * t, t, depth, baseFill, lineColor, 'base');
+            } else {
+                // Piso del mueble a ras del suelo
+                this.addBoxFaces(t + offsetX, 0, 0, width - 2 * t, t, depth, baseFill, lineColor, 'base');
+            }
+            
+            const pisoY = zocaloH > 0 ? zocaloH + t : t;
+            const techoY = height - t;
+            const espacioUtilH = techoY - pisoY;
+            
+            // 6. DIBUJAR ESTANTES (18mm) - Con retranqueo frontal estándar de 20mm
             if (shelves > 0) {
-                ctx.strokeStyle = 'oklch(70% 0.15 80)'; // Color madera/estante cálido
-                ctx.lineWidth = 2.5;
-                
-                const hSpace = (height - 36) / (shelves + 1);
+                const hSpace = espacioUtilH / (shelves + 1);
                 for (let i = 1; i <= shelves; i++) {
-                    const currY = t + i * hSpace;
-                    
-                    const sfL = this.project(t + offsetX, currY, 0, width, height, depth, sw, sh);
-                    const sfR = this.project(width - t + offsetX, currY, 0, width, height, depth, sw, sh);
-                    const sbL = this.project(t + offsetX, currY, depth - 20, width, height, depth, sw, sh);
-                    const sbR = this.project(width - t + offsetX, currY, depth - 20, width, height, depth, sw, sh);
-                    
-                    line(sfL, sfR);
-                    line(sfL, sbL, true);
-                    line(sfR, sbR, true);
-                    line(sbL, sbR, true);
+                    const shelfY = pisoY + i * hSpace - t / 2;
+                    this.addBoxFaces(t + offsetX, shelfY, 20, width - 2 * t, t, depth - 20, shelfFill, lineColor, 'shelf');
                 }
             }
             
-            // Cajoneras (Si posee contenido)
+            // 7. DIBUJAR CAJONES (Frentes de cajón de 18mm con holgura de 3mm)
             if (drawers > 0) {
-                ctx.strokeStyle = 'oklch(65% 0.18 220)'; // Color cian de cajoneras
-                ctx.lineWidth = 2.5;
-                
-                const hSpace = height / drawers;
+                const hSpace = espacioUtilH / drawers;
                 for (let i = 0; i < drawers; i++) {
-                    const yBottom = i * hSpace;
-                    const yTop = (i + 1) * hSpace;
+                    const yBottom = pisoY + i * hSpace;
+                    // Frente de cajón de 18mm de espesor embutido, Z = 0
+                    this.addBoxFaces(3 + offsetX, yBottom + 3, 0, width - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer');
                     
-                    // Frente de cajón
-                    const fBL = this.project(3 + offsetX, yBottom + 3, 0, width, height, depth, sw, sh);
-                    const fBR = this.project(width - 3 + offsetX, yBottom + 3, 0, width, height, depth, sw, sh);
-                    const fTL = this.project(3 + offsetX, yTop - 3, 0, width, height, depth, sw, sh);
-                    const fTR = this.project(width - 3 + offsetX, yTop - 3, 0, width, height, depth, sw, sh);
-                    
-                    line(fBL, fBR);
-                    line(fBR, fTR);
-                    line(fTR, fTL);
-                    line(fTL, fBL);
-                    
-                    // Cuerpo de cajón interno (en proyección discontinua hacia el fondo)
-                    const bBL = this.project(t + 13 + offsetX, yBottom + t, depth - 50, width, height, depth, sw, sh);
-                    const bBR = this.project(width - t - 13 + offsetX, yBottom + t, depth - 50, width, height, depth, sw, sh);
-                    
-                    line(fBL, bBL, true);
-                    line(fBR, bBR, true);
-                    line(bBL, bBR, true);
-                    
-                    // Tirador metálico en el centro
+                    // Tirador de barra horizontal de 3D
                     const tcX = width / 2 + offsetX;
                     const tcY = yBottom + hSpace / 2;
-                    const hL = this.project(tcX - 45, tcY, 0, width, height, depth, sw, sh);
-                    const hR = this.project(tcX + 45, tcY, 0, width, height, depth, sw, sh);
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 3.5;
-                    line(hL, hR);
-                    ctx.strokeStyle = 'oklch(65% 0.18 220)';
-                    ctx.lineWidth = 2.5;
+                    this.addBoxFaces(tcX - 45, tcY - 5, -10, 90, 10, 10, '#cccccc', lineColor, 'handle');
                 }
             }
             
-            // Puertas (Si posee contenido)
+            // 8. DIBUJAR PUERTAS (Puertas de 18mm)
             if (doors > 0) {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-                ctx.lineWidth = 2.5;
-                
-                const wSpace = width / doors;
+                const wSpace = (width - 6) / doors;
                 for (let i = 0; i < doors; i++) {
-                    const xLeft = i * wSpace;
-                    const xRight = (i + 1) * wSpace;
+                    const xLeft = 3 + i * wSpace;
+                    // Puertas de 18mm de espesor embutidas, Z = 0
+                    this.addBoxFaces(xLeft + offsetX, pisoY + 3, 0, wSpace - 3, espacioUtilH - 6, t, doorFill, lineColor, 'door');
                     
-                    const dBL = this.project(xLeft + 3 + offsetX, 3, 0, width, height, depth, sw, sh);
-                    const dBR = this.project(xRight - 3 + offsetX, 3, 0, width, height, depth, sw, sh);
-                    const dTL = this.project(xLeft + 3 + offsetX, height - 3, 0, width, height, depth, sw, sh);
-                    const dTR = this.project(xRight - 3 + offsetX, height - 3, 0, width, height, depth, sw, sh);
-                    
-                    line(dBL, dBR);
-                    line(dBR, dTR);
-                    line(dTR, dTL);
-                    line(dTL, dBL);
-                    
-                    // Tiradores de perilla
-                    const knobX = i === 0 ? xRight - 20 : xLeft + 20;
-                    const knobY = height / 2;
-                    const kp = this.project(knobX + offsetX, knobY, 0, width, height, depth, sw, sh);
-                    ctx.beginPath();
-                    ctx.arc(kp.x, kp.y, 4.5, 0, 2*Math.PI);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fill();
+                    // Tirador de barra vertical para las puertas
+                    const tiradorX = doors === 1 
+                        ? xLeft + wSpace - 30 
+                        : (i === 0 ? xLeft + wSpace - 30 : xLeft + 30);
+                    const tiradorY = pisoY + espacioUtilH / 2;
+                    this.addBoxFaces(tiradorX + offsetX - 5, tiradorY - 50, -10, 10, 100, 10, '#cccccc', lineColor, 'handle');
                 }
             }
+            
+            // =========================================================================
+            // RENDERIZADO: PAINTER'S ALGORITHM + ILUMINACIÓN DIFUSA + BACKFACE CULLING
+            // =========================================================================
+            this.allFaces.sort((a, b) => b.avgZ - a.avgZ);
+
+            // Dirección de luz (arriba-derecha-frente), normalizada
+            const _Lx = 0.45, _Ly = 0.75, _Lz = -0.48;
+            const _Ll = Math.sqrt(_Lx*_Lx + _Ly*_Ly + _Lz*_Lz);
+            const light = { x: _Lx/_Ll, y: _Ly/_Ll, z: _Lz/_Ll };
+            const ambient = 0.32; // Luz ambiental mínima (0→completamente negro, 1→sin sombra)
+
+            ctx.lineWidth = 0.8;
+            ctx.lineJoin = 'round';
+            ctx.lineCap  = 'round';
+
+            this.allFaces.forEach(f => {
+                // 1. Rotar la normal al espacio de cámara actual
+                const rn = this.rotateNormal(f.normal.x, f.normal.y, f.normal.z);
+
+                // 2. Backface culling: cámara está en -Z.
+                //    La cara es visible solo si su normal apunta hacia -Z (rn.z < 0).
+                if (rn.z > 0.025) return;
+
+                // 3. Iluminación difusa Lambertiana
+                const diffuse    = Math.max(0, rn.x*light.x + rn.y*light.y + rn.z*light.z);
+                const lightLevel = ambient + (1 - ambient) * diffuse; // [ambient .. 1.0]
+
+                // 4. Dibujar polígono
+                ctx.beginPath();
+                ctx.moveTo(f.pts[0].x, f.pts[0].y);
+                for (let i = 1; i < f.pts.length; i++) ctx.lineTo(f.pts[i].x, f.pts[i].y);
+                ctx.closePath();
+
+                // Base OKLCH de melamina
+                ctx.fillStyle = f.fillColor;
+                ctx.fill();
+
+                // Sombra proporcional a la falta de luz
+                const shadowAmt = Math.max(0, (1 - lightLevel) * 0.82);
+                if (shadowAmt > 0.004) {
+                    ctx.fillStyle = `rgba(0,0,0,${shadowAmt.toFixed(3)})`;
+                    ctx.fill();
+                }
+
+                // Brillo especular sutil (solo caras muy iluminadas, p.ej. tapa superior)
+                const highlightAmt = Math.max(0, (lightLevel - 0.82) * 0.65);
+                if (highlightAmt > 0.004) {
+                    ctx.fillStyle = `rgba(255,255,255,${highlightAmt.toFixed(3)})`;
+                    ctx.fill();
+                }
+
+                // Línea técnica CAD fina
+                ctx.strokeStyle = f.lineColor;
+                ctx.stroke();
+            });
         }
     }
-
-    const CLIENT_ID = "{clientId}";
 
     window.cubical = {
         state: {
@@ -657,26 +1135,88 @@ const isLoggedIn = !!clientId;
             environment: '',
             modules: [],
             projects: [],
-            results: null
+            results: null,
+            selectedMelamina: 'faplac_roble'
         },
 
+        initialized: false,
         renderer: null,
 
         init: async function() {
+            if (this.initialized) return;
+            this.initialized = true;
             this.updateThemeUI();
             await this.loadProjects();
             
-            // Inicializar renderizador 3D
+            // Inicializar renderizadores 3D
             try {
                 this.renderer = new Cabinet3DRenderer('canvas-preview');
+                this.rendererMobile = new Cabinet3DRenderer('canvas-preview-mobile');
+                this.rendererMobile.scale = 0.22;
             } catch (e) {
-                console.error("[CubiCal] Falló inicialización del Canvas 3D:", e);
+                console.error("[CubiCal] Falló inicialización de Canvas 3D:", e);
             }
             
+            // Cargar tarjetas del catálogo dinámicamente desde templates.js
+            await this.renderTemplateCarousel();
+            
+            // Inicializar Carrusel de Plantillas con Auto-Scroll Lento e Interactivo
+            const carousel = document.getElementById('templates-carousel');
+            const btnLeft = document.getElementById('carousel-btn-left');
+            const btnRight = document.getElementById('carousel-btn-right');
+            
+            if (carousel && btnLeft && btnRight) {
+                btnLeft.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    carousel.scrollBy({ left: -344, behavior: 'smooth' });
+                });
+                btnRight.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    carousel.scrollBy({ left: 344, behavior: 'smooth' });
+                });
+                
+                let autoScrollInterval = null;
+                const startAutoScroll = () => {
+                    autoScrollInterval = setInterval(() => {
+                        if (carousel.scrollLeft >= (carousel.scrollWidth - carousel.clientWidth - 5)) {
+                            carousel.scrollTo({ left: 0, behavior: 'smooth' });
+                        } else {
+                            carousel.scrollBy({ left: 1, behavior: 'auto' });
+                        }
+                    }, 40);
+                };
+                const stopAutoScroll = () => {
+                    if (autoScrollInterval) {
+                        clearInterval(autoScrollInterval);
+                        autoScrollInterval = null;
+                    }
+                };
+                startAutoScroll();
+                carousel.addEventListener('mouseenter', stopAutoScroll);
+                carousel.addEventListener('mouseleave', startAutoScroll);
+                carousel.addEventListener('touchstart', stopAutoScroll);
+                carousel.addEventListener('touchend', startAutoScroll);
+            }
+
             // Aplicar primer set de presets
             this.autoSetPresets();
             
             this.showScreen('dashboard');
+        },
+
+        changeMelamina: function(isMobile = false) {
+            const prefix = isMobile ? '-mobile' : '';
+            const selectEl = document.getElementById(`mod-melamina${prefix}`);
+            if (!selectEl) return;
+            const val = selectEl.value;
+            this.state.selectedMelamina = val;
+            
+            // Sincronizar el otro select
+            const otherPrefix = isMobile ? '' : '-mobile';
+            const otherSelect = document.getElementById(`mod-melamina${otherPrefix}`);
+            if (otherSelect) otherSelect.value = val;
+            
+            this.renderPreview();
         },
 
         toggleTheme: function() {
@@ -727,17 +1267,31 @@ const isLoggedIn = !!clientId;
             this.renderer.angleY = -0.6;
             this.renderer.angleX = 0.3;
             this.renderer.scale = 0.35;
+            this.renderer.panX = 0;
+            this.renderer.panY = 0;
+            if (this.rendererMobile) {
+                this.rendererMobile.angleY = -0.6;
+                this.rendererMobile.angleX = 0.3;
+                this.rendererMobile.scale = 0.22;
+                this.rendererMobile.panX = 0;
+                this.rendererMobile.panY = 0;
+            }
             this.renderPreview();
         },
 
         set3DView: function(type) {
             if (!this.renderer) return;
+            let ay = 0, ax = 0;
             if (type === 'front') {
-                this.renderer.angleY = 0;
-                this.renderer.angleX = 0;
+                ay = 0; ax = 0;
             } else if (type === 'top') {
-                this.renderer.angleY = 0;
-                this.renderer.angleX = Math.PI / 2;
+                ay = 0; ax = Math.PI / 2;
+            }
+            this.renderer.angleY = ay;
+            this.renderer.angleX = ax;
+            if (this.rendererMobile) {
+                this.rendererMobile.angleY = ay;
+                this.rendererMobile.angleX = ax;
             }
             this.renderPreview();
         },
@@ -746,6 +1300,10 @@ const isLoggedIn = !!clientId;
             if (!this.renderer) return;
             this.renderer.scale *= factor;
             this.renderer.scale = Math.max(0.1, Math.min(1.5, this.renderer.scale));
+            if (this.rendererMobile) {
+                this.rendererMobile.scale *= factor;
+                this.rendererMobile.scale = Math.max(0.1, Math.min(1.2, this.rendererMobile.scale));
+            }
             this.renderPreview();
         },
 
@@ -775,163 +1333,509 @@ const isLoggedIn = !!clientId;
             setTimeout(() => this.renderPreview(), 100);
         },
 
-        autoSetPresets: function() {
-            const type = document.getElementById('mod-type').value;
-            const shelvesInput = document.getElementById('mod-shelves');
-            const drawersInput = document.getElementById('mod-drawers');
-            const doorsInput = document.getElementById('mod-doors');
+        loadTemplate: async function(type) {
+            // ---------------------------------------------------------------
+            // CARGA DE DATOS DESDE EL ARCHIVO EXTERNO DE PLANTILLAS
+            // Para agregar nuevas plantillas editar únicamente:
+            // /herramientas/logic/cubical/templates/templates.js
+            // ---------------------------------------------------------------
+            let tplData = null;
+            try {
+                const mod = await import(`/herramientas/logic/cubical/templates/templates.js?v=` + Date.now());
+                tplData = mod.TEMPLATES[type];
+            } catch(e) {
+                console.warn('[CubiCal] No se pudo cargar templates.js, usando fallback:', e);
+            }
+
+            // Fallback: si no hay datos externos, usar valores genéricos
+            const modType   = tplData?.modType   || 'CAJONERA';
+            const dims      = tplData?.dims      || { alto: 800, ancho: 600, prof: 500, n_cajones: 3, n_puertas: 0, n_estantes: 0 };
+            const hingeType = tplData?.hingeType || 'codo_0';
+            const name      = tplData?.moduleName || `Modulo A1 - ${type}`;
+            
+            this.state.projectName = tplData ? `Proyecto Rápido - ${tplData.name}` : `Proyecto Rápido - ${type}`;
+            this.state.environment = tplData?.environment || 'cocina';
+            this.state.modules = [];
+            
+            const newId = Date.now();
+            this.state.modules.push({ id: newId, type: modType, name, dims, hingeType });
+            this.state.activeModuleId = newId;
+            
+            // Poblar barra lateral Desktop
+            document.getElementById('mod-name').value      = name;
+            document.getElementById('mod-type').value      = modType;
+            document.getElementById('mod-h').value         = dims.alto;
+            document.getElementById('mod-w').value         = dims.ancho;
+            document.getElementById('mod-p').value         = dims.prof;
+            document.getElementById('mod-drawers').value   = dims.n_cajones;
+            document.getElementById('mod-doors').value     = dims.n_puertas;
+            document.getElementById('mod-shelves').value   = dims.n_estantes;
+            
+            // Poblar barra lateral Mobile
+            document.getElementById('mod-name-mobile').value    = name;
+            document.getElementById('mod-type-mobile').value    = modType;
+            document.getElementById('mod-h-mobile').value       = dims.alto;
+            document.getElementById('mod-w-mobile').value       = dims.ancho;
+            document.getElementById('mod-p-mobile').value       = dims.prof;
+            document.getElementById('mod-drawers-mobile').value = dims.n_cajones;
+            document.getElementById('mod-doors-mobile').value   = dims.n_puertas;
+            document.getElementById('mod-shelves-mobile').value = dims.n_estantes;
+            
+            this.updateHingeVisibility();
+            this.updateDrawerEducation();
+            
+            // Resetear auto-escala para el nuevo módulo
+            if (this.renderer) this.renderer.autoScalePending = true;
+            if (this.rendererMobile) this.rendererMobile.autoScalePending = true;
+
+            this.showScreen('constructor');
+            this.renderConstructor();
+            setTimeout(() => this.renderPreview(), 100);
+        },
+
+        renderTemplateCarousel: async function() {
+            // ---------------------------------------------------------------
+            // Genera las tarjetas del carrusel dinámicamente desde templates.js
+            // ---------------------------------------------------------------
+            const carousel = document.getElementById('templates-carousel');
+            if (!carousel) return;
+
+            let TEMPLATES = {};
+            try {
+                const mod = await import(`/herramientas/logic/cubical/templates/templates.js?v=` + Date.now());
+                TEMPLATES = mod.TEMPLATES;
+            } catch(e) {
+                console.warn('[CubiCal] Error cargando catálogo de plantillas:', e);
+                return;
+            }
+
+            carousel.innerHTML = Object.values(TEMPLATES).map(t => `
+                <div onclick="window.cubical.loadTemplate('${t.id}')" 
+                     class="snap-start shrink-0 w-80 bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-xl hover:border-[var(--alvarez-red)] transition-all cursor-pointer group shadow-sm flex flex-col justify-between h-56"
+                     title="${t.name} — ${t.dims.alto} x ${t.dims.ancho} x ${t.dims.prof} mm">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-3xl">${t.emoji}</span>
+                            <span class="text-[0.5rem] font-black bg-[var(--sc-surface-alt)] px-2.5 py-1 rounded border border-[var(--sc-border)] uppercase tracking-wider" style="color: ${t.tagColor}">${t.tag}</span>
+                        </div>
+                        <h4 class="text-lg font-black text-[var(--sc-text)] uppercase tracking-tight group-hover:text-[var(--alvarez-red)] transition-colors mb-1">${t.name}</h4>
+                        <p class="text-[0.6rem] text-[var(--sc-text-dim)] font-medium leading-relaxed">${t.description}</p>
+                    </div>
+                    <div class="text-[0.6rem] font-bold text-[var(--sc-text)] uppercase font-mono tracking-wider">${t.dims.alto} x ${t.dims.ancho} x ${t.dims.prof} mm</div>
+                </div>
+            `).join('');
+        },
+
+        autoSetPresets: function(isMobile = false) {
+            const prefix = isMobile ? '-mobile' : '';
+            const type = document.getElementById(`mod-type${prefix}`).value;
+            const shelvesInput = document.getElementById(`mod-shelves${prefix}`);
+            const drawersInput = document.getElementById(`mod-drawers${prefix}`);
+            const doorsInput = document.getElementById(`mod-doors${prefix}`);
+            const hInput = document.getElementById(`mod-h${prefix}`);
+            const wInput = document.getElementById(`mod-w${prefix}`);
+            const pInput = document.getElementById(`mod-p${prefix}`);
             
             if (!shelvesInput || !drawersInput || !doorsInput) return;
             
+            // Medidas predeterminadas según tipo
             if (type === 'CAJONERA') {
-                shelvesInput.value = 0;
-                drawersInput.value = 3;
-                doorsInput.value = 0;
+                shelvesInput.value = 0; drawersInput.value = 3; doorsInput.value = 0;
+                hInput.value = 800; wInput.value = 600; pInput.value = 500;
             } else if (type === 'PLACARD') {
-                shelvesInput.value = 2;
-                drawersInput.value = 0;
-                doorsInput.value = 2;
+                shelvesInput.value = 2; drawersInput.value = 0; doorsInput.value = 2;
+                hInput.value = 2000; wInput.value = 800; pInput.value = 600;
             } else if (type === 'ALACENA') {
-                shelvesInput.value = 2;
-                drawersInput.value = 0;
-                doorsInput.value = 2;
+                shelvesInput.value = 2; drawersInput.value = 0; doorsInput.value = 2;
+                hInput.value = 700; wInput.value = 600; pInput.value = 320;
             } else if (type === 'BAJO_MESADA') {
-                shelvesInput.value = 0;
-                drawersInput.value = 0;
-                doorsInput.value = 2;
+                shelvesInput.value = 0; drawersInput.value = 0; doorsInput.value = 2;
+                hInput.value = 820; wInput.value = 800; pInput.value = 580;
             } else if (type === 'BIBLIOTECA') {
-                shelvesInput.value = 4;
-                drawersInput.value = 0;
-                doorsInput.value = 0;
+                shelvesInput.value = 4; drawersInput.value = 0; doorsInput.value = 0;
+                hInput.value = 1800; wInput.value = 800; pInput.value = 300;
             } else {
-                // Módulo a Medida Libre
-                shelvesInput.value = 0;
-                drawersInput.value = 0;
-                doorsInput.value = 0;
+                shelvesInput.value = 0; drawersInput.value = 0; drawersInput.value = 0;
+            }
+            
+            // Sincronizar el otro formulario
+            const otherPrefix = isMobile ? '' : '-mobile';
+            const otherType = document.getElementById(`mod-type${otherPrefix}`);
+            if (otherType) {
+                otherType.value = type;
+                document.getElementById(`mod-shelves${otherPrefix}`).value = shelvesInput.value;
+                document.getElementById(`mod-drawers${otherPrefix}`).value = drawersInput.value;
+                document.getElementById(`mod-doors${otherPrefix}`).value = doorsInput.value;
+                document.getElementById(`mod-h${otherPrefix}`).value = hInput.value;
+                document.getElementById(`mod-w${otherPrefix}`).value = wInput.value;
+                document.getElementById(`mod-p${otherPrefix}`).value = pInput.value;
+            }
+
+            this.updateHingeVisibility(isMobile);
+            this.updateDrawerEducation(isMobile);
+        },
+
+        updateHingeVisibility: function(isMobile = false) {
+            const prefix = isMobile ? '-mobile' : '';
+            const doorsVal = parseInt(document.getElementById(`mod-doors${prefix}`).value) || 0;
+            const hingeDiv = document.getElementById(`group-hinge-type${prefix}`);
+            const eduTip = document.getElementById('edu-hinge-tip');
+
+            if (doorsVal > 0) {
+                hingeDiv.classList.remove('hidden');
+                if (eduTip && !isMobile) eduTip.classList.remove('hidden');
+            } else {
+                hingeDiv.classList.add('hidden');
+                if (eduTip && !isMobile) eduTip.classList.add('hidden');
+            }
+            this.updateHingeEducation(isMobile);
+        },
+
+        updateHingeEducation: function(isMobile = false) {
+            const prefix = isMobile ? '-mobile' : '';
+            const typeSelect = document.getElementById(`mod-hinge-type${prefix}`);
+            if (!typeSelect) return;
+            const type = typeSelect.value;
+            const textSpan = document.getElementById('edu-hinge-text');
+            const tipDiv = document.getElementById('edu-hinge-tip');
+
+            if (!textSpan) return;
+
+            let tipText = "";
+            let title = "🚪 Bisagra Codo 0 (Superpuesta)";
+            if (type === 'codo_0') {
+                tipText = "La puerta cubre todo el lateral (18mm) al cerrar. Es la clásica más utilizada en extremos de muebles.";
+                title = "🚪 Bisagra Codo 0 (Superpuesta)";
+                if (tipDiv) tipDiv.style.borderLeftColor = 'var(--alvarez-red)';
+            } else if (type === 'codo_9') {
+                tipText = "La puerta cubre la mitad del lateral (9mm). Ideal cuando dos puertas continuas se abren opuestas y comparten el lateral central.";
+                title = "🚪 Bisagra Codo 9 (Semi-superpuesta)";
+                if (tipDiv) tipDiv.style.borderLeftColor = '#f59e0b';
+            } else if (type === 'codo_18') {
+                tipText = "La puerta queda adentro del mueble, al ras de los bordes. Deja ver los cantos melamínicos de los laterales.";
+                title = "🚪 Bisagra Codo 18 (Embutida)";
+                if (tipDiv) tipDiv.style.borderLeftColor = '#10b981';
+            }
+
+            textSpan.innerHTML = `<strong>${title}</strong><br>${tipText}`;
+        },
+
+        updateDrawerEducation: function(isMobile = false) {
+            const prefix = isMobile ? '-mobile' : '';
+            const drawersVal = parseInt(document.getElementById(`mod-drawers${prefix}`).value) || 0;
+            const tipDiv = document.getElementById('edu-drawer-tip');
+
+            if (!tipDiv) return;
+
+            if (drawersVal > 0) {
+                tipDiv.classList.remove('hidden');
+            } else {
+                tipDiv.classList.add('hidden');
             }
         },
 
-        addModule: function() {
-            const type = document.getElementById('mod-type').value;
+        // Métodos para Bottom Sheets móviles
+        openMobileSheet: function(name) {
+            this.closeMobileSheets();
+            const sheet = document.getElementById(`sheet-${name}`);
+            const btn = document.getElementById(`mbtn-${name}`);
+            if (sheet) sheet.classList.add('active');
+            if (btn) btn.classList.add('active');
+        },
+
+        closeMobileSheets: function() {
+            document.querySelectorAll('.bottom-sheet').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.bottom-action-btn').forEach(b => b.classList.remove('active'));
+        },
+
+        addModule: function(isMobile = false) {
+            const prefix = isMobile ? '-mobile' : '';
+            const nameInputVal = document.getElementById(`mod-name${prefix}`)?.value || `Modulo A${this.state.modules.length + 1}`;
+            const type = document.getElementById(`mod-type${prefix}`).value;
             const dims = {
-                alto: parseInt(document.getElementById('mod-h').value) || 800,
-                ancho: parseInt(document.getElementById('mod-w').value) || 600,
-                prof: parseInt(document.getElementById('mod-p').value) || 500,
-                n_cajones: parseInt(document.getElementById('mod-drawers').value) || 0,
-                n_puertas: parseInt(document.getElementById('mod-doors').value) || 0,
-                n_estantes: parseInt(document.getElementById('mod-shelves').value) || 0
+                alto: parseInt(document.getElementById(`mod-h${prefix}`).value) || 800,
+                ancho: parseInt(document.getElementById(`mod-w${prefix}`).value) || 600,
+                prof: parseInt(document.getElementById(`mod-p${prefix}`).value) || 500,
+                n_cajones: parseInt(document.getElementById(`mod-drawers${prefix}`).value) || 0,
+                n_puertas: parseInt(document.getElementById(`mod-doors${prefix}`).value) || 0,
+                n_estantes: parseInt(document.getElementById(`mod-shelves${prefix}`).value) || 0
             };
-            this.state.modules.push({ id: Date.now(), type, dims });
+            
+            const hingeSelect = document.getElementById(`mod-hinge-type${prefix}`);
+            const hingeType = hingeSelect ? hingeSelect.value : 'codo_0';
+
+            const newId = Date.now();
+            this.state.modules.push({ id: newId, type, name: nameInputVal, dims, hingeType });
+            this.state.activeModuleId = newId; // Activar el módulo
+            
+            // Auto-increment module name for the next module
+            const nextName = `Modulo A${this.state.modules.length + 1}`;
+            const dNameInput = document.getElementById('mod-name');
+            const mNameInput = document.getElementById('mod-name-mobile');
+            if (dNameInput) dNameInput.value = nextName;
+            if (mNameInput) mNameInput.value = nextName;
+
+            if (isMobile) {
+                this.closeMobileSheets();
+            }
             this.renderConstructor();
         },
 
         removeModule: function(id) {
             this.state.modules = this.state.modules.filter(m => m.id !== id);
+            
+            // Si el módulo borrado era el activo, activar el último de la lista
+            if (this.state.activeModuleId === id) {
+                if (this.state.modules.length > 0) {
+                    const lastMod = this.state.modules[this.state.modules.length - 1];
+                    this.selectModule(lastMod.id);
+                } else {
+                    this.state.activeModuleId = null;
+                }
+            }
+            
+            // Adjust next name index accordingly
+            const nextName = `Modulo A${this.state.modules.length + 1}`;
+            const dNameInput = document.getElementById('mod-name');
+            const mNameInput = document.getElementById('mod-name-mobile');
+            if (dNameInput) dNameInput.value = nextName;
+            if (mNameInput) mNameInput.value = nextName;
+
             this.renderConstructor();
+        },
+
+        selectModule: function(id) {
+            this.state.activeModuleId = id;
+            const m = this.state.modules.find(mod => mod.id === id);
+            if (m) {
+                // Rellenar controles Desktop
+                document.getElementById('mod-name').value = m.name;
+                document.getElementById('mod-type').value = m.type;
+                document.getElementById('mod-h').value = m.dims.alto;
+                document.getElementById('mod-w').value = m.dims.ancho;
+                document.getElementById('mod-p').value = m.dims.prof;
+                document.getElementById('mod-drawers').value = m.dims.n_cajones;
+                document.getElementById('mod-doors').value = m.dims.n_puertas;
+                document.getElementById('mod-shelves').value = m.dims.n_estantes;
+                const hingeSelect = document.getElementById('mod-hinge-type');
+                if (hingeSelect) hingeSelect.value = m.hingeType;
+                
+                // Rellenar controles Mobile
+                document.getElementById('mod-name-mobile').value = m.name;
+                document.getElementById('mod-type-mobile').value = m.type;
+                document.getElementById('mod-h-mobile').value = m.dims.alto;
+                document.getElementById('mod-w-mobile').value = m.dims.ancho;
+                document.getElementById('mod-p-mobile').value = m.dims.prof;
+                document.getElementById('mod-drawers-mobile').value = m.dims.n_cajones;
+                document.getElementById('mod-doors-mobile').value = m.dims.n_puertas;
+                document.getElementById('mod-shelves-mobile').value = m.dims.n_estantes;
+                const hingeSelectMobile = document.getElementById('mod-hinge-type-mobile');
+                if (hingeSelectMobile) hingeSelectMobile.value = m.hingeType;
+                
+                this.updateHingeVisibility();
+                this.updateDrawerEducation();
+            }
+            this.renderConstructor();
+        },
+
+        updateActiveModule: function(isMobile = false) {
+            if (!this.state.activeModuleId) return;
+            const m = this.state.modules.find(mod => mod.id === this.state.activeModuleId);
+            if (!m) return;
+            
+            const prefix = isMobile ? '-mobile' : '';
+            const nameVal = document.getElementById(`mod-name${prefix}`)?.value || m.name;
+            const typeVal = document.getElementById(`mod-type${prefix}`).value;
+            const hVal = parseInt(document.getElementById(`mod-h${prefix}`).value) || 800;
+            const wVal = parseInt(document.getElementById(`mod-w${prefix}`).value) || 600;
+            const pVal = parseInt(document.getElementById(`mod-p${prefix}`).value) || 500;
+            const drawersVal = parseInt(document.getElementById(`mod-drawers${prefix}`).value) || 0;
+            const doorsVal = parseInt(document.getElementById(`mod-doors${prefix}`).value) || 0;
+            const shelvesVal = parseInt(document.getElementById(`mod-shelves${prefix}`).value) || 0;
+            const hingeSelect = document.getElementById(`mod-hinge-type${prefix}`);
+            const hingeVal = hingeSelect ? hingeSelect.value : 'codo_0';
+            
+            m.name = nameVal;
+            m.type = typeVal;
+            m.dims.alto = hVal;
+            m.dims.ancho = wVal;
+            m.dims.prof = pVal;
+            m.dims.n_cajones = drawersVal;
+            m.dims.n_puertas = doorsVal;
+            m.dims.n_estantes = shelvesVal;
+            m.hingeType = hingeVal;
+            
+            // Sincronizar formulario opuesto
+            const otherPrefix = isMobile ? '' : '-mobile';
+            const oName = document.getElementById(`mod-name${otherPrefix}`);
+            const oType = document.getElementById(`mod-type${otherPrefix}`);
+            const oH = document.getElementById(`mod-h${otherPrefix}`);
+            const oW = document.getElementById(`mod-w${otherPrefix}`);
+            const oP = document.getElementById(`mod-p${otherPrefix}`);
+            const oDrawers = document.getElementById(`mod-drawers${otherPrefix}`);
+            const oDoors = document.getElementById(`mod-doors${otherPrefix}`);
+            const oShelves = document.getElementById(`mod-shelves${otherPrefix}`);
+            const oHinge = document.getElementById(`mod-hinge-type${otherPrefix}`);
+            
+            if (oName) oName.value = nameVal;
+            if (oType) oType.value = typeVal;
+            if (oH) oH.value = hVal;
+            if (oW) oW.value = wVal;
+            if (oP) oP.value = pVal;
+            if (oDrawers) oDrawers.value = drawersVal;
+            if (oDoors) oDoors.value = doorsVal;
+            if (oShelves) oShelves.value = shelvesVal;
+            if (oHinge && hingeSelect) oHinge.value = hingeVal;
+            
+            // Actualizar listados HTML de capas sin destruir eventos
+            const list = document.getElementById('module-list');
+            const listMobile = document.getElementById('module-list-mobile');
+            
+            const html = this.state.modules.map(mod => {
+                const isActive = mod.id === this.state.activeModuleId;
+                return `
+                <div onclick="window.cubical.selectModule(${mod.id})" class="bg-[var(--sc-surface)] border-2 ${isActive ? 'border-[var(--alvarez-red)] shadow-md' : 'border-[var(--sc-border)]'} p-5 rounded-lg flex justify-between items-center group hover:border-[var(--alvarez-red)] transition-all cursor-pointer">
+                    <div>
+                        <div class="text-[0.6rem] font-black text-[var(--alvarez-red)] uppercase">${mod.name || mod.type.replace('_',' ')}</div>
+                        <div class="text-sm font-black text-[var(--sc-text)]">${mod.dims.alto}x${mod.dims.ancho}x${mod.dims.prof} <span class="text-[0.6rem] font-normal text-[var(--sc-text-dim)]">mm</span></div>
+                        <div class="text-[0.6rem] text-[var(--sc-text-dim)] font-bold mt-1">
+                            ${mod.dims.n_estantes > 0 ? `Estantes: ${mod.dims.n_estantes} ` : ''}
+                            ${mod.dims.n_cajones > 0 ? `Cajones: ${mod.dims.n_cajones} ` : ''}
+                            ${mod.dims.n_puertas > 0 ? `Puertas: ${mod.dims.n_puertas} (${mod.hingeType.toUpperCase()}) ` : ''}
+                            ${(mod.dims.n_estantes == 0 && mod.dims.n_cajones == 0 && mod.dims.n_puertas == 0) ? 'Módulo Vacío' : ''}
+                        </div>
+                    </div>
+                    <button onclick="event.stopPropagation(); window.cubical.removeModule(${mod.id})" class="w-10 h-10 bg-[var(--sc-surface-alt)] rounded flex items-center justify-center text-[var(--sc-text-dim)] hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `;}).join('');
+            
+            if (list) list.innerHTML = html;
+            if (listMobile) listMobile.innerHTML = html;
+            
+            this.renderPreview();
         },
 
         renderConstructor: function() {
             const list = document.getElementById('module-list');
-            list.innerHTML = this.state.modules.length === 0 
+            const listMobile = document.getElementById('module-list-mobile');
+
+            const html = this.state.modules.length === 0 
                 ? '<div class="text-center py-8 text-[var(--sc-text-dim)] font-bold text-[0.6rem] uppercase opacity-40">Sin módulos añadidos</div>'
-                : this.state.modules.map(m => `
-                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-5 rounded-lg flex justify-between items-center group hover:border-[var(--alvarez-red)] transition-all">
+                : this.state.modules.map(m => {
+                const isActive = m.id === this.state.activeModuleId;
+                return `
+                <div onclick="window.cubical.selectModule(${m.id})" class="bg-[var(--sc-surface)] border-2 ${isActive ? 'border-[var(--alvarez-red)] shadow-md' : 'border-[var(--sc-border)]'} p-5 rounded-lg flex justify-between items-center group hover:border-[var(--alvarez-red)] transition-all cursor-pointer">
                     <div>
-                        <div class="text-[0.6rem] font-black text-[var(--alvarez-red)] uppercase">${m.type.replace('_',' ')}</div>
+                        <div class="text-[0.6rem] font-black text-[var(--alvarez-red)] uppercase">${m.name || m.type.replace('_',' ')}</div>
                         <div class="text-sm font-black text-[var(--sc-text)]">${m.dims.alto}x${m.dims.ancho}x${m.dims.prof} <span class="text-[0.6rem] font-normal text-[var(--sc-text-dim)]">mm</span></div>
                         <div class="text-[0.6rem] text-[var(--sc-text-dim)] font-bold mt-1">
                             ${m.dims.n_estantes > 0 ? `Estantes: ${m.dims.n_estantes} ` : ''}
                             ${m.dims.n_cajones > 0 ? `Cajones: ${m.dims.n_cajones} ` : ''}
-                            ${m.dims.n_puertas > 0 ? `Puertas: ${m.dims.n_puertas} ` : ''}
-                            ${(m.dims.n_estantes == 0 && m.dims.n_cajones == 0 && m.dims.n_puertas == 0) ? 'Módulo Vacío (Sin contenido)' : ''}
+                            ${m.dims.n_puertas > 0 ? `Puertas: ${m.dims.n_puertas} (${m.hingeType.toUpperCase()}) ` : ''}
+                            ${(m.dims.n_estantes == 0 && m.dims.n_cajones == 0 && m.dims.n_puertas == 0) ? 'Módulo Vacío' : ''}
                         </div>
                     </div>
-                    <button onclick="window.cubical.removeModule(${m.id})" class="w-10 h-10 bg-[var(--sc-surface-alt)] rounded flex items-center justify-center text-[var(--sc-text-dim)] hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">
+                    <button onclick="event.stopPropagation(); window.cubical.removeModule(${m.id})" class="w-10 h-10 bg-[var(--sc-surface-alt)] rounded flex items-center justify-center text-[var(--sc-text-dim)] hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </div>
-            `).join('');
+            `;}).join('');
             
-            document.getElementById('stat-total-mods').textContent = this.state.modules.length;
+            if (list) list.innerHTML = html;
+            if (listMobile) listMobile.innerHTML = html;
+            
+            const count = this.state.modules.length;
+            const tmods = document.getElementById('stat-total-mods');
+            const tmodsMob = document.getElementById('stat-total-mods-mobile');
+            
+            if (tmods) tmods.textContent = count;
+            if (tmodsMob) tmodsMob.textContent = count;
+            
             this.renderPreview();
         },
 
         renderPreview: function() {
-            if (!this.renderer) return;
-            const canvas = document.getElementById('canvas-preview');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const rect = canvas.parentNode.getBoundingClientRect();
-            
-            canvas.width = rect.width || 800;
-            canvas.height = 500;
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             const isDark = document.body.getAttribute('data-theme') === 'dark' || document.body.classList.contains('body-theme-dark');
-            
-            // Grilla de plano CAD en background
-            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
-            ctx.lineWidth = 1;
-            const step = 20;
-            for (let x = 0; x < canvas.width; x += step) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-            }
-            for (let y = 0; y < canvas.height; y += step) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-            }
-            
-            const count = this.state.modules.length;
-            if (count === 0) {
-                this.renderer.scale = 0.22;
-                this.renderer.drawBox(600, 800, 500, {
-                    color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.1)',
-                    fillColor: 'rgba(0, 0, 0, 0)',
-                    lineWidth: 1.5,
-                    drawPanelThickness: false
-                });
-                
-                ctx.fillStyle = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
-                ctx.font = 'bold 11px monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText("VISTA 3D EN TIEMPO REAL — ARRASTRA CON EL MOUSE PARA ROTAR", canvas.width/2, canvas.height/2 + 250);
-                return;
-            }
-            
             const spacing = 120;
-            const totalWidth = this.state.modules.reduce((sum, m) => sum + m.dims.ancho, 0) + (count - 1) * spacing;
-            const maxHeight = this.state.modules.reduce((max, m) => Math.max(max, m.dims.alto), 0);
+            const count = this.state.modules.length;
+            const selectedMelamina = this.state.selectedMelamina || 'faplac_roble';
+            const palette = MELAMINA_PALETTES[selectedMelamina];
             
-            const scaleX = (canvas.width * 0.7) / totalWidth;
-            const scaleY = (canvas.height * 0.6) / maxHeight;
-            this.renderer.scale = Math.min(0.28, Math.min(scaleX, scaleY));
-            
-            let currentX = -totalWidth / 2;
-            
-            this.state.modules.forEach((m) => {
-                const boxColor = isDark ? 'oklch(62.8% 0.25 29.23)' : '#000000';
-                const boxFill = isDark ? 'rgba(215, 40, 40, 0.03)' : 'rgba(0, 0, 0, 0.01)';
+            const drawOnCanvas = (canvasId, renderer) => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas || !renderer) return;
+                const ctx = canvas.getContext('2d');
+                const rect = canvas.parentNode.getBoundingClientRect();
                 
-                this.renderer.drawBox(m.dims.ancho, m.dims.alto, m.dims.prof, {
-                    offsetX: currentX,
+                canvas.width = rect.width || 800;
+                canvas.height = canvasId.includes('mobile') ? 400 : 500;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Grilla de fondo CAD
+                ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+                ctx.lineWidth = 1;
+                const step = 20;
+                for (let x = 0; x < canvas.width; x += step) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                }
+                for (let y = 0; y < canvas.height; y += step) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+                }
+                
+                if (count === 0) {
+                    renderer.scale = 0.22;
+                    renderer.drawBox(600, 800, 500, {
+                        color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.1)',
+                        fillColor: 'rgba(0, 0, 0, 0)',
+                        lineWidth: 1.5,
+                        drawPanelThickness: false,
+                        palette: palette
+                    });
+                    
+                    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+                    ctx.font = 'bold 11px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText("VISTA 3D EN TIEMPO REAL — ARRASTRA CON EL MOUSE PARA ROTAR", canvas.width/2, canvas.height/2 + 150);
+                    return;
+                }
+                
+                // Buscar el módulo activo para renderizar solo ese (como pidió el usuario)
+                const m = this.state.modules.find(mod => mod.id === this.state.activeModuleId) || this.state.modules[this.state.modules.length - 1];
+                if (!m) return;
+                
+                // Calcular escala para el módulo único (centrado y maximizado en pantalla)
+                const scaleX = (canvas.width * 0.45) / m.dims.ancho;
+                const scaleY = (canvas.height * 0.50) / m.dims.alto;
+                renderer.scale = Math.min(canvasId.includes('mobile') ? 0.22 : 0.35, Math.min(scaleX, scaleY));
+                
+                const boxColor = palette ? palette.lineColor : (isDark ? 'oklch(62.8% 0.25 29.23)' : '#000000');
+                const boxFill = palette ? palette.fillColor : (isDark ? 'rgba(215, 40, 40, 0.03)' : 'rgba(0, 0, 0, 0.01)');
+                
+                renderer.drawBox(m.dims.ancho, m.dims.alto, m.dims.prof, {
+                    offsetX: 0,
                     color: boxColor,
                     fillColor: boxFill,
-                    lineWidth: 2,
+                    lineWidth: 1.0, // Líneas finas SketchUp style
                     drawPanelThickness: true,
                     shelves: m.dims.n_estantes || 0,
                     drawers: m.dims.n_cajones || 0,
-                    doors: m.dims.n_puertas || 0
+                    doors: m.dims.n_puertas || 0,
+                    palette: palette
                 });
                 
-                // Etiquetas de medidas en 3D
-                const labelPos = this.renderer.project(currentX + m.dims.ancho/2, -45, 0, m.dims.ancho, m.dims.alto, m.dims.prof, canvas.width, canvas.height);
+                // Medidas en 3D del módulo único
+                const labelPos = renderer.project(m.dims.ancho/2, -45, 0, m.dims.ancho, m.dims.alto, m.dims.prof, canvas.width, canvas.height);
                 ctx.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.6)';
                 ctx.font = 'bold 9px monospace';
                 ctx.textAlign = 'center';
                 ctx.fillText(`${m.dims.ancho}x${m.dims.alto}x${m.dims.prof} mm`, labelPos.x, labelPos.y);
-                
-                currentX += m.dims.ancho + spacing;
-            });
+            };
+
+            drawOnCanvas('canvas-preview', this.renderer);
+            drawOnCanvas('canvas-preview-mobile', this.rendererMobile);
         },
 
         generateResults: async function() {
@@ -939,7 +1843,7 @@ const isLoggedIn = !!clientId;
             this.showScreen('results');
             
             try {
-                // Importación dinámica de motores puros
+                // Importación dinámica de motores
                 const optEngine = await import('/herramientas/logic/cubical/engine.js?v=' + Date.now());
                 const hwEngine = await import('/herramientas/logic/cubical/hardware.js?v=' + Date.now());
                 
@@ -949,7 +1853,7 @@ const isLoggedIn = !!clientId;
                     allPieces = allPieces.concat(pieces);
                 });
                 
-                // Filtrar fondos de MDF para la optimización de placas de melamina de 18mm
+                // Filtrar melamina de 18mm
                 const melaminaPieces = allPieces.filter(p => !p.isBackground).map(p => ({
                     name: p.name,
                     h: p.h,
@@ -957,7 +1861,6 @@ const isLoggedIn = !!clientId;
                     qty: p.qty
                 }));
                 
-                // Faplac estándar 18mm 2750x1820
                 const board = { w: 2750, h: 1820 };
                 const optResults = optEngine.optimizeBoards(melaminaPieces, board, 4);
                 
@@ -966,14 +1869,43 @@ const isLoggedIn = !!clientId;
                 
                 this.state.results = {
                     opt: optResults,
-                    hw: realHardware
+                    hw: realHardware,
+                    pieces: allPieces
                 };
                 
                 this.renderResults();
             } catch (e) {
-                console.error("[CubiCal] Error ejecutando optimización industrial:", e);
-                alert("⚠️ Error al optimizar el despiece. Asegúrate de que las medidas ingresadas sean válidas.");
+                console.error("[CubiCal] Error ejecutando optimización:", e);
+                alert("⚠️ Error al optimizar el despiece. Revisa los datos de tus módulos.");
             }
+        },
+
+        exportToSmartCut: function() {
+            if (!this.state.results || !this.state.results.pieces) {
+                alert("⚠️ Por favor optimiza el cálculo primero.");
+                return;
+            }
+            
+            // Filtrar melamina de 18mm (no fondos traseros MDF de 3mm)
+            const melaminaPieces = this.state.results.pieces.filter(p => !p.isBackground).map(p => ({
+                nombre: p.name,
+                alto: p.h || p.alto || 800, // Safe fallbacks
+                ancho: p.w || p.ancho || 600,
+                cantidad: p.qty || 1,
+                tapacanto_h: "none", // Tapacantos default
+                tapacanto_w: "none",
+                veta: "indiferente"
+            }));
+            
+            // Guardar en sessionStorage
+            sessionStorage.setItem('cubical_despiece', JSON.stringify({
+                projectName: this.state.projectName,
+                thickness: 18,
+                pieces: melaminaPieces
+            }));
+            
+            // Redirigir a SmartCut
+            window.location.href = '/herramientas/presupuestador';
         },
 
         renderResults: function() {
@@ -995,7 +1927,7 @@ const isLoggedIn = !!clientId;
                 </div>
             `;
             
-            // Lista desglosada de placas optimizadas
+            // Placas
             document.getElementById('res-boards-list').innerHTML = opt.boards.map(b => {
                 return `
                     <div class="bg-[var(--sc-surface-alt)] p-5 rounded-lg border border-[var(--sc-border)] flex justify-between items-center group">
@@ -1010,7 +1942,7 @@ const isLoggedIn = !!clientId;
                 `;
             }).join('');
             
-            // Listado de herrajes comerciales
+            // Listado de herrajes
             document.getElementById('res-hardware-list').innerHTML = hw.map(h => `
                 <tr class="group hover:bg-[var(--sc-surface-alt)] transition-all">
                     <td class="py-5 font-bold text-[var(--sc-text)] uppercase text-xs tracking-tight">${h.name}</td>
@@ -1071,3 +2003,4 @@ const isLoggedIn = !!clientId;
     document.addEventListener('astro:page-load', () => window.cubical.init());
     window.cubical.init();
 </script>
+
