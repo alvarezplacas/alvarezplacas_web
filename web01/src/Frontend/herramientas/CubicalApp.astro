@@ -1096,9 +1096,10 @@ const isLoggedIn = !!clientId;
                 this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top');
             } else {
                 // Dibujar Fajas de anclaje (espigas) si no hay tapa y es bajo mesada o simplemente para ver estructura
-                // Faja frontal y trasera
-                this.addBoxFaces(t + offsetX, height - t, 20, width - 2*t, t, 100, baseFill, lineColor, 'faja-frente');
-                this.addBoxFaces(t + offsetX, height - t, depth - 100, width - 2*t, t, 100, baseFill, lineColor, 'faja-fondo');
+                // Faja frontal y trasera por dentro de los laterales y a ras de su borde superior
+                const fajaY = height - 2 * t; // El lateral llega hasta height - t
+                this.addBoxFaces(t + offsetX, fajaY, 20, width - 2*t, t, 100, baseFill, lineColor, 'faja-frente');
+                this.addBoxFaces(t + offsetX, fajaY, depth - 100, width - 2*t, t, 100, baseFill, lineColor, 'faja-fondo');
             }
             
             // 5. DIBUJAR PISO / BASE INFERIOR (18mm) - Soporte para Zócalo si corresponde
