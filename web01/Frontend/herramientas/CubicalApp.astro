@@ -33,16 +33,6 @@ const isLoggedIn = !!clientId;
     <!-- PANTALLA 1: DASHBOARD (Ahora centrado en Plantillas) -->
     <section id="screen-dashboard" class="animate-fade-in pt-8">
         <!-- SE ELIMINÓ EL BOTÓN 'NUEVO PROYECTO' A PEDIDO DEL USUARIO PARA PRIORIZAR LAS PLANTILLAS -->
-        <div class="mt-16 border-t border-[var(--sc-border)] pt-12" style={!isLoggedIn ? 'display:none;' : ''}>
-            <h3 class="text-3xl font-black mb-4 tracking-tighter text-[var(--sc-text)]">TUS PROYECTOS GUARDADOS</h3>
-            <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <!-- Dinámico -->
-                <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
-                <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
-                <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
-            </div>
-        </div>
-
         <!-- CATÁLOGO DE PLANTILLAS RÁPIDAS (AHORA ES LO PRINCIPAL) -->
         <div class="mb-16">
             <h2 class="text-5xl font-black mb-4 tracking-tighter text-[var(--sc-text)] uppercase italic">EXPLORA NUESTROS MODELOS</h2>
@@ -65,6 +55,16 @@ const isLoggedIn = !!clientId;
                 <button id="carousel-btn-right" class="absolute right-0 top-1/2 translate-y-[-50%] w-10 h-10 rounded-full bg-[var(--sc-surface)] border border-[var(--sc-border)] text-[var(--sc-text)] flex items-center justify-center hover:bg-[var(--sc-surface-alt)] hover:border-[var(--alvarez-red)] hover:text-[var(--alvarez-red)] transition-all z-10 shadow-md cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-300">
                     <i class="fas fa-chevron-right"></i>
                 </button>
+            </div>
+        </div>
+
+        <div class="mt-16 border-t border-[var(--sc-border)] pt-12" style={!isLoggedIn ? 'display:none;' : ''}>
+            <h3 class="text-3xl font-black mb-4 tracking-tighter text-[var(--sc-text)]">TUS PROYECTOS GUARDADOS</h3>
+            <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Dinámico -->
+                <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
+                <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
+                <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
             </div>
         </div>
     </section>
