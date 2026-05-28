@@ -1083,9 +1083,24 @@ const isLoggedIn = !!clientId;
             const techoY = height - t;
             const espacioUtilH = techoY - pisoY;
             
+            // Dividir espacio para cajones y puertas
+            let drawerSpaceH = 0;
+            let doorSpaceH = 0;
+            
+            if (drawers > 0 && doors > 0) {
+                drawerSpaceH = drawers * 200; // 200mm aprox por cajón
+                if (drawerSpaceH > espacioUtilH - 300) drawerSpaceH = espacioUtilH - 300; // Dejar 300 para puertas
+                doorSpaceH = espacioUtilH - drawerSpaceH;
+            } else if (drawers > 0) {
+                drawerSpaceH = espacioUtilH;
+            } else if (doors > 0) {
+                doorSpaceH = espacioUtilH;
+            }
+            
             // 6. DIBUJAR ESTANTES (18mm) - Con retranqueo frontal estándar de 20mm
+            // Los estantes se calculan sobre el espacio de las puertas si las hay (para que queden ocultos tras la puerta)
             if (shelves > 0) {
-                const hSpace = espacioUtilH / (shelves + 1);
+                const hSpace = (doors > 0 ? doorSpaceH : espacioUtilH) / (shelves + 1);
                 for (let i = 1; i <= shelves; i++) {
                     const shelfY = pisoY + i * hSpace - t / 2;
                     this.addBoxFaces(t + offsetX, shelfY, 20, width - 2 * t, t, depth - 20, shelfFill, lineColor, 'shelf');
@@ -1094,9 +1109,11 @@ const isLoggedIn = !!clientId;
             
             // 7. DIBUJAR CAJONES (Frentes de cajón de 18mm con holgura de 3mm)
             if (drawers > 0) {
-                const hSpace = espacioUtilH / drawers;
+                const hSpace = drawerSpaceH / drawers;
+                // Si hay puertas, los cajones van arriba de ellas.
+                const drawerStartY = pisoY + doorSpaceH;
                 for (let i = 0; i < drawers; i++) {
-                    const yBottom = pisoY + i * hSpace;
+                    const yBottom = drawerStartY + i * hSpace;
                     // Frente de cajón de 18mm de espesor embutido, Z = 0
                     this.addBoxFaces(3 + offsetX, yBottom + 3, 0, width - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer');
                     
@@ -1113,13 +1130,14 @@ const isLoggedIn = !!clientId;
                 for (let i = 0; i < doors; i++) {
                     const xLeft = 3 + i * wSpace;
                     // Puertas de 18mm de espesor embutidas, Z = 0
-                    this.addBoxFaces(xLeft + offsetX, pisoY + 3, 0, wSpace - 3, espacioUtilH - 6, t, doorFill, lineColor, 'door');
+                    this.addBoxFaces(xLeft + offsetX, pisoY + 3, 0, wSpace - 3, doorSpaceH - 6, t, doorFill, lineColor, 'door');
                     
                     // Tirador de barra vertical para las puertas
                     const tiradorX = doors === 1 
                         ? xLeft + wSpace - 30 
                         : (i === 0 ? xLeft + wSpace - 30 : xLeft + 30);
-                    const tiradorY = pisoY + espacioUtilH / 2;
+                    // El tirador se pone a 50mm del borde superior de la puerta
+                    const tiradorY = pisoY + doorSpaceH - 50;
                     this.addBoxFaces(tiradorX + offsetX - 5, tiradorY - 50, -10, 10, 100, 10, '#cccccc', lineColor, 'handle');
                 }
             }

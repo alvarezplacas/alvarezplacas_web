@@ -78,21 +78,32 @@ export function calculateModulePieces(type, dims, thickness = 18) {
         pieces.push({ name: 'Estante Regulable', h: ancho - (thickness * 2) - 2, w: prof - 20, qty: n_estantes });
     }
 
+    // Calcular espacio útil y repartirlo
+    let hUtil = alto - thickness;
+    if (type === MODULE_TYPES.CAJONERA) hUtil -= (80 + thickness);
+    else if (type === MODULE_TYPES.BAJO_MESADA) hUtil -= (120 + thickness);
+
+    let drawerSpaceH = 0;
+    let doorSpaceH = 0;
+
+    if (n_cajones > 0 && n_puertas > 0) {
+        drawerSpaceH = n_cajones * 200; // Asumir 200mm por frente de cajón si hay ambos
+        if (drawerSpaceH > hUtil - 300) drawerSpaceH = hUtil - 300; // Garantizar 300mm mínimo para puertas
+        doorSpaceH = hUtil - drawerSpaceH;
+    } else if (n_cajones > 0) {
+        drawerSpaceH = hUtil;
+    } else if (n_puertas > 0) {
+        doorSpaceH = hUtil;
+    }
+
     // Cajones (Cajonera interna)
     if (n_cajones > 0) {
-        let hDisponible = alto - thickness;
-        if (type === MODULE_TYPES.CAJONERA) {
-            hDisponible = alto - thickness - 80 - thickness; // Descontar zócalo y piso
-        } else if (type === MODULE_TYPES.BAJO_MESADA) {
-            hDisponible = alto - thickness - 120 - thickness; // Descontar zócalo y piso/fajas
-        }
-        
-        const hFrente = Math.floor((hDisponible - (n_cajones * 4)) / n_cajones);
+        const hFrente = Math.floor((drawerSpaceH - (n_cajones * 4)) / n_cajones);
         
         for (let i = 0; i < n_cajones; i++) {
             // Frente visible
             pieces.push({ name: `Frente Cajón ${i+1}`, h: hFrente, w: ancho - 4, qty: 1, isFront: true });
-            // Laterales de cajón (150mm alto estándar)
+            // Laterales de cajón (150mm alto estándar o adaptado)
             const hCajonInterno = Math.min(150, Math.max(100, Math.floor(hFrente - 50)));
             pieces.push({ name: `Lateral Cajón ${i+1}`, h: hCajonInterno, w: prof - 50, qty: 2 });
             // Contra-frente cajón (interior)
@@ -105,7 +116,10 @@ export function calculateModulePieces(type, dims, thickness = 18) {
     // Puertas
     if (n_puertas > 0) {
         const wPuerta = Math.floor((ancho - (n_puertas * 2)) / n_puertas) - 2;
-        const hPuerta = type === MODULE_TYPES.BAJO_MESADA ? (alto - 120) : (alto - 4);
+        // La altura de la puerta cubre el doorSpaceH más el espesor del piso (y base si no es bajo mesada)
+        // En Bajo Mesada el zócalo es descubierto, la puerta cubre solo hasta el piso.
+        let extraH = type === MODULE_TYPES.BAJO_MESADA ? thickness : thickness * 2; 
+        const hPuerta = doorSpaceH + extraH - 4; // -4 holgura
         pieces.push({ name: 'Puerta', h: hPuerta, w: wPuerta, qty: n_puertas, isFront: true });
     }
 
