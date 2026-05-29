@@ -159,6 +159,25 @@ if (resolvedSellerId) {
         .tool-btn.active { background-color: var(--ps-panel-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); color: #3b82f6; }
         .tool-btn.disabled { opacity: 0.4; cursor: not-allowed; }
         .toolbar-sep { width: 24px; height: 1px; background-color: var(--ps-toolbar-border); margin: 8px 0; }
+        
+        .badge-new {
+            position: absolute;
+            top: -4px;
+            right: -25px;
+            background: #ef4444;
+            color: white;
+            font-size: 8px;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 4px;
+            animation: pulse-badge 2s infinite;
+            z-index: 20;
+        }
+        @keyframes pulse-badge {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
 
         /* Main Canvas */
         .canvas-area {
@@ -283,19 +302,20 @@ if (resolvedSellerId) {
     <div class="app-container">
         <aside class="toolbar">
             <div class="toolbar-top">
-                <a href="/ceo" class="tool-btn ${Astro.url.pathname === '/ceo' ? 'active' : ''}" data-tooltip="Control de Correos (IMAP)">
+                <a href="/ceo" class="tool-btn tooltip-trigger ${Astro.url.pathname === '/ceo' ? 'active' : ''}" data-tooltip="Control de Correos (IMAP)">
                     <i class="fas fa-envelope"></i>
                 </a>
                 
-                <a href="/ceo/radar" class="tool-btn ${Astro.url.pathname === '/ceo/radar' ? 'active' : ''}" data-tooltip="Radar Global Predictivo">
+                <a href="/ceo/radar" class="tool-btn tooltip-trigger ${Astro.url.pathname === '/ceo/radar' ? 'active' : ''}" data-tooltip="Radar Global Predictivo">
                     <i class="fas fa-satellite-dish" style="color: #10b981;"></i>
                 </a>
 
-                <a href="/ceo/facturas" class="tool-btn ${Astro.url.pathname === '/ceo/facturas' ? 'active' : ''}" data-tooltip="Buscador de Facturas">
+                <a href="/ceo/facturas" class="tool-btn tooltip-trigger ${Astro.url.pathname === '/ceo/facturas' ? 'active' : ''}" data-tooltip="Nuevo: Buscador Inteligente de Facturas" style="position: relative;">
                     <i class="fas fa-file-invoice" style="color: #ef4444;"></i>
+                    <span class="badge-new">NUEVO</span>
                 </a>
 
-                <a href="/ceo/finanzas" class="tool-btn ${Astro.url.pathname === '/ceo/finanzas' ? 'active' : ''}" data-tooltip="Dashboard Financiero">
+                <a href="/ceo/finanzas" class="tool-btn tooltip-trigger ${Astro.url.pathname === '/ceo/finanzas' ? 'active' : ''}" data-tooltip="Dashboard Financiero">
                     <i class="fas fa-chart-line" style="color: #3b82f6;"></i>
                 </a>
                 <div class="toolbar-sep"></div>
