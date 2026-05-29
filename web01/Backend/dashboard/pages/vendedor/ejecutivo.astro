@@ -100,14 +100,14 @@ if (!sellerSession) {
             </div>
 
             <!-- GRÁFICO EMISIONES (NUEVO) -->
-            <div class="chart-card">
-                <div class="card-header" style="justify-content: space-between;">
+            <div class="chart-card chart-large" style="margin-top: 20px;">
+                <div class="card-header" style="justify-content: space-between; display: flex; align-items: center; width: 100%;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <i class="fas fa-file-invoice" style="color:#10b981;"></i>
                         <h3>Evolución de Facturas y Remitos Emitidos</h3>
                     </div>
-                    <div>
-                        <span style="font-size: 10px; color: #666; margin-right: 6px;">AGRUPAR POR:</span>
+                    <div class="filter-controls" style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
+                        <span style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Agrupar por:</span>
                         <select id="ejec-emision-agrupacion" class="ps-input-sm" style="background:#1e1e1e; border:1px solid #444; color:#ccc; padding:3px 8px; border-radius:4px; font-size:11px; outline: none; cursor: pointer;">
                             <option value="diario" selected>Diario</option>
                             <option value="mensual">Mensual</option>
