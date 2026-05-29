@@ -406,14 +406,8 @@ if (resolvedSellerId) {
         <!-- Left Toolbar -->
         <aside class="toolbar">
             <div class="toolbar-top">
-                <a href={title === 'Caja' ? 'javascript:void(0)' : '/vendedor/caja'} class={`tool-btn tooltip-trigger ${title === 'Caja' ? 'active' : ''}`} data-tab="tab-diario" data-tooltip="Operación Diaria (Ingresos/Egresos)">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                </a>
-                <a href={title === 'Caja' ? 'javascript:void(0)' : '/vendedor/caja'} class="tool-btn tooltip-trigger" data-tab="tab-ejecutivo" data-tooltip="Dashboard Ejecutivo Mensual">
-                    <i class="fas fa-chart-pie"></i>
-                </a>
-                <a href={title === 'Caja' ? 'javascript:void(0)' : '/vendedor/caja'} class="tool-btn tooltip-trigger" data-tab="tab-historico" data-tooltip="Reportes Históricos">
-                    <i class="fas fa-chart-line"></i>
+                <a href={title === 'Caja' ? 'javascript:void(0)' : '/vendedor/caja'} class={`tool-btn tooltip-trigger ${title === 'Caja' ? 'active' : ''}`} data-tab="tab-diario" data-tooltip="Panel General de Caja">
+                    <i class="fas fa-columns"></i>
                 </a>
                 <a href="/vendedor/facturas" class={`tool-btn tooltip-trigger tool-btn--buscador ${title === 'Buscador Inteligente de Facturas' ? 'active' : ''}`} data-tooltip="Nuevo: Buscador Inteligente de Facturas (OCR)" id="tool-buscador-btn">
                     <i class="fas fa-search"></i>
