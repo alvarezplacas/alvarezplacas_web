@@ -119,18 +119,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             let maxAge: number | undefined = rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24 * 30;
             let expires: Date | undefined = undefined;
 
-            // Facundo (admin) y Fernando (cajero) no tienen restricción de horario
-            const isExemptFromHours = isFacundo || email === 'fernando@alvarezplacas.com.ar' || user.role === 'cajero';
+            // Facundo (admin), Fernando (cajero) y Guillermo (ceo) no tienen restricción de horario
+            const isExemptFromHours = isFacundo || email === 'fernando@alvarezplacas.com.ar' || email === 'guillermo@alvarezplacas.com.ar' || user.role === 'cajero' || user.role === 'ceo' || user.role === 'admin';
 
             if (!isExemptFromHours) {
                 const config = getConfig();
                 const [cierreHoras, cierreMinutos] = (config.horaCierre || '18:00').split(':').map(Number);
                 
-                const now = new Date();
-                const closingTime = new Date(now);
+                // Usar la hora de Argentina para evitar el bloqueo prematuro por UTC
+                const nowStr = new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" });
+                const nowArg = new Date(nowStr);
+                
+                const closingTime = new Date(nowStr);
                 closingTime.setHours(cierreHoras, cierreMinutos, 0, 0);
 
-                if (now.getTime() >= closingTime.getTime()) {
+                if (nowArg.getTime() >= closingTime.getTime()) {
                     return new Response(JSON.stringify({ 
                         success: false, 
                         message: `Fuera de horario de atención (cierra a las ${config.horaCierre}hs)`,
@@ -139,7 +142,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                     }), { status: 403, headers: { 'Content-Type': 'application/json' } });
                 }
 
-                expires = closingTime;
+                const expiresInMs = closingTime.getTime() - nowArg.getTime();
+                expires = new Date(Date.now() + expiresInMs);
                 maxAge = undefined;
             }
 
