@@ -38,10 +38,10 @@ export const GET: APIRoute = async () => {
             )
             SELECT 
                 SUM(CASE WHEN doc_type LIKE 'FA-%' THEN 1 ELSE 0 END) as fact_count,
-                SUM(CASE WHEN doc_type LIKE 'RE-%' THEN 1 ELSE 0 END) as rem_count,
+                SUM(CASE WHEN doc_type = 'RE' THEN 1 ELSE 0 END) as rem_count,
                 SUM(CASE WHEN doc_type LIKE 'FA-%' THEN total_amount ELSE 0 END) as fact_total
             FROM RankedDocs
-            WHERE (doc_type LIKE 'FA-%' OR doc_type LIKE 'RE-%') AND rn = 1
+            WHERE (doc_type LIKE 'FA-%' OR doc_type = 'RE') AND rn = 1
               AND DATE(doc_date) = $1
         `, [todayStr]);
         if (statsResult.rows.length > 0) {
