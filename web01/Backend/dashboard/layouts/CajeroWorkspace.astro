@@ -159,6 +159,25 @@ if (resolvedSellerId) {
         .tool-btn.active { background-color: var(--ps-panel-border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
         .toolbar-sep { width: 24px; height: 1px; background-color: var(--ps-toolbar-border); margin: 8px 0; }
 
+        .badge-new {
+            position: absolute;
+            top: -4px;
+            right: -25px;
+            background: #ef4444;
+            color: white;
+            font-size: 8px;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 4px;
+            animation: pulse-badge 2s infinite;
+            z-index: 20;
+        }
+        @keyframes pulse-badge {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
         /* Buscador OCR Button */
         .tool-btn--buscador {
             color: #ef4444 !important;
@@ -356,9 +375,10 @@ if (resolvedSellerId) {
                 <a href={title === 'Caja' ? 'javascript:void(0)' : '/vendedor/caja'} class="tool-btn tooltip-trigger" data-tab="tab-historico" data-tooltip="Reportes Históricos">
                     <i class="fas fa-chart-line"></i>
                 </a>
-                <a href={title === 'Caja' ? 'javascript:void(0)' : '/vendedor/caja'} class="tool-btn tooltip-trigger tool-btn--buscador" data-tab="tab-buscador" data-tooltip="Buscador Inteligente de Facturas (OCR)" id="tool-buscador-btn">
+                <a href="/vendedor/facturas" class={`tool-btn tooltip-trigger tool-btn--buscador ${title === 'Buscador Inteligente de Facturas' ? 'active' : ''}`} data-tooltip="Nuevo: Buscador Inteligente de Facturas (OCR)" id="tool-buscador-btn">
                     <i class="fas fa-search"></i>
                     <span class="tool-ocr-badge">OCR</span>
+                    <span class="badge-new">NUEVO</span>
                 </a>
                 <div class="toolbar-sep"></div>
                 <a href="/vendedor/herramientas" class={`tool-btn tooltip-trigger ${title === 'Herramientas Financieras' ? 'active' : ''}`} data-tooltip="Herramientas Financieras">

@@ -1,0 +1,31 @@
+---
+import CajeroWorkspace from '../../layouts/CajeroWorkspace.astro';
+import { directus, readItems } from '@conexiones/directus.js';
+
+const sellerSession = Astro.cookies.get('seller_session')?.value;
+
+if (!sellerSession) {
+    return Astro.redirect('/login');
+}
+
+// Generamos el HTML usando el mismo endpoint del vendedor para reutilizar la vista
+let buscadorHtml = '';
+try {
+    const baseUrl = Astro.url.origin;
+    const response = await fetch(`${baseUrl}/api/vendedor/views/buscador`);
+    if (response.ok) {
+        buscadorHtml = await response.text();
+    } else {
+        buscadorHtml = '<div style="color:red; padding: 20px;">Error cargando buscador API. ('+response.status+')</div>';
+    }
+} catch (e: any) {
+    buscadorHtml = `<div style="color:red; padding: 20px;">Error al conectar con API buscador: ${e.message}</div>`;
+}
+
+---
+
+<CajeroWorkspace title="Buscador Inteligente de Facturas" vendedor_id={sellerSession}>
+    <div style="height: 100%; display: flex; flex-direction: column;">
+        <Fragment set:html={buscadorHtml} />
+    </div>
+</CajeroWorkspace>

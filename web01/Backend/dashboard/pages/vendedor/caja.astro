@@ -28,19 +28,6 @@ try {
 } catch(e) {
     console.error("[Caja] Error verifying user:", e);
 }
-
-let buscadorHtml = '';
-try {
-    const baseUrl = Astro.url.origin;
-    const response = await fetch(`${baseUrl}/api/vendedor/views/buscador`);
-    if (response.ok) {
-        buscadorHtml = await response.text();
-    } else {
-        buscadorHtml = '<div style="color:red; padding: 20px;">Error cargando buscador API. ('+response.status+')</div>';
-    }
-} catch (e: any) {
-    buscadorHtml = `<div style="color:red; padding: 20px;">Error al conectar con API buscador: ${e.message}</div>`;
-}
 ---
 
 <CajeroWorkspace title="Caja" vendedor_id={sellerId}>
@@ -58,9 +45,6 @@ try {
         </button>
         <button class="ctab" data-ctab="historico">
             <i class="fas fa-chart-line"></i> Reportes Históricos
-        </button>
-        <button class="ctab" data-ctab="buscador">
-            <i class="fas fa-file-invoice" style="color: #ef4444;"></i> Buscador de Facturas
         </button>
         <button class="ctab" data-ctab="calculadora">
             <i class="fas fa-calculator"></i> Calculadora Neta
@@ -479,12 +463,9 @@ try {
         <ManualCalculadora />
     </section>
 
-    <!-- ============================ -->
-    <!-- SOLAPA 7: BUSCADOR DE FACTURAS -->
-    <!-- ============================ -->
-    <section class="ctab-panel hidden" id="panel-buscador">
-        <Fragment set:html={buscadorHtml} />
-    </section>
+    <!-- ========================= -->
+    <!-- FIN SOLAPAS -->
+    <!-- ========================= -->
 
 </CajeroWorkspace>
 

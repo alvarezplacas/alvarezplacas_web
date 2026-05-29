@@ -15,12 +15,8 @@
             <p class="text-gray-400 text-sm">Centro operativo financiero con proyecciones y simulador de escenarios</p>
         </div>
         <div class="relative z-10 flex flex-wrap gap-2">
-            <button class="bg-[#1e1e1e] text-gray-300 hover:text-white transition-all px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-white/10" @click="showImporter = !showImporter">
-                <i class="fas fa-magic text-yellow-500"></i>
-                <span x-text="showImporter ? 'Ocultar Importador Gcom' : '⚡ Importar desde Gcom/Excel'"></span>
-            </button>
-            <button class="bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-all px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-blue-500/30" @click="exportCSV()">
-                <i class="fas fa-file-csv"></i> Exportar CSV
+            <button class="bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-all w-10 h-10 rounded-xl flex items-center justify-center border border-blue-500/30 tooltip-trigger" data-tooltip="Exportar CSV" @click="exportCSV()">
+                <i class="fas fa-file-csv text-lg"></i>
             </button>
             <button class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-emerald-500/30" @click="saveSnapshotToCEO()">
                 <i class="fas fa-cloud-upload-alt"></i> Registrar Cierre Proyectado
@@ -59,27 +55,6 @@
     <div x-show="toast.show" x-transition class="fixed top-4 right-4 z-50 flex items-center gap-3 bg-[#111] border border-green-500/30 text-green-400 px-5 py-3 rounded-xl shadow-2xl" style="display: none;">
         <i class="fas fa-check-circle text-lg"></i>
         <span class="text-xs font-bold uppercase tracking-wider" x-text="toast.message"></span>
-    </div>
-
-    <!-- PARSER INTELIGENTE DE TEXTO GCOM / EXCEL -->
-    <div x-show="showImporter" x-collapse class="bg-[#111] border border-yellow-500/10 rounded-2xl p-6 relative overflow-hidden" style="display: none;">
-        <div class="absolute inset-0 bg-yellow-500/[0.02] pointer-events-none"></div>
-        <div class="flex items-center gap-2 mb-3">
-            <i class="fas fa-bolt text-yellow-500"></i>
-            <h4 class="text-white font-bold uppercase tracking-wider text-sm">Importador Inteligente Gecom Express</h4>
-        </div>
-        <p class="text-gray-400 text-xs mb-4 leading-relaxed">
-            Pegue directamente el texto copiado de su planilla Excel de cierres o las líneas de venta del facturador Gcom. El motor inteligente extraerá las cifras de ventas, cortes, pegados y gastos automáticamente.
-        </p>
-        <div class="space-y-4">
-            <textarea x-model="pasteArea" rows="4" class="w-full bg-[#000] border border-white/10 rounded-xl p-3 text-mono text-xs text-white outline-none focus:border-yellow-500" placeholder="Ejemplo de pegado:&#10;Venta 1 Blanco: 1,850,000&#10;Corte V1: 150000&#10;Pegados Blanco: 35 unidades a 1200&#10;Venta 2: $2.400.000&#10;Gastos Fijos Periodo: 850000"></textarea>
-            <div class="flex justify-end gap-2">
-                <button class="bg-[#222] text-gray-400 hover:text-white px-3 py-1.5 rounded-lg text-xs" @click="pasteArea = ''">Limpiar</button>
-                <button class="bg-yellow-500 text-black font-bold uppercase text-xs tracking-wider px-4 py-1.5 rounded-lg hover:bg-yellow-400 transition" @click="parseGcomData()">
-                    <i class="fas fa-sync-alt mr-1"></i> Procesar y Autocompletar
-                </button>
-            </div>
-        </div>
     </div>
 
     <!-- CUADRO DE CALCULO - FORMATO INTERACTIVO DE CELDAS DE EXCEL (FONDO NEGRO) -->
