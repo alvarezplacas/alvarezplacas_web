@@ -1141,6 +1141,13 @@ try {
     let chartsInitialized = false;
     let barChart: any = null, tortaFijosChart: any = null, tortaVariablesChart: any = null, ingresosChart: any = null;
 
+    window.addEventListener('init-charts', () => {
+        if (!chartsInitialized) {
+            initCharts(currentPeriod);
+            chartsInitialized = true;
+        }
+    });
+
     document.querySelectorAll('.period-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -1479,6 +1486,14 @@ try {
     // HISTORICO
     // ========================
     let histChart: any = null;
+    let historicoInitialized = false;
+
+    window.addEventListener('init-historico', () => {
+        if (!historicoInitialized) {
+            initHistoricoDefaults();
+            historicoInitialized = true;
+        }
+    });
 
     function initHistoricoDefaults() {
         const el = document.getElementById('hist-fecha-carga') as HTMLInputElement;
