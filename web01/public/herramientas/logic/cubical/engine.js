@@ -18,32 +18,33 @@ export const MODULE_TYPES = {
  * @param {object} dims {alto, ancho, prof, n_cajones, n_puertas, n_estantes}
  * @param {number} thickness Espesor de la placa (default 18mm)
  */
-export function calculateModulePieces(type, dims, thickness = 18) {
+export function calculateModulePieces(type, dims, thickness = 18, customVars = {}) {
     const { alto, ancho, prof, n_cajones, n_estantes, n_puertas } = dims;
     let pieces = [];
 
     if (type === MODULE_TYPES.ESCRITORIO) {
+        const cajoneraW = customVars.cajoneraWidth || 400;
         // Lógica Especial de Escritorio Juvenil
         pieces.push({ name: 'Techo de Escritorio', h: ancho, w: prof, qty: 1 });
         pieces.push({ name: 'Lateral Izquierdo', h: alto - thickness, w: prof, qty: 1 });
         
-        // Cajonera derecha (ancho fijo 400)
+        // Cajonera derecha (ancho dinámico)
         pieces.push({ name: 'Lateral Derecho (Cajonera)', h: alto - thickness, w: prof, qty: 1 });
         pieces.push({ name: 'Divisor Interno (Cajonera)', h: alto - thickness, w: prof, qty: 1 });
-        pieces.push({ name: 'Piso Cajonera', h: 400 - (thickness * 2), w: prof, qty: 1 });
+        pieces.push({ name: 'Piso Cajonera', h: cajoneraW - (thickness * 2), w: prof, qty: 1 });
         
-        pieces.push({ name: 'Faldón (Modesty Panel)', h: 300, w: ancho - 400 - thickness, qty: 1 });
-        pieces.push({ name: 'Bandeja Teclado', h: prof - 100, w: ancho - 400 - thickness - 26, qty: 1 });
+        pieces.push({ name: 'Faldón (Modesty Panel)', h: 300, w: ancho - cajoneraW - thickness, qty: 1 });
+        pieces.push({ name: 'Bandeja Teclado', h: prof - 100, w: ancho - cajoneraW - thickness - 26, qty: 1 });
         
-        // 4 Cajones
+        // Cajones
         if (n_cajones > 0) {
             const hFrente = Math.floor((alto - thickness - 80) / n_cajones);
             for (let i = 0; i < n_cajones; i++) {
-                pieces.push({ name: `Frente Cajón ${i+1}`, h: hFrente, w: 400 - 4, qty: 1, isFront: true });
+                pieces.push({ name: `Frente Cajón ${i+1}`, h: hFrente, w: cajoneraW - 4, qty: 1, isFront: true });
                 const hCajonInterno = Math.min(150, Math.max(100, Math.floor(hFrente - 50)));
                 pieces.push({ name: `Lateral Cajón ${i+1}`, h: hCajonInterno, w: prof - 50, qty: 2 });
-                pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: 400 - (thickness * 2) - 26 - (thickness * 2), qty: 2 });
-                pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: 400 - (thickness * 2) - 26, qty: 1, isBackground: true });
+                pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: cajoneraW - (thickness * 2) - 26 - (thickness * 2), qty: 2 });
+                pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: cajoneraW - (thickness * 2) - 26, qty: 1, isBackground: true });
             }
         }
         return pieces;
@@ -77,8 +78,57 @@ export function calculateModulePieces(type, dims, thickness = 18) {
     if (n_estantes > 0) {
         pieces.push({ name: 'Estante Regulable', h: ancho - (thickness * 2) - 2, w: prof - 20, qty: n_estantes });
     }
+    // Lógica Específica Rack TV (3 columnas)
+    if (type === MODULE_TYPES.RACK_TV) {
+        const centerW = customVars.colCenterWidth || 600;
+        const sideW = Math.floor((ancho - (thickness * 4) - centerW) / 2);
+        const hUtilTV = alto - (thickness * 2);
 
-    // Calcular espacio útil y repartirlo
+        // Carcasa (Laterales, Techo, Piso, Fondo)
+        pieces.push({ name: 'Lateral Izquierdo Rack', h: alto - thickness, w: prof, qty: 1 });
+        pieces.push({ name: 'Lateral Derecho Rack', h: alto - thickness, w: prof, qty: 1 });
+        pieces.push({ name: 'Techo Rack TV', h: ancho, w: prof, qty: 1 });
+        pieces.push({ name: 'Base Rack TV', h: ancho - (thickness * 2), w: prof, qty: 1 });
+        pieces.push({ name: 'Fondo MDF 3mm', h: alto - 10, w: ancho - 10, qty: 1, isBackground: true });
+
+        // Divisores verticales
+        pieces.push({ name: 'Divisor Vertical Izquierdo', h: hUtilTV, w: prof - 20, qty: 1 });
+        pieces.push({ name: 'Divisor Vertical Derecho', h: hUtilTV, w: prof - 20, qty: 1 });
+
+        // Puertas (En columnas laterales)
+        if (n_puertas > 0) {
+            const hPuerta = hUtilTV - 4; // holgura
+            const wPuerta = sideW + thickness - 4; 
+            pieces.push({ name: 'Puerta Izquierda', h: hPuerta, w: wPuerta, qty: 1, isFront: true });
+            if (n_puertas > 1) {
+                pieces.push({ name: 'Puerta Derecha', h: hPuerta, w: wPuerta, qty: 1, isFront: true });
+            }
+        }
+
+        // Centro (Cajones y estantes)
+        let centerH = hUtilTV;
+        if (n_cajones > 0) {
+            const totalDrawerH = 200 * n_cajones;
+            centerH = Math.max(hUtilTV - totalDrawerH, Math.floor(hUtilTV / 2));
+            const finalDrawerH = hUtilTV - centerH;
+            const hFrente = Math.floor(finalDrawerH / n_cajones);
+            for (let i = 0; i < n_cajones; i++) {
+                pieces.push({ name: `Frente Cajón Centro ${i+1}`, h: hFrente - 4, w: centerW - 4, qty: 1, isFront: true });
+                const hCajonInterno = Math.min(150, Math.max(100, Math.floor(hFrente - 50)));
+                pieces.push({ name: `Lateral Cajón Centro ${i+1}`, h: hCajonInterno, w: prof - 50, qty: 2 });
+                pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: centerW - (thickness * 2) - 26 - (thickness * 2), qty: 2 });
+                pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: centerW - (thickness * 2) - 26, qty: 1, isBackground: true });
+            }
+        }
+        
+        if (n_estantes > 0) {
+            pieces.push({ name: 'Estante Central Rack', h: centerW, w: prof - 20, qty: n_estantes });
+        }
+
+        return pieces;
+    }
+
+    // Calcular espacio útil y repartirlo para el resto de módulos genéricos
     let hUtil = alto - thickness;
     if (type === MODULE_TYPES.CAJONERA) hUtil -= (80 + thickness);
     else if (type === MODULE_TYPES.BAJO_MESADA) hUtil -= (120 + thickness);

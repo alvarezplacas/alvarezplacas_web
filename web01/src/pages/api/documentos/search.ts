@@ -8,6 +8,8 @@ export const GET: APIRoute = async ({ url }) => {
         const limit = parseInt(url.searchParams.get('limit') || '10') || 10;
         const offset = (page - 1) * limit;
         const order = url.searchParams.get('order') === 'asc' ? 'ASC' : 'DESC';
+        const docType = url.searchParams.get('type')?.trim() || '';
+        const typeParam = docType ? `${docType}-%` : '%';
         
         let dbResult;
         let totalCount = 0;
@@ -21,10 +23,11 @@ export const GET: APIRoute = async ({ url }) => {
                     created_at,
                     count(*) OVER() AS full_count
                 FROM documentos_facturacion
+                WHERE doc_type ILIKE $3
                 ORDER BY doc_date ${order}, created_at ${order}
                 LIMIT $1 OFFSET $2;
             `;
-            dbResult = await query(queryText, [limit, offset]);
+            dbResult = await query(queryText, [limit, offset, typeParam]);
         } else {
             const likeParam = `%${searchQuery}%`;
             
@@ -47,17 +50,18 @@ export const GET: APIRoute = async ({ url }) => {
                     END AS rank
                 FROM documentos_facturacion
                 WHERE 
-                    doc_number ILIKE $2
+                    (doc_type ILIKE $5) AND
+                    (doc_number ILIKE $2
                     OR client_name ILIKE $2
                     OR client_cuit ILIKE $2
                     OR client_cta ILIKE $2
-                    OR (fts_doc IS NOT NULL AND fts_doc @@ plainto_tsquery('spanish', $1))
+                    OR (fts_doc IS NOT NULL AND fts_doc @@ plainto_tsquery('spanish', $1)))
                 ORDER BY rank DESC, doc_date ${order}
                 LIMIT $3 OFFSET $4;
             `;
             
             try {
-                dbResult = await query(sqlQuery, [searchQuery, likeParam, limit, offset]);
+                dbResult = await query(sqlQuery, [searchQuery, likeParam, limit, offset, typeParam]);
             } catch (ftsErr: any) {
                 // Fallback: pure ILIKE search if FTS fails (e.g., special characters, numeric-only queries)
                 console.warn('FTS search failed, falling back to ILIKE:', ftsErr.message);
@@ -69,14 +73,15 @@ export const GET: APIRoute = async ({ url }) => {
                         count(*) OVER() AS full_count
                     FROM documentos_facturacion
                     WHERE 
-                        doc_number ILIKE $1
+                        (doc_type ILIKE $4) AND
+                        (doc_number ILIKE $1
                         OR client_name ILIKE $1
                         OR client_cuit ILIKE $1
-                        OR client_cta ILIKE $1
+                        OR client_cta ILIKE $1)
                     ORDER BY doc_date ${order}
                     LIMIT $2 OFFSET $3;
                 `;
-                dbResult = await query(fallbackQuery, [likeParam, limit, offset]);
+                dbResult = await query(fallbackQuery, [likeParam, limit, offset, typeParam]);
             }
         }
 

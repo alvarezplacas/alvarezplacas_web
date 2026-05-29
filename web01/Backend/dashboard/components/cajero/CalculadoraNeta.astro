@@ -108,6 +108,16 @@
                         </div>
                     </div>
 
+                    <!-- Margen Base Venta 1 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-gray-500 text-[10px] font-black uppercase tracking-wider">Margen Base (%)</label>
+                        </div>
+                        <div class="relative flex items-center">
+                            <input type="number" step="0.01" x-model.number="porcentajeMargenBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono font-bold tracking-tight hover:border-blue-700/60 transition" />
+                        </div>
+                    </div>
+
                     <!-- Corte Venta 1 -->
                     <div>
                         <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Servicio de Corte V1</label>
@@ -174,6 +184,16 @@
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaNegro = Math.max(0, ventaNegro - 50000); isLiveSync = false">-</button>
                             <input type="number" x-model.number="ventaNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono font-bold tracking-tight hover:border-purple-700/60 transition" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaNegro += 50000; isLiveSync = false">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Margen Base Venta 2 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-gray-500 text-[10px] font-black uppercase tracking-wider">Margen Base (%)</label>
+                        </div>
+                        <div class="relative flex items-center">
+                            <input type="number" step="0.01" x-model.number="porcentajeMargenNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono font-bold tracking-tight hover:border-purple-700/60 transition" />
                         </div>
                     </div>
 
@@ -468,9 +488,15 @@
                 <tbody class="divide-y divide-white/5 text-gray-300">
                     <tr>
                         <td class="p-3 font-medium">Margen Base Melaminas (Placas)</td>
-                        <td class="p-3 text-center text-gray-500 font-mono">Venta Sin Corte × 23.077%</td>
-                        <td class="p-3 text-right font-mono" x-text="format(margenBlanco)"></td>
-                        <td class="p-3 text-right font-mono" x-text="format(margenNegro)"></td>
+                        <td class="p-3 text-center text-gray-500 font-mono">Venta Sin Corte &times; % Config.</td>
+                        <td class="p-3 text-right font-mono">
+                            <span class="text-[9px] text-gray-500 mr-1" x-text="'(' + porcentajeMargenBlanco + '%)'"></span>
+                            <span x-text="format(margenBlanco)"></span>
+                        </td>
+                        <td class="p-3 text-right font-mono">
+                            <span class="text-[9px] text-gray-500 mr-1" x-text="'(' + porcentajeMargenNegro + '%)'"></span>
+                            <span x-text="format(margenNegro)"></span>
+                        </td>
                     </tr>
                     <tr>
                         <td class="p-3 font-medium">Margen Servicio de Corte</td>
@@ -603,6 +629,9 @@
             ventaPegadoNegro: 80000,
             cantPegadosNegro: 50,
             precioPegadoNegro: 1000,
+
+            porcentajeMargenBlanco: 24.24,
+            porcentajeMargenNegro: 24.24,
             
             gastosTotales: 680000,
             ivaCompras: 80000,
@@ -683,6 +712,8 @@
                 this.$watch('cantPegadosNegro', () => this.updateChart());
                 this.$watch('precioPegadoNegro', () => this.updateChart());
                 this.$watch('gastosTotales', () => this.updateChart());
+                this.$watch('porcentajeMargenBlanco', () => this.updateChart());
+                this.$watch('porcentajeMargenNegro', () => this.updateChart());
                 this.$watch('mesesProyeccion', () => this.updateChart());
                 this.$watch('crecimientoVentas', () => this.updateChart());
                 this.$watch('inflacionGastos', () => this.updateChart());
@@ -691,7 +722,7 @@
 
             // Formula Getters Venta 1
             get ventaSinCorteBlanco() { return currency(this.ventaBlanco).subtract(this.ventaCorteBlanco).subtract(this.ventaPegadoBlanco).value; },
-            get margenBlanco() { return currency(this.ventaSinCorteBlanco).multiply(0.23077).value; },
+            get margenBlanco() { return currency(this.ventaSinCorteBlanco).multiply(this.porcentajeMargenBlanco / 100).value; },
             get margenCorteBlanco() { return currency(this.ventaCorteBlanco).multiply(0.80).value; },
             get costoPegadoBlanco() { return currency(this.cantPegadosBlanco).multiply(this.precioPegadoBlanco).value; },
             get servPegadoBlanco() { return currency(this.ventaPegadoBlanco).subtract(this.costoPegadoBlanco).value; },
@@ -700,7 +731,7 @@
 
             // Formula Getters Venta 2
             get ventaSinCorteNegro() { return currency(this.ventaNegro).subtract(this.ventaCorteNegro).subtract(this.ventaPegadoNegro).value; },
-            get margenNegro() { return currency(this.ventaSinCorteNegro).multiply(0.23077).value; },
+            get margenNegro() { return currency(this.ventaSinCorteNegro).multiply(this.porcentajeMargenNegro / 100).value; },
             get margenCorteNegro() { return currency(this.ventaCorteNegro).multiply(1.0).value; },
             get costoPegadoNegro() { return currency(this.cantPegadosNegro).multiply(this.precioPegadoNegro).value; },
             get servPegadoNegro() { return currency(this.ventaPegadoNegro).subtract(this.costoPegadoNegro).value; },

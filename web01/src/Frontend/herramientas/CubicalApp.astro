@@ -211,8 +211,11 @@ const isLoggedIn = !!clientId;
                     <canvas id="canvas-preview" class="w-full h-full max-h-[600px] cursor-grab active:cursor-grabbing" style="min-height:500px; display:block;"></canvas>
                 </div>
 
-                <div class="flex justify-between items-center bg-[var(--sc-surface)] p-6 rounded-xl border border-[var(--sc-border)]">
-                    <button onclick="window.cubical.generateResults()" class="w-full py-5 bg-[var(--alvarez-red)] text-white font-black rounded hover:scale-105 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-lg">
+                <div class="flex justify-between items-center bg-[var(--sc-surface)] p-6 rounded-xl border border-[var(--sc-border)] gap-4">
+                    <button onclick="window.cubical.showRealPhoto()" class="w-1/3 py-5 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] text-[var(--sc-text)] font-black rounded hover:border-[var(--alvarez-blue)] hover:text-[var(--alvarez-blue)] transition-all uppercase tracking-[0.1em] flex items-center justify-center gap-2 shadow-sm text-xs group">
+                        <i class="fas fa-images group-hover:scale-110 transition-transform"></i> EJEMPLOS
+                    </button>
+                    <button onclick="window.cubical.generateResults()" class="w-2/3 py-5 bg-[var(--alvarez-red)] text-white font-black rounded hover:scale-105 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-lg">
                         OPTIMIZAR CÁLCULO <i class="fas fa-microchip"></i>
                     </button>
                 </div>
@@ -262,6 +265,14 @@ const isLoggedIn = !!clientId;
                                 <option value="codo_9">Bisagra Codo 9 (Semi-superpuesta)</option>
                                 <option value="codo_18">Bisagra Codo 18 (Embutida)</option>
                             </select>
+                        </div>
+                        
+                        <!-- Parámetros Extra (Dinámicos por plantilla) -->
+                        <div id="group-custom-vars" class="col-span-2 hidden bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
+                            <h4 class="text-[0.6rem] font-black text-[var(--alvarez-red)] uppercase tracking-wider mb-2"><i class="fas fa-tools"></i> Parámetros Especiales</h4>
+                            <div id="custom-vars-container" class="space-y-3">
+                                <!-- Inputs dinámicos -->
+                            </div>
                         </div>
                         
                         <div class="col-span-2">
@@ -393,6 +404,14 @@ const isLoggedIn = !!clientId;
                                 <option value="codo_9">Bisagra Codo 9 (Semi-superpuesta)</option>
                                 <option value="codo_18">Bisagra Codo 18 (Embutida)</option>
                             </select>
+                        </div>
+                        
+                        <!-- Parámetros Extra (Dinámicos por plantilla) Mobile -->
+                        <div id="group-custom-vars-mobile" class="col-span-3 hidden bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
+                            <h4 class="text-[0.55rem] font-black text-[var(--alvarez-red)] uppercase tracking-wider mb-2"><i class="fas fa-tools"></i> Parámetros Especiales</h4>
+                            <div id="custom-vars-container-mobile" class="space-y-3">
+                                <!-- Inputs dinámicos -->
+                            </div>
                         </div>
                         
                         <div class="col-span-3 mt-1">
@@ -657,8 +676,32 @@ const isLoggedIn = !!clientId;
 
 </style>
 
+<!-- MODAL RENDER IA HIPERREALISTA -->
+<div id="real-photo-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all">
+    <div class="bg-[var(--sc-surface)] rounded-xl shadow-2xl max-w-4xl w-full border border-[var(--sc-border)] overflow-hidden relative">
+        <button onclick="window.cubical.closeRealPhoto()" class="absolute top-4 right-4 bg-black/50 hover:bg-[var(--alvarez-red)] text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="p-6 border-b border-[var(--sc-border)] flex items-center gap-3 bg-[var(--sc-surface-alt)]">
+            <i class="fas fa-images text-[var(--alvarez-red)] text-xl"></i>
+            <div>
+                <h3 class="font-black uppercase tracking-widest text-[var(--sc-text)] text-sm">Ejemplos Reales</h3>
+                <p class="text-[0.65rem] text-[var(--sc-text-dim)] uppercase">Visualización de muebles similares terminados en un entorno real.</p>
+            </div>
+        </div>
+        <div class="p-4 bg-[var(--sc-input-bg)] flex justify-center items-center min-h-[400px]">
+            <img id="real-photo-img" src="" alt="Ejemplo Real" class="max-w-full max-h-[70vh] rounded shadow-lg object-contain">
+        </div>
+        <div class="p-4 bg-[var(--sc-surface-alt)] border-t border-[var(--sc-border)] text-center">
+            <button onclick="window.cubical.closeRealPhoto()" class="px-6 py-2 border border-[var(--sc-border)] bg-[var(--sc-surface)] hover:bg-[var(--sc-input-bg)] rounded text-xs font-bold uppercase tracking-wider transition-colors">Volver al Editor 3D</button>
+        </div>
+    </div>
+</div>
+
 <script is:inline>
     // 🛡️ Inicialización inmediata del tema sincronizada con el Layout principal de Alvarez Placas
+
+
     (function() {
         const savedTheme = localStorage.getItem('client-theme') || localStorage.getItem('sc-theme') || 'light';
         if (savedTheme === 'dark') {
@@ -960,10 +1003,13 @@ const isLoggedIn = !!clientId;
             ];
             
             boxFaces.forEach(f => {
-                const avgZ = f.indices.reduce((sum, idx) => sum + proj[idx].z, 0) / 4;
+                const zVals = f.indices.map(idx => proj[idx].z);
+                const maxZ = Math.max(...zVals);
+                const minZ = Math.min(...zVals);
+                const avgZ = zVals.reduce((sum, z) => sum + z, 0) / 4;
                 const pts  = f.indices.map(idx => proj[idx]);
                 this.allFaces.push({
-                    pts, avgZ, fillColor, lineColor,
+                    pts, avgZ, maxZ, minZ, fillColor, lineColor,
                     faceName: f.faceName,
                     normal:   f.normal,
                     boardName: name
@@ -1015,18 +1061,19 @@ const isLoggedIn = !!clientId;
             const doorFill   = palette ? palette.doorColor : (isDark ? '#3d3d3d' : '#ede9df');
             
             if (opts.type === 'ESCRITORIO') {
+                const cajoneraW = (opts.customVars && opts.customVars.cajoneraWidth) ? opts.customVars.cajoneraWidth : 400;
                 // 1. TAPA SUPERIOR
                 if (showTop) this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top');
                 // 2. LATERAL IZQUIERDO
                 this.addBoxFaces(offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'left-side');
-                // 3. CAJONERA DERECHA (ancho 400)
+                // 3. CAJONERA DERECHA (ancho variable)
                 this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side');
-                this.addBoxFaces(width - 400 + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'divider');
-                this.addBoxFaces(width - 400 + t + offsetX, 0, 0, 400 - 2 * t, t, depth, baseFill, lineColor, 'base-cajonera');
+                this.addBoxFaces(width - cajoneraW + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'divider');
+                this.addBoxFaces(width - cajoneraW + t + offsetX, 0, 0, cajoneraW - 2 * t, t, depth, baseFill, lineColor, 'base-cajonera');
                 // 4. FALDÓN TRASERO
-                this.addBoxFaces(t + offsetX, height - t - 300, depth - t, width - 400 - t, 300, t, baseFill, lineColor, 'faldon');
+                this.addBoxFaces(t + offsetX, height - t - 300, depth - t, width - cajoneraW - t, 300, t, baseFill, lineColor, 'faldon');
                 // 5. BANDEJA TECLADO
-                this.addBoxFaces(t + 13 + offsetX, height - t - 100, 20, width - 400 - t - 26, t, depth - 40, shelfFill, lineColor, 'bandeja');
+                this.addBoxFaces(t + 13 + offsetX, height - t - 100, 20, width - cajoneraW - t - 26, t, depth - 40, shelfFill, lineColor, 'bandeja');
                 
                 // 6. CAJONES (en espacio de cajonera)
                 if (drawers > 0) {
@@ -1038,10 +1085,10 @@ const isLoggedIn = !!clientId;
                         // Si el usuario eligió no mostrar frentes, mostramos solo la caja interior
                         if (!showDrawers) {
                             // Caja interna simplificada
-                            const cW = 400 - 2*t - 6 - 26; // Descuenta espesores y correderas
+                            const cW = cajoneraW - 2*t - 6 - 26; // Descuenta espesores y correderas
                             const cH = Math.min(150, hSpace - 30);
                             const cD = depth - 50;
-                            const cX = width - 400 + t + 16 + offsetX; // Margen correderas
+                            const cX = width - cajoneraW + t + 16 + offsetX; // Margen correderas
                             const cY = yBottom + 10;
                             // Lateral Izq, Der, Frente Interno, Trasero
                             this.addBoxFaces(cX, cY, 10, t, cH, cD, drawerFill, lineColor, 'cajon-lat-izq');
@@ -1049,8 +1096,8 @@ const isLoggedIn = !!clientId;
                             this.addBoxFaces(cX + t, cY, 10, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-frente-int');
                             this.addBoxFaces(cX + t, cY, 10 + cD - t, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-trasero');
                         } else {
-                            this.addBoxFaces(width - 400 + t + 3 + offsetX, yBottom + 3, 0, 400 - 2*t - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer');
-                            const tcX = width - 400 + t + (400 - 2*t)/2 + offsetX;
+                            this.addBoxFaces(width - cajoneraW + t + 3 + offsetX, yBottom + 3, 0, cajoneraW - 2*t - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer');
+                            const tcX = width - cajoneraW + t + (cajoneraW - 2*t)/2 + offsetX;
                             const tcY = yBottom + hSpace / 2;
                             this.addBoxFaces(tcX - 45, tcY - 5, -10, 90, 10, 10, '#cccccc', lineColor, 'handle');
                         }
@@ -1058,7 +1105,10 @@ const isLoggedIn = !!clientId;
                 }
                 
                 // Ordenar caras y renderizar (mismo proceso)
-                this.allFaces.sort((a, b) => b.avgZ - a.avgZ);
+                this.allFaces.sort((a, b) => {
+                    if (Math.abs(b.maxZ - a.maxZ) > 0.01) return b.maxZ - a.maxZ;
+                    return b.avgZ - a.avgZ;
+                });
                 const _Lx = 0.45, _Ly = 0.75, _Lz = -0.48;
                 const _Ll = Math.sqrt(_Lx*_Lx + _Ly*_Ly + _Lz*_Lz);
                 const light = { x: _Lx/_Ll, y: _Ly/_Ll, z: _Lz/_Ll };
@@ -1079,6 +1129,114 @@ const isLoggedIn = !!clientId;
                     if (highlightAmt > 0.004) { ctx.fillStyle = `rgba(255,255,255,${highlightAmt.toFixed(3)})`; ctx.fill(); }
                     ctx.strokeStyle = f.lineColor; ctx.stroke();
                 });
+                return;
+            }
+
+            if (opts.type === 'RACK_TV') {
+                const centerW = (opts.customVars && opts.customVars.colCenterWidth) ? opts.customVars.colCenterWidth : 600;
+                const sideW = (width - 4 * t - centerW) / 2;
+                const pisoY = t;
+                const techoY = height - t;
+                const espacioUtilH = techoY - pisoY;
+                const divLeftX = offsetX + t + sideW;
+                const divRightX = divLeftX + t + centerW;
+                
+                // Fondo, Laterales, Techo, Piso (Similares al genérico)
+                this.addBoxFaces(offsetX, 0, depth - 3, width, height, 3, baseFill, lineColor, 'backboard');
+                this.addBoxFaces(offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'left-side');
+                this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side');
+                if (showTop) this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top');
+                else {
+                    const fajaY = height - 2 * t;
+                    this.addBoxFaces(t + offsetX, fajaY, 20, width - 2*t, t, 100, baseFill, lineColor, 'faja-frente');
+                    this.addBoxFaces(t + offsetX, fajaY, depth - 100, width - 2*t, t, 100, baseFill, lineColor, 'faja-fondo');
+                }
+                this.addBoxFaces(t + offsetX, 0, 0, width - 2 * t, t, depth, baseFill, lineColor, 'base');
+                
+                // Divisores verticales interiores
+                this.addBoxFaces(divLeftX, pisoY, 20, t, espacioUtilH, depth - 20, baseFill, lineColor, 'div-izq');
+                this.addBoxFaces(divRightX, pisoY, 20, t, espacioUtilH, depth - 20, baseFill, lineColor, 'div-der');
+                
+                // Puertas en laterales
+                if (doors > 0 && showDoors) {
+                    let tiradorY = Math.min(1000, pisoY + espacioUtilH - 50);
+                    this.addBoxFaces(offsetX + 3, pisoY + 3, 0, sideW + t - 3, espacioUtilH - 6, t, doorFill, lineColor, 'door-izq');
+                    this.addBoxFaces(offsetX + sideW/2, tiradorY, -10, 30, 10, 10, '#cccccc', lineColor, 'handle-izq');
+                }
+                if (doors > 1 && showDoors) {
+                    let tiradorY = Math.min(1000, pisoY + espacioUtilH - 50);
+                    this.addBoxFaces(divRightX + 3, pisoY + 3, 0, sideW + t - 6, espacioUtilH - 6, t, doorFill, lineColor, 'door-der');
+                    this.addBoxFaces(divRightX + sideW/2, tiradorY, -10, 30, 10, 10, '#cccccc', lineColor, 'handle-der');
+                }
+                
+                // Centro
+                let centerH = espacioUtilH;
+                let bottomY = pisoY;
+                
+                // Cajones al centro
+                if (drawers > 0) {
+                    const totalDrawerH = 200 * drawers; // aprox
+                    centerH = Math.max(espacioUtilH - totalDrawerH, espacioUtilH / 2); // Dejar al menos mitad para estante
+                    const finalDrawerH = espacioUtilH - centerH;
+                    const hSpace = finalDrawerH / drawers;
+                    bottomY = pisoY + finalDrawerH;
+                    
+                    for (let i = 0; i < drawers; i++) {
+                        const yBottom = pisoY + i * hSpace;
+                        if (!showDrawers) {
+                            const cW = centerW - 26; 
+                            const cH = Math.min(150, hSpace - 30);
+                            const cD = depth - 50;
+                            const cX = divLeftX + t + 13;
+                            const cY = yBottom + 10;
+                            this.addBoxFaces(cX, cY, 10, t, cH, cD, drawerFill, lineColor, 'cajon-lat-izq');
+                            this.addBoxFaces(cX + cW - t, cY, 10, t, cH, cD, drawerFill, lineColor, 'cajon-lat-der');
+                            this.addBoxFaces(cX + t, cY, 10, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-frente-int');
+                            this.addBoxFaces(cX + t, cY, 10 + cD - t, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-trasero');
+                        } else {
+                            this.addBoxFaces(divLeftX + t + 3, yBottom + 3, 0, centerW - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer-center');
+                            const tcX = divLeftX + t + centerW / 2;
+                            const tcY = yBottom + hSpace / 2;
+                            this.addBoxFaces(tcX - 45, tcY - 5, -10, 90, 10, 10, '#cccccc', lineColor, 'handle-center');
+                        }
+                    }
+                }
+                
+                // Estantes en el centro
+                if (shelves > 0) {
+                    const hSpace = centerH / (shelves + 1);
+                    for (let i = 1; i <= shelves; i++) {
+                        const shelfY = bottomY + i * hSpace - t / 2;
+                        this.addBoxFaces(divLeftX + t, shelfY, 20, centerW, t, depth - 20, shelfFill, lineColor, 'shelf-center');
+                    }
+                }
+                
+                // Renderizado
+                this.allFaces.sort((a, b) => {
+                    if (Math.abs(b.maxZ - a.maxZ) > 0.01) return b.maxZ - a.maxZ;
+                    return b.avgZ - a.avgZ;
+                });
+                const _Lx = 0.45, _Ly = 0.75, _Lz = -0.48;
+                const _Ll = Math.sqrt(_Lx*_Lx + _Ly*_Ly + _Lz*_Lz);
+                const light = { x: _Lx/_Ll, y: _Ly/_Ll, z: _Lz/_Ll };
+                const ambient = 0.32;
+                ctx.lineWidth = 0.8; ctx.lineJoin = 'round'; ctx.lineCap  = 'round';
+                this.allFaces.forEach(f => {
+                    const rn = this.rotateNormal(f.normal.x, f.normal.y, f.normal.z);
+                    if (rn.z > 0.025) return;
+                    const diffuse = Math.max(0, rn.x*light.x + rn.y*light.y + rn.z*light.z);
+                    const lightLevel = ambient + (1 - ambient) * diffuse;
+                    ctx.beginPath(); ctx.moveTo(f.pts[0].x, f.pts[0].y);
+                    for (let i = 1; i < f.pts.length; i++) ctx.lineTo(f.pts[i].x, f.pts[i].y);
+                    ctx.closePath();
+                    ctx.fillStyle = f.fillColor; ctx.fill();
+                    const shadowAmt = Math.max(0, (1 - lightLevel) * 0.82);
+                    if (shadowAmt > 0.004) { ctx.fillStyle = `rgba(0,0,0,${shadowAmt.toFixed(3)})`; ctx.fill(); }
+                    const highlightAmt = Math.max(0, (lightLevel - 0.82) * 0.65);
+                    if (highlightAmt > 0.004) { ctx.fillStyle = `rgba(255,255,255,${highlightAmt.toFixed(3)})`; ctx.fill(); }
+                    ctx.strokeStyle = f.lineColor; ctx.stroke();
+                });
+                
                 return;
             }
 
@@ -1189,8 +1347,15 @@ const isLoggedIn = !!clientId;
                     const tiradorX = doors === 1 
                         ? xLeft + wSpace - 30 
                         : (i === 0 ? xLeft + wSpace - 30 : xLeft + 30);
-                    // El tirador se pone a 50mm del borde superior de la puerta
-                    const tiradorY = pisoY + doorSpaceH - 50;
+                    // Lógica de altura ergonómica del tirador
+                    let tiradorY;
+                    if (opts.type === 'ALACENA') {
+                        tiradorY = pisoY + 80; // Cerca de la base para módulos colgantes
+                    } else if (doorSpaceH + pisoY > 1500) {
+                        tiradorY = 1000; // Altura estándar ergonómica desde el suelo para muebles altos
+                    } else {
+                        tiradorY = pisoY + doorSpaceH - 60; // Cerca del borde superior para muebles bajos
+                    }
                     this.addBoxFaces(tiradorX + offsetX - 5, tiradorY - 50, -10, 10, 100, 10, '#cccccc', lineColor, 'handle');
                 }
             }
@@ -1198,7 +1363,10 @@ const isLoggedIn = !!clientId;
             // =========================================================================
             // RENDERIZADO: PAINTER'S ALGORITHM + ILUMINACIÓN DIFUSA + BACKFACE CULLING
             // =========================================================================
-            this.allFaces.sort((a, b) => b.avgZ - a.avgZ);
+            this.allFaces.sort((a, b) => {
+                if (Math.abs(b.maxZ - a.maxZ) > 0.01) return b.maxZ - a.maxZ;
+                return b.avgZ - a.avgZ;
+            });
 
             // Dirección de luz (arriba-derecha-frente), normalizada
             const _Lx = 0.45, _Ly = 0.75, _Lz = -0.48;
@@ -1371,13 +1539,13 @@ const isLoggedIn = !!clientId;
             if (!this.renderer) return;
             this.renderer.angleY = -0.6;
             this.renderer.angleX = 0.3;
-            this.renderer.scale = 0.35;
+            this.renderer.autoScalePending = true;
             this.renderer.panX = 0;
             this.renderer.panY = 0;
             if (this.rendererMobile) {
                 this.rendererMobile.angleY = -0.6;
                 this.rendererMobile.angleX = 0.3;
-                this.rendererMobile.scale = 0.22;
+                this.rendererMobile.autoScalePending = true;
                 this.rendererMobile.panX = 0;
                 this.rendererMobile.panY = 0;
             }
@@ -1410,6 +1578,56 @@ const isLoggedIn = !!clientId;
                 this.rendererMobile.scale = Math.max(0.1, Math.min(1.2, this.rendererMobile.scale));
             }
             this.renderPreview();
+        },
+
+        showRealPhoto: function() {
+            let imgName = 'ropero';
+            if (this.currentTemplateId && this.templates[this.currentTemplateId]) {
+                 imgName = this.templates[this.currentTemplateId].name.toLowerCase().replace(/ /g, '_');
+            } else {
+                 const name = document.getElementById('mod-name')?.value.toLowerCase() || '';
+                 if (name.includes('chifonier')) imgName = 'chifonier';
+                 else if (name.includes('bajo mesada')) imgName = 'bajo_mesada';
+                 else if (name.includes('alacena')) imgName = 'alacena';
+                 else if (name.includes('placard') || name.includes('ropero') || name.includes('vestidor')) imgName = 'ropero';
+                 else if (name.includes('biblioteca')) imgName = 'biblioteca';
+                 else if (name.includes('vanitory')) imgName = 'vanitory';
+                 else if (name.includes('rack tv')) imgName = 'rack_tv';
+                 else if (name.includes('escritorio')) imgName = 'escritorio';
+            }
+
+            const modal = document.getElementById('real-photo-modal');
+            const img = document.getElementById('real-photo-img');
+            
+            if (modal && img) {
+                modal.classList.remove('hidden');
+                img.style.opacity = '0.5';
+                
+                // Buscar primero en la carpeta "cubical" de Directus
+                const folderId = '204f3934-548e-44b1-92d8-db065fba2ac5';
+                fetch(`https://admin.alvarezplacas.com.ar/files?filter[folder][_eq]=${folderId}&filter[title][_icontains]=${imgName}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.data && data.data.length > 0) {
+                            // Se encontró en Directus
+                            img.src = `https://admin.alvarezplacas.com.ar/assets/${data.data[0].id}`;
+                        } else {
+                            // Fallback a la imagen local
+                            img.src = `/herramientas/assets/renders/${imgName}.png`;
+                        }
+                        img.onload = () => img.style.opacity = '1';
+                    })
+                    .catch(err => {
+                        console.error('Error fetching from Directus:', err);
+                        img.src = `/herramientas/assets/renders/${imgName}.png`;
+                        img.onload = () => img.style.opacity = '1';
+                    });
+            }
+        },
+
+        closeRealPhoto: function() {
+            const modal = document.getElementById('real-photo-modal');
+            if (modal) modal.classList.add('hidden');
         },
 
         showScreen: function(name) {
@@ -1463,7 +1681,7 @@ const isLoggedIn = !!clientId;
             this.state.modules = [];
             
             const newId = Date.now();
-            this.state.modules.push({ id: newId, type: modType, name, dims, hingeType });
+            this.state.modules.push({ id: newId, type: modType, name, dims, hingeType, customVars: tplData?.customVars || {} });
             this.state.activeModuleId = newId;
             
             // Poblar barra lateral Desktop
@@ -1488,6 +1706,7 @@ const isLoggedIn = !!clientId;
             
             this.updateHingeVisibility();
             this.updateDrawerEducation();
+            this.renderCustomVarsUI();
             
             // Resetear auto-escala para el nuevo módulo
             if (this.renderer) this.renderer.autoScalePending = true;
@@ -1742,6 +1961,7 @@ const isLoggedIn = !!clientId;
                 
                 this.updateHingeVisibility();
                 this.updateDrawerEducation();
+                this.renderCustomVarsUI();
             }
             this.renderConstructor();
         },
@@ -1773,6 +1993,16 @@ const isLoggedIn = !!clientId;
             m.dims.n_estantes = shelvesVal;
             m.hingeType = hingeVal;
             
+            // Sincronizar Custom Vars desde los inputs dinámicos
+            if (m.customVars) {
+                Object.keys(m.customVars).forEach(key => {
+                    const input = document.getElementById(`mod-cv-${key}${prefix}`);
+                    if (input) {
+                        m.customVars[key] = parseInt(input.value) || m.customVars[key];
+                    }
+                });
+            }
+            
             // Sincronizar formulario opuesto
             const otherPrefix = isMobile ? '' : '-mobile';
             const oName = document.getElementById(`mod-name${otherPrefix}`);
@@ -1794,6 +2024,14 @@ const isLoggedIn = !!clientId;
             if (oDoors) oDoors.value = doorsVal;
             if (oShelves) oShelves.value = shelvesVal;
             if (oHinge && hingeSelect) oHinge.value = hingeVal;
+            
+            // Sincronizar UI de Custom Vars al otro formulario
+            if (m.customVars) {
+                Object.keys(m.customVars).forEach(key => {
+                    const oInput = document.getElementById(`mod-cv-${key}${otherPrefix}`);
+                    if (oInput) oInput.value = m.customVars[key];
+                });
+            }
             
             // Actualizar listados HTML de capas sin destruir eventos
             const list = document.getElementById('module-list');
@@ -1863,6 +2101,41 @@ const isLoggedIn = !!clientId;
             
             this.renderPreview();
         },
+        
+        renderCustomVarsUI: function() {
+            if (!this.state.activeModuleId) return;
+            const m = this.state.modules.find(mod => mod.id === this.state.activeModuleId);
+            if (!m) return;
+            
+            const doRender = (isMobile) => {
+                const prefix = isMobile ? '-mobile' : '';
+                const group = document.getElementById(`group-custom-vars${prefix}`);
+                const container = document.getElementById(`custom-vars-container${prefix}`);
+                if (!group || !container) return;
+                
+                if (!m.customVars || Object.keys(m.customVars).length === 0) {
+                    group.classList.add('hidden');
+                    return;
+                }
+                
+                group.classList.remove('hidden');
+                container.innerHTML = Object.keys(m.customVars).map(key => {
+                    let label = key;
+                    if (key === 'colCenterWidth') label = "Ancho Centro (mm)";
+                    if (key === 'cajoneraWidth') label = "Ancho Cajonera (mm)";
+                    
+                    return `
+                    <div>
+                        <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">${label}</label>
+                        <input type="number" id="mod-cv-${key}${prefix}" value="${m.customVars[key]}" oninput="window.cubical.updateActiveModule(${isMobile}); window.cubical.renderPreview()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-mono font-bold">
+                    </div>
+                    `;
+                }).join('');
+            };
+            
+            doRender(false);
+            doRender(true);
+        },
 
         renderPreview: function() {
             const isDark = document.body.getAttribute('data-theme') === 'dark' || document.body.classList.contains('body-theme-dark');
@@ -1914,10 +2187,13 @@ const isLoggedIn = !!clientId;
                 const m = this.state.modules.find(mod => mod.id === this.state.activeModuleId) || this.state.modules[this.state.modules.length - 1];
                 if (!m) return;
                 
-                // Calcular escala para el módulo único (centrado y maximizado en pantalla)
-                const scaleX = (canvas.width * 0.45) / m.dims.ancho;
-                const scaleY = (canvas.height * 0.50) / m.dims.alto;
-                renderer.scale = Math.min(canvasId.includes('mobile') ? 0.22 : 0.35, Math.min(scaleX, scaleY));
+                // Solo auto-escalar si está pendiente (al cargar módulo nuevo o resetear)
+                if (renderer.autoScalePending) {
+                    const scaleX = (canvas.width * 0.45) / m.dims.ancho;
+                    const scaleY = (canvas.height * 0.50) / m.dims.alto;
+                    renderer.scale = Math.min(canvasId.includes('mobile') ? 0.22 : 0.35, Math.min(scaleX, scaleY));
+                    renderer.autoScalePending = false;
+                }
                 
                 const boxColor = palette ? palette.lineColor : (isDark ? 'oklch(62.8% 0.25 29.23)' : '#000000');
                 const boxFill = palette ? palette.fillColor : (isDark ? 'rgba(215, 40, 40, 0.03)' : 'rgba(0, 0, 0, 0.01)');
@@ -1976,7 +2252,7 @@ const isLoggedIn = !!clientId;
                 
                 let allPieces = [];
                 this.state.modules.forEach(m => {
-                    const pieces = optEngine.calculateModulePieces(m.type, m.dims, 18);
+                    const pieces = optEngine.calculateModulePieces(m.type, m.dims, 18, m.customVars);
                     allPieces = allPieces.concat(pieces);
                 });
                 

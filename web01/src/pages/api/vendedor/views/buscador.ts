@@ -112,6 +112,13 @@ export const GET: APIRoute = async () => {
         <i class="fas fa-search"></i> Buscar
       </button>
     </div>
+    <select id="doc-search-type-select" class="search-order-btn" style="appearance:none; padding-right:10px;">
+      <option value="">Todos los Tipos</option>
+      <option value="FA">Facturas (FA)</option>
+      <option value="FC">Facturas (FC)</option>
+      <option value="NC">Notas de Crédito (NC)</option>
+      <option value="RE">Remitos (RE)</option>
+    </select>
     <button id="doc-search-order-btn" class="search-order-btn">
       <i class="fas fa-sort-amount-down"></i> Más nuevos
     </button>
@@ -519,9 +526,10 @@ export const GET: APIRoute = async () => {
       pagControls.classList.add('hidden');
 
       try {
+        const typeVal = document.getElementById('doc-search-type-select') ? document.getElementById('doc-search-type-select').value : '';
         const res = await fetch(
           '/api/documentos/search?q=' + encodeURIComponent(q) +
-          '&page=' + currentPage + '&limit=' + LIMIT + '&order=' + currentOrder
+          '&page=' + currentPage + '&limit=' + LIMIT + '&order=' + currentOrder + '&type=' + typeVal
         );
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
@@ -565,6 +573,11 @@ export const GET: APIRoute = async () => {
         : '<i class="fas fa-sort-amount-up"></i> Más viejos';
       executeSearch(true);
     });
+
+    const typeSelect = document.getElementById('doc-search-type-select');
+    if (typeSelect) {
+      typeSelect.addEventListener('change', () => executeSearch(true));
+    }
 
     prevBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; executeSearch(false); } });
     nextBtn.addEventListener('click', () => { currentPage++; executeSearch(false); });

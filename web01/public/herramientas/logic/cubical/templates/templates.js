@@ -89,8 +89,9 @@ export const TEMPLATES = {
         tagColor: "#f43f5e", // Rose-500
         description: "Centro de entretenimiento de baja altura con 2 puertas y estante central de audio.",
         environment: 'living',
-        modType: 'BAJO_MESADA',
-        dims: { alto: 550, ancho: 1400, prof: 400, n_cajones: 0, n_puertas: 2, n_estantes: 1 },
+        modType: 'RACK_TV', // Cambiado de BAJO_MESADA a RACK_TV
+        dims: { alto: 550, ancho: 1400, prof: 400, n_cajones: 2, n_puertas: 2, n_estantes: 1 },
+        customVars: { colCenterWidth: 600 },
         hingeType: 'codo_0',
         moduleName: "Modulo A1 - Rack TV Moderno"
     },
@@ -104,6 +105,7 @@ export const TEMPLATES = {
         environment: 'oficina',
         modType: 'ESCRITORIO',
         dims: { alto: 750, ancho: 1200, prof: 600, n_cajones: 4, n_puertas: 0, n_estantes: 0 },
+        customVars: { cajoneraWidth: 400 },
         hingeType: 'codo_0',
         moduleName: "Modulo A1 - Escritorio"
     },
