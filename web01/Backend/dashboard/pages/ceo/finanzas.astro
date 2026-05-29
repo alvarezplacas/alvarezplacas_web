@@ -94,6 +94,26 @@ if (!sellerId) {
                 <div id="chart-ingresos" style="min-height: 280px;"></div>
             </div>
 
+            <!-- GRÁFICO EMISIONES (NUEVO) -->
+            <div class="chart-card chart-large" style="grid-column: 1 / -1; background: #252525; border: 1px solid #383838; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                <div class="card-header" style="justify-content: space-between; display: flex; align-items: center; width: 100%; padding: 12px 16px; border-bottom: 1px solid #383838; background: #2a2a2a;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-file-invoice" style="color:#10b981;"></i>
+                        <h3 style="color: #ccc; font-size: 13px; font-weight: 600;">Evolución de Facturas y Remitos Emitidos</h3>
+                    </div>
+                    <div class="filter-controls" style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
+                        <span style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Agrupar por:</span>
+                        <select id="ejec-emision-agrupacion" class="ps-input-sm" style="background:#1e1e1e; border:1px solid #444; color:#ccc; padding:3px 8px; border-radius:4px; font-size:11px; outline: none; cursor: pointer;">
+                            <option value="diario" selected>Diario</option>
+                            <option value="mensual">Mensual</option>
+                            <option value="semestral">Semestral</option>
+                            <option value="anual">Anual</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="chart-emisiones" style="min-height: 280px;"></div>
+            </div>
+
             <div class="chart-card chart-large" style="grid-column: 1 / -1; background: #252525; border: 1px solid #383838; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
                 <div class="card-header" style="justify-content: space-between; display: flex; align-items: center; width: 100%; padding: 12px 16px; border-bottom: 1px solid #383838; background: #2a2a2a;">
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -160,7 +180,7 @@ if (!sellerId) {
     const today = () => new Date().toISOString().split('T')[0];
 
     let currentPeriod = 30;
-    let barChart: any = null, tortaFijosChart: any = null, tortaVariablesChart: any = null, ingresosChart: any = null;
+    let barChart: any = null, tortaFijosChart: any = null, tortaVariablesChart: any = null, ingresosChart: any = null, emisionesChart: any = null;
 
     document.querySelectorAll('.period-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -432,6 +452,75 @@ if (!sellerId) {
                 console.error("Error loading ingresos chart:", e);
             }
 
+            // Fetch e inicialización del Gráfico de Emisiones
+            try {
+                const resEmi = await fetch(`/api/documentos/emisiones-chart`);
+                if (resEmi.ok) {
+                    const dataEmi = await resEmi.json();
+                    if (dataEmi.success && dataEmi.data) {
+                        const agrupacionEmisiones = (document.getElementById('ejec-emision-agrupacion') as HTMLSelectElement)?.value || 'diario';
+                        let facturasMap: Record<string, number> = {};
+                        let remitosMap: Record<string, number> = {};
+                        let allDates = new Set<string>();
+
+                        dataEmi.data.forEach((row: any) => {
+                            const dateStr = (row.fecha || '').split('T')[0];
+                            let interval = dateStr;
+                            if (agrupacionEmisiones === 'mensual') {
+                                interval = dateStr.substring(0, 7);
+                            } else if (agrupacionEmisiones === 'semestral') {
+                                const parts = dateStr.split('-');
+                                const month = parseInt(parts[1] || '1');
+                                const semester = month <= 6 ? 'Semestre 1' : 'Semestre 2';
+                                interval = `${parts[0]} - ${semester}`;
+                            } else if (agrupacionEmisiones === 'anual') {
+                                interval = dateStr.substring(0, 4);
+                            } else {
+                                const parts = dateStr.split('-');
+                                if (parts.length >= 3) {
+                                    interval = `${parts[2]}/${parts[1]}`;
+                                }
+                            }
+                            allDates.add(interval);
+                            facturasMap[interval] = (facturasMap[interval] || 0) + parseInt(row.facturas || 0);
+                            remitosMap[interval] = (remitosMap[interval] || 0) + parseInt(row.remitos || 0);
+                        });
+
+                        const emisionesDates = Array.from(allDates).sort();
+                        const facturasSeriesData = emisionesDates.map(d => facturasMap[d] || 0);
+                        const remitosSeriesData = emisionesDates.map(d => remitosMap[d] || 0);
+
+                        if (emisionesChart) emisionesChart.destroy();
+                        emisionesChart = new ApexCharts(document.getElementById('chart-emisiones'), {
+                            ...apexOpts,
+                            chart: { ...apexOpts.chart, type: 'area', height: 280 },
+                            series: [
+                                { name: 'Facturas', data: facturasSeriesData },
+                                { name: 'Remitos', data: remitosSeriesData }
+                            ],
+                            xaxis: { 
+                                categories: emisionesDates, 
+                                labels: { rotate: -45, style: { colors: '#888', fontSize: '10px' } } 
+                            },
+                            yaxis: { 
+                                labels: { style: { colors: '#888' }, formatter: (v: number) => v.toString() } 
+                            },
+                            stroke: { curve: 'smooth', width: 3 },
+                            colors: ['#10b981', '#3b82f6'],
+                            fill: { 
+                                type: 'gradient', 
+                                gradient: { shadeIntensity: 0.5, opacityFrom: 0.25, opacityTo: 0.02 } 
+                            },
+                            tooltip: { y: { formatter: (v: number) => v.toString() + ' docs' } },
+                            dataLabels: { enabled: false }
+                        });
+                        emisionesChart.render();
+                    }
+                }
+            } catch (err) {
+                console.error("Error cargando Emisiones:", err);
+            }
+
         } catch(e) {
             console.error("Error initializing charts:", e);
         }
@@ -442,6 +531,10 @@ if (!sellerId) {
     });
 
     document.getElementById('ejec-ingreso-agrupacion')?.addEventListener('change', () => {
+        initCharts(currentPeriod);
+    });
+
+    document.getElementById('ejec-emision-agrupacion')?.addEventListener('change', () => {
         initCharts(currentPeriod);
     });
 
