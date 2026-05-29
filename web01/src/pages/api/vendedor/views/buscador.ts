@@ -59,6 +59,9 @@ export const GET: APIRoute = async () => {
             : '—';
         const formatDate = doc.doc_date ? new Date(doc.doc_date).toLocaleDateString('es-AR', { timeZone: 'UTC' }) : '—';
         const docTypeClass = (doc.doc_type || 'X').toLowerCase().replace(/[^a-z0-9]/g, '-');
+        
+        const versionMatch = doc.filename ? doc.filename.match(/_(\d+)\.pdf$/i) : null;
+        const versionBadge = versionMatch ? `<span style="color: #eab308; font-size: 0.8em; margin-left: 4px;" title="Versión Modificada">_v${versionMatch[1]}</span>` : '';
 
         return `
         <div class="doc-card" onclick="previewDoc(this.dataset.id, this.dataset.filename)" data-id="${doc.id}" data-filename="${(doc.filename || '').replace(/'/g, "\\'")}" title="Click para ver factura">
@@ -67,7 +70,7 @@ export const GET: APIRoute = async () => {
           </div>
           <div class="doc-card-body">
             <div class="doc-card-top">
-              <span class="doc-number">${doc.pos_number || '0000'}-${doc.doc_number || '00000000'}</span>
+              <span class="doc-number">${doc.pos_number || '0000'}-${doc.doc_number || '00000000'}${versionBadge}</span>
               <span class="doc-date-tag"><i class="fas fa-calendar-alt"></i> ${formatDate}</span>
             </div>
             <div class="doc-card-client">
@@ -488,7 +491,11 @@ export const GET: APIRoute = async () => {
         const fecha = doc.doc_date ? new Date(doc.doc_date).toLocaleDateString('es-AR', { timeZone: 'UTC' }) : '—';
         const typeClass = (doc.doc_type || 'X').toLowerCase().replace(/[^a-z0-9]/g, '-');
         const clientName = highlight(doc.client_name || 'Consumidor Final', queryTerm);
-        const docNum = \`\${doc.pos_number || '0000'}-\${doc.doc_number || '00000000'}\`;
+        
+        const versionMatch = doc.filename ? doc.filename.match(/_(\d+)\.pdf$/i) : null;
+        const versionBadge = versionMatch ? \`<span style="color: #eab308; font-size: 0.8em; margin-left: 4px;" title="Versión Modificada">_v\${versionMatch[1]}</span>\` : '';
+        
+        const docNum = \`\${doc.pos_number || '0000'}-\${doc.doc_number || '00000000'}\${versionBadge}\`;
         const safeFilename = (doc.filename || 'factura.pdf').replace(/'/g, "\\\\'");
 
         return \`
