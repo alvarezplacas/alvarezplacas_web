@@ -14,7 +14,7 @@ import { query } from '../../../../../Backend/conexiones/lib/db.js';
 
 export const GET: APIRoute = async () => {
     let recentDocs: any[] = [];
-    let statsToday = { count: 0, total: 0 };
+    let statsToday = { count: 0, total: 0, remitos: 0 };
     try {
         const dbResult = await query(`
             SELECT id, filename, doc_type, pos_number, doc_number, doc_date,
@@ -36,15 +36,19 @@ export const GET: APIRoute = async () => {
                     ) as rn
                 FROM documentos_facturacion
             )
-            SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total
+            SELECT 
+                SUM(CASE WHEN doc_type LIKE 'FA-%' THEN 1 ELSE 0 END) as fact_count,
+                SUM(CASE WHEN doc_type LIKE 'RE-%' THEN 1 ELSE 0 END) as rem_count,
+                SUM(CASE WHEN doc_type LIKE 'FA-%' THEN total_amount ELSE 0 END) as fact_total
             FROM RankedDocs
-            WHERE doc_type LIKE 'FA-%' AND rn = 1
+            WHERE (doc_type LIKE 'FA-%' OR doc_type LIKE 'RE-%') AND rn = 1
               AND DATE(doc_date) = $1
         `, [todayStr]);
         if (statsResult.rows.length > 0) {
             statsToday = {
-                count: parseInt(statsResult.rows[0].count) || 0,
-                total: parseFloat(statsResult.rows[0].total) || 0
+                count: parseInt(statsResult.rows[0].fact_count) || 0,
+                total: parseFloat(statsResult.rows[0].fact_total) || 0,
+                remitos: parseInt(statsResult.rows[0].rem_count) || 0
             };
         }
     } catch (e: any) {
@@ -110,6 +114,10 @@ export const GET: APIRoute = async () => {
       <div class="stat-pill stat-pill--green">
         <i class="fas fa-chart-line"></i>
         Hoy: <strong>${statsToday.count}</strong> fact. &nbsp; <strong>$${statsToday.total.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+      </div>
+      <div class="stat-pill stat-pill--blue">
+        <i class="fas fa-truck"></i>
+        Hoy: <strong>${statsToday.remitos}</strong> remitos
       </div>
     </div>
   </div>
@@ -218,6 +226,8 @@ export const GET: APIRoute = async () => {
   }
   .stat-pill--green { background: rgba(16,185,129,.1); border-color: rgba(16,185,129,.3); color: #10b981; }
   .stat-pill--green strong { color: #34d399; }
+  .stat-pill--blue { background: rgba(59,130,246,.1); border-color: rgba(59,130,246,.3); color: #3b82f6; }
+  .stat-pill--blue strong { color: #60a5fa; }
 
   /* === SEARCH === */
   .search-wrap { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
