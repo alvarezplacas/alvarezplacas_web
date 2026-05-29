@@ -11,11 +11,20 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     try {
         const result = await query(`
+            WITH RankedDocs AS (
+                SELECT 
+                    *,
+                    ROW_NUMBER() OVER(
+                        PARTITION BY regexp_replace(doc_number, '_\\d+$', '') 
+                        ORDER BY created_at DESC
+                    ) as rn
+                FROM documentos_facturacion
+            )
             SELECT 
                 DATE(doc_date) as fecha,
                 SUM(CASE WHEN doc_type LIKE 'FA-%' THEN total_amount WHEN doc_type LIKE 'NC-%' THEN -total_amount ELSE 0 END) as ingresos
-            FROM documentos_facturacion
-            WHERE (doc_type LIKE 'FA-%' OR doc_type LIKE 'NC-%')
+            FROM RankedDocs
+            WHERE rn = 1 AND (doc_type LIKE 'FA-%' OR doc_type LIKE 'NC-%')
               AND doc_date >= date_trunc('month', CURRENT_DATE)
             GROUP BY DATE(doc_date)
             ORDER BY DATE(doc_date) ASC

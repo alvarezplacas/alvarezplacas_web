@@ -27,9 +27,18 @@ export const GET: APIRoute = async () => {
 
         const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
         const statsResult = await query(`
+            WITH RankedDocs AS (
+                SELECT 
+                    *,
+                    ROW_NUMBER() OVER(
+                        PARTITION BY regexp_replace(doc_number, '_\\d+$', '') 
+                        ORDER BY created_at DESC
+                    ) as rn
+                FROM documentos_facturacion
+            )
             SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total
-            FROM documentos_facturacion
-            WHERE doc_type LIKE 'FA-%'
+            FROM RankedDocs
+            WHERE doc_type LIKE 'FA-%' AND rn = 1
               AND DATE(doc_date) = $1
         `, [todayStr]);
         if (statsResult.rows.length > 0) {

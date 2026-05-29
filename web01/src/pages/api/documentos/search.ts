@@ -17,13 +17,22 @@ export const GET: APIRoute = async ({ url }) => {
         if (!searchQuery) {
             // No query: Return the recent documents paginated
             const queryText = `
+                WITH RankedDocs AS (
+                    SELECT 
+                        *,
+                        ROW_NUMBER() OVER(
+                            PARTITION BY regexp_replace(doc_number, '_\\d+$', '') 
+                            ORDER BY created_at DESC
+                        ) as rn
+                    FROM documentos_facturacion
+                )
                 SELECT 
                     id, filename, doc_type, pos_number, doc_number, doc_date,
                     client_cta, client_name, client_cuit, total_amount, seller_code,
                     created_at,
                     count(*) OVER() AS full_count
-                FROM documentos_facturacion
-                WHERE doc_type ILIKE $3
+                FROM RankedDocs
+                WHERE doc_type ILIKE $3 AND rn = 1
                 ORDER BY doc_date ${order}, created_at ${order}
                 LIMIT $1 OFFSET $2;
             `;
@@ -36,6 +45,15 @@ export const GET: APIRoute = async ({ url }) => {
             // 2. Exact field matches (doc_number, client_name, client_cuit, client_cta)
             // Removed raw ILIKE on doc_text to prevent slow full table scans
             const sqlQuery = `
+                WITH RankedDocs AS (
+                    SELECT 
+                        *,
+                        ROW_NUMBER() OVER(
+                            PARTITION BY regexp_replace(doc_number, '_\\d+$', '') 
+                            ORDER BY created_at DESC
+                        ) as rn
+                    FROM documentos_facturacion
+                )
                 SELECT 
                     id, filename, doc_type, pos_number, doc_number, doc_date,
                     client_cta, client_name, client_cuit, total_amount, seller_code,
@@ -48,8 +66,9 @@ export const GET: APIRoute = async ({ url }) => {
                         WHEN client_cta ILIKE $2 THEN 1.8
                         ELSE 0.5
                     END AS rank
-                FROM documentos_facturacion
+                FROM RankedDocs
                 WHERE 
+                    rn = 1 AND
                     (doc_type ILIKE $5) AND
                     (doc_number ILIKE $2
                     OR client_name ILIKE $2
@@ -66,13 +85,23 @@ export const GET: APIRoute = async ({ url }) => {
                 // Fallback: pure ILIKE search if FTS fails (e.g., special characters, numeric-only queries)
                 console.warn('FTS search failed, falling back to ILIKE:', ftsErr.message);
                 const fallbackQuery = `
+                    WITH RankedDocs AS (
+                        SELECT 
+                            *,
+                            ROW_NUMBER() OVER(
+                                PARTITION BY regexp_replace(doc_number, '_\\d+$', '') 
+                                ORDER BY created_at DESC
+                            ) as rn
+                        FROM documentos_facturacion
+                    )
                     SELECT 
                         id, filename, doc_type, pos_number, doc_number, doc_date,
                         client_cta, client_name, client_cuit, total_amount, seller_code,
                         created_at,
                         count(*) OVER() AS full_count
-                    FROM documentos_facturacion
+                    FROM RankedDocs
                     WHERE 
+                        rn = 1 AND
                         (doc_type ILIKE $4) AND
                         (doc_number ILIKE $1
                         OR client_name ILIKE $1
