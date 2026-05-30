@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ cookies }) => {
         clientes = await directus.request(readItems('clientes', {
             filter: { vendedor_id: { _eq: sellerId } },
             sort: ['nombre_empresa'],
-            fields: ['id', 'name', 'nombre_empresa', 'debt_amount', 'fin_status', 'email', 'phone', 'cuit_dni']
+            fields: ['id', 'name', 'nombre_empresa', 'debt_amount', 'fin_status', 'email', 'phone']
         })) as any[];
     } catch (e: any) {
         console.error('Error cargando clientes:', e.message);
