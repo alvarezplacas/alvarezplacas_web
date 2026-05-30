@@ -7,6 +7,7 @@ import { aggregate } from '@directus/sdk';
 import { CommunicationService } from '../logic/communication.js';
 import { query } from '@conexiones/lib/db.js';
 import BusinessHoursCounter from '../components/BusinessHoursCounter.astro';
+import HelpModal from '../components/HelpModal.astro';
 
 interface Props {
 	title: string;
@@ -249,24 +250,7 @@ try {
                 </div>
 
                 <div class="panel-body">
-                    <!-- Contexto -->
-                    <div class="context-card">
-                        <p class="context-label">Contexto Actual</p>
-                        <div class="context-rows">
-                            <div class="context-row">
-                                <span class="context-key">Vendedor:</span>
-                                <span class="context-val">{sellerName} (ID: {vendedor_id || '—'})</span>
-                            </div>
-                            <div class="context-row">
-                                <span class="context-key">Sesión:</span>
-                                <span class="context-val context-active">ACTIVA</span>
-                            </div>
-                            <div class="context-row context-row--border">
-                                <span class="context-key">Rango:</span>
-                                <span class="context-val context-rank">{isJefe ? 'Jefe de Ventas' : 'Vendedor'}</span>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Removed Contexto Actual -->
 
                     <!-- Herramientas Sugeridas -->
                     <div class="suggested-tools">
@@ -389,187 +373,7 @@ try {
             </div>
         </div>
 
-        <!-- HELP MANUAL MODAL -->
-        <div id="help-modal" class="modal-overlay">
-            <div class="modal-window">
-                <header class="modal-header">
-                    <div class="modal-header-title">
-                        <i class="fas fa-question-circle" style="color: #e02020;"></i>
-                        <span>Centro de Ayuda & Documentación</span>
-                    </div>
-                    <button class="modal-close" id="btn-close-help">&times;</button>
-                </header>
-                <div class="modal-body">
-                    <!-- Navigation sidebar of the help center -->
-                    <aside class="modal-sidebar">
-                        <button class="help-nav-btn active" data-tab="help-dashboard">
-                            <i class="fas fa-th-large"></i> Panel Principal
-                        </button>
-                        <button class="help-nav-btn" data-tab="help-agenda">
-                            <i class="fas fa-calendar-alt"></i> Agenda y Tareas
-                        </button>
-                        <button class="help-nav-btn" data-tab="help-clientes">
-                            <i class="fas fa-users"></i> Base de Clientes
-                        </button>
-                        <button class="help-nav-btn" data-tab="help-mensajeria">
-                            <i class="fas fa-comments"></i> Mensajería y Chat
-                        </button>
-                        <button class="help-nav-btn" data-tab="help-planta">
-                            <i class="fas fa-industry"></i> Estado de Planta
-                        </button>
-                        <button class="help-nav-btn" data-tab="help-estrategia">
-                            <i class="fas fa-book"></i> Estrategia y Materiales
-                        </button>
-                        <button class="help-nav-btn" data-tab="help-acerca">
-                            <i class="fas fa-info-circle"></i> Acerca de (Beta)
-                        </button>
-                    </aside>
-                    <!-- Main content pane of the help center -->
-                    <main class="modal-content">
-                        <!-- Dashboard Panel -->
-                        <div class="help-tab-content active" id="help-tab-dashboard">
-                            <h2>📊 Panel Principal (Dashboard)</h2>
-                            <p class="help-intro">El centro de operaciones diario del vendedor. Permite visualizar las métricas clave de facturación y objetivos mensuales de un vistazo.</p>
-                            <h3>Funcionamiento:</h3>
-                            <ul>
-                                <li>Muestra la facturación del mes en curso contrastada con el objetivo asignado.</li>
-                                <li>Presenta los estados de cobros pendientes y los accesos rápidos a herramientas.</li>
-                            </ul>
-                            <h3>Limitaciones en Fase Beta:</h3>
-                            <p>Los datos del gráfico de desempeño mensual se refrescan automáticamente cada 10 minutos. Para ver actualizaciones en tiempo real, recarga la pestaña.</p>
-                        </div>
-
-                        <!-- Agenda Panel -->
-                        <div class="help-tab-content" id="help-tab-agenda">
-                            <h2>📅 Agenda y Tareas Diario</h2>
-                            <p class="help-intro">Planifica y gestiona tus citas, llamadas y tareas operativas diarias para mantener tu flujo de trabajo organizado.</p>
-                            <h3>Funcionamiento:</h3>
-                            <ul>
-                                <li>Visualización de tareas ordenadas cronológicamente para el día actual.</li>
-                                <li>Creación rápida de recordatorios vinculados a un cliente específico.</li>
-                            </ul>
-                            <h3>Limitaciones en Fase Beta:</h3>
-                            <p>Los recordatorios actualmente no envían notificaciones push externas; las alertas son internas y visibles únicamente dentro de la pestaña activa del Workspace.</p>
-                        </div>
-
-                        <!-- Estrategia Panel -->
-                        <div class="help-tab-content" id="help-tab-estrategia">
-                            <h2>📚 Estrategia y Argumentación Comercial</h2>
-                            <p class="help-intro">Diccionario rápido de materiales para resolver dudas de clientes y argumentar ventas.</p>
-                            
-                            <div class="search-container" style="margin-bottom: 15px;">
-                                <input type="text" id="estrategia-search" placeholder="Buscar término (ej. MDF, FSC, Egger)..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-card); background: var(--bg-card); color: var(--text-main);">
-                            </div>
-
-                            <ul id="estrategia-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
-                                <li class="estrategia-item" data-term="mdf medium density fiberboard trupan finsa">
-                                    <strong>MDF:</strong> Tablero de fibras de densidad media. Ideal para ruteados y lacados. Ej: Trupán (Arauco), Finsa.
-                                </li>
-                                <li class="estrategia-item" data-term="mdp pb aglomerado melamina faplac egger sadepan">
-                                    <strong>MDP / Aglomerado:</strong> Tablero de partículas recubierto en melamina. Excelente retención de tornillos. Marcas: Faplac, Egger, Sadepan.
-                                </li>
-                                <li class="estrategia-item" data-term="hb hardboard cholguan durolac fondo">
-                                    <strong>Hardboard (HB):</strong> Tablero prensado de alta densidad y bajo espesor (ej. Cholguán, Durolac). Ideal para fondos de mueble.
-                                </li>
-                                <li class="estrategia-item" data-term="fsc pefc certificacion bosque sostenible">
-                                    <strong>FSC / PEFC:</strong> Sellos que garantizan que la madera proviene de bosques gestionados de forma sustentable. Argumento clave para arquitectos.
-                                </li>
-                                <li class="estrategia-item" data-term="e1 naf carb formaldehido emisiones salud">
-                                    <strong>Emisiones E1 / NAF:</strong> Clasificación de resinas con baja o nula emisión de formaldehídos. Argumento clave para salud, escuelas y hospitales.
-                                </li>
-                                <li class="estrategia-item" data-term="leed breeam creditos construccion ecologica">
-                                    <strong>LEED / BREEAM:</strong> Sistemas de certificación de edificios ecológicos. Nuestros productos suman puntos para que el arquitecto certifique su obra.
-                                </li>
-                            </ul>
-                            
-                            <script>
-                                document.getElementById('estrategia-search').addEventListener('input', function(e) {
-                                    const term = e.target.value.toLowerCase();
-                                    const items = document.querySelectorAll('.estrategia-item');
-                                    items.forEach(item => {
-                                        const text = item.getAttribute('data-term') + " " + item.innerText.toLowerCase();
-                                        item.style.display = text.includes(term) ? 'block' : 'none';
-                                    });
-                                });
-                            </script>
-                        </div>
-
-                        <!-- Clientes Panel -->
-                        <div class="help-tab-content" id="help-tab-clientes">
-                            <h2>👥 Base de Clientes</h2>
-                            <p class="help-intro">Gestión completa de tu cartera de clientes asignados, sus estados de cuenta y límites de crédito.</p>
-                            <h3>Funcionamiento:</h3>
-                            <ul>
-                                <li>Actualización de saldos, estados financieros (Al día, Vencido, Bloqueado) directamente en pantalla.</li>
-                                <li>Historial de compras y contacto telefónico directo a través de WhatsApp.</li>
-                            </ul>
-                            <h3>Limitaciones en Fase Beta:</h3>
-                            <p>El cambio de saldo y límite de crédito de clientes requiere una validación del Jefe de Ventas para impactar directamente en el sistema ERP central.</p>
-                        </div>
-
-                        <!-- Mensajeria Panel -->
-                        <div class="help-tab-content" id="help-tab-mensajeria">
-                            <h2>💬 Mensajería y Chat en Vivo</h2>
-                            <p class="help-intro">Canal de comunicación directa entre el equipo comercial y la gerencia de planta para coordinar cortes.</p>
-                            <h3>Funcionamiento:</h3>
-                            <ul>
-                                <li>Envío de alertas de pedidos urgentes y notificaciones instantáneas de cambios en diseños o prioridades de producción.</li>
-                                <li>Marcado de notas urgentes con tags de color amarillo y rojo.</li>
-                            </ul>
-                            <h3>Limitaciones en Fase Beta:</h3>
-                            <p>La mensajería instantánea está optimizada para mensajes cortos de texto. Los archivos adjuntos de más de 10MB están bloqueados en esta versión preliminar para preservar el ancho de banda del servidor.</p>
-                        </div>
-
-                        <!-- Estado de Planta Panel -->
-                        <div class="help-tab-content" id="help-tab-planta">
-                            <h2>🏭 Monitoreo: Estado de Planta</h2>
-                            <p class="help-intro">Módulo exclusivo de supervisión de producción y priorización de cortes en las seccionadoras SmartCut.</p>
-                            <h3>Funcionamiento:</h3>
-                            <ul>
-                                <li>Visualización en tiempo real del estado de cada orden de corte (En cola, Cortando, Empaquetado, Listo para Despacho).</li>
-                                <li>Permite a los administradores / jefes reordenar prioridades de producción en caliente.</li>
-                            </ul>
-                            <h3>Limitaciones en Fase Beta:</h3>
-                            <p>Los sensores físicos de las sierras reportan el avance con un retraso de 3 segundos. No manipule la cola de producción durante procesos críticos de recalibración de la máquina.</p>
-                        </div>
-
-                        <!-- Acerca de Panel (Beta Warning) -->
-                        <div class="help-tab-content" id="help-tab-acerca">
-                            <h2>⚙️ Acerca del Sistema (Fase Beta)</h2>
-                            <div class="beta-banner">
-                                <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
-                                <div>
-                                    <strong>AVISO DE DESARROLLO Y PRUEBAS ACTIVO</strong>
-                                    <p>Esta aplicación funciona de manera modular y escalable. Nos encontramos en fase beta experimental (Versión 16.5-beta). Las comparaciones de costos, optimizaciones de placas y estimaciones pueden presentar fallas menores. Todo el flujo está sujeto a revisión antes de producción final.</p>
-                                </div>
-                            </div>
-                            <table class="help-table">
-                                <tr>
-                                    <th>Parámetro</th>
-                                    <th>Valor</th>
-                                </tr>
-                                <tr>
-                                    <td>Nombre de Proyecto</td>
-                                    <td>Alvarez Placas Workspace Pro</td>
-                                </tr>
-                                <tr>
-                                    <td>Versión del Engine</td>
-                                    <td>v16.5-beta (SmartCut Core v11.2)</td>
-                                </tr>
-                                <tr>
-                                    <td>Estado del Entorno</td>
-                                    <td>🔴 Entorno Experimental / Pruebas Activas</td>
-                                </tr>
-                                <tr>
-                                    <td>Desarrollador</td>
-                                    <td>Alvarez Placas S.A.</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </main>
-                </div>
-            </div>
-        </div>
+        <HelpModal role="vendedor" />
 
 	</body>
 </html>

@@ -1,0 +1,534 @@
+---
+export interface Props {
+    role: 'vendedor' | 'ceo' | 'cajero';
+}
+
+const { role } = Astro.props;
+
+const isVendedor = role === 'vendedor';
+const isCeo = role === 'ceo';
+const isCajero = role === 'cajero';
+---
+
+<!-- HELP MANUAL MODAL -->
+<div id="help-modal" class="modal-overlay">
+    <div class="modal-window">
+        <header class="modal-header">
+            <div class="modal-header-title">
+                <i class="fas fa-question-circle" style="color: #e02020;"></i>
+                <span>Centro de Ayuda & Documentación</span>
+            </div>
+            <button class="modal-close" id="btn-close-help">&times;</button>
+        </header>
+        <div class="modal-body">
+            <!-- Navigation sidebar of the help center -->
+            <aside class="modal-sidebar">
+                { (isVendedor || isCeo) && (
+                    <button class="help-nav-btn active" data-tab="help-dashboard">
+                        <i class="fas fa-th-large"></i> Panel Principal
+                    </button>
+                )}
+                { isCajero && (
+                    <button class="help-nav-btn active" data-tab="help-caja">
+                        <i class="fas fa-cash-register"></i> Panel de Caja
+                    </button>
+                )}
+                { isVendedor && (
+                    <>
+                        <button class="help-nav-btn" data-tab="help-agenda">
+                            <i class="fas fa-calendar-alt"></i> Agenda y Tareas
+                        </button>
+                        <button class="help-nav-btn" data-tab="help-clientes">
+                            <i class="fas fa-users"></i> Base de Clientes
+                        </button>
+                        <button class="help-nav-btn" data-tab="help-mensajeria">
+                            <i class="fas fa-comments"></i> Mensajería y Chat
+                        </button>
+                        <button class="help-nav-btn" data-tab="help-planta">
+                            <i class="fas fa-industry"></i> Estado de Planta
+                        </button>
+                    </>
+                )}
+                { isCeo && (
+                    <>
+                        <button class="help-nav-btn" data-tab="help-finanzas">
+                            <i class="fas fa-chart-line"></i> Dashboard Financiero
+                        </button>
+                        <button class="help-nav-btn" data-tab="help-radar">
+                            <i class="fas fa-satellite-dish"></i> Radar Predictivo
+                        </button>
+                    </>
+                )}
+                { isCajero && (
+                    <>
+                        <button class="help-nav-btn" data-tab="help-facturas">
+                            <i class="fas fa-file-invoice"></i> Buscador OCR
+                        </button>
+                        <button class="help-nav-btn" data-tab="help-herramientas">
+                            <i class="fas fa-toolbox"></i> Herramientas
+                        </button>
+                    </>
+                )}
+                <button class="help-nav-btn" data-tab="help-estrategia">
+                    <i class="fas fa-book"></i> Estrategia y Materiales
+                </button>
+                <button class="help-nav-btn" data-tab="help-acerca">
+                    <i class="fas fa-info-circle"></i> Acerca de (Beta)
+                </button>
+            </aside>
+            <!-- Main content pane of the help center -->
+            <main class="modal-content">
+                
+                { (isVendedor || isCeo) && (
+                    <div class="help-tab-content active" id="help-tab-dashboard">
+                        <h2>📊 Panel Principal (Dashboard)</h2>
+                        <p class="help-intro">El centro de operaciones diario del vendedor y supervisor. Permite visualizar las métricas clave de facturación y objetivos mensuales de un vistazo.</p>
+                        <h3>Funcionamiento:</h3>
+                        <ul>
+                            <li>Muestra la facturación del mes en curso contrastada con el objetivo asignado.</li>
+                            <li>Presenta los estados de cobros pendientes y los accesos rápidos a herramientas.</li>
+                        </ul>
+                        <h3>Limitaciones en Fase Beta:</h3>
+                        <p>Los datos del gráfico de desempeño mensual se refrescan automáticamente cada 10 minutos. Para ver actualizaciones en tiempo real, recarga la pestaña.</p>
+                    </div>
+                )}
+                
+                { isCajero && (
+                    <div class="help-tab-content active" id="help-tab-caja">
+                        <h2>🧾 Panel de Caja</h2>
+                        <p class="help-intro">Centro de operaciones diario para la administración de ingresos, egresos y control de operaciones.</p>
+                        <h3>Funcionamiento:</h3>
+                        <ul>
+                            <li>Control exhaustivo de cobros diarios y movimientos de caja.</li>
+                            <li>Acceso directo a herramientas de validación de comprobantes.</li>
+                        </ul>
+                    </div>
+                )}
+
+                { isVendedor && (
+                    <>
+                        <!-- Agenda Panel -->
+                        <div class="help-tab-content" id="help-tab-agenda">
+                            <h2>📅 Agenda y Tareas Diario</h2>
+                            <p class="help-intro">Planifica y gestiona tus citas, llamadas y tareas operativas diarias para mantener tu flujo de trabajo organizado.</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li>Visualización de tareas ordenadas cronológicamente para el día actual.</li>
+                                <li>Creación rápida de recordatorios vinculados a un cliente específico.</li>
+                            </ul>
+                            <h3>Limitaciones en Fase Beta:</h3>
+                            <p>Los recordatorios actualmente no envían notificaciones push externas; las alertas son internas y visibles únicamente dentro de la pestaña activa del Workspace.</p>
+                        </div>
+
+                        <!-- Clientes Panel -->
+                        <div class="help-tab-content" id="help-tab-clientes">
+                            <h2>👥 Base de Clientes</h2>
+                            <p class="help-intro">Gestión completa de tu cartera de clientes asignados, sus estados de cuenta y límites de crédito.</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li>Actualización de saldos, estados financieros (Al día, Vencido, Bloqueado) directamente en pantalla.</li>
+                                <li>Historial de compras y contacto telefónico directo a través de WhatsApp.</li>
+                            </ul>
+                            <h3>Limitaciones en Fase Beta:</h3>
+                            <p>El cambio de saldo y límite de crédito de clientes requiere una validación del Jefe de Ventas para impactar directamente en el sistema ERP central.</p>
+                        </div>
+
+                        <!-- Mensajeria Panel -->
+                        <div class="help-tab-content" id="help-tab-mensajeria">
+                            <h2>💬 Mensajería y Chat en Vivo</h2>
+                            <p class="help-intro">Canal de comunicación directa entre el equipo comercial y la gerencia de planta para coordinar cortes.</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li>Envío de alertas de pedidos urgentes y notificaciones instantáneas de cambios en diseños o prioridades de producción.</li>
+                                <li>Marcado de notas urgentes con tags de color amarillo y rojo.</li>
+                            </ul>
+                            <h3>Limitaciones en Fase Beta:</h3>
+                            <p>La mensajería instantánea está optimizada para mensajes cortos de texto. Los archivos adjuntos de más de 10MB están bloqueados en esta versión preliminar para preservar el ancho de banda del servidor.</p>
+                        </div>
+
+                        <!-- Estado de Planta Panel -->
+                        <div class="help-tab-content" id="help-tab-planta">
+                            <h2>🏭 Monitoreo: Estado de Planta</h2>
+                            <p class="help-intro">Módulo exclusivo de supervisión de producción y priorización de cortes en las seccionadoras SmartCut.</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li>Visualización en tiempo real del estado de cada orden de corte (En cola, Cortando, Empaquetado, Listo para Despacho).</li>
+                                <li>Permite a los administradores / jefes reordenar prioridades de producción en caliente.</li>
+                            </ul>
+                            <h3>Limitaciones en Fase Beta:</h3>
+                            <p>Los sensores físicos de las sierras reportan el avance con un retraso de 3 segundos. No manipule la cola de producción durante procesos críticos de recalibración de la máquina.</p>
+                        </div>
+                    </>
+                )}
+
+                { isCeo && (
+                    <>
+                        <div class="help-tab-content" id="help-tab-finanzas">
+                            <h2>📈 Dashboard Financiero</h2>
+                            <p class="help-intro">Panel ejecutivo para monitorear la salud financiera, ingresos netos y proyecciones de facturación.</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li>Métricas consolidadas de todas las sucursales.</li>
+                                <li>Visualización de reportes históricos de cierre.</li>
+                            </ul>
+                        </div>
+                        <div class="help-tab-content" id="help-tab-radar">
+                            <h2>📡 Radar Predictivo</h2>
+                            <p class="help-intro">Análisis en tiempo real de indicadores macroeconómicos y proyecciones del mercado.</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li>Monitoreo de la cotización de divisas (Dólar Blue, MEP, CCL) y riesgo país.</li>
+                                <li>Proyecciones basadas en datos del mercado actual para toma de decisiones ágiles.</li>
+                            </ul>
+                        </div>
+                    </>
+                )}
+
+                { isCajero && (
+                    <>
+                        <div class="help-tab-content" id="help-tab-facturas">
+                            <h2>🔍 Buscador Inteligente de Facturas (OCR)</h2>
+                            <p class="help-intro">Sistema avanzado de búsqueda y procesamiento de facturas en PDF utilizando Inteligencia Artificial.</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li>Escaneo automático de texto dentro de comprobantes en PDF.</li>
+                                <li>Búsqueda por cliente, CUIT, importes o palabras clave dentro del documento.</li>
+                            </ul>
+                        </div>
+                        <div class="help-tab-content" id="help-tab-herramientas">
+                            <h2>🛠️ Herramientas Financieras</h2>
+                            <p class="help-intro">Utilidades específicas para cálculos netos, retenciones y control de comisiones (Calculadora Gecom).</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li>Calculadora automática de netos y comisiones.</li>
+                                <li>Acceso rápido a tablas impositivas actualizadas.</li>
+                            </ul>
+                        </div>
+                    </>
+                )}
+
+                <!-- Estrategia Panel -->
+                <div class="help-tab-content" id="help-tab-estrategia">
+                    <h2>📚 Estrategia y Argumentación Comercial</h2>
+                    <p class="help-intro">Diccionario rápido de materiales para resolver dudas técnicas y de clientes.</p>
+                    
+                    <div class="search-container" style="margin-bottom: 15px;">
+                        <input type="text" id="estrategia-search" placeholder="Buscar término (ej. MDF, FSC, Egger)..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--ps-panel-border, #383838); background: var(--ps-bg, #1e1e1e); color: var(--ps-text-main, #ccc);">
+                    </div>
+
+                    <ul id="estrategia-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+                        <li class="estrategia-item" data-term="mdf medium density fiberboard trupan finsa" style="background: var(--ps-bg, #1e1e1e); padding: 10px; border-radius: 4px; border: 1px solid var(--ps-panel-border, #383838);">
+                            <strong style="color: #fff;">MDF:</strong> Tablero de fibras de densidad media. Ideal para ruteados y lacados. Ej: Trupán (Arauco), Finsa.
+                        </li>
+                        <li class="estrategia-item" data-term="mdp pb aglomerado melamina faplac egger sadepan" style="background: var(--ps-bg, #1e1e1e); padding: 10px; border-radius: 4px; border: 1px solid var(--ps-panel-border, #383838);">
+                            <strong style="color: #fff;">MDP / Aglomerado:</strong> Tablero de partículas recubierto en melamina. Excelente retención de tornillos. Marcas: Faplac, Egger, Sadepan.
+                        </li>
+                        <li class="estrategia-item" data-term="hb hardboard cholguan durolac fondo" style="background: var(--ps-bg, #1e1e1e); padding: 10px; border-radius: 4px; border: 1px solid var(--ps-panel-border, #383838);">
+                            <strong style="color: #fff;">Hardboard (HB):</strong> Tablero prensado de alta densidad y bajo espesor (ej. Cholguán, Durolac). Ideal para fondos de mueble.
+                        </li>
+                        <li class="estrategia-item" data-term="fsc pefc certificacion bosque sostenible" style="background: var(--ps-bg, #1e1e1e); padding: 10px; border-radius: 4px; border: 1px solid var(--ps-panel-border, #383838);">
+                            <strong style="color: #fff;">FSC / PEFC:</strong> Sellos que garantizan que la madera proviene de bosques gestionados de forma sustentable. Argumento clave para arquitectos.
+                        </li>
+                        <li class="estrategia-item" data-term="e1 naf carb formaldehido emisiones salud" style="background: var(--ps-bg, #1e1e1e); padding: 10px; border-radius: 4px; border: 1px solid var(--ps-panel-border, #383838);">
+                            <strong style="color: #fff;">Emisiones E1 / NAF:</strong> Clasificación de resinas con baja o nula emisión de formaldehídos. Argumento clave para salud, escuelas y hospitales.
+                        </li>
+                        <li class="estrategia-item" data-term="leed breeam creditos construccion ecologica" style="background: var(--ps-bg, #1e1e1e); padding: 10px; border-radius: 4px; border: 1px solid var(--ps-panel-border, #383838);">
+                            <strong style="color: #fff;">LEED / BREEAM:</strong> Sistemas de certificación de edificios ecológicos. Nuestros productos suman puntos para que el arquitecto certifique su obra.
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Acerca de Panel (Beta Warning) -->
+                <div class="help-tab-content" id="help-tab-acerca">
+                    <h2>⚙️ Acerca del Sistema (Fase Beta)</h2>
+                    <div class="beta-banner">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+                        <div>
+                            <strong>AVISO DE DESARROLLO Y PRUEBAS ACTIVO</strong>
+                            <p>Esta aplicación funciona de manera modular y escalable. Nos encontramos en fase beta experimental (Versión 16.5-beta). Las comparaciones de costos, optimizaciones de placas y estimaciones pueden presentar fallas menores. Todo el flujo está sujeto a revisión antes de producción final.</p>
+                        </div>
+                    </div>
+                    <table class="help-table">
+                        <tr>
+                            <th>Parámetro</th>
+                            <th>Valor</th>
+                        </tr>
+                        <tr>
+                            <td>Nombre de Proyecto</td>
+                            <td>Alvarez Placas Workspace Pro</td>
+                        </tr>
+                        <tr>
+                            <td>Versión del Engine</td>
+                            <td>v16.5-beta (SmartCut Core v11.2)</td>
+                        </tr>
+                        <tr>
+                            <td>Estado del Entorno</td>
+                            <td>🔴 Entorno Experimental / Pruebas Activas</td>
+                        </tr>
+                        <tr>
+                            <td>Desarrollador</td>
+                            <td>Alvarez Placas S.A.</td>
+                        </tr>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* MODAL OVERLAY */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(4px);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity .25s ease;
+    }
+    .modal-overlay.show {
+        display: flex;
+        opacity: 1;
+    }
+    .modal-window {
+        background: #252525;
+        border: 1px solid #3d3d3d;
+        border-radius: 12px;
+        width: 800px;
+        max-width: 90%;
+        height: 520px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: scaleUp .25s cubic-bezier(0.16, 1, 0.3, 1);
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+    @keyframes scaleUp {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    .modal-header {
+        height: 48px;
+        background: #2d2d2d;
+        border-bottom: 1px solid #111;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        flex-shrink: 0;
+    }
+    .modal-header-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 14px;
+        color: #fff;
+    }
+    .modal-close {
+        background: transparent;
+        border: none;
+        color: #888;
+        font-size: 24px;
+        cursor: pointer;
+        transition: color .15s;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-body {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+    }
+    .modal-sidebar {
+        width: 200px;
+        background: #1e1e1e;
+        border-right: 1px solid #111;
+        padding: 12px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        overflow-y: auto;
+    }
+    .help-nav-btn {
+        background: transparent;
+        border: none;
+        color: #aaa;
+        padding: 10px 12px;
+        text-align: left;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all .15s;
+    }
+    .help-nav-btn:hover { background: #2d2d2d; color: #fff; }
+    .help-nav-btn.active { background: #e02020; color: #fff; font-weight: 700; }
+    .modal-content {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+        background: #252525;
+    }
+    .help-tab-content {
+        display: none;
+    }
+    .help-tab-content.active {
+        display: block;
+    }
+    .help-tab-content h2 {
+        font-size: 20px;
+        color: #fff;
+        margin-top: 0;
+        margin-bottom: 12px;
+        font-weight: 700;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        padding-bottom: 8px;
+    }
+    .help-tab-content h3 {
+        font-size: 14px;
+        color: #fff;
+        margin-top: 18px;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+    .help-intro {
+        font-size: 13px;
+        line-height: 1.5;
+        color: #bbb;
+    }
+    .help-tab-content ul {
+        margin-left: 18px;
+        margin-bottom: 12px;
+        color: #ccc;
+    }
+    .help-tab-content li {
+        margin-bottom: 6px;
+        line-height: 1.4;
+    }
+    .help-tab-content p {
+        font-size: 13px;
+        line-height: 1.5;
+        color: #ccc;
+    }
+    .beta-banner {
+        background: rgba(234, 179, 8, 0.1);
+        border: 1px solid rgba(234, 179, 8, 0.3);
+        border-left: 4px solid #eab308;
+        border-radius: 6px;
+        padding: 12px 16px;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        color: #fef08a;
+        margin-bottom: 18px;
+        font-size: 12px;
+    }
+    .beta-banner strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 13px;
+    }
+    .help-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+        font-size: 12px;
+    }
+    .help-table th, .help-table td {
+        border: 1px solid #3d3d3d;
+        padding: 8px 12px;
+        text-align: left;
+    }
+    .help-table th {
+        background: #1e1e1e;
+        color: #fff;
+    }
+    .help-table td {
+        background: #282828;
+        color: #ccc;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // ---- Help Center Modal Engine ----
+        const helpModal = document.getElementById('help-modal');
+        const btnManual = document.getElementById('btn-manual');
+        const btnAcerca = document.getElementById('btn-acerca');
+        const btnCloseHelp = document.getElementById('btn-close-help');
+
+        function openHelpTab(tabId) {
+            // Remove active class from all buttons and tabs
+            document.querySelectorAll('.help-nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.help-tab-content').forEach(tab => tab.classList.remove('active'));
+
+            // Find target button and tab
+            const targetBtn = document.querySelector(`.help-nav-btn[data-tab="help-${tabId}"]`);
+            const targetTab = document.getElementById(`help-tab-${tabId}`);
+
+            if (targetBtn && targetTab) {
+                targetBtn.classList.add('active');
+                targetTab.classList.add('active');
+            }
+
+            if (helpModal) {
+                helpModal.classList.add('show');
+            }
+        }
+
+        btnManual?.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Try to open a relevant default tab
+            const defaultTab = document.querySelector('.help-nav-btn')?.getAttribute('data-tab')?.replace('help-', '') || 'dashboard';
+            openHelpTab(defaultTab);
+        });
+
+        btnAcerca?.addEventListener('click', (e) => {
+            e.preventDefault();
+            openHelpTab('acerca');
+        });
+
+        btnCloseHelp?.addEventListener('click', () => {
+            helpModal?.classList.remove('show');
+        });
+
+        // Close modal when clicking on overlay
+        helpModal?.addEventListener('click', (e) => {
+            if (e.target === helpModal) {
+                helpModal.classList.remove('show');
+            }
+        });
+
+        // Toggle manual tabs
+        document.querySelectorAll('.help-nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabAttr = btn.getAttribute('data-tab');
+                if (tabAttr) {
+                    const tabId = tabAttr.replace('help-', '');
+                    openHelpTab(tabId);
+                }
+            });
+        });
+
+        // Search engine for estrategia
+        const searchInput = document.getElementById('estrategia-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                const term = e.target.value.toLowerCase();
+                const items = document.querySelectorAll('.estrategia-item');
+                items.forEach(item => {
+                    const text = item.getAttribute('data-term') + " " + item.innerText.toLowerCase();
+                    item.style.display = text.includes(term) ? 'block' : 'none';
+                });
+            });
+        }
+    });
+</script>

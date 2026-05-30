@@ -5,6 +5,7 @@ import { query } from '@conexiones/lib/db.js';
 import QuickNotes from '../components/QuickNotes.astro';
 import AgendaPanel from '../components/AgendaPanel.astro';
 import BusinessHoursCounter from '../components/BusinessHoursCounter.astro';
+import HelpModal from '../components/HelpModal.astro';
 
 interface Props {
     title: string;
@@ -375,8 +376,8 @@ if (resolvedSellerId) {
             <div class="menu-item">
                 Ayuda <i class="fas fa-chevron-down" style="font-size: 9px; margin-left: 4px; opacity: 0.7;"></i>
                 <div class="dropdown-content">
-                    <a href="/vendedor/caja?tab=manual"><i class="fas fa-book text-blue-400"></i> Libro de Ayuda</a>
-                    <a href="/vendedor/caja?tab=manual-calculadora"><i class="fas fa-question-circle text-purple-400"></i> Manual Calculadora Neta</a>
+                    <a href="javascript:void(0)" id="btn-manual"><i class="fas fa-book text-blue-400"></i> Manual de Usuario</a>
+                    <a href="javascript:void(0)" id="btn-acerca"><i class="fas fa-info-circle text-purple-400"></i> Acerca del Sistema</a>
                 </div>
             </div>
         </div>
@@ -465,6 +466,9 @@ if (resolvedSellerId) {
             </div>
         </aside>
     </div>
+
+    <!-- HELP MANUAL MODAL -->
+    <HelpModal role="cajero" />
 
     <!-- SELLER PROFILE EDIT MODAL -->
     <div id="profile-modal" class="modal-overlay">
