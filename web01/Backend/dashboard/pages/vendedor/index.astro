@@ -116,59 +116,35 @@ const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Bue
     <!-- QUICK ACCESS TOOLS -->
     <div class="tools-section">
         <p class="tools-label">Acceso Rápido a Herramientas</p>
-        <div class="tools-grid">
-            <button class="tool-card" onclick="workspaceLoadView('pedidos')">
-                <div class="tool-card-icon"><i class="fas fa-shipping-fast"></i></div>
-                <div class="tool-card-body">
-                    <h3>Seguimiento Rápido</h3>
-                    <p>Accedé a los pedidos que requieren atención inmediata.</p>
-                </div>
-                <i class="fas fa-chevron-right tool-card-arrow"></i>
+        <div class="app-grid">
+            <button class="app-btn" onclick="workspaceLoadView('pedidos')">
+                <div class="app-icon" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; box-shadow: 0 4px 12px rgba(37,99,235,0.3);"><i class="fas fa-shipping-fast"></i></div>
+                <div class="app-label">Pedidos</div>
             </button>
 
-            <button class="tool-card" onclick="workspaceLoadView('clientes')">
-                <div class="tool-card-icon" style="background: rgba(34,197,94,.1); color: #22c55e"><i class="fas fa-id-card"></i></div>
-                <div class="tool-card-body">
-                    <h3>Gestión de Cartera</h3>
-                    <p>Actualizá saldos y estados financieros de tu cartera.</p>
-                </div>
-                <i class="fas fa-chevron-right tool-card-arrow"></i>
+            <button class="app-btn" onclick="workspaceLoadView('clientes')">
+                <div class="app-icon" style="background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; box-shadow: 0 4px 12px rgba(22,163,74,0.3);"><i class="fas fa-id-card"></i></div>
+                <div class="app-label">Cartera</div>
             </button>
 
-            <button class="tool-card" onclick="workspaceLoadView('mensajes')">
-                <div class="tool-card-icon" style="background: rgba(168,85,247,.1); color: #a855f7"><i class="fas fa-comments"></i></div>
-                <div class="tool-card-body">
-                    <h3>Chat Planta</h3>
-                    <p>Coordiná prioridades urgentes directo con producción.</p>
-                </div>
-                <i class="fas fa-chevron-right tool-card-arrow"></i>
+            <button class="app-btn" onclick="workspaceLoadView('mensajes')">
+                <div class="app-icon" style="background: linear-gradient(135deg, #9333ea, #7e22ce); color: #fff; box-shadow: 0 4px 12px rgba(147,51,234,0.3);"><i class="fas fa-comments"></i></div>
+                <div class="app-label">Chat Planta</div>
             </button>
 
-            <button class="tool-card" onclick="workspaceLoadView('buscador')">
-                <div class="tool-card-icon" style="background: rgba(239,68,68,.1); color: #ef4444"><i class="fas fa-file-invoice"></i></div>
-                <div class="tool-card-body">
-                    <h3>Buscador Facturas</h3>
-                    <p>Encontrá PDFs de clientes y facturas al instante.</p>
-                </div>
-                <i class="fas fa-chevron-right tool-card-arrow"></i>
+            <button class="app-btn" onclick="workspaceLoadView('buscador')">
+                <div class="app-icon" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; box-shadow: 0 4px 12px rgba(220,38,38,0.3);"><i class="fas fa-file-invoice"></i></div>
+                <div class="app-label">Facturas</div>
             </button>
 
-            <button class="tool-card" onclick="window.location.href='/vendedor/monitoreo'">
-                <div class="tool-card-icon" style="background: rgba(34,197,94,.1); color: #22c55e"><i class="fas fa-industry"></i></div>
-                <div class="tool-card-body">
-                    <h3>Estado de Planta</h3>
-                    <p>Monitoreo en tiempo real de producción y retiros en taller.</p>
-                </div>
-                <i class="fas fa-chevron-right tool-card-arrow"></i>
+            <button class="app-btn" onclick="window.location.href='/vendedor/monitoreo'">
+                <div class="app-icon" style="background: linear-gradient(135deg, #059669, #047857); color: #fff; box-shadow: 0 4px 12px rgba(5,150,105,0.3);"><i class="fas fa-industry"></i></div>
+                <div class="app-label">Planta</div>
             </button>
 
-            <button class="tool-card" onclick="workspaceLoadView('agenda')">
-                <div class="tool-card-icon" style="background: rgba(245,158,11,.1); color: #f59e0b"><i class="fas fa-calendar-alt"></i></div>
-                <div class="tool-card-body">
-                    <h3>Agenda</h3>
-                    <p>Recordatorios y eventos pendientes del día.</p>
-                </div>
-                <i class="fas fa-chevron-right tool-card-arrow"></i>
+            <button class="app-btn" onclick="workspaceLoadView('agenda')">
+                <div class="app-icon" style="background: linear-gradient(135deg, #ea580c, #c2410c); color: #fff; box-shadow: 0 4px 12px rgba(234,88,12,0.3);"><i class="fas fa-calendar-alt"></i></div>
+                <div class="app-label">Agenda</div>
             </button>
         </div>
     </div>
@@ -209,22 +185,39 @@ const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Bue
     .stat-arrow { color: #333; font-size: 11px; transition: transform .2s, color .2s; }
     .stat-card:hover .stat-arrow { transform: translateX(3px); color: #666; }
 
-    /* TOOLS */
+    /* TOOLS (Android App Style) */
     .tools-section { margin-top: 4px; }
     .tools-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #444; margin-bottom: 12px; }
-    .tools-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .tool-card {
-        background: #1a1a1a; border: 1px solid #222;
-        border-radius: 14px; padding: 16px;
-        display: flex; align-items: center; gap: 14px;
-        cursor: pointer; transition: all .2s;
-        text-align: left; width: 100%;
+    
+    .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 20px 10px; justify-items: center; margin-top: 15px; }
+    .app-btn {
+        background: transparent; border: none; padding: 0;
+        display: flex; flex-direction: column; align-items: center; gap: 8px;
+        cursor: pointer; transition: all .2s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
     }
-    .tool-card:hover { border-color: #3a3a3a; background: #1f1f1f; }
-    .tool-card-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(59,130,246,.1); color: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-    .tool-card-body { flex: 1; }
-    .tool-card-body h3 { font-size: 12px; font-weight: 700; color: #ddd; }
-    .tool-card-body p { font-size: 10px; color: #555; margin-top: 3px; line-height: 1.4; }
-    .tool-card-arrow { color: #333; font-size: 10px; transition: all .2s; }
-    .tool-card:hover .tool-card-arrow { transform: translateX(2px); color: #555; }
+    .app-btn:hover { transform: translateY(-4px) scale(1.05); }
+    .app-btn:active { transform: scale(0.95); }
+    
+    .app-icon { 
+        width: 60px; height: 60px; border-radius: 16px; /* Squircle effect */
+        display: flex; align-items: center; justify-content: center; 
+        font-size: 24px; 
+        border: 1px solid rgba(255,255,255,0.1);
+        transition: all .3s ease;
+        position: relative;
+    }
+    .app-icon::after {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: inherit;
+        background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+        pointer-events: none;
+    }
+    .app-btn:hover .app-icon {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    }
+    .app-label { 
+        font-size: 11px; font-weight: 500; color: #ccc; line-height: 1.2; text-align: center;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
 </style>
