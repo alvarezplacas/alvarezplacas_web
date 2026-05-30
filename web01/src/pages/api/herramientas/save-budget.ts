@@ -68,21 +68,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         console.log(`[SmartCut] Presupuesto generado ID: ${result.id} para cliente: ${cliente_id}, vendedor asignado: ${sellerId}`);
 
-        // 💬 DISPARADOR DE NOTIFICACIÓN DE WHATSAPP AL VENDEDOR (+54116141842)
+        // 💬 DISPARADOR DE NOTIFICACIÓN DE WHATSAPP AL VENDEDOR (+5491161411842)
         const totalPlates = data.projects.reduce((acc: number, p: any) => acc + (p.stats?.totalPlates || 0), 0);
         const reqDateStr = data.fecha_entrega_requerida 
             ? new Date(data.fecha_entrega_requerida).toLocaleDateString('es-AR') 
             : 'A confirmar';
         const msg = `${sellerName}, acabas de recibir un pedido de corte de parte de ${clientName} a través de nuestro sitio web! 📝 Placas: ${totalPlates} unidades. Fecha de entrega requerida: ${reqDateStr}.`;
         
-        console.log(`[SmartCut Notification Dispatch] Enviando WhatsApp a +54116141842: "${msg}"`);
+        console.log(`[SmartCut Notification Dispatch] Enviando WhatsApp a +5491161411842: "${msg}"`);
         
         try {
             await fetch('https://admin.alvarezplacas.com.ar/api/notifications/whatsapp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer alvarez-api-token-v16-2026' },
                 body: JSON.stringify({
-                    phone: '+54116141842',
+                    phone: '+5491161411842',
                     message: msg
                 })
             });
