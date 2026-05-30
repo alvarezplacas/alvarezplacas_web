@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ cookies }) => {
         clientes = await directus.request(readItems('clientes', {
             filter: { vendedor_id: { _eq: sellerId } },
             sort: ['nombre_empresa'],
-            fields: ['id', 'name', 'nombre_empresa', 'debt_amount', 'fin_status', 'email']
+            fields: ['id', 'name', 'nombre_empresa', 'debt_amount', 'fin_status', 'email', 'phone', 'cuit_dni']
         })) as any[];
     } catch (e: any) {
         console.error('Error cargando clientes:', e.message);
@@ -47,7 +47,20 @@ export const GET: APIRoute = async ({ cookies }) => {
         <span class="status-badge ${getStatusClass(c.fin_status)}">${getStatusLabel(c.fin_status)}</span>
       </div>
       <h3 class="client-name">${c.nombre_empresa || 'Sin Empresa'}</h3>
-      <p class="client-meta">${c.name || ''} • ${c.email || 'sin email'}</p>
+      <div class="client-meta-list" style="display:flex; flex-direction:column; gap:6px; margin-top:6px; margin-bottom:12px;">
+        <span class="client-meta-item" style="font-size: 11px; color: #888; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-user" style="width: 14px; text-align: center; color: #555;"></i> ${c.name || 'Sin nombre'}
+        </span>
+        <span class="client-meta-item" style="font-size: 11px; color: #888; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-envelope" style="width: 14px; text-align: center; color: #555;"></i> ${c.email || 'Sin email'}
+        </span>
+        <span class="client-meta-item" style="font-size: 11px; color: #888; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-id-card" style="width: 14px; text-align: center; color: #555;"></i> ${c.cuit_dni || 'CUIT/CUIL no registrado'}
+        </span>
+        <span class="client-meta-item" style="font-size: 11px; color: #888; display: flex; align-items: center; gap: 8px;">
+          <i class="fab fa-whatsapp" style="width: 14px; text-align: center; color: #22c55e;"></i> ${c.phone || 'No registrado'}
+        </span>
+      </div>
       <div class="client-debt-section">
         <div class="debt-info">
           <p class="debt-label">Deuda Pendiente</p>
