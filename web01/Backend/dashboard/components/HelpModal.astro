@@ -59,15 +59,23 @@ const isCajero = role === 'cajero';
                         </button>
                     </>
                 )}
-                { isCajero && (
+                { (isCajero || isVendedor) && (
                     <>
+                        <button class="help-nav-btn" data-tab="help-gcom-test">
+                            <i class="fas fa-flask" style="color: #f59e0b;"></i> GCOM Test (Stock)
+                        </button>
+                        <button class="help-nav-btn" data-tab="help-gcom-import">
+                            <i class="fas fa-file-import" style="color: #10b981;"></i> Importar en GCOM
+                        </button>
                         <button class="help-nav-btn" data-tab="help-facturas">
                             <i class="fas fa-file-invoice"></i> Buscador OCR
                         </button>
-                        <button class="help-nav-btn" data-tab="help-herramientas">
-                            <i class="fas fa-toolbox"></i> Herramientas
-                        </button>
                     </>
+                )}
+                { isCajero && (
+                    <button class="help-nav-btn" data-tab="help-herramientas">
+                        <i class="fas fa-toolbox"></i> Herramientas
+                    </button>
                 )}
                 <button class="help-nav-btn" data-tab="help-estrategia">
                     <i class="fas fa-book"></i> Estrategia y Materiales
@@ -184,8 +192,111 @@ const isCajero = role === 'cajero';
                     </>
                 )}
 
-                { isCajero && (
+                { (isCajero || isVendedor) && (
                     <>
+                        <div class="help-tab-content" id="help-tab-gcom-test">
+                            <h2>🧪 Acceso al Entorno de Pruebas GCOM</h2>
+                            <p class="help-intro">Cómo conectarse a la base de pruebas <strong style="color:#f59e0b;">AP2526_TEST</strong> para controlar el stock y probar la sincronización de SKUs sin afectar la operativa real.</p>
+
+                            <div class="gcom-alert" style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.4); border-left: 4px solid #f59e0b; border-radius: 6px; padding: 12px 16px; margin: 16px 0; font-size: 12px; color: #fcd34d;">
+                                <strong style="display:block; margin-bottom:4px;">⚠️ ENTORNO DE PRUEBAS — SEGURO</strong>
+                                Todo lo que hagas en AP2526_TEST está aislado. La base productiva real (AP2526) NO se ve afectada.
+                            </div>
+
+                            <h3>Pasos para conectarse:</h3>
+                            <ol style="margin-left: 18px; color: #ccc; line-height: 1.8; font-size: 13px;">
+                                <li>Abrir el programa <strong style="color:#fff;">GCOM</strong> en tu terminal.</li>
+                                <li>En el menú superior hacer clic en <strong style="color:#fff;">"Bases"</strong> y luego en <strong style="color:#fff;">"Lista"</strong>.</li>
+                                <li>En el listado de bases disponibles, seleccionar: <code style="background:#111; padding:2px 8px; border-radius:4px; color:#f59e0b; font-family:monospace;">AP2526_TEST</code></li>
+                                <li>Hacer clic en <strong style="color:#fff;">"Aceptar"</strong> para confirmar el ingreso.</li>
+                            </ol>
+
+                            <h3>Verificación de seguridad:</h3>
+                            <p>Comprobá que en la barra de estado o cabecera de GCOM figure la ruta de pruebas:</p>
+                            <pre style="background:#111; border:1px solid #333; border-radius:6px; padding:10px 14px; color:#10b981; font-family:monospace; font-size:12px; margin-top:8px; overflow-x:auto;">\\server-alvarezp\c\gecom\datos\AP2526_TEST</pre>
+
+                            <h3>¿Qué podés hacer dentro del TEST?</h3>
+                            <ul>
+                                <li>Consultar y verificar el stock de productos con los nuevos códigos <code style="background:#111; padding:1px 6px; border-radius:3px; color:#3b82f6;">X-XX-XXXX</code>.</li>
+                                <li>Facturar, registrar cobros y modificar precios de forma 100% aislada.</li>
+                                <li>Validar que la sincronización automática con el catálogo web funciona correctamente.</li>
+                            </ul>
+
+                            <h3>Para volver al sistema productivo real:</h3>
+                            <p>Repetir el proceso y seleccionar la base <code style="background:#111; padding:2px 8px; border-radius:4px; color:#10b981; font-family:monospace;">AP2526</code> (sin el sufijo _TEST).</p>
+
+                            <div style="margin-top: 20px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); border-radius:6px; padding:12px 16px; font-size:12px; color:#93c5fd;">
+                                <strong style="display:block; margin-bottom:4px;">ℹ️ Contexto técnico</strong>
+                                Esta base de pruebas fue creada como copia exacta de AP2526. El motor de sincronización de stock (Python) monitorea los archivos <code style="font-family:monospace;">stock.fac</code> y actualiza el catálogo web (Directus) automáticamente cuando se producen cambios en GCOM.
+                            </div>
+                        </div>
+
+                        <div class="help-tab-content" id="help-tab-gcom-import">
+                            <h2>📥 Importación de Artículos y SKUs en GCOM</h2>
+                            <p class="help-intro">Instrucciones paso a paso para que el operador importe el archivo de equivalencias TXT de SKUs y Rubros generado desde Directus.</p>
+
+                            <div class="gcom-alert" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.4); border-left: 4px solid #10b981; border-radius: 6px; padding: 12px 16px; margin: 16px 0; font-size: 12px; color: #a7f3d0;">
+                                <strong style="display:block; margin-bottom:4px;">📄 ARCHIVO DE IMPORTACIÓN GENERADO</strong>
+                                El archivo con los 380 artículos y sus equivalencias de SKUs e índices jerárquicos está listo en:<br/>
+                                <code style="background:#111; padding:2px 6px; border-radius:4px; color:#10b981; font-family:monospace; font-size:11px;">d:\Alvarezplacas_2026\WEB-alvarezplacas_astro\Alvarezplacas\gcom\importacion_articulos.txt</code>
+                            </div>
+
+                            <h3>Paso 1: Configurar el Formato en GCOM</h3>
+                            <ol style="margin-left: 18px; color: #ccc; line-height: 1.8; font-size: 13px;">
+                                <li>En el menú superior de GCOM, ir a <strong style="color:#fff;">Bases</strong> ➡️ <strong style="color:#fff;">Formatos</strong> ➡️ <strong style="color:#fff;">Importación y Exportación</strong>.</li>
+                                <li>Seleccionar <strong style="color:#fff;">Importación de Artículos + Precios</strong> en la lista y presionar el botón <strong style="color:#fff;">Modificar</strong>.</li>
+                                <li>Establecer los siguientes valores en el formulario:
+                                    <ul>
+                                        <li><strong>Ancho</strong>: <code style="color:#f59e0b;">500</code></li>
+                                        <li><strong>Separador Decimal</strong>: <code style="color:#f59e0b;">,</code> (coma)</li>
+                                        <li><strong>Saltear</strong>: <code style="color:#f59e0b;">0</code></li>
+                                        <li><strong>Caracteres OEM</strong>: <em>Desmarcado</em></li>
+                                    </ul>
+                                </li>
+                                <li>Configurar las variables por columna y ancho (hacer clic en la grilla):
+                                    <ul>
+                                        <li><strong>CODIGO ARTICULO</strong>: Columna <code style="color:#10b981;">1</code>, Ancho <code style="color:#10b981;">11</code></li>
+                                        <li><strong>DESCRIPCION</strong>: Columna <code style="color:#10b981;">13</code>, Ancho <code style="color:#10b981;">40</code></li>
+                                        <li><strong>RUBRO</strong>: Columna <code style="color:#10b981;">60</code>, Ancho <code style="color:#10b981;">4</code></li>
+                                    </ul>
+                                </li>
+                                <li>Hacer clic en el botón de la tilde verde para guardar el formato.</li>
+                            </ol>
+                            <div style="margin: 15px 0 25px 18px;">
+                                <span style="display:block; font-size:11px; color:#888; margin-bottom:6px; font-weight:bold; text-transform:uppercase;">📸 Vista de Configuración del Formato en GCOM:</span>
+                                <img src="/images/gcom/estructura_importacion_articulos.jpg" alt="Estructura de Importación GCOM" style="max-width: 100%; height: auto; border: 1px solid #444; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />
+                            </div>
+
+                            <h3>Paso 2: Ejecutar la Importación</h3>
+                            <ol style="margin-left: 18px; color: #ccc; line-height: 1.8; font-size: 13px;">
+                                <li>Ir al menú <strong style="color:#fff;">Módulos</strong> ➡️ <strong style="color:#fff;">Stock</strong> ➡️ <strong style="color:#fff;">Artículos</strong> ➡️ <strong style="color:#fff;">Rubros y Artículos</strong>.</li>
+                                <li>Presionar <strong style="color:#f59e0b;">Ctrl + Clic</strong> sobre la columna **Descripción** de cualquier artículo (se pondrá azul).</li>
+                                <li>En la barra de herramientas, hacer clic en el botón de **Funciones Especiales** (ícono de herramientas).</li>
+                                <li>Seleccionar <strong style="color:#fff;">Importar Artículos</strong> en el menú desplegable.</li>
+                                <li>Hacer clic en la carpeta para elegir el archivo de importación:
+                                    <br/><code style="background:#111; padding:2px 8px; border-radius:4px; color:#a7f3d0; font-family:monospace; font-size:11px;">d:\Alvarezplacas_2026\WEB-alvarezplacas_astro\Alvarezplacas\gcom\importacion_articulos.txt</code>
+                                </li>
+                                <li>Presionar la tilde verde para ejecutar la importación.</li>
+                            </ol>
+                            <div style="margin: 15px 0 25px 18px;">
+                                <span style="display:block; font-size:11px; color:#888; margin-bottom:6px; font-weight:bold; text-transform:uppercase;">📸 Vista de la pantalla Rubros y Artículos en GCOM:</span>
+                                <img src="/images/gcom/gecom_articulos.jpg" alt="Pantalla Rubros y Artículos GCOM" style="max-width: 100%; height: auto; border: 1px solid #444; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />
+                            </div>
+
+                            <div class="gcom-alert" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-left: 4px solid #ef4444; border-radius: 6px; padding: 12px 16px; margin: 16px 0; font-size: 12px; color: #fca5a5;">
+                                <strong style="display:block; margin-bottom:4px;">⚠️ PASO OBLIGATORIO: REARMAR ESTRUCTURA</strong>
+                                Como la base de datos GCOM utiliza un árbol binario jerárquico de punteros, es **obligatorio** rearmar la estructura para que los nuevos artículos se organicen correctamente dentro de sus Rubros (ej. AGLOMERADOS, MDF) en el sistema.
+                            </div>
+
+                            <h3>Paso 3: Rearmar la Estructura en GCOM</h3>
+                            <ol style="margin-left: 18px; color: #ccc; line-height: 1.8; font-size: 13px;">
+                                <li>Dentro de la misma ventana de <strong style="color:#fff;">Rubros y Artículos</strong>, volver a presionar <strong style="color:#f59e0b;">Ctrl + Clic</strong> en la columna **Descripción**.</li>
+                                <li>Ir a **Herramientas y Funciones Especiales** (ícono de herramientas).</li>
+                                <li>Seleccionar la opción <strong style="color:#fff;">Rearmar Estructura</strong> del menú desplegable.</li>
+                                <li>Hacer clic en la tilde verde para ejecutar. El sistema reordenará los registros de la base de datos y reconstruirá los índices automáticamente.</li>
+                            </ol>
+                        </div>
+
                         <div class="help-tab-content" id="help-tab-facturas">
                             <h2>🔍 Buscador Inteligente de Facturas (OCR)</h2>
                             <p class="help-intro">Sistema avanzado de búsqueda y procesamiento de facturas en PDF utilizando Inteligencia Artificial.</p>
@@ -193,15 +304,6 @@ const isCajero = role === 'cajero';
                             <ul>
                                 <li>Escaneo automático de texto dentro de comprobantes en PDF.</li>
                                 <li>Búsqueda por cliente, CUIT, importes o palabras clave dentro del documento.</li>
-                            </ul>
-                        </div>
-                        <div class="help-tab-content" id="help-tab-herramientas">
-                            <h2>🛠️ Herramientas Financieras</h2>
-                            <p class="help-intro">Utilidades específicas para cálculos netos, retenciones y control de comisiones (Calculadora Gecom).</p>
-                            <h3>Funcionamiento:</h3>
-                            <ul>
-                                <li>Calculadora automática de netos y comisiones.</li>
-                                <li>Acceso rápido a tablas impositivas actualizadas.</li>
                             </ul>
                         </div>
                     </>
