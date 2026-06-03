@@ -25,10 +25,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             }), { status: 400 });
         }
 
+        // Helper: sanitiza y formatea el teléfono para WhatsApp (+54911...)
+        const formatWhatsAppPhone = (phone: string): string => {
+            let clean = phone.replace(/\D/g, '');
+            if (clean.length === 10) {
+                clean = '549' + clean;
+            } else if (clean.startsWith('15') && clean.length === 11) {
+                clean = '549' + clean.substring(2);
+            } else if (clean.length > 0 && !clean.startsWith('54') && !clean.startsWith('+54')) {
+                clean = '549' + clean;
+            }
+            return clean.startsWith('+') ? clean : '+' + clean;
+        };
+
         // Obtener datos del cliente y su vendedor asignado
         let sellerId = null;
         let clientName = `Cliente #${cliente_id}`;
         let sellerName = 'Braian';
+        let sellerPhone = '+5491161411842'; // Fallback por defecto
+
         try {
             const clientData = await directus.request(readItem('clientes', cliente_id, {
                 fields: ['id', 'name', 'nombre_empresa', 'vendedor_id']
@@ -40,13 +55,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                     sellerId = typeof clientData.vendedor_id === 'object' ? clientData.vendedor_id.id : clientData.vendedor_id;
                     try {
                         const sellerData = await directus.request(readItem('vendedores', sellerId, {
-                            fields: ['name']
+                            fields: ['name', 'whatsapp']
                         })) as any;
                         if (sellerData?.name) {
                             sellerName = sellerData.name;
                         }
+                        if (sellerData?.whatsapp) {
+                            sellerPhone = formatWhatsAppPhone(sellerData.whatsapp);
+                        }
                     } catch (err) {
-                        console.error('[SmartCut] Error fetching seller name:', err);
+                        console.error('[SmartCut] Error fetching seller name & phone:', err);
                     }
                 }
             }
@@ -59,30 +77,38 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const result = await directus.request(createItem('pedidos', {
             cliente_id: cliente_id,
             vendedor_id: sellerId,
-            status: 'pendiente', 
-            datos_optimizacion: data, // JSON con los proyectos y piezas
+            status: 'presupuesto', 
+            datos_optimizacion: data, // JSON con los proyectos, piezas y herrajes consolidado
             fecha_pedido: new Date().toISOString(),
             resumen_visible: true,
             total_m2: data.projects.reduce((acc, p) => acc + (p.stats?.totalM2 || 0), 0)
         })) as any;
 
-        console.log(`[SmartCut] Presupuesto generado ID: ${result.id} para cliente: ${cliente_id}, vendedor asignado: ${sellerId}`);
+        console.log(`[SmartCut] Presupuesto generado ID: ${result.id} para cliente: ${cliente_id}, vendedor asignado: ${sellerId} (${sellerPhone})`);
 
-        // 💬 DISPARADOR DE NOTIFICACIÓN DE WHATSAPP AL VENDEDOR (+5491161411842)
+        // 💬 DISPARADOR DE NOTIFICACIÓN DE WHATSAPP AL VENDEDOR ASIGNADO
         const totalPlates = data.projects.reduce((acc: number, p: any) => acc + (p.stats?.totalPlates || 0), 0);
         const reqDateStr = data.fecha_entrega_requerida 
             ? new Date(data.fecha_entrega_requerida).toLocaleDateString('es-AR') 
             : 'A confirmar';
-        const msg = `${sellerName}, acabas de recibir un pedido de corte de parte de ${clientName} a través de nuestro sitio web! 📝 Placas: ${totalPlates} unidades. Fecha de entrega requerida: ${reqDateStr}.`;
         
-        console.log(`[SmartCut Notification Dispatch] Enviando WhatsApp a +5491161411842: "${msg}"`);
+        // Obtener resumen compacto de herrajes principales para la alerta
+        let hwSummary = '';
+        if (data.hardware && data.hardware.length > 0) {
+            const hwItems = data.hardware.slice(0, 3).map((h: any) => `${h.qty}x ${h.name.split(' (')[0]}`).join(', ');
+            hwSummary = `\n🛠️ Herrajes principales: ${hwItems}${data.hardware.length > 3 ? '...' : ''}`;
+        }
+            
+        const msg = `¡Hola ${sellerName}! Acabas de recibir un nuevo pedido de optimización de parte de *${clientName}* 📝\n\n📦 Placas: ${totalPlates} unidades.\n📅 Fecha de entrega requerida: ${reqDateStr}.${hwSummary}\n\n🔗 Abrir pedido para cotizar: https://alvarezplacas.com.ar/vendedor/pedidos?id=${result.id}`;
+        
+        console.log(`[SmartCut Notification Dispatch] Enviando WhatsApp a ${sellerPhone}: "${msg}"`);
         
         try {
             await fetch('https://admin.alvarezplacas.com.ar/api/notifications/whatsapp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer alvarez-api-token-v16-2026' },
                 body: JSON.stringify({
-                    phone: '+5491161411842',
+                    phone: sellerPhone,
                     message: msg
                 })
             });

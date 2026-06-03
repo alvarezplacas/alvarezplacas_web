@@ -513,15 +513,27 @@ const { isLoggedIn = false } = Astro.props;
     .btn-industrial.reset { background: #6c757d; color: white; box-shadow: 0 4px 0 #495057; }
     .btn-industrial:active { transform: translateY(4px); box-shadow: none; }
     .btn-industrial:hover { filter: brightness(1.1); }
+    .nav-link-sc.btn-back-cubical {
+        color: #007aff !important;
+        font-weight: 800;
+    }
+    .nav-link-sc.btn-back-cubical:hover {
+        color: #0056b3 !important;
+    }
 </style>
 
 <div id="smartcut-bar" class="smart-bar" data-is-logged-in={isLoggedIn ? "true" : "false"}>
     <div style="display: flex; align-items: center; gap: 20px;">
-        <a href="/cliente" class="nav-link-sc">
-            <i class="fas fa-arrow-left"></i> VOLVER AL PANEL
+        <a href="/cliente" class="nav-link-sc" title="Volver al Panel Principal de Clientes">
+            <i class="fas fa-home"></i> VOLVER AL PANEL
         </a>
+        <div style="width: 1px; height: 18px; background: var(--sc-border);"></div>
+        <a href="/herramientas/cubical" class="nav-link-sc btn-back-cubical" title="Regresar al Diseñador 3D CubiCal PRO">
+            <i class="fas fa-cubes"></i> VOLVER A CUBICAL
+        </a>
+        <div style="width: 1px; height: 18px; background: var(--sc-border);"></div>
         <div class="smart-label">
-            SMARTCUT PRO <span style="background: #000; color: #00ff00; padding: 2px 8px; border-radius: 4px; font-size: 0.5rem; margin-left: 10px; border: 1px solid #00ff00;">v11.2 TREE LOOK-AHEAD</span>
+            SMARTCUT PRO <span style="background: #000; color: #00ff00; padding: 2px 8px; border-radius: 4px; font-size: 0.5rem; border: 1px solid #00ff00;">v11.2 TREE LOOK-AHEAD</span>
         </div>
     </div>
     
@@ -886,10 +898,30 @@ const { isLoggedIn = false } = Astro.props;
             </div>
             
             <div class="mobile-stack-grid" style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
-                <aside>
+                <aside style="display: flex; flex-direction: column; gap: 20px;">
                     <div style="background: #0a0a0c; border: 1px solid #151517; padding: 25px; border-radius: 10px;">
                         <div style="font-size: 0.7rem; font-weight: 900; color: #444; margin-bottom: 20px; letter-spacing: 1px;">LISTA DE PIEZAS (<span id="count-label">0</span>)</div>
                         <div id="pieces-list" style="max-height: 600px; overflow-y: auto; padding-right: 10px;"></div>
+                    </div>
+                    
+                    <!-- PANEL DE HERRAJES IMPORTADOS (CUBICAL) -->
+                    <div id="sc-hardware-panel" class="hidden" style="background: #0a0a0c; border: 1px solid #151517; padding: 25px; border-radius: 10px;">
+                        <div style="font-size: 0.75rem; font-weight: 900; color: var(--alvarez-red); margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase;">
+                            <i class="fas fa-tools" style="margin-right: 6px;"></i> Herrajes del Módulo
+                        </div>
+                        <div style="max-height: 300px; overflow-y: auto; padding-right: 10px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: left; color: #ccc;">
+                                <thead>
+                                    <tr style="border-bottom: 1.5px solid #222;">
+                                        <th style="padding-bottom: 8px; font-weight: 800;">Descripción</th>
+                                        <th style="padding-bottom: 8px; text-align: right; font-weight: 800;">Cant</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sc-hardware-list">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </aside>
                 <div id="plates-container-compact"></div>
@@ -968,6 +1000,33 @@ const { isLoggedIn = false } = Astro.props;
             </div>
         </div>
     </section>
+
+    <!-- LOADER DE SIERRA CIRCULAR (ESPERA INDUSTRIAL) -->
+    <div id="sc-saw-loader" class="modal-overlay hidden" style="z-index: 10500; background: rgba(10, 10, 12, 0.95); backdrop-filter: blur(15px); display: flex; flex-direction: column; align-items: center; justify-content: center; position: fixed; inset: 0;">
+        <div style="position: relative; width: 120px; height: 120px; margin-bottom: 25px; display: flex; align-items: center; justify-content: center;">
+            <!-- Sierra Circular Animada en CSS con gradiente y sombras -->
+            <div class="saw-blade" style="width: 100px; height: 100px; border-radius: 50%; border: 6px dashed var(--alvarez-red); animation: spin-saw 0.6s linear infinite; box-shadow: 0 0 35px rgba(255, 40, 0, 0.4); position: relative;">
+                <div style="width: 28px; height: 28px; background: #0a0a0c; border-radius: 50%; border: 4px solid var(--alvarez-red); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+            </div>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 2px; margin: 0; margin-bottom: 8px; font-family: Inter, sans-serif;">PROCESANDO DESPIECE</h3>
+        <p style="font-size: 0.7rem; color: #666; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin: 0; text-align: center; max-width: 340px; line-height: 1.6; font-family: Inter, sans-serif;">
+            Sincronizando catálogo e inyectando tapacantos estructurales en SmartCut PRO...
+        </p>
+    </div>
+    <script is:inline>
+        if (sessionStorage.getItem('cubical_despiece')) {
+            const loaderEl = document.getElementById('sc-saw-loader');
+            if (loaderEl) loaderEl.classList.remove('hidden');
+        }
+    </script>
+
+    <style>
+    @keyframes spin-saw {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    </style>
 
     <div id="login-wall" class="modal-overlay hidden">
         <div style="background:#0a0a0c; border:1px solid #1a1a1c; padding:50px; border-radius:15px; width:450px; text-align:center;" class="animate-in">
@@ -1071,7 +1130,8 @@ const { isLoggedIn = false } = Astro.props;
         viewMode: 'grid', // 'grid' por defecto (Modo Clásico)
         activeCanto: 0.45,
         activePriceList: 'precio_l1',
-        config: { kerf: 4, trim: 5, edgeWaste: 18, philosophy: 'V', steps: 900 } 
+        config: { kerf: 4, trim: 5, edgeWaste: 18, philosophy: 'V', steps: 900 },
+        hardware: [] // Herrajes/insumos importados globales
     };
 
     window.setModeSC = (mode) => {
@@ -1122,15 +1182,99 @@ const { isLoggedIn = false } = Astro.props;
         } catch (e) { setTimeout(initSC, 1000); }
     }
 
-    function checkCubicalDespieceOnLoad() {
-        const despiece = sessionStorage.getItem('cubical_despiece');
-        if (despiece) {
-            const banner = document.getElementById('cubical-import-banner');
-            if (banner) {
-                banner.classList.remove('hidden');
+    async function checkCubicalDespieceOnLoad() {
+        const rawDespiece = sessionStorage.getItem('cubical_despiece');
+        if (rawDespiece) {
+            try {
+                const despiece = JSON.parse(rawDespiece);
+                const banner = document.getElementById('cubical-import-banner');
+                if (banner) {
+                    banner.classList.remove('hidden');
+                }
+
+                if (despiece && despiece.brand && despiece.designName) {
+                    console.log(`[SmartCut] Auto-importador detectado. Resolviendo catálogo para: ${despiece.brand} - ${despiece.designName}`);
+                    
+                    // Mostrar loader de sierra circular girando
+                    const loader = document.getElementById('sc-saw-loader');
+                    if (loader) {
+                        loader.classList.remove('hidden');
+                    }
+                    
+                    // Mostrar pantalla de configuración (Setup)
+                    showSetup();
+                    
+                    // 1. Establecer la marca
+                    const brandSelect = document.getElementById('plate-brand');
+                    if (brandSelect) {
+                        brandSelect.value = despiece.brand;
+                    }
+                    
+                    // 2. Cargar las líneas llamando a updateCatalogFlow('brand')
+                    await updateCatalogFlow('brand');
+                    
+                    // 3. Buscar y seleccionar la línea de producto
+                    const lineSelect = document.getElementById('setup-line');
+                    if (lineSelect && lineSelect.options.length > 1) {
+                        for (let i = 1; i < lineSelect.options.length; i++) {
+                            const lineVal = lineSelect.options[i].value;
+                            if (lineVal) {
+                                lineSelect.value = lineVal;
+                                await updateCatalogFlow('line');
+                                
+                                // Verificar si el color de diseño está disponible en esta línea
+                                const designSelect = document.getElementById('setup-design-select');
+                                if (designSelect) {
+                                    let foundIdx = -1;
+                                    for (let j = 0; j < designSelect.options.length; j++) {
+                                        const optText = designSelect.options[j].value || '';
+                                        if (optText.toUpperCase().includes(despiece.designName.toUpperCase())) {
+                                            foundIdx = j;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (foundIdx !== -1) {
+                                        designSelect.selectedIndex = foundIdx;
+                                        await updateCatalogFlow('design');
+                                        console.log(`[SmartCut] Coincidencia encontrada! Línea: ${lineVal}, Color: ${despiece.designName}`);
+                                        
+                                        // 4. Crear el proyecto automáticamente
+                                        setTimeout(() => {
+                                            createProjectSC();
+                                        }, 400);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Fallback si no se encontró en el catálogo dinámico: usar carga manual
+                    console.warn(`[SmartCut] No se encontró el color "${despiece.designName}" en el catálogo de "${despiece.brand}". Usando carga manual.`);
+                    toggleManualMode(true);
+                    const manualInput = document.getElementById('setup-design-manual');
+                    if (manualInput) {
+                        manualInput.value = `${despiece.brand} ${despiece.designName}`;
+                    }
+                    const thicknessEl = document.getElementById('plate-thickness');
+                    if (thicknessEl) {
+                        thicknessEl.value = despiece.thickness || '18';
+                    }
+                    setTimeout(() => {
+                        createProjectSC();
+                    }, 500);
+                } else {
+                    const loader = document.getElementById('sc-saw-loader');
+                    if (loader) loader.classList.add('hidden');
+                    showSetup();
+                }
+            } catch (e) {
+                console.error("[SmartCut] Error en auto-importación:", e);
+                const loader = document.getElementById('sc-saw-loader');
+                if (loader) loader.classList.add('hidden');
+                showSetup();
             }
-            // Auto-redirect them to the setup screen so they can choose their plate/color!
-            showSetup();
         }
     }
 
@@ -1480,6 +1624,25 @@ const { isLoggedIn = false } = Astro.props;
             </div>
         `;
 
+        // Renderizar herrajes importados si existen
+        const hwPanel = document.getElementById('sc-hardware-panel');
+        const hwList = document.getElementById('sc-hardware-list');
+        if (hwPanel && hwList) {
+            const hwData = p.hardware || session.hardware || [];
+            if (hwData.length > 0) {
+                hwPanel.classList.remove('hidden');
+                hwList.innerHTML = hwData.map(h => `
+                    <tr style="border-bottom: 1px solid #151517;">
+                        <td style="padding: 10px 0; color: #fff; font-weight: 700;">${h.name}</td>
+                        <td style="padding: 10px 0; text-align: right; color: var(--alvarez-red); font-weight: 900;">${h.qty} <span style="font-size: 0.6rem; color: #666; font-weight: 700;">${h.unit || 'UNID'}</span></td>
+                    </tr>
+                `).join('');
+            } else {
+                hwPanel.classList.add('hidden');
+                hwList.innerHTML = '';
+            }
+        }
+
         document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         document.getElementById('view-editor').classList.remove('hidden');
         document.getElementById('btn-projects-sc').classList.remove('hidden');
@@ -1549,6 +1712,28 @@ const { isLoggedIn = false } = Astro.props;
                 const despieceData = JSON.parse(rawDespiece);
                 if (despieceData && Array.isArray(despieceData.pieces)) {
                     despieceData.pieces.forEach((p, idx) => {
+                        const nameLower = (p.nombre || 'Pieza').toLowerCase();
+                        let edgeConfig = { t: 0, b: 0, l: 0, r: 0 };
+                        
+                        // Determinar tapacantos predeterminados según la pieza
+                        if (nameLower.includes('puerta') || nameLower.includes('frente cajón') || nameLower.includes('frente de cajón')) {
+                            // Puertas y frentes van tapacantados en los 4 bordes (L1, L2, A1, A2)
+                            edgeConfig = { t: 0.45, b: 0.45, l: 0.45, r: 0.45 };
+                        } else if (
+                            nameLower.includes('lateral') || 
+                            nameLower.includes('techo') || 
+                            nameLower.includes('base') || 
+                            nameLower.includes('piso') || 
+                            nameLower.includes('estante') || 
+                            nameLower.includes('faja') || 
+                            nameLower.includes('zócalo') || 
+                            nameLower.includes('faldón') ||
+                            nameLower.includes('contra-frente')
+                        ) {
+                            // Componentes estructurales y de cajón llevan tapacanto al frente (L1)
+                            edgeConfig = { t: 0.45, b: 0, l: 0, r: 0 };
+                        }
+                        
                         project.pieces.push({
                             id: Date.now() + idx,
                             q: parseInt(p.cantidad) || 1,
@@ -1557,11 +1742,15 @@ const { isLoggedIn = false } = Astro.props;
                             label: p.nombre || 'Pieza',
                             canRotate: p.veta !== 'con_veta',
                             edgeColor: null,
-                            edges: { t: 0, b: 0, l: 0, r: 0 }
+                            edges: edgeConfig
                         });
                     });
                     if (despieceData.projectName) {
                         project.design = `${despieceData.projectName.toUpperCase()} - ${project.design}`;
+                    }
+                    if (despieceData.hardware) {
+                        project.hardware = despieceData.hardware;
+                        session.hardware = despieceData.hardware;
                     }
                 }
             } catch (e) {
@@ -1581,6 +1770,10 @@ const { isLoggedIn = false } = Astro.props;
         if (project.pieces.length > 0) {
             optimizeNowSC();
         }
+
+        // Ocultar loader de sierra circular
+        const loader = document.getElementById('sc-saw-loader');
+        if (loader) loader.classList.add('hidden');
     };
 
     window.addPieceSC = () => {
@@ -2105,8 +2298,10 @@ const { isLoggedIn = false } = Astro.props;
                     pieces: p.pieces,
                     stats: p.result?.stats,
                     precio_l1: p.precio_l1,
-                    precio_l2: p.precio_l2
+                    precio_l2: p.precio_l2,
+                    hardware: p.hardware || []
                 })),
+                hardware: session.hardware || [],
                 activePriceList: session.activePriceList,
                 fecha_entrega_requerida: document.getElementById('final-fecha-entrega')?.value || null
             };

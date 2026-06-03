@@ -90,18 +90,28 @@ const statusLabels = {
                         </div>
                         
                         <div class="flex items-center gap-6">
-                            <div class="text-right">
-                                <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Monto Estimado</p>
-                                <p class="text-2xl font-black text-white italic">{p.total_m2} m²</p>
+                            <div class="text-right font-sans">
+                                <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">
+                                    {p.total && parseFloat(p.total) > 0 ? 'Cotización Oficial' : 'Rendimiento Estimado'}
+                                </p>
+                                <p class="text-2xl font-black text-white italic">
+                                    {p.total && parseFloat(p.total) > 0 ? `$${parseFloat(p.total).toLocaleString('es-AR')}` : `${p.total_m2} m²`}
+                                </p>
                             </div>
                             
-                            {p.status === 'presupuesto' && (
+                            {p.status === 'presupuesto' && p.total && parseFloat(p.total) > 0 && (
                                 <button 
                                     class="bg-primary hover:bg-white text-white hover:text-black font-black py-4 px-8 rounded-2xl transition-all uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20 approve-btn active:scale-95"
                                     data-id={p.id}
                                 >
                                     Aprobar Presupuesto
                                 </button>
+                            )}
+
+                            {p.status === 'presupuesto' && (!p.total || parseFloat(p.total) === 0) && (
+                                <span class="text-[9px] font-black uppercase text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 px-4 py-3 rounded-xl tracking-wider flex items-center gap-2">
+                                    <i class="fas fa-hourglass-half"></i> Pendiente de Cotización
+                                </span>
                             )}
                         </div>
                     </div>
@@ -175,6 +185,9 @@ const statusLabels = {
                 });
 
                 if (res.ok) {
+                    const data = await res.json();
+                    const sName = data.sellerName || 'tu asesor asignado';
+                    alert(`✅ ¡Presupuesto Aprobado con Éxito!\n\nHemos notificado a tu asesor (${sName}). Se comunicará telefónicamente contigo a la brevedad para coordinar la forma de pago y continuar con la operación en taller.`);
                     location.reload();
                 } else {
                     alert('Error al aprobar el pedido. Por favor contacta a tu vendedor.');

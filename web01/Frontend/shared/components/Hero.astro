@@ -1,10 +1,20 @@
 ---
 // Hero.astro
 // Main landing section with quick nav and live status card
+interface Props {
+  backgroundUrl?: string;
+}
+
+const { backgroundUrl = '/background.avif' } = Astro.props;
 ---
 
 <section class="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-jet-black via-[#111111] to-neutral-900 border-b border-white/5">
   
+  <!-- Dynamic Directus Background with smooth transition -->
+  <div id="mundial-bg" class="absolute inset-0 pointer-events-none z-0 bg-cover bg-center transition-opacity duration-[4000ms] ease-out opacity-100" style={`background-image: url('${backgroundUrl}');`}>
+    <div class="absolute inset-0 bg-black/45"></div>
+  </div>
+
   <!-- Subtle Background Radial Glow to mimic the old overlay -->
   <div class="absolute inset-0 z-0">
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] opacity-60"></div>
@@ -177,10 +187,27 @@
     }
   }
 
-  // Initialize once DOM is ready and set interval
-  document.addEventListener("DOMContentLoaded", () => {
+  function handleMundialBg() {
+    const bg = document.getElementById('mundial-bg');
+    if (!bg) return;
+    
+    // Asegurar que inicia totalmente visible
+    bg.style.opacity = '1';
+    
+    // Sostener por 5 segundos y luego desvanecer suavemente (transición CSS de 4s)
+    setTimeout(() => {
+      bg.style.opacity = '0';
+    }, 5000);
+  }
+
+  let statusInterval;
+
+  // Inicializar en la carga inicial y en cada navegación de Astro
+  document.addEventListener("astro:page-load", () => {
     updateBusinessStatus();
-    // Re-check every minute to keep UI fresh
-    setInterval(updateBusinessStatus, 60000); 
+    handleMundialBg();
+    
+    if (statusInterval) clearInterval(statusInterval);
+    statusInterval = setInterval(updateBusinessStatus, 60000); 
   });
 </script>

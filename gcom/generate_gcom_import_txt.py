@@ -15,11 +15,21 @@ DIRECTUS_PRODUCTS_CACHE = r"\\Server-alvarezp\c\CATALOGADOR\scratch\directus_pro
 MAP_PATH = r"d:\Alvarezplacas_2026\WEB-alvarezplacas_astro\Alvarezplacas\scratch\gcom_to_directus_map_smart_correct.json"
 OUTPUT_DIR = r"d:\Alvarezplacas_2026\WEB-alvarezplacas_astro\Alvarezplacas\gcom"
 OUTPUT_TXT = os.path.join(OUTPUT_DIR, "importacion_articulos.txt")
+OUTPUT_PRN = os.path.join(OUTPUT_DIR, "importacion_articulos.prn")
 
 def clean_description(desc):
-    """Clean description to fit 40 characters and remove non-ansi chars."""
+    """Clean description to fit 40 characters, remove newlines, and strip accents."""
     if not desc:
         return ""
+    # Replace literal backslash-n/r and real newlines
+    desc = desc.replace(r"\n", " ").replace(r"\r", " ")
+    desc = desc.replace("\n", " ").replace("\r", " ")
+    # Translate accents
+    trans = str.maketrans(
+        "áéíóúüÁÉÍÓÚÜ",
+        "aeiouuAEIOUU"
+    )
+    desc = desc.translate(trans)
     # Remove excessive spaces
     desc = re.sub(r'\s+', ' ', desc).strip()
     # Limit to 40 chars
@@ -36,91 +46,91 @@ def get_gcom_rubro(sku, name):
     if sku.startswith("M-"):
         # Maderas / Tableros
         if "MDF" in name or "FIBRO" in name:
-            return "0002"  # MDF
+            return "Ag0002"  # MDF
         elif "AGLO" in name or "AGLOMERADO" in name:
-            return "0001"  # AGLOMERADO
+            return "Ag0001"  # AGLOMERADO
         elif "FENOLICO" in name:
-            return "0032"  # FENOLICO
+            return "Ag0032"  # FENOLICO
         elif "TERCIADO" in name:
-            return "0023"  # TERCIADO
+            return "Ag0023"  # TERCIADO
         elif "OSB" in name:
-            return "0055"  # OSB
+            return "Ag0055"  # OSB
         elif "PINO" in name or "EUCA" in name or "FINGER" in name:
-            return "0013"  # TABLEROS
+            return "Ag0013"  # TABLEROS
         elif "CHAPADUR" in name or "FIPLASTO" in name:
-            return "0058"  # CHAPADUR
+            return "Ag0058"  # CHAPADUR
         elif "WPC" in name or "ALISTONADA" in name:
-            return "0044"  # PLACA ALISTONADA
+            return "Ag0044"  # PLACA ALISTONADA
         else:
             if "-10-" in sku or "-20-" in sku or "-30-" in sku:
-                return "0002"  # Default melamine boards to MDF
-            return "0013"  # Default to Tableros
+                return "Ag0002"  # Default melamine boards to MDF
+            return "Ag0013"  # Default to Tableros
             
     elif sku.startswith("H-"):
         # Herrajes
         if "BISAGRA" in name:
-            return "0039"  # BISAGRAS
+            return "Ag0039"  # BISAGRAS
         elif "TORNILLO" in name or "AUTOPERFORANTE" in name:
-            return "0012"  # TORNILLOS
+            return "Ag0012"  # TORNILLOS
         elif "CORREDERA" in name:
-            return "0027"  # CORREDERAS
+            return "Ag0027"  # CORREDERAS
         elif "TIRADOR" in name:
-            return "0014"  # TIRADORES
+            return "Ag0014"  # TIRADORES
         elif "MANIJA" in name:
-            return "0033"  # MANIJAS
+            return "Ag0033"  # MANIJAS
         elif "RIEL" in name or "GUIA" in name:
-            return "0019"  # RIELES
+            return "Ag0019"  # RIELES
         elif "TAPA" in name:
-            return "0011"  # HOJA TAPATORNILLO
+            return "Ag0011"  # HOJA TAPATORNILLO
         else:
-            return "0057"  # ACCESORIOS HERRAJES
+            return "Ag0057"  # ACCESORIOS HERRAJES
             
     elif sku.startswith("T-"):
         # Tapacantos
         if "PVC" in name:
-            return "0005"  # PVC
+            return "Ag0005"  # PVC
         elif "ABS" in name:
-            return "0006"  # ABS
+            return "Ag0006"  # ABS
         else:
-            return "0005"  # PVC default
+            return "Ag0005"  # PVC default
             
     elif sku.startswith("R-"):
         # Herramientas
-        return "0024"  # HERRAMIENTAS
+        return "Ag0024"  # HERRAMIENTAS
         
     elif sku.startswith("D-"):
         # Molduras / Zocalos
         if "ZOCALO" in name:
-            return "0017"  # ZOCALOS
+            return "Ag0017"  # ZOCALOS
         elif "VARILLA" in name:
-            return "0015"  # VARILLAS
+            return "Ag0015"  # VARILLAS
         else:
-            return "0017"  # ZOCALOS default
+            return "Ag0017"  # ZOCALOS default
             
     elif sku.startswith("I-"):
         # Insumos / Quimica
         if "LACA" in name or "BARNIZ" in name or "PINTURA" in name:
-            return "0051"  # LACAS
+            return "Ag0051"  # LACAS
         elif "MASILLA" in name:
-            return "0052"  # MASILLAS
+            return "Ag0052"  # MASILLAS
         elif "ADHESIVO" in name or "COLA" in name or "PEGAMENTO" in name:
-            return "0016"  # ADHESIVOS
+            return "Ag0016"  # ADHESIVOS
         else:
-            return "0053"  # COMPLEMENTOS DE PINTURA
+            return "Ag0053"  # COMPLEMENTOS DE PINTURA
             
     elif sku.startswith("S-"):
         # Servicios
         if "CORTE" in name:
-            return "0003"  # CORTES A MEDIDA
+            return "Ag0003"  # CORTES A MEDIDA
         elif "PEGADO" in name or "FILO" in name:
-            return "0009"  # PEGADO DE FILO
+            return "Ag0009"  # PEGADO DE FILO
         elif "PERFORACION" in name or "BISAGRA" in name:
-            return "0056"  # SERVICIO PERFORACION BISAGRAS
+            return "Ag0056"  # SERVICIO PERFORACION BISAGRAS
         else:
-            return "0003"  # CORTES default
+            return "Ag0003"  # CORTES default
             
     else:
-        return "0067"  # SIN DETALLE
+        return "Ag0067"  # SIN DETALLE
 
 def main():
     if not os.path.exists(OUTPUT_DIR):
@@ -139,11 +149,13 @@ def main():
             for item in raw_list:
                 sku = item.get("sku")
                 nombre = item.get("nombre")
+                precio_efectivo = item.get("precio_efectivo")
                 if sku and nombre:
                     products.append({
                         "sku": sku,
-                        "nombre": nombre
-                    })
+                        "nombre": nombre,
+                        "precio_efectivo": precio_efectivo
+                     })
             source_name = "Catalogador Cache (directus_products.json)"
         except Exception as e:
             print(f"  Error reading from Catalogador: {e}")
@@ -161,7 +173,8 @@ def main():
                 if sku and nombre:
                     products.append({
                         "sku": sku,
-                        "nombre": nombre
+                        "nombre": nombre,
+                        "precio_efectivo": None
                     })
             source_name = "Smart Matches Fallback"
         except Exception as e:
@@ -185,16 +198,19 @@ def main():
         desc_clean = clean_description(nombre)
         
         # Get the corresponding GCOM rubro
-        rubro = get_gcom_rubro(sku, nombre)
+        rubro_raw = get_gcom_rubro(sku, nombre)
+        # GCOM expects the rubro code in the import file without the 'Ag' prefix
+        rubro = rubro_raw[2:] if rubro_raw.startswith("Ag") else rubro_raw
         rubros_count[rubro] = rubros_count.get(rubro, 0) + 1
 
-        # We build a 63-character line (since Col 60 + 4 - 1 = 63)
+        # We build an 80-character line (since Col 69 + 12 - 1 = 80)
         # Python string slicing is 0-indexed, so:
         # Col 1 (index 0) to 11 (index 10)
         # Col 13 (index 12) to 52 (index 51)
-        # Col 60 (index 59) to 63 (index 62)
+        # Col 60 (index 59) to 67 (index 66)
+        # Col 69 (index 68) to 80 (index 79)
         
-        line_chars = list(" " * 63)
+        line_chars = list(" " * 80)
         
         # CODIGO ARTICULO
         sku_str = sku[:11].ljust(11)
@@ -206,10 +222,21 @@ def main():
         for i, c in enumerate(desc_str):
             line_chars[12 + i] = c
             
-        # RUBRO
-        rubro_str = rubro[:4].ljust(4)
+        # RUBRO (width 8)
+        rubro_str = rubro[:8].ljust(8)
         for i, c in enumerate(rubro_str):
             line_chars[59 + i] = c
+            
+        # PRECIO (width 12)
+        precio_val = item.get("precio_efectivo")
+        if precio_val is not None and precio_val > 0:
+            precio_final = precio_val * 1.33
+            precio_str = f"{precio_final:.2f}".replace(".", ",").rjust(12)
+        else:
+            precio_str = " " * 12
+            
+        for i, c in enumerate(precio_str):
+            line_chars[68 + i] = c
             
         lines.append("".join(line_chars))
 
@@ -221,8 +248,14 @@ def main():
     # Save to TXT file in ANSI format
     with open(OUTPUT_TXT, 'w', encoding='ansi') as f:
         f.write("\n".join(lines) + "\n")
-    print(f"\n[3] Import file successfully saved to: {OUTPUT_TXT}")
-    print(f"    File size: {os.path.getsize(OUTPUT_TXT):,} bytes")
+    
+    # Save to PRN file in ANSI format
+    with open(OUTPUT_PRN, 'w', encoding='ansi') as f:
+        f.write("\n".join(lines) + "\n")
+
+    print(f"\n[3] Import files successfully saved to:")
+    print(f"    - {OUTPUT_TXT} ({os.path.getsize(OUTPUT_TXT):,} bytes)")
+    print(f"    - {OUTPUT_PRN} ({os.path.getsize(OUTPUT_PRN):,} bytes)")
 
 if __name__ == "__main__":
     main()

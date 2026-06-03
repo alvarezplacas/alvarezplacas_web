@@ -2289,6 +2289,29 @@ const isLoggedIn = !!clientId;
                 return;
             }
             
+            // Mapear melamina seleccionada a marca y diseño del catálogo
+            const selectedMelamina = this.state.selectedMelamina || 'faplac_roble';
+            let brand = 'FAPLAC';
+            let designName = 'Roble Americano';
+
+            if (selectedMelamina.startsWith('egger_')) {
+                brand = 'EGGER';
+                if (selectedMelamina === 'egger_helsinki') designName = 'Helsinki Birch';
+                else if (selectedMelamina === 'egger_arcilla') designName = 'Gris Arcilla';
+                else if (selectedMelamina === 'egger_ceniza') designName = 'Ceniza Egger';
+            } else if (selectedMelamina.startsWith('sadepan_')) {
+                brand = 'SADEPAN';
+                if (selectedMelamina === 'sadepan_cerezo') designName = 'Cerezo';
+                else if (selectedMelamina === 'sadepan_haya') designName = 'Haya';
+                else if (selectedMelamina === 'sadepan_grafito') designName = 'Grafito Sadepan';
+            } else if (selectedMelamina.startsWith('faplac_')) {
+                brand = 'FAPLAC';
+                if (selectedMelamina === 'faplac_roble') designName = 'Roble Americano';
+                else if (selectedMelamina === 'faplac_seda') designName = 'Seda Giorno';
+                else if (selectedMelamina === 'faplac_nogal') designName = 'Nogal Habano';
+                else if (selectedMelamina === 'faplac_gris') designName = 'Gris Humo';
+            }
+            
             // Filtrar melamina de 18mm (no fondos traseros MDF de 3mm)
             const melaminaPieces = this.state.results.pieces.filter(p => !p.isBackground).map(p => ({
                 nombre: p.name,
@@ -2304,10 +2327,18 @@ const isLoggedIn = !!clientId;
             sessionStorage.setItem('cubical_despiece', JSON.stringify({
                 projectName: this.state.projectName,
                 thickness: 18,
-                pieces: melaminaPieces
+                brand: brand,
+                designName: designName,
+                pieces: melaminaPieces,
+                hardware: this.state.results.hw || []
             }));
             
-            // Redirigir a SmartCut
+            // Redirigir a SmartCut con estado de carga visual interactivo
+            const btn = document.querySelector('button[onclick="window.cubical.exportToSmartCut()"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PREPARANDO SMARTCUT...';
+            }
             window.location.href = '/herramientas/presupuestador';
         },
 

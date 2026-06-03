@@ -61,9 +61,12 @@
         <div class="bg-[#111] border border-blue-500/10 rounded-2xl p-6 relative flex flex-col justify-between">
             <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/[0.02] blur-xl pointer-events-none"></div>
             <div>
-                <div class="flex items-center gap-2 mb-4 pb-2 border-b border-white/5">
-                    <i class="fas fa-file-invoice text-blue-500"></i>
-                    <h3 class="text-white font-bold uppercase tracking-widest text-xs">Operaciones Venta 1</h3>
+                <div class="flex items-center justify-between mb-4 pb-2 border-b border-white/5">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-file-invoice text-blue-500"></i>
+                        <h3 class="text-white font-bold uppercase tracking-widest text-xs">Venta 1 (Blanco)</h3>
+                    </div>
+                    <span class="font-mono text-blue-400 bg-blue-500/10 text-[10px] font-bold px-2 py-0.5 rounded" x-text="porcentajeV1 + '%'"></span>
                 </div>
                 
                 <div class="space-y-4">
@@ -75,7 +78,7 @@
                         </div>
                         <div class="relative flex items-center">
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaBlanco = Math.max(0, ventaBlanco - 50000); isLiveSync = false">-</button>
-                            <input type="number" x-model.number="ventaBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono font-bold tracking-tight hover:border-blue-700/60 transition" />
+                            <input type="text" :value="ventaBlanco" @change="ventaBlanco = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono font-bold tracking-tight hover:border-blue-700/60 transition" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaBlanco += 50000; isLiveSync = false">+</button>
                         </div>
                     </div>
@@ -86,7 +89,7 @@
                             <label class="text-gray-500 text-[10px] font-black uppercase tracking-wider">Margen Base (%)</label>
                         </div>
                         <div class="relative flex items-center">
-                            <input type="number" step="0.01" x-model.number="porcentajeMargenBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono font-bold tracking-tight hover:border-blue-700/60 transition" />
+                            <input type="text" :value="porcentajeMargenBlanco" @change="porcentajeMargenBlanco = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono font-bold tracking-tight hover:border-blue-700/60 transition" />
                         </div>
                     </div>
 
@@ -95,7 +98,7 @@
                         <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Servicio de Corte V1</label>
                         <div class="relative flex items-center">
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaCorteBlanco = Math.max(0, ventaCorteBlanco - 10000); isLiveSync = false">-</button>
-                            <input type="number" x-model.number="ventaCorteBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono hover:border-blue-700/60 transition" />
+                            <input type="text" :value="ventaCorteBlanco" @change="ventaCorteBlanco = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono hover:border-blue-700/60 transition" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaCorteBlanco += 10000; isLiveSync = false">+</button>
                         </div>
                     </div>
@@ -105,7 +108,7 @@
                         <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Servicio de Pegado V1</label>
                         <div class="relative flex items-center">
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaPegadoBlanco = Math.max(0, ventaPegadoBlanco - 10000); isLiveSync = false">-</button>
-                            <input type="number" x-model.number="ventaPegadoBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono hover:border-blue-700/60 transition" />
+                            <input type="text" :value="ventaPegadoBlanco" @change="ventaPegadoBlanco = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-blue-500 outline-none text-right font-mono hover:border-blue-700/60 transition" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaPegadoBlanco += 10000; isLiveSync = false">+</button>
                         </div>
                     </div>
@@ -114,11 +117,11 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Cant. Pegados</label>
-                            <input type="number" x-model.number="cantPegadosBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-3 py-2 text-white text-xs focus:border-blue-500 outline-none text-right font-mono" />
+                            <input type="text" :value="cantPegadosBlanco" @change="cantPegadosBlanco = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/50 rounded-xl px-3 py-2 text-white text-xs focus:border-blue-500 outline-none text-right font-mono" />
                         </div>
                         <div>
                             <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Valor Unitario</label>
-                            <input type="number" x-model.number="precioPegadoBlanco" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/30 rounded-xl px-3 py-2 text-gray-400 text-xs focus:border-blue-500 outline-none text-right font-mono" />
+                            <input type="text" :value="precioPegadoBlanco" @change="precioPegadoBlanco = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-blue-900/30 rounded-xl px-3 py-2 text-gray-400 text-xs focus:border-blue-500 outline-none text-right font-mono" />
                         </div>
                     </div>
                 </div>
@@ -140,9 +143,12 @@
         <div class="bg-[#111] border border-purple-500/10 rounded-2xl p-6 relative flex flex-col justify-between">
             <div class="absolute top-0 right-0 w-24 h-24 bg-purple-500/[0.02] blur-xl pointer-events-none"></div>
             <div>
-                <div class="flex items-center gap-2 mb-4 pb-2 border-b border-white/5">
-                    <i class="fas fa-wallet text-purple-500"></i>
-                    <h3 class="text-white font-bold uppercase tracking-widest text-xs">Operaciones Venta 2</h3>
+                <div class="flex items-center justify-between mb-4 pb-2 border-b border-white/5">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-wallet text-purple-500"></i>
+                        <h3 class="text-white font-bold uppercase tracking-widest text-xs">Venta 2 (Negro)</h3>
+                    </div>
+                    <span class="font-mono text-purple-400 bg-purple-500/10 text-[10px] font-bold px-2 py-0.5 rounded" x-text="porcentajeV2 + '%'"></span>
                 </div>
                 
                 <div class="space-y-4">
@@ -154,7 +160,7 @@
                         </div>
                         <div class="relative flex items-center">
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaNegro = Math.max(0, ventaNegro - 50000); isLiveSync = false">-</button>
-                            <input type="number" x-model.number="ventaNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono font-bold tracking-tight hover:border-purple-700/60 transition" />
+                            <input type="text" :value="ventaNegro" @change="ventaNegro = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono font-bold tracking-tight hover:border-purple-700/60 transition" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaNegro += 50000; isLiveSync = false">+</button>
                         </div>
                     </div>
@@ -165,26 +171,26 @@
                             <label class="text-gray-500 text-[10px] font-black uppercase tracking-wider">Margen Base (%)</label>
                         </div>
                         <div class="relative flex items-center">
-                            <input type="number" step="0.01" x-model.number="porcentajeMargenNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono font-bold tracking-tight hover:border-purple-700/60 transition" />
+                            <input type="text" :value="porcentajeMargenNegro" @change="porcentajeMargenNegro = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono font-bold tracking-tight hover:border-purple-700/60 transition" />
                         </div>
                     </div>
 
-                    <!-- Corte Venta 2 -->
+                    <!-- Servicio de Corte V2 -->
                     <div>
                         <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Servicio de Corte V2</label>
                         <div class="relative flex items-center">
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaCorteNegro = Math.max(0, ventaCorteNegro - 10000); isLiveSync = false">-</button>
-                            <input type="number" x-model.number="ventaCorteNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono hover:border-purple-700/60 transition" />
+                            <input type="text" :value="ventaCorteNegro" @change="ventaCorteNegro = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono hover:border-purple-700/60 transition" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaCorteNegro += 10000; isLiveSync = false">+</button>
                         </div>
                     </div>
 
-                    <!-- Pegado Venta 2 -->
+                    <!-- Servicio de Pegado V2 -->
                     <div>
                         <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Servicio de Pegado V2</label>
                         <div class="relative flex items-center">
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="ventaPegadoNegro = Math.max(0, ventaPegadoNegro - 10000); isLiveSync = false">-</button>
-                            <input type="number" x-model.number="ventaPegadoNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono hover:border-purple-700/60 transition" />
+                            <input type="text" :value="ventaPegadoNegro" @change="ventaPegadoNegro = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-purple-500 outline-none text-right font-mono hover:border-purple-700/60 transition" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="ventaPegadoNegro += 10000; isLiveSync = false">+</button>
                         </div>
                     </div>
@@ -193,11 +199,11 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Cant. Pegados</label>
-                            <input type="number" x-model.number="cantPegadosNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-3 py-2 text-white text-xs focus:border-purple-500 outline-none text-right font-mono" />
+                            <input type="text" :value="cantPegadosNegro" @change="cantPegadosNegro = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/50 rounded-xl px-3 py-2 text-white text-xs focus:border-purple-500 outline-none text-right font-mono" />
                         </div>
                         <div>
                             <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">Valor Unitario</label>
-                            <input type="number" x-model.number="precioPegadoNegro" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/30 rounded-xl px-3 py-2 text-gray-400 text-xs focus:border-purple-500 outline-none text-right font-mono" />
+                            <input type="text" :value="precioPegadoNegro" @change="precioPegadoNegro = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-purple-900/30 rounded-xl px-3 py-2 text-gray-400 text-xs focus:border-purple-500 outline-none text-right font-mono" />
                         </div>
                     </div>
                 </div>
@@ -233,7 +239,7 @@
                         </div>
                         <div class="relative flex items-center">
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="gastosTotales = Math.max(0, gastosTotales - 20000); isLiveSync = false">-</button>
-                            <input type="number" min="0" x-model.number="gastosTotales" @input="isLiveSync = false" class="w-full bg-[#000] border rounded-xl px-8 py-2.5 text-white text-sm outline-none text-right font-mono font-bold transition" :class="isLiveSync ? 'border-emerald-900/60 focus:border-emerald-500 hover:border-emerald-700/60' : 'border-red-900/50 focus:border-red-500 hover:border-red-700/60'" />
+                            <input type="text" :value="gastosTotales" @change="gastosTotales = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border rounded-xl px-8 py-2.5 text-white text-sm outline-none text-right font-mono font-bold transition" :class="isLiveSync ? 'border-emerald-900/60 focus:border-emerald-500 hover:border-emerald-700/60' : 'border-red-900/50 focus:border-red-500 hover:border-red-700/60'" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="gastosTotales += 20000; isLiveSync = false">+</button>
                         </div>
                         <p class="text-[9px] text-gray-600 mt-1" x-show="isLiveSync">Suma automática de egresos del período seleccionado</p>
@@ -243,11 +249,11 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">IVA Ventas</label>
-                            <input type="number" x-model.number="ivaVentas" @input="isLiveSync = false" class="w-full bg-[#000] border border-red-900/30 rounded-xl px-3 py-2.5 text-white text-xs focus:border-red-500 outline-none text-right font-mono" />
+                            <input type="text" :value="ivaVentas" @change="ivaVentas = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-red-900/30 rounded-xl px-3 py-2.5 text-white text-xs focus:border-red-500 outline-none text-right font-mono" />
                         </div>
                         <div>
                             <label class="block text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1">IVA Compras</label>
-                            <input type="number" x-model.number="ivaCompras" @input="isLiveSync = false" class="w-full bg-[#000] border border-red-900/30 rounded-xl px-3 py-2.5 text-white text-xs focus:border-red-500 outline-none text-right font-mono" />
+                            <input type="text" :value="ivaCompras" @change="ivaCompras = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-red-900/30 rounded-xl px-3 py-2.5 text-white text-xs focus:border-red-500 outline-none text-right font-mono" />
                         </div>
                     </div>
 
@@ -318,7 +324,7 @@
                         <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Recaudación Real</label>
                         <div class="relative flex items-center">
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="recaudacion = Math.max(0, recaudacion - 50000); isLiveSync = false">-</button>
-                            <input type="number" x-model.number="recaudacion" @input="isLiveSync = false" class="w-full bg-[#000] border border-amber-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-amber-500 outline-none text-right font-mono font-bold tracking-tight hover:border-amber-700/60 transition" />
+                            <input type="text" :value="recaudacion" @change="recaudacion = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-amber-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-amber-500 outline-none text-right font-mono font-bold tracking-tight hover:border-amber-700/60 transition" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="recaudacion += 50000; isLiveSync = false">+</button>
                         </div>
                     </div>
@@ -333,7 +339,7 @@
                         <label class="block text-gray-500 text-[10px] font-black uppercase tracking-wider mb-1">Compra Total Real</label>
                         <div class="relative flex items-center">
                             <button class="absolute left-2 text-gray-600 hover:text-white text-xs" @click="compraTotalReal = Math.max(0, compraTotalReal - 50000); isLiveSync = false">-</button>
-                            <input type="number" x-model.number="compraTotalReal" @input="isLiveSync = false" class="w-full bg-[#000] border border-amber-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-amber-500 outline-none text-right font-mono font-bold tracking-tight hover:border-amber-700/60 transition" />
+                            <input type="text" :value="compraTotalReal" @change="compraTotalReal = cleanAndParseFloat($event.target.value)" @input="isLiveSync = false" class="w-full bg-[#000] border border-amber-900/50 rounded-xl px-8 py-2.5 text-white text-sm focus:border-amber-500 outline-none text-right font-mono font-bold tracking-tight hover:border-amber-700/60 transition" />
                             <button class="absolute right-2 text-gray-600 hover:text-white text-xs" @click="compraTotalReal += 50000; isLiveSync = false">+</button>
                         </div>
                     </div>
@@ -714,11 +720,14 @@
             get gananciaVentaNegro() { return currency(this.margenNegro).add(this.margenCorteNegro).add(this.margenPegadoNegro).value; },
 
             // Control Recaudacion y Compras Getters
+            get totalVentas() { return currency(this.ventaBlanco).add(this.ventaNegro).value; },
+            get porcentajeV1() { return this.totalVentas > 0 ? ((this.ventaBlanco / this.totalVentas) * 100).toFixed(1) : '0.0'; },
+            get porcentajeV2() { return this.totalVentas > 0 ? ((this.ventaNegro / this.totalVentas) * 100).toFixed(1) : '0.0'; },
             get materiaPrimaBlanco() { return currency(this.ventaSinCorteBlanco).subtract(this.margenBlanco).divide(1.25).value; },
             get materiaPrimaNegro() { return currency(this.ventaSinCorteNegro).subtract(this.margenNegro).divide(1.105).value; },
             get materiaPrimaTotal() { return currency(this.materiaPrimaBlanco).add(this.materiaPrimaNegro).value; },
             get desvioDeCompra() { return currency(this.compraTotalReal).subtract(this.materiaPrimaTotal).value; },
-            get recaudacionMenosVentas() { return currency(this.recaudacion).subtract(currency(this.ventaBlanco).add(this.ventaNegro).value).value; },
+            get recaudacionMenosVentas() { return currency(this.recaudacion).subtract(this.totalVentas).value; },
 
             // Period duration getter
             get periodoDias() {
@@ -754,6 +763,45 @@
 
             format(value) {
                 return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
+            },
+
+            cleanAndParseFloat(val) {
+                if (val === null || val === undefined) return 0;
+                let str = String(val).trim();
+                if (!str) return 0;
+                
+                // Remove currency symbols and spaces
+                str = str.replace(/[^0-9.,-]/g, '');
+                
+                // If it has both dot and comma, e.g. 1.234,56
+                if (str.includes('.') && str.includes(',')) {
+                    str = str.replace(/\./g, '').replace(/,/g, '.');
+                } else if (str.includes(',')) {
+                    // Single comma
+                    const commaCount = (str.match(/,/g) || []).length;
+                    if (commaCount === 1) {
+                        str = str.replace(/,/g, '.');
+                    } else {
+                        str = str.replace(/,/g, '');
+                    }
+                } else if (str.includes('.')) {
+                    // Single or multiple dots
+                    const dotCount = (str.match(/\./g) || []).length;
+                    if (dotCount > 1) {
+                        str = str.replace(/\./g, '');
+                    } else {
+                        // Single dot. In Argentina, single dot in large numbers is thousands,
+                        // but could be decimal. E.g. "24.24" is decimal, "1.500" is thousands.
+                        // Let's check if there are 3 digits after the dot (e.g. "1.500" -> 1500)
+                        const parts = str.split('.');
+                        if (parts[1] && parts[1].length === 3 && parseFloat(parts[0]) > 0) {
+                            str = str.replace(/\./g, '');
+                        }
+                    }
+                }
+                
+                const parsed = parseFloat(str);
+                return isNaN(parsed) ? 0 : parsed;
             },
 
             showToast(msg) {
@@ -1145,6 +1193,8 @@
                     gastosTotales: this.gastosTotales,
                     ivaCompras: this.ivaCompras,
                     ivaVentas: this.ivaVentas,
+                    recaudacion: this.recaudacion,
+                    compraTotalReal: this.compraTotalReal,
                     mesesProyeccion: this.mesesProyeccion,
                     crecimientoVentas: this.crecimientoVentas,
                     inflacionGastos: this.inflacionGastos,
@@ -1283,6 +1333,8 @@
                 this.gastosTotales = detalles.gastosTotales !== undefined ? detalles.gastosTotales : proj.gastos_totales;
                 this.ivaCompras = detalles.ivaCompras !== undefined ? detalles.ivaCompras : 0;
                 this.ivaVentas = detalles.ivaVentas !== undefined ? detalles.ivaVentas : 0;
+                this.recaudacion = detalles.recaudacion !== undefined ? detalles.recaudacion : 0;
+                this.compraTotalReal = detalles.compraTotalReal !== undefined ? detalles.compraTotalReal : 0;
                 
                 if (detalles.mesesProyeccion !== undefined) this.mesesProyeccion = detalles.mesesProyeccion;
                 if (detalles.crecimientoVentas !== undefined) this.crecimientoVentas = detalles.crecimientoVentas;

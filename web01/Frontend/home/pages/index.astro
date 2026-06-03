@@ -7,11 +7,14 @@ import Layout from '@layouts/Layout.astro';
 import Header from '@components/Header.astro';
 import Hero from '@components/Hero.astro';
 import ClubSection from '@home/components/ClubSection.astro';
+import { getHomeBackgroundUrl } from '@conexiones/background.js';
+
+const backgroundUrl = await getHomeBackgroundUrl();
 ---
 
 <Layout title="Alvarez Placas - Proveedor para Profesionales">
 	<Header />
-	<Hero />
+	<Hero backgroundUrl={backgroundUrl} />
     
     <ClubSection />
 

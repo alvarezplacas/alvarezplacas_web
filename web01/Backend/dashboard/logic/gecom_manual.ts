@@ -1,5 +1,22 @@
 export const gecomManualData = [
   {
+    title: `Acceso al Entorno de Pruebas GCOM`,
+    content: `CÓMO ACCEDER AL ENTORNO DE PRUEBAS SEGURO (AP2526_TEST)
+======================================================
+
+Para probar la sincronización de stock y la actualización de códigos SKU (formato X-XX-XXXX) sin afectar la operativa diaria de la empresa:
+
+1. Abrir el programa GCOM en tu terminal.
+2. En el menú superior, hacer clic en "Bases" y luego seleccionar "Lista".
+3. En el listado de bases de datos disponibles, seleccionar la opción:
+   ▶ AP2526_TEST
+4. Hacer clic en "Aceptar" para confirmar el ingreso.
+5. Verificación de Seguridad: Comprueba que en la barra de estado del sistema o en la cabecera de la ventana activa figure la ruta de pruebas:
+   \\server-alvarezp\c\gecom\datos\AP2526_TEST
+
+Una vez dentro, puedes facturar, consultar stock, registrar cobros o modificar precios de prueba de forma 100% aislada. Para regresar al sistema productivo real, repite el proceso y selecciona la base "AP2526".`
+  },
+  {
     title: `Manual de Calculadora Proyectada`,
     content: `MANUAL DE LA CALCULADORA PROYECTADA AVANZADA (CENTRO OPERATIVO FINANCIERO)
 ==========================================================================

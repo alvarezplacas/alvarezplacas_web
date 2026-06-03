@@ -164,9 +164,25 @@ const data = pedido.datos_optimizacion;
                     steps: 1200 
                 });
 
+                // Resolucion de dimensiones según marca del material
+                const BRANDS = { 
+                    'EGGER': { w: 2600, h: 1830 }, 
+                    'FAPLAC': { w: 2750, h: 1830 }, 
+                    'SADEPAN': { w: 2820, h: 1830 }, 
+                    'NOVA': { w: 3660, h: 1830 },
+                    'MASISA': { w: 2600, h: 1830 },
+                    'ARAUCO': { w: 2600, h: 1830 },
+                    'FIBROPLUS': { w: 2600, h: 1830 },
+                    'OSB': { w: 2440, h: 1220 }
+                };
+                
+                const brandConfig = BRANDS[String(proj.brand).toUpperCase().trim()] || { w: 2750, h: 1830 };
+                const plateWidth = brandConfig.w;
+                const plateHeight = brandConfig.h;
+
                 // Recalcular el resultado para renderizar
                 if (proj.pieces && proj.pieces.length > 0) {
-                    const result = engine.optimize(2750, 1830, proj.pieces); // Default FAPLAC si no se guardó el tamaño
+                    const result = engine.optimize(plateWidth, plateHeight, proj.pieces);
                     
                     // Override visualizer para impresión (Blanco/Negro)
                     visualizer.drawPlate = function(ctx, plate, pw, ph) {
@@ -214,7 +230,7 @@ const data = pedido.datos_optimizacion;
                         }
                     };
 
-                    visualizer.render(result, 2750, 1830);
+                    visualizer.render(result, plateWidth, plateHeight);
                 }
             });
         }

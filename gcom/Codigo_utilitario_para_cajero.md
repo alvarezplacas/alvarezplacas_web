@@ -1,0 +1,2 @@
+Tenemos que crear para GCOM un codigo tuilitario, este codigo será de uso exclusivo para que el cajero pueda usarla como soporte para descuentos fuera del registro o ingreso efectivo para otras utilidades. 
+Para el uso del cajero usamos el codigo con Z-XX-XXXX "Z" será para utilidad del cajero.
