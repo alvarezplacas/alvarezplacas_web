@@ -9,24 +9,24 @@ const isLoggedIn = !!clientId;
 
 <div id="cubical-app-root" class="cubical-container mx-auto max-w-[1600px] px-4 py-8" data-is-logged-in={isLoggedIn} data-client-id={clientId}>
     <!-- BARRA SUPERIOR -->
-    <header class="flex justify-between items-center mb-12 bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-lg shadow-sm">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0 mb-12 bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-lg shadow-sm">
         <div class="flex items-center gap-6">
              <a href="/cliente" class="nav-link-sc">
                 <i class="fas fa-arrow-left"></i> VOLVER AL PANEL
             </a>
-            <div style="width: 1px; height: 20px; background: var(--sc-border);"></div>
+            <div style="width: 1px; height: 20px; background: var(--sc-border);" class="hidden md:block"></div>
             <div>
                 <div class="text-[0.6rem] font-black text-[var(--alvarez-red)] tracking-[0.2em] uppercase mb-1">CubiCal PRO v1.1</div>
-                <h1 class="text-3xl font-black tracking-tighter uppercase italic text-[var(--sc-text)]">CALCULADOR <span class="text-[var(--alvarez-red)]">INDUSTRIAL</span></h1>
+                <h1 class="text-2xl md:text-3xl font-black tracking-tighter uppercase italic text-[var(--sc-text)]">CALCULADOR <span class="text-[var(--alvarez-red)]">INDUSTRIAL</span></h1>
             </div>
         </div>
-        <div class="flex gap-4 items-center">
-             <div id="theme-toggle" onclick="window.cubical.toggleTheme()" class="nav-link-sc" style="cursor:pointer; color: var(--sc-text-dim);">
+        <div class="flex flex-wrap gap-4 items-center w-full md:w-auto mt-2 md:mt-0">
+             <div id="theme-toggle" onclick="window.cubical.toggleTheme()" class="nav-link-sc !hidden md:!flex" style="cursor:pointer; color: var(--sc-text-dim);">
                 <i id="theme-icon" class="fas fa-moon"></i> <span id="theme-text">MODO OSCURO</span>
             </div>
-            <div style="width: 1px; height: 20px; background: var(--sc-border);"></div>
-            <button id="btn-save-project" class="hidden px-6 py-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase text-[var(--sc-text)] hover:bg-[var(--sc-border)] transition-all">Guardar Proyecto</button>
-            <button id="btn-goto-dashboard" onclick="window.cubical.showDashboard()" class="px-6 py-2 bg-[var(--alvarez-red)] text-white rounded text-xs font-black uppercase hover:scale-105 transition-all shadow-lg">Mis Proyectos</button>
+            <div style="width: 1px; height: 20px; background: var(--sc-border);" class="hidden md:block"></div>
+            <button id="btn-save-project" class="hidden px-6 py-2 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase text-[var(--sc-text)] hover:bg-[var(--sc-border)] transition-all flex-1 md:flex-none">Guardar Proyecto</button>
+            <button id="btn-goto-dashboard" onclick="window.cubical.showDashboard()" class="px-6 py-2 bg-[var(--alvarez-red)] text-white rounded text-xs font-black uppercase hover:scale-105 transition-all shadow-lg flex-1 md:flex-none">Mis Proyectos</button>
         </div>
     </header>
 
@@ -35,7 +35,7 @@ const isLoggedIn = !!clientId;
         <!-- SE ELIMINÓ EL BOTÓN 'NUEVO PROYECTO' A PEDIDO DEL USUARIO PARA PRIORIZAR LAS PLANTILLAS -->
         <!-- CATÁLOGO DE PLANTILLAS RÁPIDAS (AHORA ES LO PRINCIPAL) -->
         <div class="mb-16">
-            <h2 class="text-5xl font-black mb-4 tracking-tighter text-[var(--sc-text)] uppercase italic">EXPLORA NUESTROS MODELOS</h2>
+            <h2 class="text-2xl md:text-5xl font-black mb-4 tracking-tighter text-[var(--sc-text)] uppercase italic">EXPLORA NUESTROS MODELOS</h2>
             <div class="w-20 h-1 bg-[var(--alvarez-red)] mb-8"></div>
             <p class="text-[var(--sc-text-dim)] mb-8 max-w-xl text-lg font-medium">Inicia tu diseño al instante seleccionando un módulo estándar preconfigurado de nuestro catálogo interactivo.</p>
             
@@ -59,7 +59,7 @@ const isLoggedIn = !!clientId;
         </div>
 
         <div class="mt-16 border-t border-[var(--sc-border)] pt-12" style={!isLoggedIn ? 'display:none;' : ''}>
-            <h3 class="text-3xl font-black mb-4 tracking-tighter text-[var(--sc-text)]">TUS PROYECTOS GUARDADOS</h3>
+            <h3 class="text-xl md:text-3xl font-black mb-4 tracking-tighter text-[var(--sc-text)]">TUS PROYECTOS GUARDADOS</h3>
             <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <!-- Dinámico -->
                 <div class="bg-[var(--sc-surface-alt)] h-40 rounded-lg animate-pulse"></div>
@@ -72,7 +72,7 @@ const isLoggedIn = !!clientId;
     <!-- PANTALLA 2: SETUP -->
     <section id="screen-setup" class="hidden max-w-2xl mx-auto animate-fade-in">
         <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-12 rounded-xl shadow-2xl">
-            <h2 class="text-3xl font-black mb-10 tracking-tight text-center uppercase text-[var(--sc-text)]">Configuración del Proyecto</h2>
+            <h2 class="text-xl md:text-3xl font-black mb-10 tracking-tight text-center uppercase text-[var(--sc-text)]">Configuración del Proyecto</h2>
             
             <div class="space-y-8">
                 <div>
@@ -231,27 +231,27 @@ const isLoggedIn = !!clientId;
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Alto (mm)</label>
-                            <input type="number" id="mod-h" oninput="window.cubical.updateActiveModule()" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-h" oninput="window.cubical.updateActiveModule()" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Ancho (mm)</label>
-                            <input type="number" id="mod-w" oninput="window.cubical.updateActiveModule()" value="600" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-w" oninput="window.cubical.updateActiveModule()" value="600" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Prof. (mm)</label>
-                            <input type="number" id="mod-p" oninput="window.cubical.updateActiveModule()" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-p" oninput="window.cubical.updateActiveModule()" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Estantes</label>
-                            <input type="number" id="mod-shelves" oninput="window.cubical.updateActiveModule()" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-shelves" oninput="window.cubical.updateActiveModule()" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Cajones</label>
-                            <input type="number" id="mod-drawers" value="3" min="0" oninput="window.cubical.updateDrawerEducation(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-drawers" value="3" min="0" oninput="window.cubical.updateDrawerEducation(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Puertas</label>
-                            <input type="number" id="mod-doors" value="0" min="0" oninput="window.cubical.updateHingeVisibility(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-doors" value="0" min="0" oninput="window.cubical.updateHingeVisibility(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         
                         <!-- Dynamic Hinge Selector -->
@@ -374,27 +374,27 @@ const isLoggedIn = !!clientId;
                     <div class="grid grid-cols-3 gap-3">
                         <div>
                             <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Alto (mm)</label>
-                            <input type="number" id="mod-h-mobile" oninput="window.cubical.updateActiveModule(true)" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-h-mobile" oninput="window.cubical.updateActiveModule(true)" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Ancho (mm)</label>
-                            <input type="number" id="mod-w-mobile" oninput="window.cubical.updateActiveModule(true)" value="600" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-w-mobile" oninput="window.cubical.updateActiveModule(true)" value="600" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Prof. (mm)</label>
-                            <input type="number" id="mod-p-mobile" oninput="window.cubical.updateActiveModule(true)" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-p-mobile" oninput="window.cubical.updateActiveModule(true)" value="500" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Estantes</label>
-                            <input type="number" id="mod-shelves-mobile" oninput="window.cubical.updateActiveModule(true)" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-shelves-mobile" oninput="window.cubical.updateActiveModule(true)" value="0" min="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Cajones</label>
-                            <input type="number" id="mod-drawers-mobile" value="3" min="0" oninput="window.cubical.updateDrawerEducation(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-drawers-mobile" value="3" min="0" oninput="window.cubical.updateDrawerEducation(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         <div>
                             <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Puertas</label>
-                            <input type="number" id="mod-doors-mobile" value="0" min="0" oninput="window.cubical.updateHingeVisibility(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            <input type="number" inputmode="decimal" id="mod-doors-mobile" value="0" min="0" oninput="window.cubical.updateHingeVisibility(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
 
                         <div id="group-hinge-type-mobile" class="col-span-3 hidden">
@@ -486,7 +486,7 @@ const isLoggedIn = !!clientId;
             <!-- COLUMNA PLACAS -->
             <div class="space-y-6">
                 <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-10 rounded-xl shadow-sm">
-                    <h3 class="text-2xl font-black mb-8 uppercase italic text-[var(--alvarez-red)]">REPORTE DE MATERIALES</h3>
+                    <h3 class="text-lg md:text-2xl font-black mb-8 uppercase italic text-[var(--alvarez-red)]">REPORTE DE MATERIALES</h3>
                     <div id="res-boards-stats" class="grid grid-cols-3 gap-5 mb-10">
                         <!-- Dinámico -->
                     </div>
@@ -499,8 +499,9 @@ const isLoggedIn = !!clientId;
             <!-- COLUMNA HERRAJES -->
             <div class="space-y-6">
                 <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-10 rounded-xl shadow-sm">
-                    <h3 class="text-2xl font-black mb-8 uppercase italic text-[var(--sc-text)]">LISTA DE HERRAJES</h3>
-                    <table class="w-full text-sm text-left">
+                    <h3 class="text-lg md:text-2xl font-black mb-8 uppercase italic text-[var(--sc-text)]">LISTA DE HERRAJES</h3>
+                    <div class="overflow-x-auto w-full custom-scrollbar pb-2">
+                        <table class="w-full text-sm text-left min-w-[400px]">
                         <thead class="text-[0.65rem] font-black text-[var(--sc-text-dim)] uppercase border-bottom border-[var(--sc-border)]">
                             <tr>
                                 <th class="pb-6">Descripción del Insumo</th>
@@ -512,6 +513,7 @@ const isLoggedIn = !!clientId;
                             <!-- Dinámico -->
                         </tbody>
                     </table>
+                    </div>
                 </div>
                 
                 <div class="flex flex-col gap-4 p-4 bg-[var(--sc-surface-alt)] rounded-xl border border-[var(--sc-border)]">
@@ -529,7 +531,7 @@ const isLoggedIn = !!clientId;
         
         <!-- INFORME DE ENSAMBLAJE (FULL WIDTH) -->
         <div class="mt-8 bg-[var(--sc-surface)] border border-[var(--sc-border)] p-10 rounded-xl shadow-sm">
-            <h3 class="text-2xl font-black mb-6 uppercase italic text-[var(--sc-text)] flex items-center gap-3">
+            <h3 class="text-lg md:text-2xl font-black mb-6 uppercase italic text-[var(--sc-text)] flex items-center gap-3">
                 <i class="fas fa-tools text-[var(--alvarez-red)]"></i> INFORME DE ENSAMBLAJE PASO A PASO
             </h3>
             <div id="res-assembly-guide" class="space-y-4 text-sm text-[var(--sc-text-dim)]">
@@ -609,16 +611,17 @@ const isLoggedIn = !!clientId;
     .bottom-action-bar {
         display: flex;
         justify-content: space-around;
-        align-items: center;
+        align-items: stretch;
         background: var(--sc-surface);
         border-top: 1px solid var(--sc-border);
-        padding: 12px 0;
+        padding: 0;
         position: absolute;
         bottom: 0;
         left: 0;
         right: 0;
         z-index: 40;
         box-shadow: 0 -3px 15px rgba(0,0,0,0.1);
+        min-height: 60px;
     }
     .bottom-action-btn {
         display: flex;
@@ -634,6 +637,8 @@ const isLoggedIn = !!clientId;
         transition: all 0.2s ease;
         flex: 1;
         text-align: center;
+        padding: 12px 8px;
+        justify-content: center;
     }
     .bottom-action-btn:hover,
     .bottom-action-btn.active {
@@ -647,31 +652,44 @@ const isLoggedIn = !!clientId;
     /* Bottom Sheets Overlay */
     .bottom-sheet {
         position: absolute;
-        bottom: 55px; /* Altura de la barra inferior */
+        bottom: 60px; /* Altura de la barra inferior */
         left: 0;
         right: 0;
         background: var(--sc-surface);
         border-top: 2px solid var(--alvarez-red);
         border-radius: 16px 16px 0 0;
-        transform: translateY(100%);
-        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        transform: translateY(calc(100% + 60px));
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
         z-index: 50;
         padding: 20px;
         box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
         max-height: 80%;
         overflow-y: auto;
+        opacity: 0;
+        pointer-events: none;
     }
     .bottom-sheet.active {
         transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
     }
     .bottom-sheet-handle {
-        width: 36px;
+        width: 100%;
+        height: 24px;
+        margin: -10px auto 10px auto;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .bottom-sheet-handle::after {
+        content: "";
+        display: block;
+        width: 40px;
         height: 4px;
         background: var(--sc-text-dim);
         opacity: 0.3;
         border-radius: 2px;
-        margin: 0 auto 15px auto;
-        cursor: pointer;
     }
 
 </style>
@@ -698,6 +716,8 @@ const isLoggedIn = !!clientId;
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" is:inline></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" is:inline></script>
 <script is:inline>
     // 🛡️ Inicialización inmediata del tema sincronizada con el Layout principal de Alvarez Placas
 
@@ -721,300 +741,166 @@ const isLoggedIn = !!clientId;
         faplac_roble: {
             name: "Faplac Roble Americano",
             lineColor: "#222222",
-            fillColor: "oklch(60% 0.12 72)", // Solid, opaque warm oak
-            shelfColor: "oklch(56% 0.12 72)",
-            drawerColor: "oklch(53% 0.12 72)",
-            doorColor: "oklch(63% 0.12 72)"
+            fillColor: "#c28859", // Solid, opaque warm oak
+            shelfColor: "#b57a4e",
+            drawerColor: "#ab7044",
+            doorColor: "#cd9667"
         },
         faplac_seda: {
             name: "Faplac Seda Giorno",
             lineColor: "#222222",
-            fillColor: "oklch(82% 0.04 85)", // Solid warm off-white linen
-            shelfColor: "oklch(78% 0.04 85)",
-            drawerColor: "oklch(75% 0.04 85)",
-            doorColor: "oklch(85% 0.04 85)"
+            fillColor: "#d6d0c4", // Solid warm off-white linen
+            shelfColor: "#cbc4b7",
+            drawerColor: "#bfb8ab",
+            doorColor: "#e0dacc"
         },
         faplac_nogal: {
             name: "Faplac Nogal Habano",
             lineColor: "#222222",
-            fillColor: "oklch(38% 0.08 55)", // Solid deep dark brown walnut
-            shelfColor: "oklch(34% 0.08 55)",
-            drawerColor: "oklch(31% 0.08 55)",
-            doorColor: "oklch(42% 0.08 55)"
+            fillColor: "#5e3a24", // Solid deep dark brown walnut
+            shelfColor: "#52311d",
+            drawerColor: "#462817",
+            doorColor: "#6a442d"
         },
         faplac_gris: {
             name: "Faplac Gris Humo",
             lineColor: "#222222",
-            fillColor: "oklch(60% 0.01 240)", // Solid modern medium gray
-            shelfColor: "oklch(56% 0.01 240)",
-            drawerColor: "oklch(53% 0.01 240)",
-            doorColor: "oklch(63% 0.01 240)"
+            fillColor: "#909296", // Solid modern medium gray
+            shelfColor: "#84868a",
+            drawerColor: "#787a7e",
+            doorColor: "#9a9c9f"
         },
         egger_helsinki: {
             name: "Egger Helsinki Birch",
             lineColor: "#222222",
-            fillColor: "oklch(88% 0.06 90)", // Solid light birch
-            shelfColor: "oklch(84% 0.06 90)",
-            drawerColor: "oklch(81% 0.06 90)",
-            doorColor: "oklch(91% 0.06 90)"
+            fillColor: "#e8dcc3", // Solid light birch
+            shelfColor: "#dfd0b4",
+            drawerColor: "#d6c4a5",
+            doorColor: "#f0e6d0"
         },
         egger_arcilla: {
             name: "Egger Gris Arcilla",
             lineColor: "#222222",
-            fillColor: "oklch(68% 0.03 70)", // Solid warm clay grey
-            shelfColor: "oklch(64% 0.03 70)",
-            drawerColor: "oklch(61% 0.03 70)",
-            doorColor: "oklch(71% 0.03 70)"
+            fillColor: "#afa398", // Solid warm clay grey
+            shelfColor: "#a3958a",
+            drawerColor: "#98887c",
+            doorColor: "#baae9e"
         },
         egger_ceniza: {
             name: "Egger Ceniza Egger",
             lineColor: "#222222",
-            fillColor: "oklch(75% 0.03 80)", // Solid light ash grey
-            shelfColor: "oklch(71% 0.03 80)",
-            drawerColor: "oklch(68% 0.03 80)",
-            doorColor: "oklch(78% 0.03 80)"
+            fillColor: "#c0b8ad", // Solid light ash grey
+            shelfColor: "#b3aa9d",
+            drawerColor: "#a69c8e",
+            doorColor: "#ccc5b9"
         },
         sadepan_cerezo: {
             name: "Sadepan Cerezo",
             lineColor: "#222222",
-            fillColor: "oklch(52% 0.15 48)", // Solid warm cherry
-            shelfColor: "oklch(48% 0.15 48)",
-            drawerColor: "oklch(45% 0.15 48)",
-            doorColor: "oklch(56% 0.15 48)"
+            fillColor: "#a85a3a", // Solid warm cherry
+            shelfColor: "#9c5030",
+            drawerColor: "#8b5a2b",
+            doorColor: "#cd853f"
         },
         sadepan_haya: {
             name: "Sadepan Haya",
             lineColor: "#222222",
-            fillColor: "oklch(80% 0.10 75)", // Solid warm beech wood
-            shelfColor: "oklch(76% 0.10 75)",
-            drawerColor: "oklch(73% 0.10 75)",
-            doorColor: "oklch(83% 0.10 75)"
+            fillColor: "#deb887", // Solid warm beech wood
+            shelfColor: "#d2b48c",
+            drawerColor: "#c19a6b",
+            doorColor: "#e6c280"
         },
         sadepan_grafito: {
             name: "Sadepan Grafito Sadepan",
             lineColor: "#222222",
-            fillColor: "oklch(30% 0.02 260)", // Solid dark graphite charcoal
-            shelfColor: "oklch(26% 0.02 260)",
-            drawerColor: "oklch(23% 0.02 260)",
-            doorColor: "oklch(33% 0.02 260)"
+            fillColor: "#333333", // Solid dark graphite charcoal
+            shelfColor: "#2c2c2c",
+            drawerColor: "#262626",
+            doorColor: "#3a3a3a"
         }
     };
 
-    class Cabinet3DRenderer {
+        class Cabinet3DRenderer {
         constructor(canvasId) {
             this.canvas = document.getElementById(canvasId);
-            this.ctx = this.canvas.getContext('2d');
-            this.angleY = -0.6; // Ángulo de rotación por defecto
-            this.angleX = 0.3;  // Ángulo de inclinación por defecto
-            this.scale = 0.35;
-            this.panX = 0;      // Desplazamiento X para Paneo (Barra espaciadora + Mouse)
-            this.panY = 0;      // Desplazamiento Y para Paneo
-            this.spacePressed = false;   // Estado de la barra espaciadora
-            this.autoScalePending = true;  // Auto-ajustar escala al primer render
-            this.setupInteraction();
+            
+            // Configurar Three.js
+            this.scene = new THREE.Scene();
+            // Fondo similar al anterior pero con soporte 3D
+            this.scene.background = new THREE.Color(document.body.getAttribute('data-theme') === 'dark' ? '#1e1e1e' : '#f5f5f5');
+            
+            // Antialiasing para líneas perfectas
+            this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+            this.renderer.setSize(this.canvas.clientWidth || 800, this.canvas.clientHeight || 500);
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            this.camera = new THREE.PerspectiveCamera(45, (this.canvas.clientWidth || 800) / (this.canvas.clientHeight || 500), 1, 10000);
+            
+            // Luces Realistas
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            this.scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(1000, 2000, 1000);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            this.scene.add(dirLight);
+            
+            // Controles Órbita (Rotación nativa y fluida)
+            this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+            this.controls.enableDamping = true;
+            this.controls.dampingFactor = 0.05;
+            
+            // Actualizar vista dinámicamente si interactúan
+            this.controls.addEventListener('change', () => {
+                this.renderer.render(this.scene, this.camera);
+            });
+            
+            this.meshes = [];
+            this.firstRender = true;
+            
+            // Resize observer
+            window.addEventListener('resize', () => {
+                if(this.canvas.clientWidth) {
+                    this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+                    this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.render(this.scene, this.camera);
+                }
+            });
         }
         
-        setupInteraction() {
-            let isDragging = false;
-            let lastX = 0, lastY = 0;
+        addBoxFaces(x, y, z, w, h, d, fillColor, lineColor, name = 'board', hiddenFaces = []) {
+            const cx = x + w / 2;
+            const cy = y + h / 2;
+            const cz = z + d / 2;
             
-            const startDrag = (x, y) => {
-                isDragging = true;
-                lastX = x;
-                lastY = y;
-                if (this.spacePressed) {
-                    this.canvas.style.cursor = 'grabbing';
-                }
-            };
+            const geometry = new THREE.BoxGeometry(w, h, d);
             
-            const dragMove = (x, y) => {
-                if (!isDragging) return;
-                const dx = x - lastX;
-                const dy = y - lastY;
-                
-                if (this.spacePressed) {
-                    // Mover/Panear el mueble por el plano
-                    this.panX += dx;
-                    this.panY += dy;
-                    this.canvas.style.cursor = 'grabbing';
-                } else {
-                    // Rotar el mueble sobre sus ejes
-                    this.angleY += dx * 0.007;
-                    this.angleX += dy * 0.007;
-                    this.angleX = Math.max(-Math.PI/3, Math.min(Math.PI/3, this.angleX)); // Evitar dar la vuelta
-                }
-                
-                lastX = x;
-                lastY = y;
-                if (window.cubical && typeof window.cubical.renderPreview === 'function') {
-                    window.cubical.renderPreview();
-                }
-            };
-            
-            const stopDrag = () => { 
-                isDragging = false; 
-                if (this.spacePressed) {
-                    this.canvas.style.cursor = 'grab';
-                } else {
-                    this.canvas.style.cursor = 'default';
-                }
-            };
-            
-            this.canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
-            this.canvas.addEventListener('mousemove', (e) => dragMove(e.clientX, e.clientY));
-            window.addEventListener('mouseup', stopDrag);
-            
-            // Listeners de Teclado Globales para barra espaciadora (evitando conflicto si escribe en inputs)
-            window.addEventListener('keydown', (e) => {
-                const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-                if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
-                    return; // Ignorar si el usuario está tipeando en un formulario
-                }
-                if (e.code === 'Space') {
-                    e.preventDefault(); // Evitar scroll de la página
-                    this.spacePressed = true;
-                    this.canvas.style.cursor = 'grab';
-                }
+            // Intentar convertir colores HSL/OKLCH a HEX para Three.js si es necesario, 
+            // pero Three.js soporta colores CSS estándar en su mayoría.
+            // Para asegurar compatibilidad, lo pasamos crudo.
+            const material = new THREE.MeshStandardMaterial({ 
+                color: new THREE.Color(fillColor),
+                roughness: 0.8,
+                metalness: 0.1
             });
             
-            window.addEventListener('keyup', (e) => {
-                const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-                if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
-                    return;
-                }
-                if (e.code === 'Space') {
-                    this.spacePressed = false;
-                    this.canvas.style.cursor = 'default';
-                }
-            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(cx, cy, cz);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
             
-            this.canvas.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    startDrag(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            });
-            this.canvas.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1) {
-                    dragMove(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            });
-            window.addEventListener('touchend', stopDrag);
-        }
-        
-        project(X, Y, Z, width, height, depth, screenWidth, screenHeight) {
-            const cx = width / 2;
-            const cy = height / 2;
-            const cz = depth / 2;
+            // Delineado técnico (Edges)
+            const edgesGeo = new THREE.EdgesGeometry(geometry);
+            const edgesMat = new THREE.LineBasicMaterial({ color: lineColor, linewidth: 1 });
+            const edges = new THREE.LineSegments(edgesGeo, edgesMat);
+            mesh.add(edges);
             
-            let px = X - cx;
-            let py = Y - cy;
-            let pz = Z - cz;
-            
-            const cosY = Math.cos(this.angleY);
-            const sinY = Math.sin(this.angleY);
-            const rx1 = px * cosY - pz * sinY;
-            const rz1 = px * sinY + pz * cosY;
-            
-            const cosX = Math.cos(this.angleX);
-            const sinX = Math.sin(this.angleX);
-            const ry2 = py * cosX - rz1 * sinX;
-            const rz2 = py * sinX + rz1 * cosX;
-            
-            // Distancia de la cámara para proyección cónica realista (punto de fuga)
-            const d = 1500;
-            const perspectiveFactor = d / (d + rz2);
-            
-            // Se suman panX y panY para permitir arrastrar libremente el mueble por la pantalla
-            const sx = screenWidth / 2 + rx1 * this.scale * perspectiveFactor + this.panX;
-            const sy = screenHeight / 2 - ry2 * this.scale * perspectiveFactor + this.panY;
-            
-            return { x: sx, y: sy, z: rz2 };
-        }
-
-        // Rota una normal de espacio-modelo al espacio de cámara
-        // (misma secuencia Y→X que project, pero sin perspectiva ni traslación)
-        rotateNormal(nx, ny, nz) {
-            const cosY = Math.cos(this.angleY), sinY = Math.sin(this.angleY);
-            const rx  = nx * cosY - nz * sinY;
-            const rz1 = nx * sinY + nz * cosY;
-            const cosX = Math.cos(this.angleX), sinX = Math.sin(this.angleX);
-            const ry  = ny * cosX - rz1 * sinX;
-            const rz  = ny * sinX + rz1 * cosX;
-            return { x: rx, y: ry, z: rz };
-        }
-
-        // Calcula la escala necesaria para que el modelo quepa en el 80% del canvas
-        computeAutoScale(width, height, depth) {
-            const sw = this.canvas.width, sh = this.canvas.height;
-            const cx = width/2, cy = height/2, cz = depth/2;
-            const cosY = Math.cos(this.angleY), sinY = Math.sin(this.angleY);
-            const cosX = Math.cos(this.angleX), sinX = Math.sin(this.angleX);
-            const D = 1500;
-            const corners = [
-                [0,0,0],[width,0,0],[width,height,0],[0,height,0],
-                [0,0,depth],[width,0,depth],[width,height,depth],[0,height,depth]
-            ];
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            corners.forEach(([X,Y,Z]) => {
-                const px=X-cx, py=Y-cy, pz=Z-cz;
-                const rx  = px*cosY - pz*sinY;
-                const rz1 = px*sinY + pz*cosY;
-                const ry  = py*cosX - rz1*sinX;
-                const rz  = py*sinX + rz1*cosX;
-                const pf  = D/(D+rz);
-                minX = Math.min(minX, rx*pf);  maxX = Math.max(maxX, rx*pf);
-                minY = Math.min(minY, -ry*pf); maxY = Math.max(maxY, -ry*pf);
-            });
-            const pad = 0.80;
-            const sX = (sw*pad) / Math.max(1, maxX - minX);
-            const sY = (sh*pad) / Math.max(1, maxY - minY);
-            return Math.min(sX, sY);
-        }
-
-        addBoxFaces(x, y, z, w, h, d, fillColor, lineColor, name = 'board') {
-            const sw = this.canvas.width;
-            const sh = this.canvas.height;
-            
-            // 8 vértices de un prisma rectangular
-            const vertices = [
-                {x: x,     y: y,     z: z},     // 0 (Frente, Abajo, Izquierda)
-                {x: x + w, y: y,     z: z},     // 1 (Frente, Abajo, Derecha)
-                {x: x + w, y: y + h, z: z},     // 2 (Frente, Arriba, Derecha)
-                {x: x,     y: y + h, z: z},     // 3 (Frente, Arriba, Izquierda)
-                {x: x,     y: y,     z: z + d}, // 4 (Atrás, Abajo, Izquierda)
-                {x: x + w, y: y,     z: z + d}, // 5 (Atrás, Abajo, Derecha)
-                {x: x + w, y: y + h, z: z + d}, // 6 (Atrás, Arriba, Derecha)
-                {x: x,     y: y + h, z: z + d}  // 7 (Atrás, Arriba, Izquierda)
-            ];
-            
-            // Proyectar todos los vértices a la pantalla 2D
-            const proj = vertices.map(v => {
-                return this.project(v.x, v.y, v.z, this.currentModDims.ancho, this.currentModDims.alto, this.currentModDims.prof, sw, sh);
-            });
-            
-            // 6 caras con normales en espacio-modelo (top/bottom corregidos)
-            const boxFaces = [
-                { indices: [0, 1, 2, 3], faceName: 'front',  normal: { x:  0, y:  0, z: -1 } },
-                { indices: [5, 4, 7, 6], faceName: 'back',   normal: { x:  0, y:  0, z:  1 } },
-                { indices: [4, 0, 3, 7], faceName: 'left',   normal: { x: -1, y:  0, z:  0 } },
-                { indices: [1, 5, 6, 2], faceName: 'right',  normal: { x:  1, y:  0, z:  0 } },
-                { indices: [3, 2, 6, 7], faceName: 'top',    normal: { x:  0, y:  1, z:  0 } }, // y=h: TAPA SUPERIOR
-                { indices: [4, 5, 1, 0], faceName: 'bottom', normal: { x:  0, y: -1, z:  0 } }  // y=0: PISO
-            ];
-            
-            boxFaces.forEach(f => {
-                const zVals = f.indices.map(idx => proj[idx].z);
-                const maxZ = Math.max(...zVals);
-                const minZ = Math.min(...zVals);
-                const avgZ = zVals.reduce((sum, z) => sum + z, 0) / 4;
-                const pts  = f.indices.map(idx => proj[idx]);
-                this.allFaces.push({
-                    pts, avgZ, maxZ, minZ, fillColor, lineColor,
-                    faceName: f.faceName,
-                    normal:   f.normal,
-                    boardName: name
-                });
-            });
+            this.scene.add(mesh);
+            this.meshes.push(mesh);
         }
         
         drawBox(width, height, depth, opts = {}) {
@@ -1035,20 +921,18 @@ const isLoggedIn = !!clientId;
             
             const sw = this.canvas.width;
             const sh = this.canvas.height;
-            const ctx = this.ctx;
-            const t = 18; // 18mm de espesor de melamina
+            
+            const t = 18;
+            // Limpiar escena anterior
+            this.meshes.forEach(m => this.scene.remove(m));
+            this.meshes = [];
+            this.scene.background = new THREE.Color(document.body.getAttribute('data-theme') === 'dark' ? '#1e1e1e' : '#f5f5f5');
+ // 18mm de espesor de melamina
             
             // Guardar las dimensiones del módulo actual para que project() las use como centro de rotación y perspectiva
-            this.currentModDims = { ancho: width, alto: height, prof: depth };
+            
             
             // Reiniciar el listado global de caras para el Algoritmo del Pintor
-            this.allFaces = [];
-
-            // Auto-escalar para que el módulo siempre quepa en el canvas
-            if (this.autoScalePending) {
-                this.scale = this.computeAutoScale(width, height, depth);
-                this.autoScalePending = false;
-            }
             
             // Delineado técnico ultra-fino dinámico de alta definición
             const isDark = document.body.getAttribute('data-theme') === 'dark' || document.body.classList.contains('body-theme-dark');
@@ -1067,13 +951,13 @@ const isLoggedIn = !!clientId;
                 // 2. LATERAL IZQUIERDO
                 this.addBoxFaces(offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'left-side');
                 // 3. CAJONERA DERECHA (ancho variable)
-                this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side');
-                this.addBoxFaces(width - cajoneraW + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'divider');
-                this.addBoxFaces(width - cajoneraW + t + offsetX, 0, 0, cajoneraW - 2 * t, t, depth, baseFill, lineColor, 'base-cajonera');
+                this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side', ['top']);
+                this.addBoxFaces(width - cajoneraW + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'divider', ['top', 'bottom']);
+                this.addBoxFaces(width - cajoneraW + t + offsetX, 0, 0, cajoneraW - 2 * t, t, depth, baseFill, lineColor, 'base-cajonera', ['left', 'right']);
                 // 4. FALDÓN TRASERO
                 this.addBoxFaces(t + offsetX, height - t - 300, depth - t, width - cajoneraW - t, 300, t, baseFill, lineColor, 'faldon');
                 // 5. BANDEJA TECLADO
-                this.addBoxFaces(t + 13 + offsetX, height - t - 100, 20, width - cajoneraW - t - 26, t, depth - 40, shelfFill, lineColor, 'bandeja');
+                this.addBoxFaces(t + 13 + offsetX, height - t - 100, 20, width - cajoneraW - t - 26, t, depth - 40, shelfFill, lineColor, 'bandeja', ['left', 'right']);
                 
                 // 6. CAJONES (en espacio de cajonera)
                 if (drawers > 0) {
@@ -1096,39 +980,21 @@ const isLoggedIn = !!clientId;
                             this.addBoxFaces(cX + t, cY, 10, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-frente-int');
                             this.addBoxFaces(cX + t, cY, 10 + cD - t, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-trasero');
                         } else {
-                            this.addBoxFaces(width - cajoneraW + t + 3 + offsetX, yBottom + 3, 0, cajoneraW - 2*t - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer');
+                            this.addBoxFaces(width - cajoneraW + t + 3 + offsetX, yBottom + 3, 0, cajoneraW - 2*t - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer', ['left', 'right', 'top', 'bottom', 'back']);
                             const tcX = width - cajoneraW + t + (cajoneraW - 2*t)/2 + offsetX;
                             const tcY = yBottom + hSpace / 2;
                             this.addBoxFaces(tcX - 45, tcY - 5, -10, 90, 10, 10, '#cccccc', lineColor, 'handle');
                         }
                     }
                 }
-                
-                // Ordenar caras y renderizar (mismo proceso)
-                this.allFaces.sort((a, b) => {
-                    if (Math.abs(b.maxZ - a.maxZ) > 0.01) return b.maxZ - a.maxZ;
-                    return b.avgZ - a.avgZ;
-                });
-                const _Lx = 0.45, _Ly = 0.75, _Lz = -0.48;
-                const _Ll = Math.sqrt(_Lx*_Lx + _Ly*_Ly + _Lz*_Lz);
-                const light = { x: _Lx/_Ll, y: _Ly/_Ll, z: _Lz/_Ll };
-                const ambient = 0.32;
-                ctx.lineWidth = 0.8; ctx.lineJoin = 'round'; ctx.lineCap  = 'round';
-                this.allFaces.forEach(f => {
-                    const rn = this.rotateNormal(f.normal.x, f.normal.y, f.normal.z);
-                    if (rn.z > 0.025) return;
-                    const diffuse = Math.max(0, rn.x*light.x + rn.y*light.y + rn.z*light.z);
-                    const lightLevel = ambient + (1 - ambient) * diffuse;
-                    ctx.beginPath(); ctx.moveTo(f.pts[0].x, f.pts[0].y);
-                    for (let i = 1; i < f.pts.length; i++) ctx.lineTo(f.pts[i].x, f.pts[i].y);
-                    ctx.closePath();
-                    ctx.fillStyle = f.fillColor; ctx.fill();
-                    const shadowAmt = Math.max(0, (1 - lightLevel) * 0.82);
-                    if (shadowAmt > 0.004) { ctx.fillStyle = `rgba(0,0,0,${shadowAmt.toFixed(3)})`; ctx.fill(); }
-                    const highlightAmt = Math.max(0, (lightLevel - 0.82) * 0.65);
-                    if (highlightAmt > 0.004) { ctx.fillStyle = `rgba(255,255,255,${highlightAmt.toFixed(3)})`; ctx.fill(); }
-                    ctx.strokeStyle = f.lineColor; ctx.stroke();
-                });
+                // Posicionar cámara y controles
+                this.controls.target.set(width/2, height/2, depth/2);
+                if (this.firstRender) {
+                    this.camera.position.set(width * 1.5, height * 1.5, depth * 2.5);
+                    this.firstRender = false;
+                }
+                this.controls.update();
+                this.renderer.render(this.scene, this.camera);
                 return;
             }
 
@@ -1142,20 +1008,20 @@ const isLoggedIn = !!clientId;
                 const divRightX = divLeftX + t + centerW;
                 
                 // Fondo, Laterales, Techo, Piso (Similares al genérico)
-                this.addBoxFaces(offsetX, 0, depth - 3, width, height, 3, baseFill, lineColor, 'backboard');
-                this.addBoxFaces(offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'left-side');
-                this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side');
-                if (showTop) this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top');
+                this.addBoxFaces(offsetX, 0, depth - 3, width, height, 3, baseFill, lineColor, 'backboard', ['back', 'top', 'bottom', 'left', 'right']);
+                this.addBoxFaces(offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'left-side', ['top']);
+                this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side', ['top']);
+                if (showTop) this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top', ['bottom']);
                 else {
                     const fajaY = height - 2 * t;
                     this.addBoxFaces(t + offsetX, fajaY, 20, width - 2*t, t, 100, baseFill, lineColor, 'faja-frente');
                     this.addBoxFaces(t + offsetX, fajaY, depth - 100, width - 2*t, t, 100, baseFill, lineColor, 'faja-fondo');
                 }
-                this.addBoxFaces(t + offsetX, 0, 0, width - 2 * t, t, depth, baseFill, lineColor, 'base');
+                this.addBoxFaces(t + offsetX, 0, 0, width - 2 * t, t, depth, baseFill, lineColor, 'base', ['left', 'right']);
                 
                 // Divisores verticales interiores
-                this.addBoxFaces(divLeftX, pisoY, 20, t, espacioUtilH, depth - 20, baseFill, lineColor, 'div-izq');
-                this.addBoxFaces(divRightX, pisoY, 20, t, espacioUtilH, depth - 20, baseFill, lineColor, 'div-der');
+                this.addBoxFaces(divLeftX, pisoY, 20, t, espacioUtilH, depth - 20, baseFill, lineColor, 'div-izq', ['top', 'bottom']);
+                this.addBoxFaces(divRightX, pisoY, 20, t, espacioUtilH, depth - 20, baseFill, lineColor, 'div-der', ['top', 'bottom']);
                 
                 // Puertas en laterales
                 if (doors > 0 && showDoors) {
@@ -1207,14 +1073,14 @@ const isLoggedIn = !!clientId;
                     const hSpace = centerH / (shelves + 1);
                     for (let i = 1; i <= shelves; i++) {
                         const shelfY = bottomY + i * hSpace - t / 2;
-                        this.addBoxFaces(divLeftX + t, shelfY, 20, centerW, t, depth - 20, shelfFill, lineColor, 'shelf-center');
+                        this.addBoxFaces(divLeftX + t, shelfY, 20, centerW, t, depth - 20, shelfFill, lineColor, 'shelf-center', ['left', 'right']);
                     }
                 }
                 
                 // Renderizado
                 this.allFaces.sort((a, b) => {
-                    if (Math.abs(b.maxZ - a.maxZ) > 0.01) return b.maxZ - a.maxZ;
-                    return b.avgZ - a.avgZ;
+                    if (Math.abs(b.avgZ - a.avgZ) > 0.01) return b.avgZ - a.avgZ;
+                    return b.maxZ - a.maxZ;
                 });
                 const _Lx = 0.45, _Ly = 0.75, _Lz = -0.48;
                 const _Ll = Math.sqrt(_Lx*_Lx + _Ly*_Ly + _Lz*_Lz);
@@ -1241,17 +1107,17 @@ const isLoggedIn = !!clientId;
             }
 
             // 1. DIBUJAR FONDO/RESPALDO (3mm MDF) - Ubicado al fondo del mueble
-            this.addBoxFaces(offsetX, 0, depth - 3, width, height, 3, baseFill, lineColor, 'backboard');
+            this.addBoxFaces(offsetX, 0, depth - 3, width, height, 3, baseFill, lineColor, 'backboard', ['back', 'top', 'bottom', 'left', 'right']);
             
             // 2. DIBUJAR LATERAL IZQUIERDO (18mm) - Corregido para que termine bajo el techo
-            this.addBoxFaces(offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'left-side');
+            this.addBoxFaces(offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'left-side', ['top']);
             
             // 3. DIBUJAR LATERAL DERECHO (18mm) - Corregido para que termine bajo el techo
-            this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side');
+            this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side', ['top']);
             
             // 4. DIBUJAR TECHO / TAPA SUPERIOR (18mm)
             if (showTop) {
-                this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top');
+                this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top', ['bottom']);
             } else {
                 // Dibujar Fajas de anclaje (espigas) si no hay tapa y es bajo mesada o simplemente para ver estructura
                 // Faja frontal y trasera por dentro de los laterales y a ras de su borde superior
@@ -1267,12 +1133,12 @@ const isLoggedIn = !!clientId;
             
             if (zocaloH > 0) {
                 // Dibujar Zócalo frontal retranqueado (retrocede 20mm del frente Z = 20)
-                this.addBoxFaces(t + offsetX, 0, 20, width - 2 * t, zocaloH, t, baseFill, lineColor, 'zocalo');
+                this.addBoxFaces(t + offsetX, 0, 20, width - 2 * t, zocaloH, t, baseFill, lineColor, 'zocalo', ['top', 'bottom']);
                 // Piso del mueble sobre el zócalo
-                this.addBoxFaces(t + offsetX, zocaloH, 0, width - 2 * t, t, depth, baseFill, lineColor, 'base');
+                this.addBoxFaces(t + offsetX, zocaloH, 0, width - 2 * t, t, depth, baseFill, lineColor, 'base', ['left', 'right']);
             } else {
                 // Piso del mueble a ras del suelo
-                this.addBoxFaces(t + offsetX, 0, 0, width - 2 * t, t, depth, baseFill, lineColor, 'base');
+                this.addBoxFaces(t + offsetX, 0, 0, width - 2 * t, t, depth, baseFill, lineColor, 'base', ['left', 'right', 'bottom']);
             }
             
             const pisoY = zocaloH > 0 ? zocaloH + t : t;
@@ -1299,7 +1165,7 @@ const isLoggedIn = !!clientId;
                 const hSpace = (doors > 0 ? doorSpaceH : espacioUtilH) / (shelves + 1);
                 for (let i = 1; i <= shelves; i++) {
                     const shelfY = pisoY + i * hSpace - t / 2;
-                    this.addBoxFaces(t + offsetX, shelfY, 20, width - 2 * t, t, depth - 20, shelfFill, lineColor, 'shelf');
+                    this.addBoxFaces(t + offsetX, shelfY, 20, width - 2 * t, t, depth - 20, shelfFill, lineColor, 'shelf', ['left', 'right', 'back']);
                 }
             }
             
@@ -1325,7 +1191,7 @@ const isLoggedIn = !!clientId;
                         this.addBoxFaces(cX + t, cY, 10 + cD - t, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-trasero');
                     } else {
                         // Frente de cajón de 18mm de espesor embutido, Z = 0
-                        this.addBoxFaces(3 + offsetX, yBottom + 3, 0, width - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer');
+                        this.addBoxFaces(3 + offsetX, yBottom + 3, 0, width - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer', ['left', 'right', 'top', 'bottom', 'back']);
                         
                         // Tirador de barra horizontal de 3D
                         const tcX = width / 2 + offsetX;
@@ -1341,7 +1207,7 @@ const isLoggedIn = !!clientId;
                 for (let i = 0; i < doors; i++) {
                     const xLeft = 3 + i * wSpace;
                     // Puertas de 18mm de espesor embutidas, Z = 0
-                    this.addBoxFaces(xLeft + offsetX, pisoY + 3, 0, wSpace - 3, doorSpaceH - 6, t, doorFill, lineColor, 'door');
+                    this.addBoxFaces(xLeft + offsetX, pisoY + 3, 0, wSpace - 3, doorSpaceH - 6, t, doorFill, lineColor, 'door', ['left', 'right', 'top', 'bottom', 'back']);
                     
                     // Tirador de barra vertical para las puertas
                     const tiradorX = doors === 1 
@@ -1359,65 +1225,14 @@ const isLoggedIn = !!clientId;
                     this.addBoxFaces(tiradorX + offsetX - 5, tiradorY - 50, -10, 10, 100, 10, '#cccccc', lineColor, 'handle');
                 }
             }
-            
-            // =========================================================================
-            // RENDERIZADO: PAINTER'S ALGORITHM + ILUMINACIÓN DIFUSA + BACKFACE CULLING
-            // =========================================================================
-            this.allFaces.sort((a, b) => {
-                if (Math.abs(b.maxZ - a.maxZ) > 0.01) return b.maxZ - a.maxZ;
-                return b.avgZ - a.avgZ;
-            });
-
-            // Dirección de luz (arriba-derecha-frente), normalizada
-            const _Lx = 0.45, _Ly = 0.75, _Lz = -0.48;
-            const _Ll = Math.sqrt(_Lx*_Lx + _Ly*_Ly + _Lz*_Lz);
-            const light = { x: _Lx/_Ll, y: _Ly/_Ll, z: _Lz/_Ll };
-            const ambient = 0.32; // Luz ambiental mínima (0→completamente negro, 1→sin sombra)
-
-            ctx.lineWidth = 0.8;
-            ctx.lineJoin = 'round';
-            ctx.lineCap  = 'round';
-
-            this.allFaces.forEach(f => {
-                // 1. Rotar la normal al espacio de cámara actual
-                const rn = this.rotateNormal(f.normal.x, f.normal.y, f.normal.z);
-
-                // 2. Backface culling: cámara está en -Z.
-                //    La cara es visible solo si su normal apunta hacia -Z (rn.z < 0).
-                if (rn.z > 0.025) return;
-
-                // 3. Iluminación difusa Lambertiana
-                const diffuse    = Math.max(0, rn.x*light.x + rn.y*light.y + rn.z*light.z);
-                const lightLevel = ambient + (1 - ambient) * diffuse; // [ambient .. 1.0]
-
-                // 4. Dibujar polígono
-                ctx.beginPath();
-                ctx.moveTo(f.pts[0].x, f.pts[0].y);
-                for (let i = 1; i < f.pts.length; i++) ctx.lineTo(f.pts[i].x, f.pts[i].y);
-                ctx.closePath();
-
-                // Base OKLCH de melamina
-                ctx.fillStyle = f.fillColor;
-                ctx.fill();
-
-                // Sombra proporcional a la falta de luz
-                const shadowAmt = Math.max(0, (1 - lightLevel) * 0.82);
-                if (shadowAmt > 0.004) {
-                    ctx.fillStyle = `rgba(0,0,0,${shadowAmt.toFixed(3)})`;
-                    ctx.fill();
-                }
-
-                // Brillo especular sutil (solo caras muy iluminadas, p.ej. tapa superior)
-                const highlightAmt = Math.max(0, (lightLevel - 0.82) * 0.65);
-                if (highlightAmt > 0.004) {
-                    ctx.fillStyle = `rgba(255,255,255,${highlightAmt.toFixed(3)})`;
-                    ctx.fill();
-                }
-
-                // Línea técnica CAD fina
-                ctx.strokeStyle = f.lineColor;
-                ctx.stroke();
-            });
+            // Render WebGL
+            this.controls.target.set(width/2, height/2, depth/2);
+            if (this.firstRender) {
+                this.camera.position.set(width * 1.5, height * 1.5, depth * 2.5);
+                this.firstRender = false;
+            }
+            this.controls.update();
+            this.renderer.render(this.scene, this.camera);
         }
     }
 
