@@ -874,12 +874,6 @@ const isLoggedIn = !!clientId;
                 }
             });
             
-            // Textura de madera
-            const textureLoader = new THREE.TextureLoader();
-            this.woodTexture = textureLoader.load('/textures/wood_pattern.png');
-            this.woodTexture.wrapS = THREE.RepeatWrapping;
-            this.woodTexture.wrapT = THREE.RepeatWrapping;
-            
             // Actualizar vista dinámicamente si interactúan
             this.controls.addEventListener('change', () => {
                 this.renderer.render(this.scene, this.camera);
@@ -906,20 +900,10 @@ const isLoggedIn = !!clientId;
             
             const geometry = new THREE.BoxGeometry(w, h, d);
             
-            // Material con textura de madera y color de melamina
-            // Clonar la textura para poder escalar los UV independientemente para cada placa
-            const tex = this.woodTexture ? this.woodTexture.clone() : null;
-            if (tex) {
-                tex.needsUpdate = true;
-                // Repetir la textura según el tamaño real de la placa para que no se deforme (asumiendo textura de 600x600mm)
-                tex.repeat.set(Math.max(w, d) / 600, h / 600 || 1);
-            }
-            
             const material = new THREE.MeshStandardMaterial({ 
                 color: new THREE.Color(fillColor),
-                map: tex,
-                roughness: 0.85,
-                metalness: 0.05
+                roughness: 0.8,
+                metalness: 0.1
             });
             
             const mesh = new THREE.Mesh(geometry, material);
