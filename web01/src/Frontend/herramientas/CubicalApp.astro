@@ -837,21 +837,48 @@ const isLoggedIn = !!clientId;
             
             this.camera = new THREE.PerspectiveCamera(45, (this.canvas.clientWidth || 800) / (this.canvas.clientHeight || 500), 1, 10000);
             
-            // Luces Realistas
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            // Luces Realistas tipo SketchUp
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
             this.scene.add(ambientLight);
             
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            dirLight.position.set(1000, 2000, 1000);
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+            hemiLight.position.set(0, 2000, 0);
+            this.scene.add(hemiLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(1500, 2500, 1500);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 2048;
             dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.left = -1500;
+            dirLight.shadow.camera.right = 1500;
+            dirLight.shadow.camera.top = 1500;
+            dirLight.shadow.camera.bottom = -1500;
+            dirLight.shadow.bias = -0.001;
             this.scene.add(dirLight);
             
             // Controles Órbita (Rotación nativa y fluida)
             this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
             this.controls.enableDamping = true;
             this.controls.dampingFactor = 0.05;
+            
+            // Panning con la barra espaciadora
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+                }
+            });
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') {
+                    this.controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+                }
+            });
+            
+            // Textura de madera
+            const textureLoader = new THREE.TextureLoader();
+            this.woodTexture = textureLoader.load('/textures/wood_pattern.png');
+            this.woodTexture.wrapS = THREE.RepeatWrapping;
+            this.woodTexture.wrapT = THREE.RepeatWrapping;
             
             // Actualizar vista dinámicamente si interactúan
             this.controls.addEventListener('change', () => {
@@ -879,13 +906,20 @@ const isLoggedIn = !!clientId;
             
             const geometry = new THREE.BoxGeometry(w, h, d);
             
-            // Intentar convertir colores HSL/OKLCH a HEX para Three.js si es necesario, 
-            // pero Three.js soporta colores CSS estándar en su mayoría.
-            // Para asegurar compatibilidad, lo pasamos crudo.
+            // Material con textura de madera y color de melamina
+            // Clonar la textura para poder escalar los UV independientemente para cada placa
+            const tex = this.woodTexture ? this.woodTexture.clone() : null;
+            if (tex) {
+                tex.needsUpdate = true;
+                // Repetir la textura según el tamaño real de la placa para que no se deforme (asumiendo textura de 600x600mm)
+                tex.repeat.set(Math.max(w, d) / 600, h / 600 || 1);
+            }
+            
             const material = new THREE.MeshStandardMaterial({ 
                 color: new THREE.Color(fillColor),
-                roughness: 0.8,
-                metalness: 0.1
+                map: tex,
+                roughness: 0.85,
+                metalness: 0.05
             });
             
             const mesh = new THREE.Mesh(geometry, material);
