@@ -255,3 +255,42 @@ Al haber modificado el archivo `.fac` directamente a nivel binario, el archivo d
 | GCOM Prod | Path | `\\Server-alvarezp\c\gecom\Datos\AP2526` |
 | GCOM Test | Path | `\\Server-alvarezp\c\gecom\Datos\AP2526_TEST` |
 | Catalogador | Path | `\\Server-alvarezp\c\CATALOGADOR` |
+
+---
+
+## 9. Lecciones Aprendidas: Importación a GCOM (Exportaciones TXT)
+
+### 9.1. Creación de Formatos en GCOM
+Para que GCOM entienda los archivos `.txt` de ancho fijo generados por el Catalogador, se deben crear **Formatos** en:
+`Bases ➡️ Formatos ➡️ Importación y exportación`
+
+#### Formato: "CAMBIO DE PRECIOS"
+- `CODIGO ARTICULO` ➡️ Col: 1 | Ancho: 11
+- `PRECIO (Importe)` ➡️ Col: 21 | Ancho: 12
+- **⚠️ MUY IMPORTANTE SOBRE LA MONEDA:** Eliminar del formato la fila de `PRECIO (Código moneda)` (usar el tacho de basura). Si se incluye, GCOM puede rechazar el archivo con el error `"Código de moneda no existe"`. Al no pedirle moneda, GCOM asume la moneda por defecto (Pesos) y funciona sin problemas.
+
+### 9.2. Importar Artículos vs Importar Precios
+> [!CAUTION]
+> **NUNCA usar el botón "Importar Artículos"** para cargar precios. Si se sube un TXT de precios usando la pantalla de "Rubros y Artículos", GCOM pisará y arruinará los nombres de los artículos reemplazándolos con los números de los precios.
+
+#### Flujo correcto para Importar Precios:
+1. Ir al panel principal izquierdo: **Ventas ➡️ Listas de precios**.
+2. Seleccionar la lista destino (ej: `1 LP1`).
+3. Presionar **`Ctrl + I`** (o clic derecho ➡️ Importar).
+4. Seleccionar la Lista a actualizar (`LP1`), el formato (`CAMBIO DE PRECIOS`) y el archivo `.txt`.
+
+### 9.3. El Error de "Lista Calculada"
+Al intentar importar sobre `LP1`, GCOM puede arrojar el error:
+> *"La lista de precios seleccionada es CALCULADA y por lo tanto no se puede actualizar."*
+
+Esto ocurre porque `LP1` toma los valores de la lista `COSTOS DE REPOSICION` y les suma un margen de ganancia.
+**Solución para inyectar precios finales del Catalogador:**
+1. Modificar la lista `LP1` (ícono de lápiz).
+2. Ir a la pestaña **Calculada**.
+3. En el desplegable **"Lista de precios referida"** (que dice COSTOS DE REPOSICION), hacer clic sobre el texto y **borrarlo completamente usando la tecla Retroceso o Suprimir** hasta dejar el cajón vacío.
+4. Presionar Aceptar. Esto convierte la LP1 en una lista Manual que aceptará la importación directa de precios.
+
+### 9.4. Próximos pasos (Para mañana)
+1. Confirmar la ejecución exitosa de la importación de precios con el formato sin la columna de Moneda.
+2. Validar en la interfaz de facturación/caja de GCOM que los artículos bajen con el precio y SKU correctos.
+3. Consolidar el exportador del Catalogador para que de ahora en adelante el flujo sea un simple clic en "GCOM TXT (Precios)".

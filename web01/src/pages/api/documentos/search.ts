@@ -30,6 +30,7 @@ export const GET: APIRoute = async ({ url }) => {
                     id, filename, doc_type, pos_number, doc_number, doc_date,
                     client_cta, client_name, client_cuit, total_amount, seller_code,
                     created_at,
+                    substring(doc_text from '(?i)DTO\s*GENERAL\s*(\d+(?:[.,]\d+)?)\s*%') AS discount_pct,
                     count(*) OVER() AS full_count
                 FROM RankedDocs
                 WHERE doc_type ILIKE $3 AND rn = 1
@@ -58,6 +59,7 @@ export const GET: APIRoute = async ({ url }) => {
                     id, filename, doc_type, pos_number, doc_number, doc_date,
                     client_cta, client_name, client_cuit, total_amount, seller_code,
                     created_at,
+                    substring(doc_text from '(?i)DTO\s*GENERAL\s*(\d+(?:[.,]\d+)?)\s*%') AS discount_pct,
                     count(*) OVER() AS full_count,
                     CASE
                         WHEN doc_number ILIKE $2 THEN 3.0
@@ -98,6 +100,7 @@ export const GET: APIRoute = async ({ url }) => {
                         id, filename, doc_type, pos_number, doc_number, doc_date,
                         client_cta, client_name, client_cuit, total_amount, seller_code,
                         created_at,
+                        substring(doc_text from '(?i)DTO\s*GENERAL\s*(\d+(?:[.,]\d+)?)\s*%') AS discount_pct,
                         count(*) OVER() AS full_count
                     FROM RankedDocs
                     WHERE 

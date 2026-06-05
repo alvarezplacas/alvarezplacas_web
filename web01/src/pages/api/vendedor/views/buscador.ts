@@ -67,6 +67,45 @@ export const GET: APIRoute = async () => {
         const versionMatch = doc.filename ? doc.filename.match(/_(\d+)\.pdf$/i) : null;
         const versionBadge = versionMatch ? `<span style="color: #eab308; font-size: 0.8em; margin-left: 4px;" title="Versión Modificada">_v${versionMatch[1]}</span>` : '';
 
+        // Generate Alerts
+        let alertsHtml = '';
+        const alerts: string[] = [];
+        
+        // 1. Date mismatch
+        if (doc.doc_date && doc.created_at) {
+            const dDate = new Date(doc.doc_date).toISOString().split('T')[0];
+            const cDate = new Date(doc.created_at).toISOString().split('T')[0];
+            if (dDate !== cDate) {
+                const dDateStr = new Date(doc.doc_date).toLocaleDateString('es-AR', { timeZone: 'UTC' });
+                const cDateStr = new Date(doc.created_at).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+                alerts.push(`<div class="alert-badge alert-critical" title="Emisión OCR: ${dDateStr} | Ingresada: ${cDateStr}"><i class="fas fa-exclamation-triangle"></i> Fecha Inconsistente</div>`);
+            }
+        }
+        
+        // 2. Zero / Negative Amount
+        if (doc.doc_type && doc.doc_type.startsWith('FA-') && doc.total_amount <= 0) {
+            alerts.push(`<div class="alert-badge alert-critical" title="Factura con importe menor o igual a 0"><i class="fas fa-exclamation-circle"></i> Importe $0</div>`);
+        }
+        
+        // 3. FA-A without CUIT
+        if (doc.doc_type === 'FA-A' && (!doc.client_cuit || doc.client_cuit.trim() === '')) {
+            alerts.push(`<div class="alert-badge alert-warning" title="Factura A debe tener CUIT válido"><i class="fas fa-id-card"></i> Falta CUIT</div>`);
+        }
+        
+        // 4. Number 00000000
+        if (doc.doc_number === '00000000') {
+            alerts.push(`<div class="alert-badge alert-warning" title="Sin número de comprobante (Posible borrador sin CAE o error de OCR)"><i class="fas fa-file-excel"></i> Borrador / Error Nº</div>`);
+        }
+        
+        // 5. Discount Applied
+        if (doc.discount_pct && parseFloat(doc.discount_pct) > 0) {
+            alerts.push(`<div class="alert-badge alert-info" title="Descuento aplicado en el sistema"><i class="fas fa-tags"></i> Dto ${doc.discount_pct}%</div>`);
+        }
+        
+        if (alerts.length > 0) {
+            alertsHtml = `<div class="doc-card-alerts">${alerts.join('')}</div>`;
+        }
+
         return `
         <div class="doc-card" onclick="previewDoc(this.dataset.id, this.dataset.filename)" data-id="${doc.id}" data-filename="${(doc.filename || '').replace(/'/g, "\\'")}" title="Click para ver factura">
           <div class="doc-card-left">
@@ -85,6 +124,7 @@ export const GET: APIRoute = async () => {
               <span class="doc-total-tag" style="color: ${isNC ? '#ef4444' : '#10b981'};"><i class="fas fa-dollar-sign"></i> ${formatTotal}</span>
               ${doc.seller_code ? `<span class="doc-seller-tag"><i class="fas fa-user-tag"></i> Vend. ${doc.seller_code}</span>` : ''}
             </div>
+            ${alertsHtml}
           </div>
           <div class="doc-card-actions" onclick="event.stopPropagation()">
             <button class="act-btn act-preview" onclick="previewDoc(this.parentElement.parentElement.dataset.id, this.parentElement.parentElement.dataset.filename)" title="Ver PDF">
@@ -377,6 +417,20 @@ export const GET: APIRoute = async () => {
   .empty-state p { font-size: 14px; font-weight: 600; color: #555; }
   .empty-state span { font-size: 11px; color: #333; }
 
+  /* === ALERTS === */
+  .doc-card-alerts {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+    padding-top: 6px; border-top: 1px dashed #333;
+  }
+  .alert-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .alert-critical { background: #facc15; color: #000; box-shadow: 0 0 5px rgba(250,204,21,.3); }
+  .alert-warning { background: #f97316; color: #fff; }
+  .alert-info { background: #0ea5e9; color: #fff; }
+
   /* === HIGHLIGHT search terms === */
   .hl { background: rgba(239,68,68,.25); color: #fca5a5; border-radius: 2px; padding: 0 2px; }
 
@@ -505,6 +559,34 @@ export const GET: APIRoute = async () => {
         const versionMatch = doc.filename ? doc.filename.match(/_(\d+)\.pdf$/i) : null;
         const versionBadge = versionMatch ? \`<span style="color: #eab308; font-size: 0.8em; margin-left: 4px;" title="Versión Modificada">_v\${versionMatch[1]}</span>\` : '';
         
+        // Generate Alerts (Client side)
+        let alertsHtml = '';
+        const alerts = [];
+        if (doc.doc_date && doc.created_at) {
+            const dDate = new Date(doc.doc_date).toISOString().split('T')[0];
+            const cDate = new Date(doc.created_at).toISOString().split('T')[0];
+            if (dDate !== cDate) {
+                const dDateStr = new Date(doc.doc_date).toLocaleDateString('es-AR', { timeZone: 'UTC' });
+                const cDateStr = new Date(doc.created_at).toLocaleDateString('es-AR');
+                alerts.push(\`<div class="alert-badge alert-critical" title="Emisión OCR: \${dDateStr} | Ingresada: \${cDateStr}"><i class="fas fa-exclamation-triangle"></i> Fecha Inconsistente</div>\`);
+            }
+        }
+        if (doc.doc_type && doc.doc_type.startsWith('FA-') && doc.total_amount <= 0) {
+            alerts.push(\`<div class="alert-badge alert-critical" title="Factura con importe menor o igual a 0"><i class="fas fa-exclamation-circle"></i> Importe $0</div>\`);
+        }
+        if (doc.doc_type === 'FA-A' && (!doc.client_cuit || doc.client_cuit.trim() === '')) {
+            alerts.push(\`<div class="alert-badge alert-warning" title="Factura A debe tener CUIT válido"><i class="fas fa-id-card"></i> Falta CUIT</div>\`);
+        }
+        if (doc.doc_number === '00000000') {
+            alerts.push(\`<div class="alert-badge alert-warning" title="Sin número de comprobante"><i class="fas fa-file-excel"></i> Borrador / Error Nº</div>\`);
+        }
+        if (doc.discount_pct && parseFloat(doc.discount_pct) > 0) {
+            alerts.push(\`<div class="alert-badge alert-info" title="Descuento aplicado en el sistema"><i class="fas fa-tags"></i> Dto \${doc.discount_pct}%</div>\`);
+        }
+        if (alerts.length > 0) {
+            alertsHtml = \`<div class="doc-card-alerts">\${alerts.join('')}</div>\`;
+        }
+        
         const docNum = \`\${doc.pos_number || '0000'}-\${doc.doc_number || '00000000'}\${versionBadge}\`;
         const safeFilename = (doc.filename || 'factura.pdf').replace(/'/g, "\\\\'");
 
@@ -526,6 +608,7 @@ export const GET: APIRoute = async () => {
               <span class="doc-total-tag" style="color: \${isNC ? '#ef4444' : '#10b981'};"><i class="fas fa-dollar-sign"></i> \${total}</span>
               \${doc.seller_code ? \`<span class="doc-seller-tag"><i class="fas fa-user-tag"></i> Vend. \${doc.seller_code}</span>\` : ''}
             </div>
+            \${alertsHtml}
           </div>
           <div class="doc-card-actions" onclick="event.stopPropagation()">
             <button class="act-btn act-preview" onclick="previewDoc(this.parentElement.parentElement.dataset.id, this.parentElement.parentElement.dataset.filename)" title="Ver PDF">

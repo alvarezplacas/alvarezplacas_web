@@ -12,6 +12,8 @@ services:
       - DIRECTUS_ADMIN_EMAIL=admin@alvarezplacas.com.ar
       - DIRECTUS_ADMIN_PASSWORD=JavierMix2026!
       - NODE_ENV=production
+    volumes:
+      - ./facturas_ocr:/app/private/facturas
     depends_on:
       alvarezplacas_db:
         condition: service_healthy

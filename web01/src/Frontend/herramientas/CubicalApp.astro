@@ -364,7 +364,10 @@ const isLoggedIn = !!clientId;
             <!-- HOJA DESLIZABLE 1: PARÁMETROS -->
             <div id="sheet-parameters" class="bottom-sheet">
                 <div class="bottom-sheet-handle" onclick="window.cubical.closeMobileSheets()"></div>
-                <h4 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider mb-4">Añadir / Editar Módulo</h4>
+                <div class="flex justify-between items-center mb-4 border-b border-[var(--sc-border)] pb-2">
+                    <h4 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider">Añadir / Editar</h4>
+                    <button onclick="window.cubical.closeMobileSheets()" class="text-[var(--alvarez-red)] text-xs font-black uppercase"><i class="fas fa-times"></i> Cerrar</button>
+                </div>
                 
                 <div class="space-y-4">
                     <div>
@@ -856,12 +859,14 @@ const isLoggedIn = !!clientId;
             this.scene.background = new THREE.Color(document.body.getAttribute('data-theme') === 'dark' ? '#1e1e1e' : '#f5f5f5');
             
             // Antialiasing para líneas perfectas
-            this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
-            this.renderer.setSize(this.canvas.clientWidth || 800, this.canvas.clientHeight || 500);
+            this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
+            const cw = this.canvas.clientWidth || window.innerWidth || 800;
+            const ch = this.canvas.clientHeight || window.innerHeight || 500;
+            this.renderer.setSize(cw, ch);
             this.renderer.shadowMap.enabled = true;
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             
-            this.camera = new THREE.PerspectiveCamera(45, (this.canvas.clientWidth || 800) / (this.canvas.clientHeight || 500), 1, 10000);
+            this.camera = new THREE.PerspectiveCamera(45, cw / ch, 1, 10000);
             
             // Luces Realistas tipo SketchUp
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -888,15 +893,13 @@ const isLoggedIn = !!clientId;
             this.controls.enableDamping = true;
             this.controls.dampingFactor = 0.05;
             
-            // Panning con la barra espaciadora
+            // Panning interactivo con barra espaciadora (Toggle)
+            this.panMode = false;
             window.addEventListener('keydown', (e) => {
-                if (e.code === 'Space') {
-                    this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
-                }
-            });
-            window.addEventListener('keyup', (e) => {
-                if (e.code === 'Space') {
-                    this.controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+                if (e.code === 'Space' && !e.repeat) {
+                    e.preventDefault();
+                    this.panMode = !this.panMode;
+                    this.controls.mouseButtons.LEFT = this.panMode ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
                 }
             });
             
@@ -1198,7 +1201,22 @@ const isLoggedIn = !!clientId;
                 }
             }
             
-            // 7. DIBUJAR CAJONES (Frentes de cajón de 18mm con holgura de 3mm)
+            // 7. DIBUJAR CAJONES
+            const hingeType = opts.hingeType || 'codo_0';
+            let frontZ = -t; // Superpuesta por defecto
+            let startX = offsetX + 2;
+            let doorW = width - 4;
+            
+            if (hingeType === 'codo_18') {
+                frontZ = 0; // Embutida
+                startX = offsetX + t + 2;
+                doorW = width - 2*t - 4;
+            } else if (hingeType === 'codo_9') {
+                frontZ = -t; // Semi
+                startX = offsetX + 9 + 2;
+                doorW = width - 18 - 4;
+            }
+
             if (drawers > 0) {
                 const hSpace = drawerSpaceH / drawers;
                 // Si hay puertas, los cajones van arriba de ellas.
@@ -1208,10 +1226,10 @@ const isLoggedIn = !!clientId;
                     
                     if (!showDrawers) {
                         // Dibujar estructura interna del cajón
-                        const cW = width - 6 - 26; // Ancho menos holgura exterior y correderas (13mm x2)
+                        const cW = width - 2*t - 26; // Ancho menos laterales y correderas
                         const cH = Math.min(150, hSpace - 30);
                         const cD = depth - 50;
-                        const cX = offsetX + 3 + 13; // Margen exterior + corredera
+                        const cX = offsetX + t + 13;
                         const cY = yBottom + 10;
                         
                         this.addBoxFaces(cX, cY, 10, t, cH, cD, drawerFill, lineColor, 'cajon-lat-izq');
@@ -1219,46 +1237,47 @@ const isLoggedIn = !!clientId;
                         this.addBoxFaces(cX + t, cY, 10, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-frente-int');
                         this.addBoxFaces(cX + t, cY, 10 + cD - t, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-trasero');
                     } else {
-                        // Frente de cajón de 18mm de espesor embutido, Z = 0
-                        this.addBoxFaces(3 + offsetX, yBottom + 3, 0, width - 6, hSpace - 6, t, drawerFill, lineColor, 'drawer', ['left', 'right', 'top', 'bottom', 'back']);
+                        // Frente de cajón
+                        this.addBoxFaces(startX, yBottom + 3, frontZ, doorW, hSpace - 6, t, drawerFill, lineColor, 'drawer', ['back']);
                         
-                        // Tirador de barra horizontal de 3D
+                        // Tirador
                         const tcX = width / 2 + offsetX;
                         const tcY = yBottom + hSpace / 2;
-                        this.addBoxFaces(tcX - 45, tcY - 5, -10, 90, 10, 10, '#cccccc', lineColor, 'handle');
+                        this.addBoxFaces(tcX - 45, tcY - 5, frontZ - 10, 90, 10, 10, '#cccccc', lineColor, 'handle');
                     }
                 }
             }
             
-            // 8. DIBUJAR PUERTAS (Puertas de 18mm)
+            // 8. DIBUJAR PUERTAS
             if (doors > 0 && showDoors) {
-                const wSpace = (width - 6) / doors;
+                const wSpace = doorW / doors;
                 for (let i = 0; i < doors; i++) {
-                    const xLeft = 3 + i * wSpace;
-                    // Puertas de 18mm de espesor embutidas, Z = 0
-                    this.addBoxFaces(xLeft + offsetX, pisoY + 3, 0, wSpace - 3, doorSpaceH - 6, t, doorFill, lineColor, 'door', ['left', 'right', 'top', 'bottom', 'back']);
+                    const xLeft = startX + i * wSpace;
+                    this.addBoxFaces(xLeft, pisoY + 3, frontZ, wSpace - 2, doorSpaceH - 6, t, doorFill, lineColor, 'door', ['back']);
                     
-                    // Tirador de barra vertical para las puertas
+                    // Tirador
                     const tiradorX = doors === 1 
                         ? xLeft + wSpace - 30 
                         : (i === 0 ? xLeft + wSpace - 30 : xLeft + 30);
-                    // Lógica de altura ergonómica del tirador
                     let tiradorY;
                     if (opts.type === 'ALACENA') {
-                        tiradorY = pisoY + 80; // Cerca de la base para módulos colgantes
+                        tiradorY = pisoY + 80;
                     } else if (doorSpaceH + pisoY > 1500) {
-                        tiradorY = 1000; // Altura estándar ergonómica desde el suelo para muebles altos
+                        tiradorY = 1000;
                     } else {
-                        tiradorY = pisoY + doorSpaceH - 60; // Cerca del borde superior para muebles bajos
+                        tiradorY = pisoY + doorSpaceH - 60;
                     }
-                    this.addBoxFaces(tiradorX + offsetX - 5, tiradorY - 50, -10, 10, 100, 10, '#cccccc', lineColor, 'handle');
+                    this.addBoxFaces(tiradorX - 5, tiradorY - 50, frontZ - 10, 10, 100, 10, '#cccccc', lineColor, 'handle');
                 }
             }
             // Render WebGL
             this.controls.target.set(width/2, height/2, depth/2);
-            if (this.firstRender) {
-                this.camera.position.set(width * 1.5, height * 1.5, depth * 2.5);
+            if (this.firstRender || this.autoScalePending) {
+                const aspect = this.camera.aspect;
+                const distMultiplier = aspect < 1 ? 3.8 : 2.5; // Alejar más en móviles
+                this.camera.position.set(width * 1.5, height * 1.5, depth * distMultiplier);
                 this.firstRender = false;
+                this.autoScalePending = false;
             }
             this.controls.update();
             this.renderer.render(this.scene, this.camera);
@@ -1508,7 +1527,8 @@ const isLoggedIn = !!clientId;
             // ---------------------------------------------------------------
             let tplData = null;
             try {
-                const mod = await import(`/herramientas/logic/cubical/templates/templates.js?v=` + Date.now());
+                // Removemos el Date.now() para que el navegador almacene en caché el catálogo y el refresco sea instantáneo.
+                const mod = await import(`/herramientas/logic/cubical/templates/templates.js`);
                 tplData = mod.TEMPLATES[type];
             } catch(e) {
                 console.warn('[CubiCal] No se pudo cargar templates.js, usando fallback:', e);
@@ -1570,7 +1590,8 @@ const isLoggedIn = !!clientId;
 
             let TEMPLATES = {};
             try {
-                const mod = await import(`/herramientas/logic/cubical/templates/templates.js?v=` + Date.now());
+                // Caché del navegador en lugar de Date.now() para acelerar la carga de plantillas
+                const mod = await import(`/herramientas/logic/cubical/templates/templates.js`);
                 TEMPLATES = mod.TEMPLATES;
             } catch(e) {
                 console.warn('[CubiCal] Error cargando catálogo de plantillas:', e);
