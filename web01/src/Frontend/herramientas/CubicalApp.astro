@@ -224,10 +224,14 @@ const isLoggedIn = !!clientId;
             <!-- 3. COLUMNA DERECHA: PARAMETROS DE PRECISIÓN Y EDUCACIÓN (3 COLS) -->
             <div class="col-span-3 space-y-6">
                 <!-- PARÁMETROS -->
-                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-xl shadow-sm">
-                    <h3 class="text-xs font-black text-[var(--sc-text-dim)] uppercase tracking-widest mb-6 flex items-center gap-3">
-                        <i class="fas fa-sliders-h"></i> PROPIEDADES DE MÓDULO
-                    </h3>
+                <details class="bg-[var(--sc-surface)] border border-[var(--sc-border)] rounded-xl shadow-sm group mb-6" open>
+                    <summary class="p-6 cursor-pointer list-none flex justify-between items-center focus:outline-none rounded-xl group-open:rounded-b-none">
+                        <h3 class="text-xs font-black text-[var(--sc-text-dim)] uppercase tracking-widest flex items-center gap-3">
+                            <i class="fas fa-sliders-h"></i> PROPIEDADES DE MÓDULO
+                        </h3>
+                        <i class="fas fa-chevron-down text-[var(--sc-text-dim)] transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-6 pt-0 border-t border-[var(--sc-border)]">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Alto (mm)</label>
@@ -268,18 +272,38 @@ const isLoggedIn = !!clientId;
                         </div>
                         
                         <!-- ESTILO CONSTRUCTIVO -->
-                        <div class="col-span-2 bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
-                            <h4 class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase tracking-wider mb-2"><i class="fas fa-hammer"></i> Estilo Constructivo</h4>
-                            <div class="grid grid-cols-2 gap-2">
+                        <details class="col-span-2 bg-[var(--sc-surface-alt)] rounded border border-[var(--sc-border)] group" open>
+                            <summary class="p-3 cursor-pointer list-none flex justify-between items-center">
+                                <h4 class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase tracking-wider"><i class="fas fa-hammer"></i> Estilo Constructivo</h4>
+                                <i class="fas fa-chevron-down text-[var(--sc-text-dim)] transition-transform group-open:rotate-180"></i>
+                            </summary>
+                            <div class="p-3 pt-0 border-t border-[var(--sc-border)] grid grid-cols-2 gap-2 mt-2">
                                 <div>
-                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Frontal (Techo)</label>
-                                    <select id="mod-top-overhang" onchange="window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
-                                        <option value="0">Rasante (0mm)</option>
-                                        <option value="20">Volado sobre frentes (20mm)</option>
+                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Frontal</label>
+                                    <input type="number" id="mod-overhang-front" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Trasero</label>
+                                    <input type="number" id="mod-overhang-back" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Izquierdo</label>
+                                    <input type="number" id="mod-overhang-left" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Derecho</label>
+                                    <input type="number" id="mod-overhang-right" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                </div>
+                                <div class="col-span-2 mt-2">
+                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Cobertura Superior Puerta Externa</label>
+                                    <select id="mod-door-style" onchange="window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                        <option value="rasante">Rasante al Techo</option>
+                                        <option value="medio">Medio Techo</option>
+                                        <option value="cero">Cero (Cubre Techo)</option>
                                     </select>
                                 </div>
                             </div>
-                        </div>
+                        </details>
                         
                         <!-- Parámetros Extra (Dinámicos por plantilla) -->
                         <div id="group-custom-vars" class="col-span-2 hidden bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
@@ -312,14 +336,19 @@ const isLoggedIn = !!clientId;
                         </div>
                     </div>
                     
-                    <button onclick="window.cubical.addModule()" class="w-full mt-6 py-4 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR A LA LISTA</button>
-                </div>
+                    <button onclick="window.cubical.addModule()" class="w-full mt-6 py-4 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR NUEVO MÓDULO</button>
+                    </div>
+                </details>
 
                 <!-- PANEL DIDÁCTICO / INTERACTIVO -->
-                <div class="bg-[var(--sc-surface)] border border-[var(--sc-border)] p-6 rounded-xl shadow-sm text-xs space-y-4">
-                    <h3 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider flex items-center gap-2">
-                        <i class="fas fa-graduation-cap text-[var(--alvarez-red)]"></i> ASISTENTE DIDÁCTICO
-                    </h3>
+                <details class="bg-[var(--sc-surface)] border border-[var(--sc-border)] rounded-xl shadow-sm text-xs group">
+                    <summary class="p-6 cursor-pointer list-none flex justify-between items-center focus:outline-none rounded-xl group-open:rounded-b-none">
+                        <h3 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider flex items-center gap-2">
+                            <i class="fas fa-graduation-cap text-[var(--alvarez-red)]"></i> ASISTENTE DIDÁCTICO
+                        </h3>
+                        <i class="fas fa-chevron-down text-[var(--sc-text-dim)] transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-6 pt-0 border-t border-[var(--sc-border)] space-y-4">
                     
                     <div id="edu-drawer-tip" class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-[var(--alvarez-blue)] rounded">
                         <strong class="uppercase text-[0.6rem] block mb-1">💡 Holgura de Correderas</strong>
@@ -330,7 +359,8 @@ const isLoggedIn = !!clientId;
                         <strong class="uppercase text-[0.6rem] block mb-1">🚪 Tipo de Bisagra Codo 0</strong>
                         <span id="edu-hinge-text">Ideal para puertas exteriores individuales. Cubre todo el canto frontal del lateral.</span>
                     </div>
-                </div>
+                    </div>
+                </details>
             </div>
         </div>
 
@@ -424,88 +454,38 @@ const isLoggedIn = !!clientId;
                         </div>
                         
                         <!-- ESTILO CONSTRUCTIVO (Mobile) -->
-                        <div class="col-span-3 bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
-                            <h4 class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase tracking-wider mb-2"><i class="fas fa-hammer"></i> Estilo Constructivo</h4>
-                            <div>
-                                <label class="text-[0.5rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Frontal (Techo)</label>
-                                <select id="mod-top-overhang-mobile" onchange="window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
-                                    <option value="0">Rasante (0mm)</option>
-                                    <option value="20">Volado sobre frentes (20mm)</option>
-                                </select>
+                        <details class="col-span-3 bg-[var(--sc-surface-alt)] rounded border border-[var(--sc-border)] group">
+                            <summary class="p-3 cursor-pointer list-none flex justify-between items-center">
+                                <h4 class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase tracking-wider"><i class="fas fa-hammer"></i> Estilo Constructivo</h4>
+                                <i class="fas fa-chevron-down text-[var(--sc-text-dim)] transition-transform group-open:rotate-180"></i>
+                            </summary>
+                            <div class="p-3 pt-0 border-t border-[var(--sc-border)] grid grid-cols-2 gap-2 mt-2">
+                                <div>
+                                    <label class="text-[0.5rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Frontal</label>
+                                    <input type="number" id="mod-overhang-front-mobile" oninput="window.cubical.updateActiveModule(true)" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-[0.5rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Trasero</label>
+                                    <input type="number" id="mod-overhang-back-mobile" oninput="window.cubical.updateActiveModule(true)" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-[0.5rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Izq</label>
+                                    <input type="number" id="mod-overhang-left-mobile" oninput="window.cubical.updateActiveModule(true)" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-[0.5rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Der</label>
+                                    <input type="number" id="mod-overhang-right-mobile" oninput="window.cubical.updateActiveModule(true)" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                </div>
+                                <div class="col-span-2 mt-2">
+                                    <label class="text-[0.5rem] font-black uppercase text-[var(--sc-text-dim)]">Cobertura Puerta Externa</label>
+                                    <select id="mod-door-style-mobile" onchange="window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                        <option value="rasante">Rasante al Techo</option>
+                                        <option value="medio">Medio Techo</option>
+                                        <option value="cero">Cero (Cubre Techo)</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <!-- Parámetros Extra (Dinámicos por plantilla) Mobile -->
-                        <div id="group-custom-vars-mobile" class="col-span-3 hidden bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
-                            <h4 class="text-[0.55rem] font-black text-[var(--alvarez-red)] uppercase tracking-wider mb-2"><i class="fas fa-tools"></i> Parámetros Especiales</h4>
-                            <div id="custom-vars-container-mobile" class="space-y-3">
-                                <!-- Inputs dinámicos -->
-                            </div>
-                        </div>
-                        
-                        <div class="col-span-3 mt-1">
-                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Diseño de Melamina</label>
-                            <select id="mod-melamina-mobile" onchange="window.cubical.changeMelamina(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
-                                <optgroup label="FAPLAC (Premium)">
-                                    <option value="faplac_roble" selected>🌳 Faplac Roble Americano</option>
-                                    <option value="faplac_seda">🧵 Faplac Seda Giorno</option>
-                                    <option value="faplac_nogal">🪵 Faplac Nogal Habano</option>
-                                    <option value="faplac_gris">🪨 Faplac Gris Humo</option>
-                                </optgroup>
-                                <optgroup label="EGGER (Scandi Style)">
-                                    <option value="egger_helsinki">🌲 Egger Helsinki Birch</option>
-                                    <option value="egger_arcilla">🏺 Egger Gris Arcilla</option>
-                                    <option value="egger_ceniza">💨 Egger Ceniza Egger</option>
-                                </optgroup>
-                                <optgroup label="SADEPAN (Classic)">
-                                    <option value="sadepan_cerezo">🍒 Sadepan Cerezo</option>
-                                    <option value="sadepan_haya">🌾 Sadepan Haya</option>
-                                    <option value="sadepan_grafito">🕶️ Sadepan Grafito Sadepan</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button onclick="window.cubical.addModule(true)" class="w-full py-4 bg-[var(--alvarez-red)] text-white text-xs font-black uppercase rounded shadow-lg">AÑADIR AL PLANO</button>
-                </div>
-            </div>
-
-            <!-- HOJA DESLIZABLE 2: CAPAS / LISTADO -->
-            <div id="sheet-layers" class="bottom-sheet">
-                <div class="bottom-sheet-handle" onclick="window.cubical.closeMobileSheets()"></div>
-                <div class="flex justify-between items-center mb-4">
-                    <h4 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider">Capas / Módulos en el plano</h4>
-                    <span id="stat-total-mods-mobile" class="text-xs font-bold text-[var(--alvarez-red)]">0</span>
-                </div>
-                <div id="module-list-mobile" class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
-                    <!-- Dinámico -->
-                </div>
-            </div>
-
-            <!-- HOJA DESLIZABLE 3: GUÍA DIDÁCTICA -->
-            <div id="sheet-guide" class="bottom-sheet">
-                <div class="bottom-sheet-handle" onclick="window.cubical.closeMobileSheets()"></div>
-                <h4 class="text-xs font-black text-[var(--sc-text)] uppercase tracking-wider mb-4"><i class="fas fa-graduation-cap text-[var(--alvarez-red)]"></i> Guía Rápida de Herrajes</h4>
-                
-                <div class="space-y-4 text-xs text-[var(--sc-text-dim)]">
-                    <div class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-[var(--alvarez-blue)] rounded">
-                        <strong class="uppercase text-[0.6rem] block mb-1 text-[var(--sc-text)]">💡 Correderas Telescópicas</strong>
-                        Tienen una tolerancia estricta de **26mm** en total (13mm por lado). CubiCal calcula esta holgura automáticamente en tus cajones.
-                    </div>
-                    <div class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-[var(--alvarez-red)] rounded">
-                        <strong class="uppercase text-[0.6rem] block mb-1 text-[var(--sc-text)]">🚪 Bisagra Codo 0 (Superpuesta)</strong>
-                        La puerta cubre todo el espesor del lateral (18mm). Es la bisagra normal para extremos del mueble.
-                    </div>
-                    <div class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-amber-500 rounded">
-                        <strong class="uppercase text-[0.6rem] block mb-1 text-[var(--sc-text)]">🚪 Bisagra Codo 9 (Semi-superpuesta)</strong>
-                        La puerta cubre solo medio lateral (9mm). Se usa cuando dos puertas consecutivas comparten el lateral central.
-                    </div>
-                    <div class="p-3 bg-[var(--sc-surface-alt)] border-l-2 border-emerald-500 rounded">
-                        <strong class="uppercase text-[0.6rem] block mb-1 text-[var(--sc-text)]">🚪 Bisagra Codo 18 (Embutida)</strong>
-                        La puerta queda adentro del mueble, al ras de los laterales. Estética de diseño minimalista.
-                    </div>
-                </div>
-            </div>
+                        </details>
         </div>
     </section>
 
@@ -1147,9 +1127,16 @@ const isLoggedIn = !!clientId;
             this.addBoxFaces(width - t + offsetX, 0, 0, t, height - t, depth, baseFill, lineColor, 'right-side', ['top']);
             
             // 4. DIBUJAR TECHO / TAPA SUPERIOR (18mm)
+            const overFront = buildStyle.front || 0;
+            const overBack = buildStyle.back || 0;
+            const overLeft = buildStyle.left || 0;
+            const overRight = buildStyle.right || 0;
+
             if (showTop) {
-                const overFront = buildStyle.topOverhangFront || 0;
-                this.addBoxFaces(offsetX, height - t, 0 - overFront, width, t, depth + overFront, baseFill, lineColor, 'top', ['bottom']);
+                // El techo se dibuja en height - t. 
+                // offsetX se afecta por overLeft. Ancho por overLeft + overRight.
+                // Profundidad por overFront + overBack. z inicial es 0 - overFront
+                this.addBoxFaces(offsetX - overLeft, height - t, 0 - overFront, width + overLeft + overRight, t, depth + overFront + overBack, baseFill, lineColor, 'top', ['bottom']);
             } else {
                 // Dibujar Fajas de anclaje (espigas) si no hay tapa y es bajo mesada o simplemente para ver estructura
                 // Faja frontal y trasera por dentro de los laterales y a ras de su borde superior
@@ -1251,9 +1238,22 @@ const isLoggedIn = !!clientId;
             // 8. DIBUJAR PUERTAS
             if (doors > 0 && showDoors) {
                 const wSpace = doorW / doors;
+                
+                // Calcular altura de puerta según opciones y hingeType
+                let doorH = doorSpaceH - 6; // Por defecto (rasante) con holgura de 6mm (3 arriba, 3 abajo)
+                let doorY = pisoY + 3; // base
+
+                if (hingeType !== 'codo_18') { // Puerta exterior
+                    if (opts.doorStyle === 'medio') {
+                        doorH = doorSpaceH - 6 + (t / 2) + 3; // Sube medio techo
+                    } else if (opts.doorStyle === 'cero') {
+                        doorH = doorSpaceH - 6 + t + 3; // Sube todo el techo
+                    }
+                }
+
                 for (let i = 0; i < doors; i++) {
                     const xLeft = startX + i * wSpace;
-                    this.addBoxFaces(xLeft, pisoY + 3, frontZ, wSpace - 2, doorSpaceH - 6, t, doorFill, lineColor, 'door', ['back']);
+                    this.addBoxFaces(xLeft, doorY, frontZ, wSpace - 2, doorH, t, doorFill, lineColor, 'door', ['back']);
                     
                     // Tirador
                     const tiradorX = doors === 1 
@@ -1741,37 +1741,27 @@ const isLoggedIn = !!clientId;
         },
 
         addModule: function(isMobile = false) {
-            const prefix = isMobile ? '-mobile' : '';
-            const nameInputVal = document.getElementById(`mod-name${prefix}`)?.value || `Modulo A${this.state.modules.length + 1}`;
-            const type = document.getElementById(`mod-type${prefix}`).value;
-            const dims = {
-                alto: parseInt(document.getElementById(`mod-h${prefix}`).value) || 800,
-                ancho: parseInt(document.getElementById(`mod-w${prefix}`).value) || 600,
-                prof: parseInt(document.getElementById(`mod-p${prefix}`).value) || 500,
-                n_cajones: parseInt(document.getElementById(`mod-drawers${prefix}`).value) || 0,
-                n_puertas: parseInt(document.getElementById(`mod-doors${prefix}`).value) || 0,
-                n_estantes: parseInt(document.getElementById(`mod-shelves${prefix}`).value) || 0
-            };
-            
-            const hingeSelect = document.getElementById(`mod-hinge-type${prefix}`);
-            const hingeType = hingeSelect ? hingeSelect.value : 'codo_0';
+            if(!this.state.activeModuleId) return;
+            const currentMod = this.state.modules.find(m => m.id === this.state.activeModuleId);
+            if(!currentMod) return;
 
-            const newId = Date.now();
-            this.state.modules.push({ id: newId, type, name: nameInputVal, dims, hingeType });
-            this.state.activeModuleId = newId; // Activar el módulo
-            
-            // Auto-increment module name for the next module
             const nextName = `Modulo A${this.state.modules.length + 1}`;
-            const dNameInput = document.getElementById('mod-name');
-            const mNameInput = document.getElementById('mod-name-mobile');
-            if (dNameInput) dNameInput.value = nextName;
-            if (mNameInput) mNameInput.value = nextName;
-
+            const newId = Date.now();
+            
+            // Clonamos el módulo actual pero le asignamos el nuevo nombre auto-incremental
+            const newMod = JSON.parse(JSON.stringify(currentMod));
+            newMod.id = newId;
+            newMod.name = nextName;
+            
+            this.state.modules.push(newMod);
+            
+            // Seleccionamos el nuevo módulo, dejando el anterior "guardado" intacto
+            this.selectModule(newId);
+            
             if (isMobile) {
                 this.closeMobileSheets();
             }
-            this.renderConstructor();
-        },
+        },,
 
         removeModule: function(id) {
             this.state.modules = this.state.modules.filter(m => m.id !== id);
@@ -1811,8 +1801,13 @@ const isLoggedIn = !!clientId;
                 document.getElementById('mod-shelves').value = m.dims.n_estantes;
                 const hingeSelect = document.getElementById('mod-hinge-type');
                 if (hingeSelect) hingeSelect.value = m.hingeType;
-                const overhangSelect = document.getElementById('mod-top-overhang');
-                if (overhangSelect && m.buildStyle) overhangSelect.value = m.buildStyle.topOverhangFront || 0;
+                const ohFront = document.getElementById('mod-overhang-front');
+                const ohBack = document.getElementById('mod-overhang-back');
+                const ohLeft = document.getElementById('mod-overhang-left');
+                const ohRight = document.getElementById('mod-overhang-right');
+                const doorStyleSel = document.getElementById('mod-door-style');
+                if(ohFront && m.buildStyle) { ohFront.value = m.buildStyle.front || 0; ohBack.value = m.buildStyle.back || 0; ohLeft.value = m.buildStyle.left || 0; ohRight.value = m.buildStyle.right || 0; }
+                if(doorStyleSel) doorStyleSel.value = m.doorStyle || 'rasante';
                 
                 // Rellenar controles Mobile
                 document.getElementById('mod-name-mobile').value = m.name;
@@ -1825,8 +1820,13 @@ const isLoggedIn = !!clientId;
                 document.getElementById('mod-shelves-mobile').value = m.dims.n_estantes;
                 const hingeSelectMobile = document.getElementById('mod-hinge-type-mobile');
                 if (hingeSelectMobile) hingeSelectMobile.value = m.hingeType;
-                const overhangSelectMobile = document.getElementById('mod-top-overhang-mobile');
-                if (overhangSelectMobile && m.buildStyle) overhangSelectMobile.value = m.buildStyle.topOverhangFront || 0;
+                const ohFrontM = document.getElementById('mod-overhang-front-mobile');
+                const ohBackM = document.getElementById('mod-overhang-back-mobile');
+                const ohLeftM = document.getElementById('mod-overhang-left-mobile');
+                const ohRightM = document.getElementById('mod-overhang-right-mobile');
+                const doorStyleSelM = document.getElementById('mod-door-style-mobile');
+                if(ohFrontM && m.buildStyle) { ohFrontM.value = m.buildStyle.front || 0; ohBackM.value = m.buildStyle.back || 0; ohLeftM.value = m.buildStyle.left || 0; ohRightM.value = m.buildStyle.right || 0; }
+                if(doorStyleSelM) doorStyleSelM.value = m.doorStyle || 'rasante';
                 
                 this.updateHingeVisibility();
                 this.updateDrawerEducation();
@@ -1851,8 +1851,11 @@ const isLoggedIn = !!clientId;
             const shelvesVal = parseInt(document.getElementById(`mod-shelves${prefix}`).value) || 0;
             const hingeSelect = document.getElementById(`mod-hinge-type${prefix}`);
             const hingeVal = hingeSelect ? hingeSelect.value : 'codo_0';
-            const topOverhangSelect = document.getElementById(`mod-top-overhang${prefix}`);
-            const topOverhangVal = topOverhangSelect ? parseInt(topOverhangSelect.value) : 0;
+            const ohFront = parseInt(document.getElementById(`mod-overhang-front${prefix}`)?.value) || 0;
+            const ohBack = parseInt(document.getElementById(`mod-overhang-back${prefix}`)?.value) || 0;
+            const ohLeft = parseInt(document.getElementById(`mod-overhang-left${prefix}`)?.value) || 0;
+            const ohRight = parseInt(document.getElementById(`mod-overhang-right${prefix}`)?.value) || 0;
+            const doorStyleVal = document.getElementById(`mod-door-style${prefix}`)?.value || 'rasante';
             
             m.name = nameVal;
             m.type = typeVal;
@@ -1863,7 +1866,8 @@ const isLoggedIn = !!clientId;
             m.dims.n_puertas = doorsVal;
             m.dims.n_estantes = shelvesVal;
             m.hingeType = hingeVal;
-            m.buildStyle = { topOverhangFront: topOverhangVal };
+            m.buildStyle = { front: ohFront, back: ohBack, left: ohLeft, right: ohRight };
+            m.doorStyle = doorStyleVal;
             
             // Sincronizar Custom Vars desde los inputs dinámicos
             if (m.customVars) {
