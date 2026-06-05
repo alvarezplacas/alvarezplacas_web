@@ -1077,31 +1077,14 @@ const isLoggedIn = !!clientId;
                     }
                 }
                 
-                // Renderizado
-                this.allFaces.sort((a, b) => {
-                    if (Math.abs(b.avgZ - a.avgZ) > 0.01) return b.avgZ - a.avgZ;
-                    return b.maxZ - a.maxZ;
-                });
-                const _Lx = 0.45, _Ly = 0.75, _Lz = -0.48;
-                const _Ll = Math.sqrt(_Lx*_Lx + _Ly*_Ly + _Lz*_Lz);
-                const light = { x: _Lx/_Ll, y: _Ly/_Ll, z: _Lz/_Ll };
-                const ambient = 0.32;
-                ctx.lineWidth = 0.8; ctx.lineJoin = 'round'; ctx.lineCap  = 'round';
-                this.allFaces.forEach(f => {
-                    const rn = this.rotateNormal(f.normal.x, f.normal.y, f.normal.z);
-                    if (rn.z > 0.025) return;
-                    const diffuse = Math.max(0, rn.x*light.x + rn.y*light.y + rn.z*light.z);
-                    const lightLevel = ambient + (1 - ambient) * diffuse;
-                    ctx.beginPath(); ctx.moveTo(f.pts[0].x, f.pts[0].y);
-                    for (let i = 1; i < f.pts.length; i++) ctx.lineTo(f.pts[i].x, f.pts[i].y);
-                    ctx.closePath();
-                    ctx.fillStyle = f.fillColor; ctx.fill();
-                    const shadowAmt = Math.max(0, (1 - lightLevel) * 0.82);
-                    if (shadowAmt > 0.004) { ctx.fillStyle = `rgba(0,0,0,${shadowAmt.toFixed(3)})`; ctx.fill(); }
-                    const highlightAmt = Math.max(0, (lightLevel - 0.82) * 0.65);
-                    if (highlightAmt > 0.004) { ctx.fillStyle = `rgba(255,255,255,${highlightAmt.toFixed(3)})`; ctx.fill(); }
-                    ctx.strokeStyle = f.lineColor; ctx.stroke();
-                });
+                // Render WebGL
+                this.controls.target.set(width/2, height/2, depth/2);
+                if (this.firstRender) {
+                    this.camera.position.set(width * 1.5, height * 1.5, depth * 2.5);
+                    this.firstRender = false;
+                }
+                this.controls.update();
+                this.renderer.render(this.scene, this.camera);
                 
                 return;
             }
@@ -1962,27 +1945,17 @@ const isLoggedIn = !!clientId;
             const drawOnCanvas = (canvasId, renderer) => {
                 const canvas = document.getElementById(canvasId);
                 if (!canvas || !renderer) return;
-                const ctx = canvas.getContext('2d');
-                const rect = canvas.parentNode.getBoundingClientRect();
                 
-                canvas.width = rect.width || 800;
-                canvas.height = canvasId.includes('mobile') ? 400 : 500;
-                
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // Grilla de fondo CAD
-                ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
-                ctx.lineWidth = 1;
-                const step = 20;
-                for (let x = 0; x < canvas.width; x += step) {
-                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-                }
-                for (let y = 0; y < canvas.height; y += step) {
-                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+                // Grilla de fondo CAD (WebGL)
+                if (!renderer.scene.children.some(c => c.isGridHelper)) {
+                    const gridHelper = new THREE.GridHelper(2000, 40, isDark ? 0xffffff : 0x000000, isDark ? 0xffffff : 0x000000);
+                    gridHelper.material.opacity = 0.05;
+                    gridHelper.material.transparent = true;
+                    gridHelper.position.y = 0;
+                    renderer.scene.add(gridHelper);
                 }
                 
                 if (count === 0) {
-                    renderer.scale = 0.22;
                     renderer.drawBox(600, 800, 500, {
                         color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.1)',
                         fillColor: 'rgba(0, 0, 0, 0)',
@@ -1990,11 +1963,6 @@ const isLoggedIn = !!clientId;
                         drawPanelThickness: false,
                         palette: palette
                     });
-                    
-                    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
-                    ctx.font = 'bold 11px monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText("VISTA 3D EN TIEMPO REAL — ARRASTRA CON EL MOUSE PARA ROTAR", canvas.width/2, canvas.height/2 + 150);
                     return;
                 }
                 
@@ -2002,16 +1970,8 @@ const isLoggedIn = !!clientId;
                 const m = this.state.modules.find(mod => mod.id === this.state.activeModuleId) || this.state.modules[this.state.modules.length - 1];
                 if (!m) return;
                 
-                // Solo auto-escalar si está pendiente (al cargar módulo nuevo o resetear)
-                if (renderer.autoScalePending) {
-                    const scaleX = (canvas.width * 0.45) / m.dims.ancho;
-                    const scaleY = (canvas.height * 0.50) / m.dims.alto;
-                    renderer.scale = Math.min(canvasId.includes('mobile') ? 0.22 : 0.35, Math.min(scaleX, scaleY));
-                    renderer.autoScalePending = false;
-                }
-                
-                const boxColor = palette ? palette.lineColor : (isDark ? 'oklch(62.8% 0.25 29.23)' : '#000000');
-                const boxFill = palette ? palette.fillColor : (isDark ? 'rgba(215, 40, 40, 0.03)' : 'rgba(0, 0, 0, 0.01)');
+                const boxColor = palette ? palette.lineColor : (isDark ? '#e5e5e5' : '#1e1e1e');
+                const boxFill = palette ? palette.fillColor : (isDark ? '#2e2e2e' : '#f4f1ea');
                 
                 const prefix = canvasId.includes('mobile') ? '-mobile' : '';
                 const showDrawers = document.getElementById(`show-drawers${prefix}`) ? document.getElementById(`show-drawers${prefix}`).checked : true;
@@ -2031,15 +1991,9 @@ const isLoggedIn = !!clientId;
                     palette: palette,
                     showDrawers,
                     showDoors,
-                    showTop
+                    showTop,
+                    customVars: m.customVars || {}
                 });
-                
-                // Medidas en 3D del módulo único
-                const labelPos = renderer.project(m.dims.ancho/2, -45, 0, m.dims.ancho, m.dims.alto, m.dims.prof, canvas.width, canvas.height);
-                ctx.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.6)';
-                ctx.font = 'bold 9px monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText(`${m.dims.ancho}x${m.dims.alto}x${m.dims.prof} mm`, labelPos.x, labelPos.y);
             };
 
             drawOnCanvas('canvas-preview', this.renderer);
