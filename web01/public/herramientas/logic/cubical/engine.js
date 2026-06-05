@@ -18,14 +18,15 @@ export const MODULE_TYPES = {
  * @param {object} dims {alto, ancho, prof, n_cajones, n_puertas, n_estantes}
  * @param {number} thickness Espesor de la placa (default 18mm)
  */
-export function calculateModulePieces(type, dims, thickness = 18, customVars = {}) {
+export function calculateModulePieces(type, dims, thickness = 18, customVars = {}, buildStyle = {}) {
     const { alto, ancho, prof, n_cajones, n_estantes, n_puertas } = dims;
+    const overFront = buildStyle.topOverhangFront || 0;
     let pieces = [];
 
     if (type === MODULE_TYPES.ESCRITORIO) {
         const cajoneraW = customVars.cajoneraWidth || 400;
         // Lógica Especial de Escritorio Juvenil
-        pieces.push({ name: 'Techo de Escritorio', h: ancho, w: prof, qty: 1 });
+        pieces.push({ name: 'Techo de Escritorio', h: ancho, w: prof + overFront, qty: 1 });
         pieces.push({ name: 'Lateral Izquierdo', h: alto - thickness, w: prof, qty: 1 });
         
         // Cajonera derecha (ancho dinámico)
@@ -54,7 +55,7 @@ export function calculateModulePieces(type, dims, thickness = 18, customVars = {
     pieces.push({ name: 'Lateral de Carcasa', h: alto - thickness, w: prof, qty: 2 });
 
     // Techo
-    pieces.push({ name: 'Techo de Carcasa', h: ancho, w: prof, qty: 1 });
+    pieces.push({ name: 'Techo de Carcasa', h: ancho, w: prof + overFront, qty: 1 });
 
     // Base (o amarres para Bajo Mesada)
     if (type === MODULE_TYPES.BAJO_MESADA) {
@@ -87,7 +88,7 @@ export function calculateModulePieces(type, dims, thickness = 18, customVars = {
         // Carcasa (Laterales, Techo, Piso, Fondo)
         pieces.push({ name: 'Lateral Izquierdo Rack', h: alto - thickness, w: prof, qty: 1 });
         pieces.push({ name: 'Lateral Derecho Rack', h: alto - thickness, w: prof, qty: 1 });
-        pieces.push({ name: 'Techo Rack TV', h: ancho, w: prof, qty: 1 });
+        pieces.push({ name: 'Techo Rack TV', h: ancho, w: prof + overFront, qty: 1 });
         pieces.push({ name: 'Base Rack TV', h: ancho - (thickness * 2), w: prof, qty: 1 });
         pieces.push({ name: 'Fondo MDF 3mm', h: alto - 10, w: ancho - 10, qty: 1, isBackground: true });
 

@@ -267,6 +267,20 @@ const isLoggedIn = !!clientId;
                             </select>
                         </div>
                         
+                        <!-- ESTILO CONSTRUCTIVO -->
+                        <div class="col-span-2 bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
+                            <h4 class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase tracking-wider mb-2"><i class="fas fa-hammer"></i> Estilo Constructivo</h4>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Frontal (Techo)</label>
+                                    <select id="mod-top-overhang" onchange="window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                        <option value="0">Rasante (0mm)</option>
+                                        <option value="20">Volado sobre frentes (20mm)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Parámetros Extra (Dinámicos por plantilla) -->
                         <div id="group-custom-vars" class="col-span-2 hidden bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
                             <h4 class="text-[0.6rem] font-black text-[var(--alvarez-red)] uppercase tracking-wider mb-2"><i class="fas fa-tools"></i> Parámetros Especiales</h4>
@@ -404,6 +418,18 @@ const isLoggedIn = !!clientId;
                                 <option value="codo_9">Bisagra Codo 9 (Semi-superpuesta)</option>
                                 <option value="codo_18">Bisagra Codo 18 (Embutida)</option>
                             </select>
+                        </div>
+                        
+                        <!-- ESTILO CONSTRUCTIVO (Mobile) -->
+                        <div class="col-span-3 bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
+                            <h4 class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase tracking-wider mb-2"><i class="fas fa-hammer"></i> Estilo Constructivo</h4>
+                            <div>
+                                <label class="text-[0.5rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Frontal (Techo)</label>
+                                <select id="mod-top-overhang-mobile" onchange="window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
+                                    <option value="0">Rasante (0mm)</option>
+                                    <option value="20">Volado sobre frentes (20mm)</option>
+                                </select>
+                            </div>
                         </div>
                         
                         <!-- Parámetros Extra (Dinámicos por plantilla) Mobile -->
@@ -932,6 +958,7 @@ const isLoggedIn = !!clientId;
                 drawers = 0,
                 doors = 0,
                 palette = null,
+                buildStyle = { topOverhangFront: 0 },
                 showTop = true,
                 showDrawers = true,
                 showDoors = true
@@ -1118,7 +1145,8 @@ const isLoggedIn = !!clientId;
             
             // 4. DIBUJAR TECHO / TAPA SUPERIOR (18mm)
             if (showTop) {
-                this.addBoxFaces(offsetX, height - t, 0, width, t, depth, baseFill, lineColor, 'top', ['bottom']);
+                const overFront = buildStyle.topOverhangFront || 0;
+                this.addBoxFaces(offsetX, height - t, 0 - overFront, width, t, depth + overFront, baseFill, lineColor, 'top', ['bottom']);
             } else {
                 // Dibujar Fajas de anclaje (espigas) si no hay tapa y es bajo mesada o simplemente para ver estructura
                 // Faja frontal y trasera por dentro de los laterales y a ras de su borde superior
@@ -1762,6 +1790,8 @@ const isLoggedIn = !!clientId;
                 document.getElementById('mod-shelves').value = m.dims.n_estantes;
                 const hingeSelect = document.getElementById('mod-hinge-type');
                 if (hingeSelect) hingeSelect.value = m.hingeType;
+                const overhangSelect = document.getElementById('mod-top-overhang');
+                if (overhangSelect && m.buildStyle) overhangSelect.value = m.buildStyle.topOverhangFront || 0;
                 
                 // Rellenar controles Mobile
                 document.getElementById('mod-name-mobile').value = m.name;
@@ -1774,6 +1804,8 @@ const isLoggedIn = !!clientId;
                 document.getElementById('mod-shelves-mobile').value = m.dims.n_estantes;
                 const hingeSelectMobile = document.getElementById('mod-hinge-type-mobile');
                 if (hingeSelectMobile) hingeSelectMobile.value = m.hingeType;
+                const overhangSelectMobile = document.getElementById('mod-top-overhang-mobile');
+                if (overhangSelectMobile && m.buildStyle) overhangSelectMobile.value = m.buildStyle.topOverhangFront || 0;
                 
                 this.updateHingeVisibility();
                 this.updateDrawerEducation();
@@ -1798,6 +1830,8 @@ const isLoggedIn = !!clientId;
             const shelvesVal = parseInt(document.getElementById(`mod-shelves${prefix}`).value) || 0;
             const hingeSelect = document.getElementById(`mod-hinge-type${prefix}`);
             const hingeVal = hingeSelect ? hingeSelect.value : 'codo_0';
+            const topOverhangSelect = document.getElementById(`mod-top-overhang${prefix}`);
+            const topOverhangVal = topOverhangSelect ? parseInt(topOverhangSelect.value) : 0;
             
             m.name = nameVal;
             m.type = typeVal;
@@ -1808,6 +1842,7 @@ const isLoggedIn = !!clientId;
             m.dims.n_puertas = doorsVal;
             m.dims.n_estantes = shelvesVal;
             m.hingeType = hingeVal;
+            m.buildStyle = { topOverhangFront: topOverhangVal };
             
             // Sincronizar Custom Vars desde los inputs dinámicos
             if (m.customVars) {
@@ -2007,6 +2042,7 @@ const isLoggedIn = !!clientId;
                     doors: m.dims.n_puertas || 0,
                     type: m.type,
                     palette: palette,
+                    buildStyle: m.buildStyle || { topOverhangFront: 0 },
                     showDrawers,
                     showDoors,
                     showTop,
@@ -2039,7 +2075,7 @@ const isLoggedIn = !!clientId;
                 
                 let allPieces = [];
                 this.state.modules.forEach(m => {
-                    const pieces = optEngine.calculateModulePieces(m.type, m.dims, 18, m.customVars);
+                    const pieces = optEngine.calculateModulePieces(m.type, m.dims, 18, m.customVars, m.buildStyle);
                     allPieces = allPieces.concat(pieces);
                 });
                 
