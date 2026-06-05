@@ -167,10 +167,24 @@ export function calculateModulePieces(type, dims, thickness = 18, customVars = {
     // Puertas
     if (n_puertas > 0) {
         const wPuerta = Math.floor((ancho - (n_puertas * 2)) / n_puertas) - 2;
-        // La altura de la puerta cubre el doorSpaceH más el espesor del piso (y base si no es bajo mesada)
-        // En Bajo Mesada el zócalo es descubierto, la puerta cubre solo hasta el piso.
-        let extraH = type === MODULE_TYPES.BAJO_MESADA ? thickness : thickness * 2; 
-        const hPuerta = doorSpaceH + extraH - 4; // -4 holgura
+        const hingeType = buildStyle.hingeType || 'codo_0';
+        const doorStyle = buildStyle.doorStyle || 'rasante';
+        
+        let hPuerta = doorSpaceH;
+        if (hingeType === 'codo_18') {
+            // Embutida: gap de 6mm en total (3 arriba, 3 abajo)
+            hPuerta = doorSpaceH - 6;
+        } else {
+            // Exterior (Codo 0 / Codo 9): cubre el piso (thickness) y según la cobertura de techo (doorStyle)
+            if (doorStyle === 'medio') {
+                hPuerta = doorSpaceH + thickness + (thickness / 2) - 3;
+            } else if (doorStyle === 'cero') {
+                hPuerta = doorSpaceH + thickness + thickness - 6;
+            } else {
+                // rasante: acaba abajo de la tapa, cubre el piso pero no la tapa
+                hPuerta = doorSpaceH + thickness - 6;
+            }
+        }
         pieces.push({ name: 'Puerta', h: hPuerta, w: wPuerta, qty: n_puertas, isFront: true });
     }
 

@@ -121,5 +121,32 @@ export const TEMPLATES = {
         dims: { alto: 2000, ancho: 600, prof: 400, n_cajones: 0, n_puertas: 2, n_estantes: 4 },
         hingeType: 'codo_0',
         moduleName: "Modulo A1 - Despensa Alta"
+    },
+    RACK_TV_GRANDE: {
+        id: 'RACK_TV_GRANDE',
+        name: "Rack TV Grande (TV8018)",
+        emoji: "📺",
+        tag: "1.70 metros",
+        tagColor: "var(--alvarez-red)",
+        description: "Mesa para TV LED extra ancha basada en el catálogo de Fiplasto. Cuenta con espacio para consolas y parlantes.",
+        environment: 'living',
+        modType: 'RACK_TV',
+        dims: { alto: 523, ancho: 1700, prof: 468, n_cajones: 2, n_puertas: 2, n_estantes: 1 },
+        customVars: { colCenterWidth: 700 },
+        hingeType: 'codo_0',
+        moduleName: "Modulo A1 - Rack TV Extra Grande"
+    },
+    MESA_RATONA: {
+        id: 'MESA_RATONA',
+        name: "Mesa Ratona (ME8024)",
+        emoji: "☕",
+        tag: "Mesa de Centro",
+        tagColor: "#eab308",
+        description: "Mesa baja para living de 90x60cm. Altura ergonómica de 48.8cm con un práctico cajón deslizable.",
+        environment: 'living',
+        modType: 'CAJONERA',
+        dims: { alto: 488, ancho: 905, prof: 605, n_cajones: 1, n_puertas: 0, n_estantes: 1 },
+        hingeType: 'codo_0',
+        moduleName: "Modulo A1 - Mesa de Centro"
     }
 };

@@ -138,6 +138,7 @@ const isLoggedIn = !!clientId;
                             <option value="BAJO_MESADA">🍽️ Bajo Mesada Cocina</option>
                             <option value="BIBLIOTECA">📚 Biblioteca Divisoria</option>
                             <option value="ESCRITORIO">💻 Escritorio Trabajo</option>
+                            <option value="RACK_TV">📺 Rack TV / Living</option>
                             <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
                         </select>
                     </div>
@@ -414,6 +415,7 @@ const isLoggedIn = !!clientId;
                             <option value="BAJO_MESADA">🍽️ Bajo Mesada Cocina</option>
                             <option value="BIBLIOTECA">📚 Biblioteca Divisoria</option>
                             <option value="ESCRITORIO">💻 Escritorio Trabajo</option>
+                            <option value="RACK_TV">📺 Rack TV / Living</option>
                             <option value="CUSTOM">⚙️ Módulo a Medida Libre</option>
                         </select>
                     </div>
@@ -887,6 +889,44 @@ const isLoggedIn = !!clientId;
             this.controls.addEventListener('change', () => {
                 this.renderer.render(this.scene, this.camera);
             });
+
+            // CAD-like zoom to mouse cursor
+            this.controls.enableZoom = false;
+            this.canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(new THREE.Vector2(x, y), this.camera);
+                
+                const intersects = raycaster.intersectObjects(this.meshes);
+                let targetPoint = new THREE.Vector3();
+                
+                if (intersects.length > 0) {
+                    targetPoint.copy(intersects[0].point);
+                } else {
+                    const normal = new THREE.Vector3();
+                    this.camera.getWorldDirection(normal);
+                    normal.negate();
+                    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, this.controls.target);
+                    raycaster.ray.intersectPlane(plane, targetPoint);
+                }
+                
+                const zoomFactor = e.deltaY < 0 ? 0.15 : -0.15;
+                const dist = this.camera.position.distanceTo(this.controls.target);
+                if (e.deltaY < 0 && dist < 100) return;
+                if (e.deltaY > 0 && dist > 8000) return;
+                
+                const dir = new THREE.Vector3().subVectors(targetPoint, this.camera.position);
+                this.camera.position.addScaledVector(dir, zoomFactor);
+                this.controls.target.addScaledVector(new THREE.Vector3().subVectors(targetPoint, this.controls.target), zoomFactor);
+                
+                this.controls.update();
+                this.renderer.render(this.scene, this.camera);
+            }, { passive: false });
             
             this.meshes = [];
             this.firstRender = true;
@@ -1239,15 +1279,18 @@ const isLoggedIn = !!clientId;
             if (doors > 0 && showDoors) {
                 const wSpace = doorW / doors;
                 
-                // Calcular altura de puerta según opciones y hingeType
-                let doorH = doorSpaceH - 6; // Por defecto (rasante) con holgura de 6mm (3 arriba, 3 abajo)
-                let doorY = pisoY + 3; // base
+                // Calcular altura de puerta (doorH) y posición vertical (doorY) según opciones y hingeType
+                let doorY = pisoY + 3; // base default (embutida codo_18)
+                let doorH = doorSpaceH - 6; // default (embutida y rasante codo_18)
 
-                if (hingeType !== 'codo_18') { // Puerta exterior
+                if (hingeType !== 'codo_18') { // Puerta exterior (Codo 0 / Codo 9)
+                    doorY = pisoY - t + 3; // Cubre la base/piso inferior
                     if (opts.doorStyle === 'medio') {
-                        doorH = doorSpaceH - 6 + (t / 2) + 3; // Sube medio techo
+                        doorH = height - (t / 2) - doorY; // Sube medio techo
                     } else if (opts.doorStyle === 'cero') {
-                        doorH = doorSpaceH - 6 + t + 3; // Sube todo el techo
+                        doorH = height - 3 - doorY; // Sube todo el techo
+                    } else {
+                        doorH = height - t - 3 - doorY; // Rasante al techo (abajo de la tapa)
                     }
                 }
 
@@ -1433,14 +1476,19 @@ const isLoggedIn = !!clientId;
         },
 
         zoom3D: function(factor) {
-            if (!this.renderer) return;
-            this.renderer.scale *= factor;
-            this.renderer.scale = Math.max(0.1, Math.min(1.5, this.renderer.scale));
-            if (this.rendererMobile) {
-                this.rendererMobile.scale *= factor;
-                this.rendererMobile.scale = Math.max(0.1, Math.min(1.2, this.rendererMobile.scale));
-            }
-            this.renderPreview();
+            const doZoom = (renderer) => {
+                if (!renderer || !renderer.controls) return;
+                const target = renderer.controls.target;
+                const dir = new THREE.Vector3().subVectors(renderer.camera.position, target);
+                const dist = dir.length();
+                if (factor < 1 && dist < 100) return;
+                if (factor > 1 && dist > 8000) return;
+                renderer.camera.position.copy(target).addScaledVector(dir, factor);
+                renderer.controls.update();
+                renderer.renderer.render(renderer.scene, renderer.camera);
+            };
+            doZoom(this.renderer);
+            doZoom(this.rendererMobile);
         },
 
         showRealPhoto: function() {
@@ -1646,8 +1694,11 @@ const isLoggedIn = !!clientId;
             } else if (type === 'ESCRITORIO') {
                 shelvesInput.value = 0; drawersInput.value = 4; doorsInput.value = 0;
                 hInput.value = 750; wInput.value = 1200; pInput.value = 600;
+            } else if (type === 'RACK_TV') {
+                shelvesInput.value = 1; drawersInput.value = 2; doorsInput.value = 2;
+                hInput.value = 550; wInput.value = 1400; pInput.value = 400;
             } else {
-                shelvesInput.value = 0; drawersInput.value = 0; drawersInput.value = 0;
+                shelvesInput.value = 0; drawersInput.value = 0; doorsInput.value = 0;
             }
             
             // Sincronizar el otro formulario
@@ -1761,7 +1812,7 @@ const isLoggedIn = !!clientId;
             if (isMobile) {
                 this.closeMobileSheets();
             }
-        },,
+        },
 
         removeModule: function(id) {
             this.state.modules = this.state.modules.filter(m => m.id !== id);
@@ -1866,7 +1917,7 @@ const isLoggedIn = !!clientId;
             m.dims.n_puertas = doorsVal;
             m.dims.n_estantes = shelvesVal;
             m.hingeType = hingeVal;
-            m.buildStyle = { front: ohFront, back: ohBack, left: ohLeft, right: ohRight };
+            m.buildStyle = { front: ohFront, back: ohBack, left: ohLeft, right: ohRight, doorStyle: doorStyleVal, hingeType: hingeVal };
             m.doorStyle = doorStyleVal;
             
             // Sincronizar Custom Vars desde los inputs dinámicos
@@ -1890,6 +1941,7 @@ const isLoggedIn = !!clientId;
             const oDoors = document.getElementById(`mod-doors${otherPrefix}`);
             const oShelves = document.getElementById(`mod-shelves${otherPrefix}`);
             const oHinge = document.getElementById(`mod-hinge-type${otherPrefix}`);
+            const oDoorStyle = document.getElementById(`mod-door-style${otherPrefix}`);
             
             if (oName) oName.value = nameVal;
             if (oType) oType.value = typeVal;
@@ -1900,6 +1952,7 @@ const isLoggedIn = !!clientId;
             if (oDoors) oDoors.value = doorsVal;
             if (oShelves) oShelves.value = shelvesVal;
             if (oHinge && hingeSelect) oHinge.value = hingeVal;
+            if (oDoorStyle) oDoorStyle.value = doorStyleVal;
             
             // Sincronizar UI de Custom Vars al otro formulario
             if (m.customVars) {
@@ -2065,6 +2118,8 @@ const isLoggedIn = !!clientId;
                     shelves: m.dims.n_estantes || 0,
                     drawers: m.dims.n_cajones || 0,
                     doors: m.dims.n_puertas || 0,
+                    hingeType: m.hingeType || 'codo_0',
+                    doorStyle: m.doorStyle || 'rasante',
                     type: m.type,
                     palette: palette,
                     buildStyle: m.buildStyle || { topOverhangFront: 0 },
