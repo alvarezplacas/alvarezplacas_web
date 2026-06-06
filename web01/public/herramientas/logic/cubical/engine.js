@@ -9,7 +9,8 @@ export const MODULE_TYPES = {
     BIBLIOTECA: 'BIBLIOTECA',
     BAJO_MESADA: 'BAJO_MESADA',
     ALACENA: 'ALACENA',
-    ESCRITORIO: 'ESCRITORIO'
+    ESCRITORIO: 'ESCRITORIO',
+    RACK_TV: 'RACK_TV'
 };
 
 /**
@@ -35,7 +36,8 @@ export function calculateModulePieces(type, dims, thickness = 18, customVars = {
         pieces.push({ name: 'Piso Cajonera', h: cajoneraW - (thickness * 2), w: prof, qty: 1 });
         
         pieces.push({ name: 'Faldón (Modesty Panel)', h: 300, w: ancho - cajoneraW - thickness, qty: 1 });
-        pieces.push({ name: 'Bandeja Teclado', h: prof - 100, w: ancho - cajoneraW - thickness - 26, qty: 1 });
+        const runnerClearance = (buildStyle.runnerType === 'comun_z') ? 25 : 26;
+        pieces.push({ name: 'Bandeja Teclado', h: prof - 100, w: ancho - cajoneraW - thickness - runnerClearance, qty: 1 });
         
         // Cajones
         if (n_cajones > 0) {
@@ -44,8 +46,8 @@ export function calculateModulePieces(type, dims, thickness = 18, customVars = {
                 pieces.push({ name: `Frente Cajón ${i+1}`, h: hFrente, w: cajoneraW - 4, qty: 1, isFront: true });
                 const hCajonInterno = Math.min(150, Math.max(100, Math.floor(hFrente - 50)));
                 pieces.push({ name: `Lateral Cajón ${i+1}`, h: hCajonInterno, w: prof - 50, qty: 2 });
-                pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: cajoneraW - (thickness * 2) - 26 - (thickness * 2), qty: 2 });
-                pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: cajoneraW - (thickness * 2) - 26, qty: 1, isBackground: true });
+                pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: cajoneraW - (thickness * 2) - runnerClearance - (thickness * 2), qty: 2 });
+                pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: cajoneraW - (thickness * 2) - runnerClearance, qty: 1, isBackground: true });
             }
         }
         return pieces;
@@ -109,6 +111,7 @@ export function calculateModulePieces(type, dims, thickness = 18, customVars = {
         // Centro (Cajones y estantes)
         let centerH = hUtilTV;
         if (n_cajones > 0) {
+            const runnerClearance = (buildStyle.runnerType === 'comun_z') ? 25 : 26;
             const totalDrawerH = 200 * n_cajones;
             centerH = Math.max(hUtilTV - totalDrawerH, Math.floor(hUtilTV / 2));
             const finalDrawerH = hUtilTV - centerH;
@@ -117,8 +120,8 @@ export function calculateModulePieces(type, dims, thickness = 18, customVars = {
                 pieces.push({ name: `Frente Cajón Centro ${i+1}`, h: hFrente - 4, w: centerW - 4, qty: 1, isFront: true });
                 const hCajonInterno = Math.min(150, Math.max(100, Math.floor(hFrente - 50)));
                 pieces.push({ name: `Lateral Cajón Centro ${i+1}`, h: hCajonInterno, w: prof - 50, qty: 2 });
-                pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: centerW - (thickness * 2) - 26 - (thickness * 2), qty: 2 });
-                pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: centerW - (thickness * 2) - 26, qty: 1, isBackground: true });
+                pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: centerW - (thickness * 2) - runnerClearance - (thickness * 2), qty: 2 });
+                pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: centerW - (thickness * 2) - runnerClearance, qty: 1, isBackground: true });
             }
         }
         
@@ -134,6 +137,34 @@ export function calculateModulePieces(type, dims, thickness = 18, customVars = {
     if (type === MODULE_TYPES.CAJONERA) hUtil -= (80 + thickness);
     else if (type === MODULE_TYPES.BAJO_MESADA) hUtil -= (120 + thickness);
 
+    // Lógica de divisor vertical (medianil) y distribución de cajones/puertas
+    const runnerType = buildStyle.runnerType || 'telescopica';
+    const hingeType = buildStyle.hingeType || 'codo_0';
+    let drawerLayout = buildStyle.drawerLayout || 'completo';
+    const doorLayout = buildStyle.doorLayout || 'completo';
+    const runnerClearance = runnerType === 'comun_z' ? 25 : 26;
+
+    if (n_puertas >= 3 && drawerLayout === 'completo') {
+        drawerLayout = 'izq';
+    }
+
+    const forceDivider = buildStyle.divider === 'si';
+    const preventDivider = buildStyle.divider === 'no';
+    const hasDivider = !preventDivider && (forceDivider || (n_puertas >= 3) || ['izq', 'der', 'ambos'].includes(drawerLayout) || ['izq', 'der', 'ambos'].includes(doorLayout));
+    const intW = ancho - (thickness * 2);
+    let leftW = intW;
+    let rightW = 0;
+
+    if (hasDivider) {
+        if (n_puertas === 3 && doorLayout === 'ambos') {
+            leftW = Math.floor((intW - thickness) * 2 / 3);
+        } else {
+            leftW = Math.floor((intW - thickness) / 2);
+        }
+        rightW = intW - thickness - leftW;
+        pieces.push({ name: 'Parante Vertical', h: hUtil, w: prof - 20, qty: 1 });
+    }
+
     let drawerSpaceH = 0;
     let doorSpaceH = 0;
 
@@ -147,45 +178,128 @@ export function calculateModulePieces(type, dims, thickness = 18, customVars = {
         doorSpaceH = hUtil;
     }
 
+    // Estantes Regulables
+    if (n_estantes > 0) {
+        if (hasDivider) {
+            pieces.push({ name: 'Estante Regulable Izquierdo', h: leftW - 2, w: prof - 20, qty: n_estantes });
+            pieces.push({ name: 'Estante Regulable Derecho', h: rightW - 2, w: prof - 20, qty: n_estantes });
+        } else {
+            pieces.push({ name: 'Estante Regulable', h: ancho - (thickness * 2) - 2, w: prof - 20, qty: n_estantes });
+        }
+    }
+
     // Cajones (Cajonera interna)
     if (n_cajones > 0) {
         const hFrente = Math.floor((drawerSpaceH - (n_cajones * 4)) / n_cajones);
         
-        for (let i = 0; i < n_cajones; i++) {
-            // Frente visible
-            pieces.push({ name: `Frente Cajón ${i+1}`, h: hFrente, w: ancho - 4, qty: 1, isFront: true });
-            // Laterales de cajón (150mm alto estándar o adaptado)
-            const hCajonInterno = Math.min(150, Math.max(100, Math.floor(hFrente - 50)));
-            pieces.push({ name: `Lateral Cajón ${i+1}`, h: hCajonInterno, w: prof - 50, qty: 2 });
-            // Contra-frente cajón (interior)
-            pieces.push({ name: `Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: ancho - (thickness * 2) - 26 - (thickness * 2), qty: 2 });
-            // Fondo de cajón (MDF 3mm)
-            pieces.push({ name: `Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: ancho - (thickness * 2) - 26, qty: 1, isBackground: true });
+        const addDrawerPiecesForWidth = (colW, prefixName = '') => {
+            let frontW = colW - 4;
+            if (hingeType === 'codo_0') {
+                if (hasDivider) {
+                    frontW = colW + thickness + 9 - 4;
+                } else {
+                    frontW = colW + 2 * thickness - 4;
+                }
+            } else if (hingeType === 'codo_9') {
+                if (hasDivider) {
+                    frontW = colW + 9 + 9 - 4;
+                } else {
+                    frontW = colW + 2 * 9 - 4;
+                }
+            } else if (hingeType === 'codo_18') {
+                frontW = colW - 4;
+            }
+            
+            for (let i = 0; i < n_cajones; i++) {
+                // Frente visible
+                pieces.push({ name: `${prefixName}Frente Cajón ${i+1}`, h: hFrente, w: frontW, qty: 1, isFront: true });
+                // Laterales de cajón
+                const hCajonInterno = Math.min(150, Math.max(100, Math.floor(hFrente - 50)));
+                pieces.push({ name: `${prefixName}Lateral Cajón ${i+1}`, h: hCajonInterno, w: prof - 50, qty: 2 });
+                // Contra-frente cajón (interior)
+                pieces.push({ name: `${prefixName}Contra-frente Cajón ${i+1}`, h: hCajonInterno, w: colW - (thickness * 2) - runnerClearance - (thickness * 2), qty: 2 });
+                // Fondo de cajón (MDF 3mm)
+                pieces.push({ name: `${prefixName}Fondo Cajón MDF 3mm ${i+1}`, h: prof - 50, w: colW - (thickness * 2) - runnerClearance, qty: 1, isBackground: true });
+            }
+        };
+
+        if (hasDivider) {
+            if (drawerLayout === 'izq' || drawerLayout === 'completo') {
+                addDrawerPiecesForWidth(leftW, 'Izq. ');
+            } else if (drawerLayout === 'der') {
+                addDrawerPiecesForWidth(rightW, 'Der. ');
+            } else if (drawerLayout === 'ambos') {
+                addDrawerPiecesForWidth(leftW, 'Izq. ');
+                addDrawerPiecesForWidth(rightW, 'Der. ');
+            }
+        } else {
+            addDrawerPiecesForWidth(intW);
         }
     }
 
     // Puertas
     if (n_puertas > 0) {
-        const wPuerta = Math.floor((ancho - (n_puertas * 2)) / n_puertas) - 2;
-        const hingeType = buildStyle.hingeType || 'codo_0';
         const doorStyle = buildStyle.doorStyle || 'rasante';
         
         let hPuerta = doorSpaceH;
         if (hingeType === 'codo_18') {
-            // Embutida: gap de 6mm en total (3 arriba, 3 abajo)
             hPuerta = doorSpaceH - 6;
         } else {
-            // Exterior (Codo 0 / Codo 9): cubre el piso (thickness) y según la cobertura de techo (doorStyle)
             if (doorStyle === 'medio') {
                 hPuerta = doorSpaceH + thickness + (thickness / 2) - 3;
             } else if (doorStyle === 'cero') {
                 hPuerta = doorSpaceH + thickness + thickness - 6;
             } else {
-                // rasante: acaba abajo de la tapa, cubre el piso pero no la tapa
                 hPuerta = doorSpaceH + thickness - 6;
             }
         }
-        pieces.push({ name: 'Puerta', h: hPuerta, w: wPuerta, qty: n_puertas, isFront: true });
+
+        const addDoorPiecesForWidth = (colW, count, prefixName = '') => {
+            let actualW = colW;
+            if (hingeType === 'codo_0') {
+                if (hasDivider) {
+                    actualW = colW + thickness + 9;
+                } else {
+                    actualW = colW + 2 * thickness;
+                }
+            } else if (hingeType === 'codo_9') {
+                if (hasDivider) {
+                    actualW = colW + 9 + 9;
+                } else {
+                    actualW = colW + 2 * 9;
+                }
+            } else if (hingeType === 'codo_18') {
+                actualW = colW;
+            }
+            const wPuerta = Math.floor((actualW - (count * 2)) / count) - 2;
+            pieces.push({ name: `${prefixName}Puerta`, h: hPuerta, w: wPuerta, qty: count, isFront: true });
+        };
+
+        if (hasDivider) {
+            let leftDoors = 0;
+            let rightDoors = 0;
+            
+            if (doorLayout === 'izq') {
+                leftDoors = n_puertas;
+            } else if (doorLayout === 'der') {
+                rightDoors = n_puertas;
+            } else { // 'ambos' o 'completo' (mapeado a ambos si hay divisor)
+                if (n_puertas === 1) {
+                    leftDoors = 0; rightDoors = 1;
+                } else if (n_puertas === 2) {
+                    leftDoors = 1; rightDoors = 1;
+                } else if (n_puertas === 3) {
+                    leftDoors = 2; rightDoors = 1;
+                } else {
+                    leftDoors = 2; rightDoors = n_puertas - 2;
+                }
+            }
+            
+            if (leftDoors > 0) addDoorPiecesForWidth(leftW, leftDoors, 'Izq. ');
+            if (rightDoors > 0) addDoorPiecesForWidth(rightW, rightDoors, 'Der. ');
+        } else {
+            addDoorPiecesForWidth(intW, n_puertas);
+        }
     }
 
     return pieces;

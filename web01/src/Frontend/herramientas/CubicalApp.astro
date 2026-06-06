@@ -233,7 +233,7 @@ const isLoggedIn = !!clientId;
                         <i class="fas fa-chevron-down text-[var(--sc-text-dim)] transition-transform group-open:rotate-180"></i>
                     </summary>
                     <div class="p-6 pt-0 border-t border-[var(--sc-border)]">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-4 mt-4">
                         <div>
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Alto (mm)</label>
                             <input type="number" inputmode="decimal" id="mod-h" oninput="window.cubical.updateActiveModule()" value="800" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
@@ -259,52 +259,55 @@ const isLoggedIn = !!clientId;
                             <input type="number" inputmode="decimal" id="mod-doors" value="0" min="0" oninput="window.cubical.updateHingeVisibility(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
                         </div>
                         
+                        <!-- Dynamic Drawer Runner and Layout Selectors -->
+                        <div id="group-runner-type" class="col-span-2 hidden">
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Tipo de Corredera</label>
+                            <select id="mod-runner-type" onchange="window.cubical.updateDrawerEducation(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
+                                <option value="telescopica">Corredera Telescópica (Holgura 26mm)</option>
+                                <option value="comun_z">Corredera Común / Z (Holgura 25mm)</option>
+                            </select>
+                        </div>
+                        <div id="group-drawer-layout" class="col-span-2 hidden">
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Distribución de Cajones</label>
+                            <select id="mod-drawer-layout" onchange="window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
+                                <option value="completo">Ancho Completo (Apilado)</option>
+                                <option value="izq">Solo Lado Izquierdo</option>
+                                <option value="der">Solo Lado Derecho</option>
+                                <option value="ambos">Ambos Lados (Cajones a los lados)</option>
+                            </select>
+                        </div>
+                        
+                        <div id="group-divider" class="col-span-2">
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Medianil (Divisor Vertical)</label>
+                            <select id="mod-divider" onchange="window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
+                                <option value="auto">Automático (Según diseño)</option>
+                                <option value="si">Con Medianil (Forzar división)</option>
+                                <option value="no">Sin Medianil (Forzar sin división)</option>
+                            </select>
+                        </div>
+
+                        <div id="group-door-layout" class="col-span-2 hidden">
+                            <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Distribución de Puertas</label>
+                            <select id="mod-door-layout" onchange="window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
+                                <option value="completo">Ancho Completo</option>
+                                <option value="izq">Solo Lado Izquierdo</option>
+                                <option value="der">Solo Lado Derecho</option>
+                                <option value="ambos">Ambos Lados (Puertas a los lados)</option>
+                            </select>
+                        </div>
+                        
                         <!-- Dynamic Hinge Selector -->
                         <div id="group-hinge-type" class="col-span-2 hidden">
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1 flex justify-between items-center">
                                 Bisagra (Codo)
                                 <span class="text-[0.55rem] text-[var(--alvarez-blue)] cursor-pointer hover:underline" onclick="window.cubical.openMobileSheet('guide')"><i class="fas fa-info-circle"></i> ¿Cuál?</span>
                             </label>
-                            <select id="mod-hinge-type" onchange="window.cubical.updateHingeEducation(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold">
+                            <select id="mod-hinge-type" onchange="window.cubical.updateHingeEducation(); window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
                                 <option value="codo_0">Bisagra Codo 0 (Superpuesta)</option>
                                 <option value="codo_9">Bisagra Codo 9 (Semi-superpuesta)</option>
                                 <option value="codo_18">Bisagra Codo 18 (Embutida)</option>
                             </select>
                         </div>
-                        
-                        <!-- ESTILO CONSTRUCTIVO -->
-                        <details class="col-span-2 bg-[var(--sc-surface-alt)] rounded border border-[var(--sc-border)] group" open>
-                            <summary class="p-3 cursor-pointer list-none flex justify-between items-center">
-                                <h4 class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase tracking-wider"><i class="fas fa-hammer"></i> Estilo Constructivo</h4>
-                                <i class="fas fa-chevron-down text-[var(--sc-text-dim)] transition-transform group-open:rotate-180"></i>
-                            </summary>
-                            <div class="p-3 pt-0 border-t border-[var(--sc-border)] grid grid-cols-2 gap-2 mt-2">
-                                <div>
-                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Frontal</label>
-                                    <input type="number" id="mod-overhang-front" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
-                                </div>
-                                <div>
-                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Trasero</label>
-                                    <input type="number" id="mod-overhang-back" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
-                                </div>
-                                <div>
-                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Izquierdo</label>
-                                    <input type="number" id="mod-overhang-left" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
-                                </div>
-                                <div>
-                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Volado Derecho</label>
-                                    <input type="number" id="mod-overhang-right" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
-                                </div>
-                                <div class="col-span-2 mt-2">
-                                    <label class="text-[0.55rem] font-black uppercase text-[var(--sc-text-dim)]">Cobertura Superior Puerta Externa</label>
-                                    <select id="mod-door-style" onchange="window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-2 rounded text-xs font-bold">
-                                        <option value="rasante">Rasante al Techo</option>
-                                        <option value="medio">Medio Techo</option>
-                                        <option value="cero">Cero (Cubre Techo)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </details>
                         
                         <!-- Parámetros Extra (Dinámicos por plantilla) -->
                         <div id="group-custom-vars" class="col-span-2 hidden bg-[var(--sc-surface-alt)] p-3 rounded border border-[var(--sc-border)]">
@@ -313,8 +316,60 @@ const isLoggedIn = !!clientId;
                                 <!-- Inputs dinámicos -->
                             </div>
                         </div>
-                        
-                        <div class="col-span-2">
+                    </div>
+                    
+                    <button onclick="window.cubical.addModule()" class="w-full mt-6 py-4 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR NUEVO MÓDULO</button>
+                    </div>
+                </details>
+
+                <!-- ESTILO CONSTRUCTIVO -->
+                <details class="bg-[var(--sc-surface)] border border-[var(--sc-border)] rounded-xl shadow-sm group mb-6" open>
+                    <summary class="p-6 cursor-pointer list-none flex justify-between items-center focus:outline-none rounded-xl group-open:rounded-b-none">
+                        <h3 class="text-xs font-black text-[var(--sc-text-dim)] uppercase tracking-widest flex items-center gap-3">
+                            <i class="fas fa-hammer"></i> ESTILO CONSTRUCTIVO
+                        </h3>
+                        <i class="fas fa-chevron-down text-[var(--sc-text-dim)] transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-6 pt-0 border-t border-[var(--sc-border)]">
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Volado Frontal</label>
+                                <input type="number" id="mod-overhang-front" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            </div>
+                            <div>
+                                <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Volado Trasero</label>
+                                <input type="number" id="mod-overhang-back" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            </div>
+                            <div>
+                                <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Volado Izquierdo</label>
+                                <input type="number" id="mod-overhang-left" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            </div>
+                            <div>
+                                <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Volado Derecho</label>
+                                <input type="number" id="mod-overhang-right" oninput="window.cubical.updateActiveModule()" value="0" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                            </div>
+                            <div class="col-span-2 mt-2">
+                                <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Cobertura Superior Puerta Externa</label>
+                                <select id="mod-door-style" onchange="window.cubical.updateActiveModule()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
+                                    <option value="rasante">Rasante al Techo</option>
+                                    <option value="medio">Medio Techo</option>
+                                    <option value="cero">Cero (Cubre Techo)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- DISEÑO DE MELAMINA -->
+                <details class="bg-[var(--sc-surface)] border border-[var(--sc-border)] rounded-xl shadow-sm group mb-6" open>
+                    <summary class="p-6 cursor-pointer list-none flex justify-between items-center focus:outline-none rounded-xl group-open:rounded-b-none">
+                        <h3 class="text-xs font-black text-[var(--sc-text-dim)] uppercase tracking-widest flex items-center gap-3">
+                            <i class="fas fa-palette"></i> DISEÑO DE MELAMINA
+                        </h3>
+                        <i class="fas fa-chevron-down text-[var(--sc-text-dim)] transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-6 pt-0 border-t border-[var(--sc-border)]">
+                        <div class="mt-4">
                             <label class="text-[0.6rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Diseño de Melamina (Faplac/Egger/Sadepan)</label>
                             <select id="mod-melamina" onchange="window.cubical.changeMelamina()" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold text-[var(--sc-text)]">
                                 <optgroup label="FAPLAC (Premium)">
@@ -335,9 +390,6 @@ const isLoggedIn = !!clientId;
                                 </optgroup>
                             </select>
                         </div>
-                    </div>
-                    
-                    <button onclick="window.cubical.addModule()" class="w-full mt-6 py-4 bg-[var(--sc-surface-alt)] border border-[var(--sc-border)] rounded text-xs font-black uppercase hover:bg-[var(--alvarez-red)] hover:text-white transition-all shadow-sm">AÑADIR NUEVO MÓDULO</button>
                     </div>
                 </details>
 
@@ -444,6 +496,43 @@ const isLoggedIn = !!clientId;
                         <div>
                             <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Puertas</label>
                             <input type="number" inputmode="decimal" id="mod-doors-mobile" value="0" min="0" oninput="window.cubical.updateHingeVisibility(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-mono font-bold">
+                        </div>
+                        
+                        <!-- Dynamic Drawer Runner and Layout Selectors (Mobile) -->
+                        <div id="group-runner-type-mobile" class="col-span-3 hidden">
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Tipo de Corredera</label>
+                            <select id="mod-runner-type-mobile" onchange="window.cubical.updateDrawerEducation(true); window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold">
+                                <option value="telescopica">Corredera Telescópica (Holgura 26mm)</option>
+                                <option value="comun_z">Corredera Común / Z (Holgura 25mm)</option>
+                            </select>
+                        </div>
+                        <div id="group-drawer-layout-mobile" class="col-span-3 hidden">
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Distribución de Cajones</label>
+                            <select id="mod-drawer-layout-mobile" onchange="window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold">
+                                <option value="completo">Ancho Completo (Apilado)</option>
+                                <option value="izq">Solo Lado Izquierdo</option>
+                                <option value="der">Solo Lado Derecho</option>
+                                <option value="ambos">Ambos Lados (Cajones a los lados)</option>
+                            </select>
+                        </div>
+
+                        <div id="group-divider-mobile" class="col-span-3">
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Medianil (Divisor Vertical)</label>
+                            <select id="mod-divider-mobile" onchange="window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold">
+                                <option value="auto">Automático (Según diseño)</option>
+                                <option value="si">Con Medianil (Forzar división)</option>
+                                <option value="no">Sin Medianil (Forzar sin división)</option>
+                            </select>
+                        </div>
+
+                        <div id="group-door-layout-mobile" class="col-span-3 hidden">
+                            <label class="text-[0.55rem] font-black text-[var(--sc-text-dim)] uppercase block mb-1">Distribución de Puertas</label>
+                            <select id="mod-door-layout-mobile" onchange="window.cubical.updateActiveModule(true)" class="w-full bg-[var(--sc-input-bg)] border border-[var(--sc-border)] p-3 rounded text-xs font-bold">
+                                <option value="completo">Ancho Completo</option>
+                                <option value="izq">Solo Lado Izquierdo</option>
+                                <option value="der">Solo Lado Derecho</option>
+                                <option value="ambos">Ambos Lados (Puertas a los lados)</option>
+                            </select>
                         </div>
 
                         <div id="group-hinge-type-mobile" class="col-span-3 hidden">
@@ -1204,6 +1293,38 @@ const isLoggedIn = !!clientId;
             const techoY = height - t;
             const espacioUtilH = techoY - pisoY;
             
+            // Lógica de divisor vertical (medianil) y distribución de cajones/puertas
+            const runnerType = opts.runnerType || 'telescopica';
+            let drawerLayout = opts.drawerLayout || 'completo';
+            const runnerClearance = runnerType === 'comun_z' ? 25 : 26;
+            
+            // Si hay 3+ puertas, se fuerza divisor y no puede ser cajón completo.
+            if (doors >= 3 && drawerLayout === 'completo') {
+                drawerLayout = 'izq';
+            }
+            
+            const forceDivider = opts.divider === 'si';
+            const preventDivider = opts.divider === 'no';
+            const doorLayout = opts.doorLayout || 'completo';
+            const hasDivider = !preventDivider && (forceDivider || (doors >= 3) || ['izq', 'der', 'ambos'].includes(drawerLayout) || ['izq', 'der', 'ambos'].includes(doorLayout));
+            
+            // Calcular anchos de columnas
+            const intW = width - 2 * t;
+            let leftW = intW;
+            let rightW = 0;
+            
+            if (hasDivider) {
+                if (doors === 3 && doorLayout === 'ambos') {
+                    leftW = Math.floor((intW - t) * 2 / 3);
+                } else {
+                    leftW = Math.floor((intW - t) / 2);
+                }
+                rightW = intW - t - leftW;
+                
+                // Dibujar el panel divisor vertical (medianil)
+                this.addBoxFaces(offsetX + t + leftW, pisoY, 20, t, espacioUtilH, depth - 20, baseFill, lineColor, 'divider', ['top', 'bottom']);
+            }
+            
             // Dividir espacio para cajones y puertas
             let drawerSpaceH = 0;
             let doorSpaceH = 0;
@@ -1219,98 +1340,165 @@ const isLoggedIn = !!clientId;
             }
             
             // 6. DIBUJAR ESTANTES (18mm) - Con retranqueo frontal estándar de 20mm
-            // Los estantes se calculan sobre el espacio de las puertas si las hay (para que queden ocultos tras la puerta)
             if (shelves > 0) {
                 const hSpace = (doors > 0 ? doorSpaceH : espacioUtilH) / (shelves + 1);
                 for (let i = 1; i <= shelves; i++) {
                     const shelfY = pisoY + i * hSpace - t / 2;
-                    this.addBoxFaces(t + offsetX, shelfY, 20, width - 2 * t, t, depth - 20, shelfFill, lineColor, 'shelf', ['left', 'right', 'back']);
+                    if (hasDivider) {
+                        // Dibujar estantes en ambas columnas
+                        this.addBoxFaces(t + offsetX, shelfY, 20, leftW, t, depth - 20, shelfFill, lineColor, 'shelf-left', ['left', 'right', 'back']);
+                        this.addBoxFaces(offsetX + t + leftW + t, shelfY, 20, rightW, t, depth - 20, shelfFill, lineColor, 'shelf-right', ['left', 'right', 'back']);
+                    } else {
+                        this.addBoxFaces(t + offsetX, shelfY, 20, width - 2 * t, t, depth - 20, shelfFill, lineColor, 'shelf', ['left', 'right', 'back']);
+                    }
                 }
             }
             
             // 7. DIBUJAR CAJONES
             const hingeType = opts.hingeType || 'codo_0';
-            let frontZ = -t; // Superpuesta por defecto
-            let startX = offsetX + 2;
-            let doorW = width - 4;
             
-            if (hingeType === 'codo_18') {
-                frontZ = 0; // Embutida
-                startX = offsetX + t + 2;
-                doorW = width - 2*t - 4;
-            } else if (hingeType === 'codo_9') {
-                frontZ = -t; // Semi
-                startX = offsetX + 9 + 2;
-                doorW = width - 18 - 4;
-            }
-
+            const drawSingleDrawer = (xCol, yBottom, wCol, hSpace) => {
+                let frontZ = -t; // Superpuesta
+                let startX = xCol - t + 2;
+                let colDrawW = wCol + 2*t - 4;
+                
+                if (hingeType === 'codo_18') {
+                    frontZ = 0; // Embutida
+                    startX = xCol + 2;
+                    colDrawW = wCol - 4;
+                } else if (hingeType === 'codo_9') {
+                    frontZ = -t;
+                    startX = xCol - 9 + 2;
+                    colDrawW = wCol + 18 - 4;
+                }
+                
+                if (!showDrawers) {
+                    // Estructura interna del cajón
+                    const cW = wCol - runnerClearance;
+                    const cH = Math.min(150, hSpace - 30);
+                    const cD = depth - 50;
+                    const cX = xCol + (runnerClearance / 2);
+                    const cY = yBottom + 10;
+                    
+                    this.addBoxFaces(cX, cY, 10, t, cH, cD, drawerFill, lineColor, 'cajon-lat-izq');
+                    this.addBoxFaces(cX + cW - t, cY, 10, t, cH, cD, drawerFill, lineColor, 'cajon-lat-der');
+                    this.addBoxFaces(cX + t, cY, 10, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-frente-int');
+                    this.addBoxFaces(cX + t, cY, 10 + cD - t, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-trasero');
+                } else {
+                    // Frente de cajón visible
+                    this.addBoxFaces(startX, yBottom + 3, frontZ, colDrawW, hSpace - 6, t, drawerFill, lineColor, 'drawer', ['back']);
+                    
+                    // Tirador
+                    const tcX = xCol + wCol / 2;
+                    const tcY = yBottom + hSpace / 2;
+                    this.addBoxFaces(tcX - 45, tcY - 5, frontZ - 10, 90, 10, 10, '#cccccc', lineColor, 'handle');
+                }
+            };
+            
             if (drawers > 0) {
                 const hSpace = drawerSpaceH / drawers;
-                // Si hay puertas, los cajones van arriba de ellas.
                 const drawerStartY = pisoY + doorSpaceH;
                 for (let i = 0; i < drawers; i++) {
                     const yBottom = drawerStartY + i * hSpace;
                     
-                    if (!showDrawers) {
-                        // Dibujar estructura interna del cajón
-                        const cW = width - 2*t - 26; // Ancho menos laterales y correderas
-                        const cH = Math.min(150, hSpace - 30);
-                        const cD = depth - 50;
-                        const cX = offsetX + t + 13;
-                        const cY = yBottom + 10;
-                        
-                        this.addBoxFaces(cX, cY, 10, t, cH, cD, drawerFill, lineColor, 'cajon-lat-izq');
-                        this.addBoxFaces(cX + cW - t, cY, 10, t, cH, cD, drawerFill, lineColor, 'cajon-lat-der');
-                        this.addBoxFaces(cX + t, cY, 10, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-frente-int');
-                        this.addBoxFaces(cX + t, cY, 10 + cD - t, cW - 2*t, cH, t, drawerFill, lineColor, 'cajon-trasero');
+                    if (hasDivider) {
+                        if (drawerLayout === 'izq' || drawerLayout === 'completo') {
+                            drawSingleDrawer(offsetX + t, yBottom, leftW, hSpace);
+                        } else if (drawerLayout === 'der') {
+                            drawSingleDrawer(offsetX + t + leftW + t, yBottom, rightW, hSpace);
+                        } else if (drawerLayout === 'ambos') {
+                            drawSingleDrawer(offsetX + t, yBottom, leftW, hSpace);
+                            drawSingleDrawer(offsetX + t + leftW + t, yBottom, rightW, hSpace);
+                        }
                     } else {
-                        // Frente de cajón
-                        this.addBoxFaces(startX, yBottom + 3, frontZ, doorW, hSpace - 6, t, drawerFill, lineColor, 'drawer', ['back']);
-                        
-                        // Tirador
-                        const tcX = width / 2 + offsetX;
-                        const tcY = yBottom + hSpace / 2;
-                        this.addBoxFaces(tcX - 45, tcY - 5, frontZ - 10, 90, 10, 10, '#cccccc', lineColor, 'handle');
+                        drawSingleDrawer(offsetX + t, yBottom, intW, hSpace);
                     }
                 }
             }
             
             // 8. DIBUJAR PUERTAS
             if (doors > 0 && showDoors) {
-                const wSpace = doorW / doors;
+                // Lógica de montaje/codo para Z y X
+                let frontZ = -t;
+                if (hingeType === 'codo_18') frontZ = 0;
                 
-                // Calcular altura de puerta (doorH) y posición vertical (doorY) según opciones y hingeType
-                let doorY = pisoY + 3; // base default (embutida codo_18)
-                let doorH = doorSpaceH - 6; // default (embutida y rasante codo_18)
-
-                if (hingeType !== 'codo_18') { // Puerta exterior (Codo 0 / Codo 9)
-                    doorY = pisoY - t + 3; // Cubre la base/piso inferior
+                let doorY = pisoY + 3;
+                let doorH = doorSpaceH - 6;
+                
+                if (hingeType !== 'codo_18') {
+                    doorY = pisoY - t + 3;
                     if (opts.doorStyle === 'medio') {
-                        doorH = height - (t / 2) - doorY; // Sube medio techo
+                        doorH = height - (t / 2) - doorY;
                     } else if (opts.doorStyle === 'cero') {
-                        doorH = height - 3 - doorY; // Sube todo el techo
+                        doorH = height - 3 - doorY;
                     } else {
-                        doorH = height - t - 3 - doorY; // Rasante al techo (abajo de la tapa)
+                        doorH = height - t - 3 - doorY;
                     }
                 }
-
-                for (let i = 0; i < doors; i++) {
-                    const xLeft = startX + i * wSpace;
-                    this.addBoxFaces(xLeft, doorY, frontZ, wSpace - 2, doorH, t, doorFill, lineColor, 'door', ['back']);
+                
+                const drawDoorsForColumn = (xCol, wCol, count) => {
+                    if (count <= 0) return;
                     
-                    // Tirador
-                    const tiradorX = doors === 1 
-                        ? xLeft + wSpace - 30 
-                        : (i === 0 ? xLeft + wSpace - 30 : xLeft + 30);
-                    let tiradorY;
-                    if (opts.type === 'ALACENA') {
-                        tiradorY = pisoY + 80;
-                    } else if (doorSpaceH + pisoY > 1500) {
-                        tiradorY = 1000;
-                    } else {
-                        tiradorY = pisoY + doorSpaceH - 60;
+                    let startX = xCol + 2;
+                    let colDoorW = wCol - 4;
+                    
+                    if (hingeType === 'codo_0') {
+                        startX = xCol - t + 2;
+                        colDoorW = wCol + 2*t - 4;
+                    } else if (hingeType === 'codo_9') {
+                        startX = xCol - 9 + 2;
+                        colDoorW = wCol + 18 - 4;
+                    } else if (hingeType === 'codo_18') {
+                        startX = xCol + 2;
+                        colDoorW = wCol - 4;
                     }
-                    this.addBoxFaces(tiradorX - 5, tiradorY - 50, frontZ - 10, 10, 100, 10, '#cccccc', lineColor, 'handle');
+                    
+                    const wSpace = colDoorW / count;
+                    for (let j = 0; j < count; j++) {
+                        const xLeft = startX + j * wSpace;
+                        this.addBoxFaces(xLeft, doorY, frontZ, wSpace - 2, doorH, t, doorFill, lineColor, 'door', ['back']);
+                        
+                        // Tirador
+                        const tiradorX = count === 1 
+                            ? xLeft + wSpace - 30 
+                            : (j === 0 ? xLeft + wSpace - 30 : xLeft + 30);
+                        let tiradorY;
+                        if (opts.type === 'ALACENA') {
+                            tiradorY = pisoY + 80;
+                        } else if (doorSpaceH + pisoY > 1500) {
+                            tiradorY = 1000;
+                        } else {
+                            tiradorY = pisoY + doorSpaceH - 60;
+                        }
+                        this.addBoxFaces(tiradorX - 5, tiradorY - 50, frontZ - 10, 10, 100, 10, '#cccccc', lineColor, 'handle');
+                    }
+                };
+                
+                if (hasDivider) {
+                    // Determinar cuántas puertas van a cada lado
+                    let leftDoors = 0;
+                    let rightDoors = 0;
+                    
+                    if (doorLayout === 'izq') {
+                        leftDoors = doors;
+                    } else if (doorLayout === 'der') {
+                        rightDoors = doors;
+                    } else { // 'ambos' o 'completo' (mapeado a ambos si hay divisor)
+                        if (doors === 1) {
+                            leftDoors = 0; rightDoors = 1;
+                        } else if (doors === 2) {
+                            leftDoors = 1; rightDoors = 1;
+                        } else if (doors === 3) {
+                            leftDoors = 2; rightDoors = 1;
+                        } else {
+                            leftDoors = 2; rightDoors = doors - 2;
+                        }
+                    }
+                    
+                    drawDoorsForColumn(offsetX + t, leftW, leftDoors);
+                    drawDoorsForColumn(offsetX + t + leftW + t, rightW, rightDoors);
+                } else {
+                    drawDoorsForColumn(offsetX + t, intW, doors);
                 }
             }
             // Render WebGL
@@ -1593,7 +1781,29 @@ const isLoggedIn = !!clientId;
             this.state.modules = [];
             
             const newId = Date.now();
-            this.state.modules.push({ id: newId, type: modType, name, dims, hingeType, customVars: tplData?.customVars || {} });
+            const runnerType = tplData?.runnerType || 'telescopica';
+            const drawerLayout = tplData?.drawerLayout || 'completo';
+            const divider = tplData?.divider || 'auto';
+            const doorLayout = tplData?.doorLayout || 'completo';
+            
+            this.state.modules.push({ 
+                id: newId, 
+                type: modType, 
+                name, 
+                dims, 
+                hingeType, 
+                runnerType, 
+                drawerLayout, 
+                divider,
+                doorLayout,
+                customVars: tplData?.customVars || {},
+                buildStyle: { 
+                    front: 0, back: 0, left: 0, right: 0, 
+                    doorStyle: 'rasante', hingeType, 
+                    runnerType, drawerLayout,
+                    divider, doorLayout
+                } 
+            });
             this.state.activeModuleId = newId;
             
             // Poblar barra lateral Desktop
@@ -1606,6 +1816,15 @@ const isLoggedIn = !!clientId;
             document.getElementById('mod-doors').value     = dims.n_puertas;
             document.getElementById('mod-shelves').value   = dims.n_estantes;
             
+            const rSel = document.getElementById('mod-runner-type');
+            if (rSel) rSel.value = runnerType;
+            const lSel = document.getElementById('mod-drawer-layout');
+            if (lSel) lSel.value = drawerLayout;
+            const dSel = document.getElementById('mod-divider');
+            if (dSel) dSel.value = divider;
+            const dlSel = document.getElementById('mod-door-layout');
+            if (dlSel) dlSel.value = doorLayout;
+            
             // Poblar barra lateral Mobile
             document.getElementById('mod-name-mobile').value    = name;
             document.getElementById('mod-type-mobile').value    = modType;
@@ -1616,8 +1835,19 @@ const isLoggedIn = !!clientId;
             document.getElementById('mod-doors-mobile').value   = dims.n_puertas;
             document.getElementById('mod-shelves-mobile').value = dims.n_estantes;
             
-            this.updateHingeVisibility();
-            this.updateDrawerEducation();
+            const rSelMob = document.getElementById('mod-runner-type-mobile');
+            if (rSelMob) rSelMob.value = runnerType;
+            const lSelMob = document.getElementById('mod-drawer-layout-mobile');
+            if (lSelMob) lSelMob.value = drawerLayout;
+            const dSelMob = document.getElementById('mod-divider-mobile');
+            if (dSelMob) dSelMob.value = divider;
+            const dlSelMob = document.getElementById('mod-door-layout-mobile');
+            if (dlSelMob) dlSelMob.value = doorLayout;
+            
+            this.updateHingeVisibility(false);
+            this.updateHingeVisibility(true);
+            this.updateDrawerEducation(false);
+            this.updateDrawerEducation(true);
             this.renderCustomVarsUI();
             
             // Resetear auto-escala para el nuevo módulo
@@ -1715,23 +1945,29 @@ const isLoggedIn = !!clientId;
             }
 
             this.updateHingeVisibility(isMobile);
+            this.updateHingeVisibility(!isMobile);
             this.updateDrawerEducation(isMobile);
+            this.updateDrawerEducation(!isMobile);
         },
 
         updateHingeVisibility: function(isMobile = false) {
             const prefix = isMobile ? '-mobile' : '';
             const doorsVal = parseInt(document.getElementById(`mod-doors${prefix}`).value) || 0;
             const hingeDiv = document.getElementById(`group-hinge-type${prefix}`);
+            const doorLayoutDiv = document.getElementById(`group-door-layout${prefix}`);
             const eduTip = document.getElementById('edu-hinge-tip');
 
             if (doorsVal > 0) {
                 hingeDiv.classList.remove('hidden');
+                if (doorLayoutDiv) doorLayoutDiv.classList.remove('hidden');
                 if (eduTip && !isMobile) eduTip.classList.remove('hidden');
             } else {
                 hingeDiv.classList.add('hidden');
+                if (doorLayoutDiv) doorLayoutDiv.classList.add('hidden');
                 if (eduTip && !isMobile) eduTip.classList.add('hidden');
             }
             this.updateHingeEducation(isMobile);
+            this.updateControlsVisibility(isMobile);
         },
 
         updateHingeEducation: function(isMobile = false) {
@@ -1767,13 +2003,63 @@ const isLoggedIn = !!clientId;
             const prefix = isMobile ? '-mobile' : '';
             const drawersVal = parseInt(document.getElementById(`mod-drawers${prefix}`).value) || 0;
             const tipDiv = document.getElementById('edu-drawer-tip');
-
-            if (!tipDiv) return;
+            const groupRunner = document.getElementById(`group-runner-type${prefix}`);
+            const groupLayout = document.getElementById(`group-drawer-layout${prefix}`);
 
             if (drawersVal > 0) {
-                tipDiv.classList.remove('hidden');
+                if (groupRunner) groupRunner.classList.remove('hidden');
+                if (groupLayout) groupLayout.classList.remove('hidden');
+                if (tipDiv) {
+                    tipDiv.classList.remove('hidden');
+                    
+                    // Actualizar texto según la holgura
+                    const runnerSelect = document.getElementById(`mod-runner-type${prefix}`);
+                    const runnerVal = runnerSelect ? runnerSelect.value : 'telescopica';
+                    const mmClearance = runnerVal === 'comun_z' ? 25 : 26;
+                    const mmSide = runnerVal === 'comun_z' ? 12.5 : 13;
+                    const runnerName = runnerVal === 'comun_z' ? 'Común / Z' : 'Telescópica';
+                    
+                    tipDiv.innerHTML = `<strong class="uppercase text-[0.6rem] block mb-1">💡 Holgura de Correderas (${runnerName})</strong>
+                        Para colocar correderas ${runnerName.toLowerCase()} se descuentan exactamente <strong>${mmClearance} mm</strong> (${mmSide} mm por lado) del ancho interno de la cajonera. ¡CubiCal ya lo calculó!`;
+                }
             } else {
-                tipDiv.classList.add('hidden');
+                if (groupRunner) groupRunner.classList.add('hidden');
+                if (groupLayout) groupLayout.classList.add('hidden');
+                if (tipDiv) tipDiv.classList.add('hidden');
+            }
+            this.updateControlsVisibility(isMobile);
+        },
+
+        updateControlsVisibility: function(isMobile = false) {
+            const prefix = isMobile ? '-mobile' : '';
+            const typeInput = document.getElementById(`mod-type${prefix}`);
+            const type = typeInput ? typeInput.value : '';
+            const isFixed = (type === 'RACK_TV' || type === 'ESCRITORIO');
+
+            const groupDrawerLayout = document.getElementById(`group-drawer-layout${prefix}`);
+            const groupDoorLayout = document.getElementById(`group-door-layout${prefix}`);
+            const groupDivider = document.getElementById(`group-divider${prefix}`);
+
+            if (isFixed) {
+                if (groupDrawerLayout) groupDrawerLayout.classList.add('hidden');
+                if (groupDoorLayout) groupDoorLayout.classList.add('hidden');
+                if (groupDivider) groupDivider.classList.add('hidden');
+            } else {
+                const drawersVal = parseInt(document.getElementById(`mod-drawers${prefix}`).value) || 0;
+                if (drawersVal > 0) {
+                    if (groupDrawerLayout) groupDrawerLayout.classList.remove('hidden');
+                } else {
+                    if (groupDrawerLayout) groupDrawerLayout.classList.add('hidden');
+                }
+
+                const doorsVal = parseInt(document.getElementById(`mod-doors${prefix}`).value) || 0;
+                if (doorsVal > 0) {
+                    if (groupDoorLayout) groupDoorLayout.classList.remove('hidden');
+                } else {
+                    if (groupDoorLayout) groupDoorLayout.classList.add('hidden');
+                }
+
+                if (groupDivider) groupDivider.classList.remove('hidden');
             }
         },
 
@@ -1852,6 +2138,14 @@ const isLoggedIn = !!clientId;
                 document.getElementById('mod-shelves').value = m.dims.n_estantes;
                 const hingeSelect = document.getElementById('mod-hinge-type');
                 if (hingeSelect) hingeSelect.value = m.hingeType;
+                const runnerSelect = document.getElementById('mod-runner-type');
+                if (runnerSelect) runnerSelect.value = m.runnerType || 'telescopica';
+                const layoutSelect = document.getElementById('mod-drawer-layout');
+                if (layoutSelect) layoutSelect.value = m.drawerLayout || 'completo';
+                const dividerSelect = document.getElementById('mod-divider');
+                if (dividerSelect) dividerSelect.value = m.divider || 'auto';
+                const doorLayoutSelect = document.getElementById('mod-door-layout');
+                if (doorLayoutSelect) doorLayoutSelect.value = m.doorLayout || 'completo';
                 const ohFront = document.getElementById('mod-overhang-front');
                 const ohBack = document.getElementById('mod-overhang-back');
                 const ohLeft = document.getElementById('mod-overhang-left');
@@ -1871,6 +2165,14 @@ const isLoggedIn = !!clientId;
                 document.getElementById('mod-shelves-mobile').value = m.dims.n_estantes;
                 const hingeSelectMobile = document.getElementById('mod-hinge-type-mobile');
                 if (hingeSelectMobile) hingeSelectMobile.value = m.hingeType;
+                const runnerSelectMobile = document.getElementById('mod-runner-type-mobile');
+                if (runnerSelectMobile) runnerSelectMobile.value = m.runnerType || 'telescopica';
+                const layoutSelectMobile = document.getElementById('mod-drawer-layout-mobile');
+                if (layoutSelectMobile) layoutSelectMobile.value = m.drawerLayout || 'completo';
+                const dividerSelectMobile = document.getElementById('mod-divider-mobile');
+                if (dividerSelectMobile) dividerSelectMobile.value = m.divider || 'auto';
+                const doorLayoutSelectMobile = document.getElementById('mod-door-layout-mobile');
+                if (doorLayoutSelectMobile) doorLayoutSelectMobile.value = m.doorLayout || 'completo';
                 const ohFrontM = document.getElementById('mod-overhang-front-mobile');
                 const ohBackM = document.getElementById('mod-overhang-back-mobile');
                 const ohLeftM = document.getElementById('mod-overhang-left-mobile');
@@ -1879,8 +2181,10 @@ const isLoggedIn = !!clientId;
                 if(ohFrontM && m.buildStyle) { ohFrontM.value = m.buildStyle.front || 0; ohBackM.value = m.buildStyle.back || 0; ohLeftM.value = m.buildStyle.left || 0; ohRightM.value = m.buildStyle.right || 0; }
                 if(doorStyleSelM) doorStyleSelM.value = m.doorStyle || 'rasante';
                 
-                this.updateHingeVisibility();
-                this.updateDrawerEducation();
+                this.updateHingeVisibility(false);
+                this.updateHingeVisibility(true);
+                this.updateDrawerEducation(false);
+                this.updateDrawerEducation(true);
                 this.renderCustomVarsUI();
             }
             this.renderConstructor();
@@ -1902,6 +2206,14 @@ const isLoggedIn = !!clientId;
             const shelvesVal = parseInt(document.getElementById(`mod-shelves${prefix}`).value) || 0;
             const hingeSelect = document.getElementById(`mod-hinge-type${prefix}`);
             const hingeVal = hingeSelect ? hingeSelect.value : 'codo_0';
+            const runnerSelect = document.getElementById(`mod-runner-type${prefix}`);
+            const runnerVal = runnerSelect ? runnerSelect.value : 'telescopica';
+            const layoutSelect = document.getElementById(`mod-drawer-layout${prefix}`);
+            const layoutVal = layoutSelect ? layoutSelect.value : 'completo';
+            const dividerSelect = document.getElementById(`mod-divider${prefix}`);
+            const dividerVal = dividerSelect ? dividerSelect.value : 'auto';
+            const doorLayoutSelect = document.getElementById(`mod-door-layout${prefix}`);
+            const doorLayoutVal = doorLayoutSelect ? doorLayoutSelect.value : 'completo';
             const ohFront = parseInt(document.getElementById(`mod-overhang-front${prefix}`)?.value) || 0;
             const ohBack = parseInt(document.getElementById(`mod-overhang-back${prefix}`)?.value) || 0;
             const ohLeft = parseInt(document.getElementById(`mod-overhang-left${prefix}`)?.value) || 0;
@@ -1917,7 +2229,11 @@ const isLoggedIn = !!clientId;
             m.dims.n_puertas = doorsVal;
             m.dims.n_estantes = shelvesVal;
             m.hingeType = hingeVal;
-            m.buildStyle = { front: ohFront, back: ohBack, left: ohLeft, right: ohRight, doorStyle: doorStyleVal, hingeType: hingeVal };
+            m.runnerType = runnerVal;
+            m.drawerLayout = layoutVal;
+            m.divider = dividerVal;
+            m.doorLayout = doorLayoutVal;
+            m.buildStyle = { front: ohFront, back: ohBack, left: ohLeft, right: ohRight, doorStyle: doorStyleVal, hingeType: hingeVal, runnerType: runnerVal, drawerLayout: layoutVal, divider: dividerVal, doorLayout: doorLayoutVal };
             m.doorStyle = doorStyleVal;
             
             // Sincronizar Custom Vars desde los inputs dinámicos
@@ -1941,6 +2257,10 @@ const isLoggedIn = !!clientId;
             const oDoors = document.getElementById(`mod-doors${otherPrefix}`);
             const oShelves = document.getElementById(`mod-shelves${otherPrefix}`);
             const oHinge = document.getElementById(`mod-hinge-type${otherPrefix}`);
+            const oRunner = document.getElementById(`mod-runner-type${otherPrefix}`);
+            const oLayout = document.getElementById(`mod-drawer-layout${otherPrefix}`);
+            const oDivider = document.getElementById(`mod-divider${otherPrefix}`);
+            const oDoorLayout = document.getElementById(`mod-door-layout${otherPrefix}`);
             const oDoorStyle = document.getElementById(`mod-door-style${otherPrefix}`);
             
             if (oName) oName.value = nameVal;
@@ -1952,6 +2272,10 @@ const isLoggedIn = !!clientId;
             if (oDoors) oDoors.value = doorsVal;
             if (oShelves) oShelves.value = shelvesVal;
             if (oHinge && hingeSelect) oHinge.value = hingeVal;
+            if (oRunner && runnerSelect) oRunner.value = runnerVal;
+            if (oLayout && layoutSelect) oLayout.value = layoutVal;
+            if (oDivider && dividerSelect) oDivider.value = dividerVal;
+            if (oDoorLayout && doorLayoutSelect) oDoorLayout.value = doorLayoutVal;
             if (oDoorStyle) oDoorStyle.value = doorStyleVal;
             
             // Sincronizar UI de Custom Vars al otro formulario
@@ -1961,6 +2285,9 @@ const isLoggedIn = !!clientId;
                     if (oInput) oInput.value = m.customVars[key];
                 });
             }
+
+            this.updateControlsVisibility(false);
+            this.updateControlsVisibility(true);
             
             // Actualizar listados HTML de capas sin destruir eventos
             const list = document.getElementById('module-list');
@@ -2119,6 +2446,8 @@ const isLoggedIn = !!clientId;
                     drawers: m.dims.n_cajones || 0,
                     doors: m.dims.n_puertas || 0,
                     hingeType: m.hingeType || 'codo_0',
+                    runnerType: m.runnerType || 'telescopica',
+                    drawerLayout: m.drawerLayout || 'completo',
                     doorStyle: m.doorStyle || 'rasante',
                     type: m.type,
                     palette: palette,

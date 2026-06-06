@@ -148,5 +148,31 @@ export const TEMPLATES = {
         dims: { alto: 488, ancho: 905, prof: 605, n_cajones: 1, n_puertas: 0, n_estantes: 1 },
         hingeType: 'codo_0',
         moduleName: "Modulo A1 - Mesa de Centro"
+    },
+    BIBLIOTECA_PUERTAS: {
+        id: 'BIBLIOTECA_PUERTAS',
+        name: "Biblioteca con Puertas (BL0401)",
+        emoji: "📚",
+        tag: "Puertas y Estantes",
+        tagColor: "#6366f1",
+        description: "Biblioteca alta basada en el catálogo de Fiplasto de 60cm de ancho con 4 estantes superiores y 2 puertas.",
+        environment: 'oficina',
+        modType: 'BIBLIOTECA',
+        dims: { alto: 1790, ancho: 600, prof: 300, n_cajones: 0, n_puertas: 2, n_estantes: 4 },
+        hingeType: 'codo_0',
+        moduleName: "Modulo A1 - Biblioteca con Puertas"
+    },
+    COMODA_TRES: {
+        id: 'COMODA_TRES',
+        name: "Cómoda 3 Cajones (CO3503)",
+        emoji: "🗄️",
+        tag: "3 Cajones",
+        tagColor: "var(--alvarez-red)",
+        description: "Cómoda clásica de cajones profundos basada en el catálogo de Fiplasto de 90x45cm con correderas seleccionables.",
+        environment: 'dormitorio',
+        modType: 'CAJONERA',
+        dims: { alto: 760, ancho: 900, prof: 450, n_cajones: 3, n_puertas: 0, n_estantes: 0 },
+        hingeType: 'codo_0',
+        moduleName: "Modulo A1 - Cómoda 3 Cajones"
     }
 };
