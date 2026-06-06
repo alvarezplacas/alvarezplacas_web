@@ -1,0 +1,514 @@
+---
+import CeoWorkspace from '../../layouts/CeoWorkspace.astro';
+import { query } from '@conexiones/lib/db.js';
+
+const adminSession = Astro.cookies.get('admin_session')?.value;
+const sellerSession = Astro.cookies.get('seller_session')?.value;
+
+if (!adminSession && !sellerSession) {
+    return Astro.redirect('/login');
+}
+
+// Fetch Personal and Asistencias del VPS PostgreSQL v16 (Tailscale)
+let personalList = [];
+let asistenciasDia = [];
+let error = null;
+
+try {
+    const personalRes = await query(`SELECT * FROM control_personal ORDER BY nombre ASC`);
+    personalList = personalRes.rows || [];
+
+    // Asistencias de hoy (Simulación simple para UI base)
+    const asistRes = await query(`
+        SELECT a.zk_uid, a.uid_empleado, a.fecha_hora, a.tipo_registro, c.nombre 
+        FROM asistencias a 
+        LEFT JOIN control_personal c ON a.uid_empleado = c.id::varchar
+        WHERE DATE(a.fecha_hora) = CURRENT_DATE
+        ORDER BY a.fecha_hora DESC
+    `);
+    asistenciasDia = asistRes.rows || [];
+} catch (e) {
+    console.error("Error fetching personal VPS data:", e);
+    error = e.message;
+}
+
+// Helper to group today's attendances by employee
+const asistenciasPorEmpleado = {};
+personalList.forEach(p => {
+    asistenciasPorEmpleado[p.id] = {
+        nombre: p.nombre,
+        funcion: p.funcion,
+        entrada: null,
+        salida: null,
+        estado: 'Ausente'
+    };
+});
+
+asistenciasDia.forEach(a => {
+    const empId = parseInt(a.uid_empleado);
+    if (asistenciasPorEmpleado[empId]) {
+        const timeStr = new Date(a.fecha_hora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        if (a.tipo_registro === 0 && !asistenciasPorEmpleado[empId].entrada) { // Entrada
+            asistenciasPorEmpleado[empId].entrada = timeStr;
+            asistenciasPorEmpleado[empId].estado = 'Presente';
+        } else if (a.tipo_registro === 1 && !asistenciasPorEmpleado[empId].salida) { // Salida
+            asistenciasPorEmpleado[empId].salida = timeStr;
+            asistenciasPorEmpleado[empId].estado = 'Completado';
+        }
+    }
+});
+
+const presentismoGrid = Object.values(asistenciasPorEmpleado);
+
+---
+
+<CeoWorkspace title="Control de Personal y Asistencias" vendedor_id={sellerSession}>
+    <div class="personal-dashboard-container">
+        
+        <!-- Header / Error Banner -->
+        <div class="dashboard-header">
+            <div class="title-section">
+                <i class="fas fa-users-cog title-icon"></i>
+                <div>
+                    <h1>Mesa de Trabajo de Personal</h1>
+                    <p class="subtitle">Sincronización en vivo con Reloj Biométrico ZKTeco (Sede Central)</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn primary" onclick="window.location.reload()">
+                    <i class="fas fa-sync-alt"></i> Sincronizar Reloj
+                </button>
+            </div>
+        </div>
+
+        {error && (
+            <div class="error-banner">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Error de conexión al VPS Tailscale (100.127.6.20):</strong> {error}
+                </div>
+            </div>
+        )}
+
+        <!-- Top Stats Bar -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">PLANTILLA ACTIVA</span>
+                    <i class="fas fa-users text-blue-400"></i>
+                </div>
+                <div class="stat-value">{personalList.length}</div>
+                <div class="stat-desc">Empleados registrados</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">PRESENTES HOY</span>
+                    <i class="fas fa-check-circle text-green-400"></i>
+                </div>
+                <div class="stat-value">{presentismoGrid.filter(e => e.estado === 'Presente' || e.estado === 'Completado').length}</div>
+                <div class="stat-desc">Ficharon ingreso</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">AUSENTES</span>
+                    <i class="fas fa-user-times text-red-400"></i>
+                </div>
+                <div class="stat-value">{presentismoGrid.filter(e => e.estado === 'Ausente').length}</div>
+                <div class="stat-desc">Aún no registran entrada</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">CONEXIÓN RELOJ</span>
+                    <i class="fas fa-wifi text-green-400"></i>
+                </div>
+                <div class="stat-value text-green-400">OK</div>
+                <div class="stat-desc">Tailscale Tunnel Local->VPS</div>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="workspace-main">
+            <!-- Left Panel: Listado de Empleados (Planilla) -->
+            <div class="panel-section">
+                <div class="panel-header">
+                    <h2><i class="fas fa-address-book"></i> Nómina de Empleados</h2>
+                </div>
+                <div class="panel-body table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre Completo</th>
+                                <th>Función/Sector</th>
+                                <th>Sueldo Base</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {personalList.map((emp) => (
+                                <tr>
+                                    <td>
+                                        <div class="emp-name">
+                                            <div class="avatar-sm">{emp.nombre.charAt(0)}</div>
+                                            {emp.nombre}
+                                        </div>
+                                    </td>
+                                    <td><span class="badge badge-outline">{emp.funcion}</span></td>
+                                    <td class="font-mono text-green-400">${parseFloat(emp.sueldo_base).toLocaleString('es-AR')}</td>
+                                    <td>
+                                        <button class="icon-btn text-blue-400" title="Editar"><i class="fas fa-pen"></i></button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {personalList.length === 0 && (
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No hay empleados registrados en la base de datos.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Right Panel: Fichadas de Hoy -->
+            <div class="panel-section">
+                <div class="panel-header">
+                    <h2><i class="fas fa-clock"></i> Presentismo (Día Actual)</h2>
+                </div>
+                <div class="panel-body table-responsive">
+                    <table class="data-table presentismo-table">
+                        <thead>
+                            <tr>
+                                <th>Empleado</th>
+                                <th>Entrada (07-10hs)</th>
+                                <th>Salida (17-19hs)</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {presentismoGrid.map((row) => (
+                                <tr class={row.estado === 'Ausente' ? 'row-absent' : ''}>
+                                    <td class="font-medium">{row.nombre}</td>
+                                    <td class="time-cell">
+                                        {row.entrada ? (
+                                            <span class="time-badge in"><i class="fas fa-sign-in-alt"></i> {row.entrada}</span>
+                                        ) : (
+                                            <span class="text-muted">-</span>
+                                        )}
+                                    </td>
+                                    <td class="time-cell">
+                                        {row.salida ? (
+                                            <span class="time-badge out"><i class="fas fa-sign-out-alt"></i> {row.salida}</span>
+                                        ) : (
+                                            <span class="text-muted">-</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {row.estado === 'Presente' && <span class="status-badge status-present">En Turno</span>}
+                                        {row.estado === 'Completado' && <span class="status-badge status-complete">Jornada Completa</span>}
+                                        {row.estado === 'Ausente' && <span class="status-badge status-absent">Ausente</span>}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- STYLE SYSTEM -->
+    <style>
+        .personal-dashboard-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 15px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px;
+            padding: 15px 20px;
+        }
+
+        .title-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .title-icon {
+            font-size: 32px;
+            color: var(--ps-accent);
+        }
+
+        .dashboard-header h1 {
+            font-size: 20px;
+            color: var(--ps-highlight);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .dashboard-header .subtitle {
+            font-size: 12px;
+            color: var(--ps-text-muted);
+        }
+
+        .header-actions .action-btn {
+            background-color: var(--ps-bg);
+            border: 1px solid var(--ps-panel-border);
+            color: var(--ps-text-main);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .header-actions .action-btn.primary {
+            background-color: rgba(46, 96, 156, 0.2);
+            border-color: var(--ps-accent);
+            color: var(--ps-highlight);
+        }
+
+        .header-actions .action-btn.primary:hover {
+            background-color: var(--ps-accent);
+        }
+
+        .error-banner {
+            background-color: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 12px 16px;
+            border-radius: 4px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            background-color: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--ps-text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--ps-highlight);
+        }
+
+        .stat-desc {
+            font-size: 10px;
+            color: var(--ps-text-muted);
+        }
+
+        /* Workspace Main */
+        .workspace-main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel-section {
+            background-color: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--ps-panel-border);
+            background-color: var(--ps-toolbar-bg);
+        }
+
+        .panel-header h2 {
+            font-size: 14px;
+            color: var(--ps-highlight);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-body {
+            padding: 0;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 10px 16px;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--ps-text-muted);
+            font-weight: 600;
+            border-bottom: 1px solid var(--ps-panel-border);
+        }
+
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--ps-panel-border);
+            color: var(--ps-text-main);
+            vertical-align: middle;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: rgba(255,255,255,0.02);
+        }
+
+        .emp-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            color: var(--ps-highlight);
+        }
+
+        .avatar-sm {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background-color: var(--ps-accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-outline {
+            border: 1px solid var(--ps-panel-border);
+            color: var(--ps-text-muted);
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .icon-btn:hover {
+            opacity: 1;
+        }
+
+        /* Presentismo Styles */
+        .row-absent td {
+            opacity: 0.6;
+        }
+
+        .time-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .time-badge.in {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .time-badge.out {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-present {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .status-complete {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-absent {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Utilities */
+        .text-muted { color: var(--ps-text-muted); }
+        .text-center { text-align: center; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .font-medium { font-weight: 500; }
+        .font-mono { font-family: 'Roboto Mono', monospace; }
+
+    </style>
+</CeoWorkspace>
