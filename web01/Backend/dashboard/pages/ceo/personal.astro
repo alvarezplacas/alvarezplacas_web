@@ -165,6 +165,15 @@ const presentismoGrid = asistenciasDia.map(row => {
                                         >
                                             <i class="fas fa-pen"></i>
                                         </button>
+                                        <button 
+                                            class="icon-btn text-red-400 delete-btn" 
+                                            title="Eliminar Empleado"
+                                            style="margin-left: 8px;"
+                                            data-id={emp.id}
+                                            data-name={emp.nombre}
+                                        >
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -324,6 +333,35 @@ const presentismoGrid = asistenciasDia.map(row => {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'Guardar Cambios';
             }
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const name = btn.dataset.name;
+                if (confirm(`¿Estás seguro de que deseas eliminar permanentemente a ${name}?`)) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    try {
+                        const res = await fetch('/api/ceo/delete-personal', {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id })
+                        });
+                        if (res.ok) {
+                            window.location.reload();
+                        } else {
+                            alert('Error al eliminar: ' + await res.text());
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-trash"></i>';
+                        }
+                    } catch (err) {
+                        alert('Error de red');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-trash"></i>';
+                    }
+                }
+            });
         });
     </script>
 
