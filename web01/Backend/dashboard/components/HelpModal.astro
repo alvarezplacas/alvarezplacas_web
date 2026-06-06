@@ -73,9 +73,14 @@ const isCajero = role === 'cajero';
                     </>
                 )}
                 { isCajero && (
-                    <button class="help-nav-btn" data-tab="help-herramientas">
-                        <i class="fas fa-toolbox"></i> Herramientas
-                    </button>
+                    <>
+                        <button class="help-nav-btn" data-tab="help-herramientas">
+                            <i class="fas fa-toolbox"></i> Herramientas
+                        </button>
+                        <button class="help-nav-btn" data-tab="help-email">
+                            <i class="fas fa-envelope" style="color: #3b82f6;"></i> Configurar Correo
+                        </button>
+                    </>
                 )}
                 <button class="help-nav-btn" data-tab="help-estrategia">
                     <i class="fas fa-book"></i> Estrategia y Materiales
@@ -102,15 +107,58 @@ const isCajero = role === 'cajero';
                 )}
                 
                 { isCajero && (
-                    <div class="help-tab-content active" id="help-tab-caja">
-                        <h2>🧾 Panel de Caja</h2>
-                        <p class="help-intro">Centro de operaciones diario para la administración de ingresos, egresos y control de operaciones.</p>
-                        <h3>Funcionamiento:</h3>
-                        <ul>
-                            <li>Control exhaustivo de cobros diarios y movimientos de caja.</li>
-                            <li>Acceso directo a herramientas de validación de comprobantes.</li>
-                        </ul>
-                    </div>
+                    <>
+                        <div class="help-tab-content active" id="help-tab-caja">
+                            <h2>🧾 Panel de Caja</h2>
+                            <p class="help-intro">Centro de operaciones diario para la administración de ingresos, egresos y control de operaciones.</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li>Control exhaustivo de cobros diarios y movimientos de caja.</li>
+                                <li>Acceso directo a herramientas de validación de comprobantes.</li>
+                            </ul>
+                        </div>
+
+                        <div class="help-tab-content" id="help-tab-email">
+                            <h2>📱 Configurar Correo Móvil</h2>
+                            <p class="help-intro">Instrucciones para sincronizar tu cuenta corporativa (<strong style="color:#fff;">fernando@alvarezplacas.com.ar</strong>) con la aplicación de Mail de tu celular o computadora.</p>
+                            
+                            <table class="help-table" style="margin-top: 10px;">
+                                <tr>
+                                    <th style="width: 30%;">Campo</th>
+                                    <th>Valor a ingresar</th>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tipo de Cuenta</strong></td>
+                                    <td>IMAP</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dirección de Correo</strong></td>
+                                    <td><code style="background:#111; padding:2px 6px; border-radius:4px; color:#10b981; font-family:monospace;">fernando@alvarezplacas.com.ar</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Nombre de Usuario</strong></td>
+                                    <td><code style="background:#111; padding:2px 6px; border-radius:4px; color:#10b981; font-family:monospace;">fernando@alvarezplacas.com.ar</code> <em>(Igual que el correo)</em></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Contraseña</strong></td>
+                                    <td><em>La contraseña de tu cuenta de correo.</em></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Servidor Entrante (IMAP)</strong></td>
+                                    <td><code style="background:#111; padding:2px 6px; border-radius:4px; color:#3b82f6; font-family:monospace;">mail.alvarezplacas.com.ar</code><br>Puerto: <strong>993</strong> (Requiere SSL/TLS)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Servidor Saliente (SMTP)</strong></td>
+                                    <td><code style="background:#111; padding:2px 6px; border-radius:4px; color:#3b82f6; font-family:monospace;">mail.alvarezplacas.com.ar</code><br>Puerto: <strong>465</strong> (Requiere SSL/TLS)<br><em>* Requiere autenticación (mismo usuario/contraseña)</em></td>
+                                </tr>
+                            </table>
+                            
+                            <div style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.4); border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px 16px; margin: 16px 0; font-size: 12px; color: #93c5fd;">
+                                <strong style="display:block; margin-bottom:4px;">💡 Tips para Android o iPhone:</strong>
+                                Al agregar la cuenta, selecciona <strong>"Otra"</strong> o <strong>"IMAP"</strong>. Asegúrate de configurar la conexión segura (SSL/TLS).
+                            </div>
+                        </div>
+                    </>
                 )}
 
                 { isVendedor && (
