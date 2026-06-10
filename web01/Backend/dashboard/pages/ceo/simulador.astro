@@ -8,89 +8,195 @@ if (!sellerId) {
 ---
 
 <CeoWorkspace title="Simulador GCOM" vendedor_id={sellerId}>
-    <div class="view-panel" style="padding: 20px; max-width: 900px; margin: 0 auto;">
-        <div class="card-header" style="background: transparent; border-bottom: none; margin-bottom: 20px;">
-            <i class="fas fa-calculator" style="color: #10b981; font-size: 28px;"></i>
-            <h2 style="font-size: 24px; margin-left: 10px; color: #fff;">Simulador de Fórmulas GCOM</h2>
+    <div class="view-panel" style="padding: 30px; max-width: 1200px; margin: 0 auto; height: 100%; overflow-y: auto;">
+        <div class="card-header" style="background: transparent; border-bottom: none; margin-bottom: 30px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: #10b981; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(16,185,129,0.3);">
+                    <i class="fas fa-calculator" style="color: #fff; font-size: 24px;"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 28px; font-weight: 800; color: #fff; margin: 0; letter-spacing: -0.5px;">Simulador de Fórmulas GCOM</h2>
+                    <p style="color: #888; font-size: 13px; margin: 4px 0 0 0;">Configura las reglas de precios paso a paso para cuadrar exacto con GCOM.</p>
+                </div>
+            </div>
         </div>
-        
-        <p style="color: #aaa; margin-bottom: 20px; line-height: 1.5;">
-            Utilice esta herramienta para descifrar la fórmula matemática exacta que utiliza GCOM.
-            Ingrese un precio de prueba y juegue con las variables hasta que el "Precio Final en Mostrador"
-            coincida exactamente con lo que muestra GCOM en la vida real.
-        </p>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <!-- Panel de Entrada -->
-            <div class="panel-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; padding: 20px;">
-                <h3 style="color: #ccc; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;"><i class="fas fa-edit"></i> Variables de Entrada</h3>
-                
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Precio de Lista (Proveedor) $</label>
-                    <input type="number" id="sim-lista" value="10000" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            
+            <!-- PASO 1: PROVEEDOR -->
+            <div class="sim-card" style="background: #252525; border: 1px solid #333; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;">
+                    <span style="background: #3b82f6; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px;">1</span>
+                    <h3 style="color: #fff; font-size: 16px; font-weight: 700; margin: 0;">Ingreso del Proveedor</h3>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Descuento Proveedor (%)</label>
-                    <input type="number" id="sim-descuento" value="0" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; color: #aaa; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+                        <span>Precio de Lista Bruto $</span>
+                        <i class="fas fa-question-circle tooltip-trigger" style="color: #888; cursor: pointer;" data-tooltip="El precio base que figura en el PDF o Excel del proveedor antes de cualquier descuento."></i>
+                    </label>
+                    <div style="position: relative;">
+                        <span style="position: absolute; left: 12px; top: 12px; color: #888; font-weight: bold;">$</span>
+                        <input type="number" id="sim-lista" value="10000" class="ps-input" style="width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 12px 12px 12px 28px; border-radius: 8px; font-size: 16px; font-weight: bold; transition: 0.2s;">
+                    </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Rentabilidad Esperada (%)</label>
-                    <input type="number" id="sim-rentabilidad" value="40" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; color: #aaa; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+                        <span>Descuentos del Proveedor %</span>
+                        <i class="fas fa-question-circle tooltip-trigger" style="color: #888; cursor: pointer;" data-tooltip="Si el proveedor te hace un 10% u otro descuento comercial, ingrésalo aquí."></i>
+                    </label>
+                    <div style="position: relative;">
+                        <input type="number" id="sim-descuento" value="0" class="ps-input" style="width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 12px 28px 12px 12px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                        <span style="position: absolute; right: 12px; top: 12px; color: #888; font-weight: bold;">%</span>
+                    </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">IVA (%)</label>
-                    <input type="number" id="sim-iva" value="21" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Motor de Cálculo de Rentabilidad</label>
-                    <select id="sim-motor" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
-                        <option value="markup">Mark-up (Costo * 1.40)</option>
-                        <option value="margin">Margen Neto (Costo / (1 - 0.40))</option>
-                    </select>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Redondeo Obligatorio</label>
-                    <select id="sim-redondeo" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
-                        <option value="0">Sin Redondeo (Centavos Exactos)</option>
-                        <option value="10">Múltiplos de $10</option>
-                        <option value="100">Múltiplos de $100</option>
-                        <option value="500">Múltiplos de $500</option>
-                        <option value="1000" selected>Múltiplos de $1000</option>
-                    </select>
+                <div style="background: rgba(59,130,246,0.1); border: 1px dashed #3b82f6; padding: 15px; border-radius: 8px; margin-top: 25px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; color: #3b82f6; font-size: 11px; font-weight: 800; text-transform: uppercase;">
+                        <span>Costo Normalizado</span>
+                        <i class="fas fa-question-circle tooltip-trigger" style="cursor: pointer;" data-tooltip="Este es el costo REAL que pagas por el producto, restando el descuento al precio de lista."></i>
+                    </label>
+                    <div id="res-normalizado" style="color: #fff; font-size: 24px; font-weight: 900; font-family: monospace; margin-top: 5px;">$ 0.00</div>
                 </div>
             </div>
 
-            <!-- Panel de Resultados -->
-            <div class="panel-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; padding: 20px; display: flex; flex-direction: column;">
-                <h3 style="color: #ccc; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;"><i class="fas fa-laptop-code"></i> Simulación Matemática</h3>
-
-                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <span style="display: block; color: #10b981; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Precio Final en Mostrador (Caja)</span>
-                    <span id="res-final" style="color: #fff; font-size: 28px; font-weight: bold; font-family: 'Roboto Mono', monospace;">$ 0.00</span>
-                    <p style="color: #aaa; font-size: 11px; margin-top: 5px;">Este es el número redondo que verá el cliente.</p>
+            <!-- PASO 2: RENTABILIDAD E IVA -->
+            <div class="sim-card" style="background: #252525; border: 1px solid #333; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;">
+                    <span style="background: #f59e0b; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px;">2</span>
+                    <h3 style="color: #fff; font-size: 16px; font-weight: 700; margin: 0;">Rentabilidad e IVA</h3>
                 </div>
 
-                <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 15px; border-radius: 8px; margin-bottom: auto;">
-                    <span style="display: block; color: #3b82f6; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Costo a Exportar a GECOM (Costo Trucado)</span>
-                    <span id="res-export" style="color: #fff; font-size: 24px; font-weight: bold; font-family: 'Roboto Mono', monospace;">$ 0.00</span>
-                    <p style="color: #aaa; font-size: 11px; margin-top: 5px;">Nuestro Catalogador enviará este costo invisible a GECOM para que las fórmulas cuadren.</p>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; color: #aaa; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+                        <span>Motor de Cálculo</span>
+                        <i class="fas fa-question-circle tooltip-trigger" style="color: #888; cursor: pointer;" data-tooltip="Markup (ganancia sobre el costo). Margen Neto (ganancia sobre el precio final de venta)."></i>
+                    </label>
+                    <select id="sim-motor" class="ps-input" style="width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; outline: none;">
+                        <option value="markup">Mark-up Clásico (+X%)</option>
+                        <option value="margin">Margen Neto (Estrategia Corporativa)</option>
+                    </select>
                 </div>
 
-                <div style="margin-top: 20px;">
-                    <button id="btn-save-formula" style="width: 100%; background: #3b82f6; color: #fff; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;">
-                        <i class="fas fa-save"></i> Guardar como Fórmula Oficial
-                    </button>
-                    <p style="color: #888; font-size: 11px; text-align: center; margin-top: 8px;">Aplica esta lógica de rentabilidad a todas las exportaciones.</p>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; color: #aaa; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+                        <span>Rentabilidad Deseada %</span>
+                        <i class="fas fa-question-circle tooltip-trigger" style="color: #888; cursor: pointer;" data-tooltip="Porcentaje de ganancia que quieres aplicar sobre este rubro o producto."></i>
+                    </label>
+                    <div style="position: relative;">
+                        <input type="number" id="sim-rentabilidad" value="40" class="ps-input" style="width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 12px 28px 12px 12px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                        <span style="position: absolute; right: 12px; top: 12px; color: #888; font-weight: bold;">%</span>
+                    </div>
                 </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; color: #aaa; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+                        <span>IVA Aplicable %</span>
+                        <i class="fas fa-question-circle tooltip-trigger" style="color: #888; cursor: pointer;" data-tooltip="Impuesto al valor agregado. Típicamente 21% o 10.5%."></i>
+                    </label>
+                    <div style="position: relative;">
+                        <input type="number" id="sim-iva" value="21" class="ps-input" style="width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 12px 28px 12px 12px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                        <span style="position: absolute; right: 12px; top: 12px; color: #888; font-weight: bold;">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 3: REDONDEO Y RESULTADO -->
+            <div class="sim-card" style="background: #252525; border: 1px solid #333; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;">
+                    <span style="background: #10b981; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px;">3</span>
+                    <h3 style="color: #fff; font-size: 16px; font-weight: 700; margin: 0;">Redondeo a Público</h3>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; color: #aaa; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+                        <span>Fuerza de Redondeo (Hacia Arriba)</span>
+                        <i class="fas fa-question-circle tooltip-trigger" style="color: #888; cursor: pointer;" data-tooltip="Para evitar precios raros como $12,431.50. Fuerza a que termine en múltiplos limpios de $100, $500 o $1000."></i>
+                    </label>
+                    <select id="sim-redondeo" class="ps-input" style="width: 100%; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; outline: none;">
+                        <option value="0">Ninguno (Precio exacto)</option>
+                        <option value="10">Múltiplos de $10</option>
+                        <option value="100">Múltiplos de $100</option>
+                        <option value="500">Múltiplos de $500</option>
+                        <option value="1000" selected>Múltiplos de $1,000</option>
+                        <option value="5000">Múltiplos de $5,000</option>
+                    </select>
+                </div>
+
+                <div style="background: rgba(16,185,129,0.15); border: 2px solid #10b981; padding: 20px; border-radius: 12px; margin-top: auto; text-align: center; position: relative;">
+                    <i class="fas fa-tag" style="position: absolute; top: -12px; right: -12px; background: #10b981; color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(16,185,129,0.5);"></i>
+                    <label style="display: flex; align-items: center; justify-content: center; gap: 5px; color: #10b981; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">
+                        Precio Mostrador GCOM
+                        <i class="fas fa-question-circle tooltip-trigger" style="cursor: pointer;" data-tooltip="Este es el número redondo e inflado que el cliente final verá en la caja."></i>
+                    </label>
+                    <div id="res-final" style="color: #fff; font-size: 36px; font-weight: 900; font-family: monospace;">$ 0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAGIA INVERSA GECOM -->
+        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 16px; padding: 30px; display: flex; align-items: center; justify-content: space-between; gap: 30px; box-shadow: inset 0 0 40px rgba(0,0,0,0.5);">
+            <div style="flex: 1;">
+                <h3 style="color: #fff; font-size: 20px; font-weight: 800; margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-magic" style="color: #8b5cf6;"></i> Ingeniería Inversa GCOM
+                </h3>
+                <p style="color: #aaa; font-size: 13px; line-height: 1.6; margin: 0; max-width: 600px;">
+                    GCOM aplica sus propias reglas de rentabilidad e IVA. Para engañar al sistema y lograr que el Precio Mostrador sea exactamente el número redondo que elegiste arriba, el Catalogador modificará el costo inicial y enviará este <strong style="color:#fff;">Costo Trucado</strong> a la base de datos de GCOM.
+                </p>
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.3); padding: 20px 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); min-width: 300px; text-align: center;">
+                <label style="display: block; color: #8b5cf6; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Costo a Exportar</label>
+                <div id="res-export" style="color: #fff; font-size: 32px; font-weight: 900; font-family: monospace;">$ 0.00</div>
+            </div>
+
+            <div>
+                <button id="btn-save-formula" style="background: #8b5cf6; color: #fff; border: none; padding: 16px 24px; border-radius: 12px; font-weight: 900; font-size: 14px; cursor: pointer; transition: 0.2s; box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4); text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="fas fa-save"></i> Guardar Fórmula
+                </button>
             </div>
         </div>
     </div>
 </CeoWorkspace>
+
+<style>
+    .ps-input:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    .tooltip-trigger {
+        position: relative;
+    }
+    .tooltip-trigger:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-8px);
+        background: #111;
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 100;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        border: 1px solid #333;
+    }
+    .tooltip-trigger:hover::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: #111;
+        z-index: 101;
+    }
+</style>
 
 <script>
     function calculate() {
@@ -101,8 +207,9 @@ if (!sellerId) {
         const motor = (document.getElementById('sim-motor') as HTMLSelectElement).value;
         const rounding = parseInt((document.getElementById('sim-redondeo') as HTMLSelectElement).value) || 0;
 
-        // 1. Costo Real (después de descuento)
+        // 1. Costo Normalizado (después de descuento)
         const costoReal = lista * (1 - (desc / 100));
+        document.getElementById('res-normalizado')!.textContent = '$ ' + costoReal.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
         // 2. Precio Ideal
         const ivaMultiplier = 1 + (iva / 100);
@@ -145,12 +252,9 @@ if (!sellerId) {
     document.getElementById('btn-save-formula')?.addEventListener('click', async () => {
         const motor = (document.getElementById('sim-motor') as HTMLSelectElement).value;
         try {
-            // Asume que la API de Next.js está en el mismo dominio o en un endpoint conocido
-            // Dado que el Dashboard Astro podría estar en otro puerto, usamos URL absoluta por ahora si hace falta
-            // Pero si están bajo un reverse proxy, usamos ruta relativa.
             const btn = document.getElementById('btn-save-formula');
             const originalText = btn!.innerHTML;
-            btn!.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            btn!.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GUARDANDO...';
             
             // Reemplazar con la IP del backend real (Next.js CATALOGADOR)
             const res = await fetch('http://192.168.1.87:3050/api/financial/settings', {
@@ -160,19 +264,21 @@ if (!sellerId) {
             });
 
             if (res.ok) {
-                btn!.innerHTML = '<i class="fas fa-check"></i> Fórmula Guardada!';
+                btn!.innerHTML = '<i class="fas fa-check"></i> FÓRMULA ACTIVA';
                 btn!.style.background = '#10b981';
                 setTimeout(() => {
                     btn!.innerHTML = originalText;
-                    btn!.style.background = '#3b82f6';
-                }, 2000);
+                    btn!.style.background = '#8b5cf6';
+                }, 3000);
             } else {
                 alert('Error al guardar la fórmula.');
                 btn!.innerHTML = originalText;
             }
         } catch (e) {
             console.error(e);
-            alert('Error de conexión con la base de datos.');
+            alert('Error de conexión con la base de datos central.');
+            const btn = document.getElementById('btn-save-formula');
+            btn!.innerHTML = '<i class="fas fa-save"></i> Guardar Fórmula';
         }
     });
 </script>
