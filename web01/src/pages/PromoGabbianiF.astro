@@ -1,0 +1,204 @@
+---
+// Componente: PromoGabbianiF.astro
+// Promoción de la Seccionadora SCM Gabbiani F para Alvarez Placas
+---
+
+<section class="promo-gabbiani">
+  <header class="promo-header">
+    <h1>¡Nueva Tecnología en Alvarez Placas!</h1>
+    <h2>Descubrí la Seccionadora Automática SCM Gabbiani F</h2>
+    <p>
+      Para ofrecerte cortes más precisos, rápidos y eficientes, incorporamos a nuestra línea de producción tecnología de vanguardia fabricada en Italia [1]. 
+      Nuestra nueva seccionadora gestionada por control PC/PLC está diseñada para el corte perfecto de tableros de madera, aglomerados, MDF, multicapa y contrachapados [1].
+    </p>
+  </header>
+
+  <!-- INFOGRAFÍA INTERACTIVA -->
+  <div class="infographic-container">
+    <h3>Explorá sus ventajas en detalle</h3>
+    <p>Hacé clic en los puntos para conocer cómo esta máquina mejora tus pedidos.</p>
+    
+    <div class="infographic-image">
+      <!-- Representación visual simplificada de la máquina -->
+      <div class="machine-mockup">
+        <div class="hotspot" style="top: 20%; left: 15%;" data-info="software">1</div>
+        <div class="hotspot" style="top: 50%; left: 40%;" data-info="corte">2</div>
+        <div class="hotspot" style="top: 70%; left: 70%;" data-info="carro">3</div>
+        <div class="hotspot" style="top: 30%; left: 85%;" data-info="motor">4</div>
+      </div>
+    </div>
+
+    <div id="info-panel" class="info-panel">
+      <h4>Seleccioná un punto en la máquina</h4>
+      <p>Interactuá con la imagen superior para ver los detalles técnicos de nuestra nueva adquisición.</p>
+    </div>
+  </div>
+
+  <!-- ESPECIFICACIONES TÉCNICAS -->
+  <div class="technical-specs">
+    <h3>Especificaciones Técnicas del Equipo</h3>
+    <ul>
+      <li><strong>Longitud útil de corte:</strong> 3400 / 3800 mm [2].</li>
+      <li><strong>Salida de sierra:</strong> 70 mm [2].</li>
+      <li><strong>Capacidad de procesamiento:</strong> Corte simultáneo de hasta 4 paneles de 15 mm gracias a su alta productividad [2].</li>
+      <li><strong>Velocidades:</strong> Carro porta sierras variable de 10 a 50 m/min y empujador de 0 a 60 m/min [2].</li>
+      <li><strong>Diámetro de sierras:</strong> Principal de 290 mm y sierra incisor de 115 mm [3].</li>
+      <li><strong>Sujeción:</strong> Cuenta con 5 pinzas de sujeción para máxima precisión [3].</li>
+    </ul>
+  </div>
+
+  <div class="cta-section">
+    <a href="/contacto" class="cta-button">Cotizá tus cortes con la mejor tecnología</a>
+  </div>
+</section>
+
+<style>
+  /* Estilos encapsulados para Astro */
+  .promo-gabbiani {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+    color: #333;
+  }
+  
+  .promo-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .promo-header h1 {
+    color: #d32f2f;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .promo-header h2 {
+    color: #1565c0;
+    font-size: 1.5rem;
+  }
+
+  .infographic-container {
+    background-color: #f5f5f5;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 3rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+
+  .machine-mockup {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    height: 300px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%);
+    border: 2px solid #90a4ae;
+    border-radius: 8px;
+    /* Aquí idealmente reemplazarías el background con una imagen real del equipo mediante un tag <img> */
+  }
+
+  .hotspot {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-color: #d32f2f;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(211, 47, 47, 0.6);
+    transition: transform 0.2s, background-color 0.2s;
+  }
+
+  .hotspot:hover {
+    transform: scale(1.2);
+    background-color: #b71c1c;
+  }
+
+  .info-panel {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: white;
+    border-left: 5px solid #1565c0;
+    border-radius: 4px;
+    text-align: left;
+    min-height: 120px;
+  }
+
+  .info-panel h4 {
+    margin-top: 0;
+    color: #1565c0;
+    font-size: 1.2rem;
+  }
+
+  .technical-specs {
+    margin-bottom: 3rem;
+  }
+
+  .technical-specs ul {
+    list-style-type: square;
+    line-height: 1.8;
+  }
+
+  .cta-section {
+    text-align: center;
+  }
+
+  .cta-button {
+    display: inline-block;
+    padding: 1rem 2rem;
+    background-color: #d32f2f;
+    color: white;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 6px;
+    transition: background-color 0.3s;
+  }
+
+  .cta-button:hover {
+    background-color: #b71c1c;
+  }
+</style>
+
+<script>
+  // Script para manejar la interactividad de la infografía en el cliente
+  document.addEventListener('DOMContentLoaded', () => {
+    const hotspots = document.querySelectorAll('.hotspot');
+    const infoPanel = document.getElementById('info-panel');
+
+    // Base de datos de información según la fuente
+    const data = {
+      software: {
+        title: "1. Control Digital Inteligente",
+        text: "Por medio del software Maestro Ottimo Cut, recibimos remotamente los planos ya optimizados desde nuestra sala de ventas para un procesamiento inmediato y sin errores [1]."
+      },
+      corte: {
+        title: "2. Alta Productividad de Corte",
+        text: "La máquina permite realizar cortes en paquete de alta velocidad, seccionando simultáneamente hasta 4 paneles de 15 mm de espesor [2]."
+      },
+      carro: {
+        title: "3. Carro de Sierras de Cambio Rápido",
+        text: "Cuenta con un conveniente sistema de ajuste neumático que permite el cambio de herramientas (sierras) en tiempos extremadamente reducidos, garantizando continuidad en tus proyectos [2]."
+      },
+      motor: {
+        title: "4. Motores de Alta Potencia",
+        text: "Equipada con un motor de sierra principal de 7.5 kW (girando a 4400 rpm) y una sierra incisora de 1.0 kW (a 5300 rpm) para garantizar un corte limpio y sin astillas [2, 3]."
+      }
+    };
+
+    hotspots.forEach(spot => {
+      spot.addEventListener('click', (e) => {
+        const key = e.target.getAttribute('data-info');
+        if (data[key]) {
+          infoPanel.innerHTML = `<h4>${data[key].title}</h4><p>${data[key].text}</p>`;
+        }
+      });
+    });
+  });
+</script>

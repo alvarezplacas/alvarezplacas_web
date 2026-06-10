@@ -57,6 +57,9 @@ const isCajero = role === 'cajero';
                         <button class="help-nav-btn" data-tab="help-radar">
                             <i class="fas fa-satellite-dish"></i> Radar Predictivo
                         </button>
+                        <button class="help-nav-btn" data-tab="help-simulador">
+                            <i class="fas fa-calculator" style="color: #10b981;"></i> Simulador Fórmulas
+                        </button>
                     </>
                 )}
                 { (isCajero || isVendedor) && (
@@ -235,6 +238,17 @@ const isCajero = role === 'cajero';
                             <ul>
                                 <li>Monitoreo de la cotización de divisas (Dólar Blue, MEP, CCL) y riesgo país.</li>
                                 <li>Proyecciones basadas en datos del mercado actual para toma de decisiones ágiles.</li>
+                            </ul>
+                        </div>
+                        <div class="help-tab-content" id="help-tab-simulador">
+                            <h2>🧮 Simulador Matemático de Fórmulas</h2>
+                            <p class="help-intro">Herramienta para alinear los cálculos del Catalogador con las fórmulas nativas de GCOM.</p>
+                            <h3>Funcionamiento:</h3>
+                            <ul>
+                                <li><strong>Precios de Lista y Descuentos:</strong> Permite probar cómo impactan los descuentos de proveedores en el costo base.</li>
+                                <li><strong>Rentabilidad e IVA:</strong> Simula el precio ideal de venta antes de redondeos.</li>
+                                <li><strong>Cálculo Inverso (Costo Trucado):</strong> Como GCOM obliga a usar precios redondeados, el simulador hace ingeniería inversa para enviarle a GCOM un "costo modificado" y que su cálculo termine dando el número redondo deseado.</li>
+                                <li>Al guardar la fórmula, ésta afectará automáticamente a todas las exportaciones de precios TXT para GCOM.</li>
                             </ul>
                         </div>
                     </>

@@ -2,7 +2,6 @@ import type { APIRoute } from 'astro';
 import { query } from '@conexiones/lib/db.js';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-    // Only admin or seller can update
     const adminSession = cookies.get('admin_session')?.value;
     const sellerSession = cookies.get('seller_session')?.value;
 
@@ -13,13 +12,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     try {
         const body = await request.json();
         const {
-            id, nombre, funcion, sueldo_base, id_reloj, email, whatsapp,
+            nombre, funcion, sueldo_base, id_reloj, email, whatsapp,
             forma_pago, indumentaria_entregada, fecha_entrega_indumentaria,
             observaciones, adelantos, horas_extras_manual
         } = body;
 
-        if (!id) {
-            return new Response('ID requerido', { status: 400 });
+        if (!nombre) {
+            return new Response('Nombre requerido', { status: 400 });
         }
 
         // Auto-migrate: add new columns if they don't exist yet
@@ -31,47 +30,36 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             ADD COLUMN IF NOT EXISTS observaciones TEXT,
             ADD COLUMN IF NOT EXISTS adelantos NUMERIC(12,2) DEFAULT 0,
             ADD COLUMN IF NOT EXISTS horas_extras_manual NUMERIC(6,2) DEFAULT 0
-        `).catch(() => {}); // Silently ignore if columns already exist
+        `).catch(() => {}); // Ignorar si ya existen
 
-        // Update in DB
-        await query(`
-            UPDATE control_personal 
-            SET 
-                nombre = $1, 
-                funcion = $2, 
-                sueldo_base = $3, 
-                id_reloj = $4, 
-                email = $5, 
-                whatsapp = $6,
-                forma_pago = $7,
-                indumentaria_entregada = $8,
-                fecha_entrega_indumentaria = $9,
-                observaciones = $10,
-                adelantos = $11,
-                horas_extras_manual = $12
-            WHERE id = $13
+        const result = await query(`
+            INSERT INTO control_personal 
+                (nombre, funcion, sueldo_base, id_reloj, email, whatsapp,
+                 forma_pago, indumentaria_entregada, fecha_entrega_indumentaria,
+                 observaciones, adelantos, horas_extras_manual)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            RETURNING id
         `, [
-            nombre, 
-            funcion || null, 
-            sueldo_base ? parseFloat(sueldo_base) : 0, 
-            id_reloj || null, 
-            email || null, 
+            nombre,
+            funcion || null,
+            sueldo_base ? parseFloat(sueldo_base) : 0,
+            id_reloj || null,
+            email || null,
             whatsapp || null,
             forma_pago || 'Efectivo',
             indumentaria_entregada || null,
             fecha_entrega_indumentaria || null,
             observaciones || null,
             adelantos ? parseFloat(adelantos) : 0,
-            horas_extras_manual ? parseFloat(horas_extras_manual) : 0,
-            parseInt(id)
+            horas_extras_manual ? parseFloat(horas_extras_manual) : 0
         ]);
 
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ success: true, id: result.rows[0]?.id }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
     } catch (e: any) {
-        console.error("Error updating personal:", e);
+        console.error("Error adding personal:", e);
         return new Response(e.message || 'Error interno', { status: 500 });
     }
 }

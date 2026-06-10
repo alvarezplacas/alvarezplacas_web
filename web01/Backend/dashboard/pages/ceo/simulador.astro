@@ -1,0 +1,178 @@
+---
+import CeoWorkspace from '../../layouts/CeoWorkspace.astro';
+
+let sellerId = Astro.cookies.get('seller_session')?.value;
+if (!sellerId) {
+    return Astro.redirect('/ceo');
+}
+---
+
+<CeoWorkspace title="Simulador GCOM" vendedor_id={sellerId}>
+    <div class="view-panel" style="padding: 20px; max-width: 900px; margin: 0 auto;">
+        <div class="card-header" style="background: transparent; border-bottom: none; margin-bottom: 20px;">
+            <i class="fas fa-calculator" style="color: #10b981; font-size: 28px;"></i>
+            <h2 style="font-size: 24px; margin-left: 10px; color: #fff;">Simulador de Fórmulas GCOM</h2>
+        </div>
+        
+        <p style="color: #aaa; margin-bottom: 20px; line-height: 1.5;">
+            Utilice esta herramienta para descifrar la fórmula matemática exacta que utiliza GCOM.
+            Ingrese un precio de prueba y juegue con las variables hasta que el "Precio Final en Mostrador"
+            coincida exactamente con lo que muestra GCOM en la vida real.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Panel de Entrada -->
+            <div class="panel-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; padding: 20px;">
+                <h3 style="color: #ccc; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;"><i class="fas fa-edit"></i> Variables de Entrada</h3>
+                
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Precio de Lista (Proveedor) $</label>
+                    <input type="number" id="sim-lista" value="10000" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Descuento Proveedor (%)</label>
+                    <input type="number" id="sim-descuento" value="0" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Rentabilidad Esperada (%)</label>
+                    <input type="number" id="sim-rentabilidad" value="40" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">IVA (%)</label>
+                    <input type="number" id="sim-iva" value="21" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Motor de Cálculo de Rentabilidad</label>
+                    <select id="sim-motor" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
+                        <option value="markup">Mark-up (Costo * 1.40)</option>
+                        <option value="margin">Margen Neto (Costo / (1 - 0.40))</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 5px;">Redondeo Obligatorio</label>
+                    <select id="sim-redondeo" class="ps-input" style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px;">
+                        <option value="0">Sin Redondeo (Centavos Exactos)</option>
+                        <option value="10">Múltiplos de $10</option>
+                        <option value="100">Múltiplos de $100</option>
+                        <option value="500">Múltiplos de $500</option>
+                        <option value="1000" selected>Múltiplos de $1000</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Panel de Resultados -->
+            <div class="panel-card" style="background: #252525; border: 1px solid #383838; border-radius: 8px; padding: 20px; display: flex; flex-direction: column;">
+                <h3 style="color: #ccc; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;"><i class="fas fa-laptop-code"></i> Simulación Matemática</h3>
+
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <span style="display: block; color: #10b981; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Precio Final en Mostrador (Caja)</span>
+                    <span id="res-final" style="color: #fff; font-size: 28px; font-weight: bold; font-family: 'Roboto Mono', monospace;">$ 0.00</span>
+                    <p style="color: #aaa; font-size: 11px; margin-top: 5px;">Este es el número redondo que verá el cliente.</p>
+                </div>
+
+                <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 15px; border-radius: 8px; margin-bottom: auto;">
+                    <span style="display: block; color: #3b82f6; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Costo a Exportar a GECOM (Costo Trucado)</span>
+                    <span id="res-export" style="color: #fff; font-size: 24px; font-weight: bold; font-family: 'Roboto Mono', monospace;">$ 0.00</span>
+                    <p style="color: #aaa; font-size: 11px; margin-top: 5px;">Nuestro Catalogador enviará este costo invisible a GECOM para que las fórmulas cuadren.</p>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button id="btn-save-formula" style="width: 100%; background: #3b82f6; color: #fff; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                        <i class="fas fa-save"></i> Guardar como Fórmula Oficial
+                    </button>
+                    <p style="color: #888; font-size: 11px; text-align: center; margin-top: 8px;">Aplica esta lógica de rentabilidad a todas las exportaciones.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</CeoWorkspace>
+
+<script>
+    function calculate() {
+        const lista = parseFloat((document.getElementById('sim-lista') as HTMLInputElement).value) || 0;
+        const desc = parseFloat((document.getElementById('sim-descuento') as HTMLInputElement).value) || 0;
+        const rent = parseFloat((document.getElementById('sim-rentabilidad') as HTMLInputElement).value) || 0;
+        const iva = parseFloat((document.getElementById('sim-iva') as HTMLInputElement).value) || 0;
+        const motor = (document.getElementById('sim-motor') as HTMLSelectElement).value;
+        const rounding = parseInt((document.getElementById('sim-redondeo') as HTMLSelectElement).value) || 0;
+
+        // 1. Costo Real (después de descuento)
+        const costoReal = lista * (1 - (desc / 100));
+
+        // 2. Precio Ideal
+        const ivaMultiplier = 1 + (iva / 100);
+        let ideal = 0;
+        
+        if (motor === 'markup') {
+            ideal = costoReal * (1 + (rent / 100)) * ivaMultiplier;
+        } else {
+            // Margen neto
+            ideal = (costoReal / (1 - (rent / 100))) * ivaMultiplier;
+        }
+
+        // 3. Redondeo
+        let rounded = ideal;
+        if (rounding > 0) {
+            rounded = Math.ceil(ideal / rounding) * rounding;
+        }
+
+        // 4. Costo Inverso (El que enviamos a GCOM)
+        let costoInverso = 0;
+        if (motor === 'markup') {
+            costoInverso = rounded / ((1 + (rent / 100)) * ivaMultiplier);
+        } else {
+            costoInverso = rounded / (1 / (1 - (rent / 100)) * ivaMultiplier);
+        }
+
+        document.getElementById('res-final')!.textContent = '$ ' + rounded.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('res-export')!.textContent = '$ ' + costoInverso.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    const inputs = ['sim-lista', 'sim-descuento', 'sim-rentabilidad', 'sim-iva', 'sim-motor', 'sim-redondeo'];
+    inputs.forEach(id => {
+        document.getElementById(id)?.addEventListener('input', calculate);
+        document.getElementById(id)?.addEventListener('change', calculate);
+    });
+
+    // Run initial calculation
+    calculate();
+
+    document.getElementById('btn-save-formula')?.addEventListener('click', async () => {
+        const motor = (document.getElementById('sim-motor') as HTMLSelectElement).value;
+        try {
+            // Asume que la API de Next.js está en el mismo dominio o en un endpoint conocido
+            // Dado que el Dashboard Astro podría estar en otro puerto, usamos URL absoluta por ahora si hace falta
+            // Pero si están bajo un reverse proxy, usamos ruta relativa.
+            const btn = document.getElementById('btn-save-formula');
+            const originalText = btn!.innerHTML;
+            btn!.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            
+            // Reemplazar con la IP del backend real (Next.js CATALOGADOR)
+            const res = await fetch('http://192.168.1.87:3050/api/financial/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: 'GECOM_FORMULA', value: motor })
+            });
+
+            if (res.ok) {
+                btn!.innerHTML = '<i class="fas fa-check"></i> Fórmula Guardada!';
+                btn!.style.background = '#10b981';
+                setTimeout(() => {
+                    btn!.innerHTML = originalText;
+                    btn!.style.background = '#3b82f6';
+                }, 2000);
+            } else {
+                alert('Error al guardar la fórmula.');
+                btn!.innerHTML = originalText;
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error de conexión con la base de datos.');
+        }
+    });
+</script>

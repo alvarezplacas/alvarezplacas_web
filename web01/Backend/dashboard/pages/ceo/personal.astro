@@ -9,12 +9,26 @@ if (!adminSession && !sellerSession) {
     return Astro.redirect('/login');
 }
 
+const DASHBOARD_VERSION = 'v2.1';
+
 // Fetch Personal and Asistencias del VPS PostgreSQL v16
-let personalList = [];
-let asistenciasDia = [];
-let error = null;
+let personalList: any[] = [];
+let asistenciasDia: any[] = [];
+let ausentesHoy: any[] = [];
+let error: string | null = null;
 
 try {
+    // Auto-migrate: add new columns if they don't exist yet
+    await query(`
+        ALTER TABLE control_personal 
+        ADD COLUMN IF NOT EXISTS forma_pago VARCHAR(50) DEFAULT 'Efectivo',
+        ADD COLUMN IF NOT EXISTS indumentaria_entregada TEXT,
+        ADD COLUMN IF NOT EXISTS fecha_entrega_indumentaria DATE,
+        ADD COLUMN IF NOT EXISTS observaciones TEXT,
+        ADD COLUMN IF NOT EXISTS adelantos NUMERIC(12,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS horas_extras_manual NUMERIC(6,2) DEFAULT 0
+    `).catch(() => {});
+
     const personalRes = await query(`SELECT * FROM control_personal ORDER BY nombre ASC`);
     personalList = personalRes.rows || [];
 
@@ -23,7 +37,15 @@ try {
         SELECT 
             c.id, c.nombre, c.funcion,
             MIN(a.timestamp) as entrada,
-            MAX(a.timestamp) as salida
+            MAX(a.timestamp) as salida,
+            ROUND(
+                EXTRACT(EPOCH FROM (MAX(a.timestamp) - MIN(a.timestamp))) / 3600.0, 
+                2
+            ) as horas_trabajadas,
+            GREATEST(0, ROUND(
+                EXTRACT(EPOCH FROM (MAX(a.timestamp) - MIN(a.timestamp))) / 3600.0 - 8, 
+                2
+            )) as horas_extras_auto
         FROM control_personal c
         LEFT JOIN control_asistencias a 
             ON c.id_reloj = a.id_reloj AND DATE(a.timestamp) = CURRENT_DATE
@@ -31,7 +53,38 @@ try {
         ORDER BY c.nombre ASC
     `);
     asistenciasDia = asistRes.rows || [];
-} catch (e) {
+
+    // Ausentes hoy con faltas del mes
+    const ausentesRes = await query(`
+        SELECT 
+            c.id, c.nombre, c.funcion,
+            (
+                SELECT COUNT(*) 
+                FROM generate_series(
+                    DATE_TRUNC('month', CURRENT_DATE)::date,
+                    CURRENT_DATE,
+                    '1 day'::interval
+                ) as gs(day)
+                WHERE EXTRACT(DOW FROM gs.day) NOT IN (0, 6)
+            ) - (
+                SELECT COUNT(DISTINCT DATE(a2.timestamp))
+                FROM control_asistencias a2
+                WHERE a2.id_reloj = c.id_reloj
+                AND DATE(a2.timestamp) >= DATE_TRUNC('month', CURRENT_DATE)
+            ) as faltas_mes
+        FROM control_personal c
+        WHERE c.id_reloj IS NOT NULL
+        AND c.id NOT IN (
+            SELECT DISTINCT cp.id 
+            FROM control_personal cp
+            JOIN control_asistencias ca ON cp.id_reloj = ca.id_reloj
+            WHERE DATE(ca.timestamp) = CURRENT_DATE
+        )
+        ORDER BY c.nombre ASC
+    `);
+    ausentesHoy = ausentesRes.rows || [];
+
+} catch (e: any) {
     console.error("Error fetching personal VPS data:", e);
     error = e.message;
 }
@@ -40,13 +93,17 @@ const presentismoGrid = asistenciasDia.map(row => {
     let estado = 'Ausente';
     let entradaStr = null;
     let salidaStr = null;
+    let horasTrabajadas = 0;
+    let horasExtras = 0;
 
     if (row.entrada) {
         entradaStr = new Date(row.entrada).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
         estado = 'Presente';
-        if (row.salida && row.salida.getTime() !== row.entrada.getTime()) {
+        if (row.salida && new Date(row.salida).getTime() !== new Date(row.entrada).getTime()) {
             salidaStr = new Date(row.salida).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
             estado = 'Completado';
+            horasTrabajadas = parseFloat(row.horas_trabajadas || '0');
+            horasExtras = parseFloat(row.horas_extras_auto || '0');
         }
     }
 
@@ -56,121 +113,324 @@ const presentismoGrid = asistenciasDia.map(row => {
         funcion: row.funcion,
         entrada: entradaStr,
         salida: salidaStr,
-        estado: estado
+        estado,
+        horasTrabajadas,
+        horasExtras
     };
 });
 
+const totalHorasHoy = presentismoGrid.reduce((sum, r) => sum + r.horasTrabajadas, 0);
+const totalExtrasHoy = presentismoGrid.reduce((sum, r) => sum + r.horasExtras, 0);
+const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
 ---
 
 <CeoWorkspace title="Control de Personal y Asistencias" vendedor_id={sellerSession}>
-    <div class="personal-dashboard-container">
-        
-        <!-- Header / Error Banner -->
-        <div class="dashboard-header">
-            <div class="title-section">
-                <i class="fas fa-users-cog title-icon"></i>
+    <div class="personal-v2-container">
+
+        <!-- HEADER REDUCIDO -->
+        <div class="pg-header">
+            <div class="pg-header-left">
+                <i class="fas fa-users-cog pg-icon"></i>
                 <div>
-                    <h1>Gestión de Personal</h1>
-                    <p class="subtitle">Administra tu equipo y costos operativos</p>
+                    <div class="pg-title-row">
+                        <h1 class="pg-title">Gestión de Personal</h1>
+                        <span class="pg-version">{DASHBOARD_VERSION}</span>
+                    </div>
+                    <p class="pg-subtitle">Control de asistencia, nómina y RRHH operativo</p>
                 </div>
             </div>
-            <div class="header-actions">
-                <button class="action-btn primary" onclick="window.location.reload()">
+            <div class="pg-header-actions">
+                <button class="pg-btn pg-btn-secondary" onclick="window.location.reload()" id="btn-sync-reloj">
                     <i class="fas fa-sync-alt"></i> Sincronizar Reloj
+                </button>
+                <button class="pg-btn pg-btn-primary" onclick="openAddModal()" id="btn-add-employee">
+                    <i class="fas fa-user-plus"></i> Agregar Empleado
                 </button>
             </div>
         </div>
 
         {error && (
-            <div class="error-banner">
+            <div class="pg-error-banner">
                 <i class="fas fa-exclamation-triangle"></i>
-                <div>
-                    <strong>Error de conexión al VPS:</strong> {error}
+                <div><strong>Error de conexión al VPS:</strong> {error}</div>
+            </div>
+        )}
+
+        <!-- PANEL DE ALERTAS DE AUSENTES -->
+        {ausentesHoy.length > 0 && (
+            <div class="pg-alerts-bar">
+                <div class="pg-alerts-title">
+                    <i class="fas fa-bell"></i>
+                    <strong>Ausentes hoy ({ausentesHoy.length})</strong>
+                </div>
+                <div class="pg-alerts-list">
+                    {ausentesHoy.map((emp) => (
+                        <div class="pg-alert-chip">
+                            <span class="pg-alert-name">{emp.nombre}</span>
+                            {parseInt(emp.faltas_mes) > 0 && (
+                                <span class="pg-alert-faltas" title={`Faltas en el mes`}>
+                                    <i class="fas fa-calendar-times"></i> {emp.faltas_mes} falta{parseInt(emp.faltas_mes) > 1 ? 's' : ''}
+                                </span>
+                            )}
+                        </div>
+                    ))}
                 </div>
             </div>
         )}
 
-        <!-- Top Stats Bar -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">PLANTILLA ACTIVA</span>
-                    <i class="fas fa-users text-blue-400"></i>
+        <!-- STATS CARDS -->
+        <div class="pg-stats-grid">
+            <div class="pg-stat-card">
+                <div class="pg-stat-header">
+                    <span>PLANILLA ACTIVA</span>
+                    <i class="fas fa-users text-blue"></i>
                 </div>
-                <div class="stat-value">{personalList.length}</div>
-                <div class="stat-desc">Empleados registrados</div>
+                <div class="pg-stat-value">{personalList.length}</div>
+                <div class="pg-stat-desc">Empleados registrados</div>
             </div>
-            
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">PRESENTES HOY</span>
-                    <i class="fas fa-check-circle text-green-400"></i>
+            <div class="pg-stat-card">
+                <div class="pg-stat-header">
+                    <span>PRESENTES HOY</span>
+                    <i class="fas fa-check-circle text-green"></i>
                 </div>
-                <div class="stat-value">{presentismoGrid.filter(e => e.estado === 'Presente' || e.estado === 'Completado').length}</div>
-                <div class="stat-desc">Ficharon ingreso</div>
+                <div class="pg-stat-value text-green">{presentesHoy}</div>
+                <div class="pg-stat-desc">Ficharon ingreso</div>
             </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">AUSENTES</span>
-                    <i class="fas fa-user-times text-red-400"></i>
+            <div class="pg-stat-card">
+                <div class="pg-stat-header">
+                    <span>AUSENTES HOY</span>
+                    <i class="fas fa-user-times text-red"></i>
                 </div>
-                <div class="stat-value">{presentismoGrid.filter(e => e.estado === 'Ausente').length}</div>
-                <div class="stat-desc">Aún no registran entrada</div>
+                <div class="pg-stat-value text-red">{ausentesHoy.length}</div>
+                <div class="pg-stat-desc">Sin registrar entrada</div>
             </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">CONEXIÓN RELOJ</span>
-                    <i class="fas fa-wifi text-green-400"></i>
+            <div class="pg-stat-card">
+                <div class="pg-stat-header">
+                    <span>HORAS TRABAJADAS</span>
+                    <i class="fas fa-clock text-amber"></i>
                 </div>
-                <div class="stat-value text-green-400">OK</div>
-                <div class="stat-desc">Tailscale Tunnel Local->VPS</div>
+                <div class="pg-stat-value text-amber" id="stat-horas-total">{totalHorasHoy.toFixed(1)}h</div>
+                <div class="pg-stat-desc">Acumulado del día</div>
+            </div>
+            <div class="pg-stat-card">
+                <div class="pg-stat-header">
+                    <span>HORAS EXTRAS</span>
+                    <i class="fas fa-bolt text-purple"></i>
+                </div>
+                <div class="pg-stat-value text-purple" id="stat-extras-total">{totalExtrasHoy.toFixed(1)}h</div>
+                <div class="pg-stat-desc">Más de 8hs por turno</div>
             </div>
         </div>
 
-        <!-- Main Workspace -->
-        <div class="workspace-main">
-            <!-- Left Panel: Listado de Empleados (Planilla) -->
-            <div class="panel-section">
-                <div class="panel-header">
-                    <h2><i class="fas fa-address-book"></i> Nómina de Empleados</h2>
+        <!-- TABS -->
+        <div class="pg-tabs">
+            <button class="pg-tab active" id="tab-presentismo" onclick="switchTab('presentismo')">
+                <i class="fas fa-clock"></i> Presentismo
+            </button>
+            <button class="pg-tab" id="tab-nomina" onclick="switchTab('nomina')">
+                <i class="fas fa-address-book"></i> Nómina de Empleados
+            </button>
+        </div>
+
+        <!-- ============================================================ -->
+        <!--  TAB: PRESENTISMO                                             -->
+        <!-- ============================================================ -->
+        <div class="pg-workspace" id="workspace-presentismo">
+            <div class="pg-panel">
+                <div class="pg-panel-header">
+                    <div class="pg-panel-title">
+                        <i class="fas fa-clock"></i> Control de Asistencia
+                    </div>
+                    <div class="pg-panel-controls">
+                        <!-- Período Filter -->
+                        <div class="pg-period-selector">
+                            <button class="pg-period-btn active" data-periodo="dia" onclick="loadStats('dia')">
+                                <i class="fas fa-sun"></i> Hoy
+                            </button>
+                            <button class="pg-period-btn" data-periodo="semana" onclick="loadStats('semana')">
+                                <i class="fas fa-calendar-week"></i> Semana
+                            </button>
+                            <button class="pg-period-btn" data-periodo="mes" onclick="loadStats('mes')">
+                                <i class="fas fa-calendar-alt"></i> Mes
+                            </button>
+                            <button class="pg-period-btn" data-periodo="anio" onclick="loadStats('anio')">
+                                <i class="fas fa-calendar"></i> Año
+                            </button>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-left:8px;">
+                            <button class="pg-btn pg-btn-secondary pg-btn-sm" onclick="exportarExcel()" id="btn-export">
+                                <i class="fas fa-file-excel" style="color:#22c55e;"></i> Excel
+                            </button>
+                            <button class="pg-btn pg-btn-secondary pg-btn-sm" onclick="imprimirPresentismo()">
+                                <i class="fas fa-print"></i> Imprimir
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="panel-body table-responsive">
-                    <table class="data-table">
+
+                <!-- Loading State -->
+                <div id="presentismo-loading" class="pg-loading" style="display:none;">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando estadísticas...
+                </div>
+
+                <!-- Table: Daily View (default) -->
+                <div class="pg-panel-body" id="presentismo-table-container">
+                    <table class="pg-table" id="presentismo-table">
                         <thead>
                             <tr>
-                                <th>Nombre Completo</th>
-                                <th>Función/Sector</th>
+                                <th>Empleado</th>
+                                <th>Función</th>
+                                <th>Entrada</th>
+                                <th>Salida</th>
+                                <th>Hs. Trabajadas</th>
+                                <th>Hs. Extras</th>
+                                <th>Faltas/Mes</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="presentismo-tbody">
+                            {presentismoGrid.map((row) => (
+                                <tr class={row.estado === 'Ausente' ? 'row-absent' : ''}>
+                                    <td>
+                                        <div class="emp-name-cell">
+                                            <div class="pg-avatar">{row.nombre.charAt(0)}</div>
+                                            <span>{row.nombre}</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="pg-badge">{row.funcion || '-'}</span></td>
+                                    <td>
+                                        {row.entrada ? (
+                                            <span class="pg-time-badge pg-time-in">
+                                                <i class="fas fa-sign-in-alt"></i> {row.entrada}
+                                            </span>
+                                        ) : <span class="text-muted">-</span>}
+                                    </td>
+                                    <td>
+                                        {row.salida ? (
+                                            <span class="pg-time-badge pg-time-out">
+                                                <i class="fas fa-sign-out-alt"></i> {row.salida}
+                                            </span>
+                                        ) : <span class="text-muted">-</span>}
+                                    </td>
+                                    <td class="font-mono">
+                                        {row.horasTrabajadas > 0 ? (
+                                            <span class="text-green">{row.horasTrabajadas.toFixed(1)}h</span>
+                                        ) : <span class="text-muted">-</span>}
+                                    </td>
+                                    <td class="font-mono">
+                                        {row.horasExtras > 0 ? (
+                                            <span class="text-amber">{row.horasExtras.toFixed(1)}h</span>
+                                        ) : <span class="text-muted">-</span>}
+                                    </td>
+                                    <td id={`faltas-${row.id}`} class="text-center font-mono">
+                                        <span class="pg-faltas-badge" data-emp-id={row.id}>-</span>
+                                    </td>
+                                    <td>
+                                        {row.estado === 'Presente' && <span class="pg-status pg-status-present">En Turno</span>}
+                                        {row.estado === 'Completado' && <span class="pg-status pg-status-complete">Jornada OK</span>}
+                                        {row.estado === 'Ausente' && <span class="pg-status pg-status-absent">Ausente</span>}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Summary Bar -->
+                <div class="pg-summary-bar">
+                    <div class="pg-summary-item">
+                        <i class="fas fa-users"></i>
+                        <span>Total presentes: <strong id="sum-presentes">{presentesHoy}</strong></span>
+                    </div>
+                    <div class="pg-summary-item">
+                        <i class="fas fa-clock"></i>
+                        <span>Total horas: <strong id="sum-horas">{totalHorasHoy.toFixed(1)}h</strong></span>
+                    </div>
+                    <div class="pg-summary-item">
+                        <i class="fas fa-bolt"></i>
+                        <span>Total extras: <strong id="sum-extras">{totalExtrasHoy.toFixed(1)}h</strong></span>
+                    </div>
+                    <div class="pg-summary-item" id="sum-periodo-label">
+                        <i class="fas fa-calendar-day"></i>
+                        <span>Período: <strong>Hoy</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!--  TAB: NÓMINA                                                  -->
+        <!-- ============================================================ -->
+        <div class="pg-workspace" id="workspace-nomina" style="display:none;">
+            <div class="pg-panel">
+                <div class="pg-panel-header">
+                    <div class="pg-panel-title">
+                        <i class="fas fa-address-book"></i> Nómina de Empleados
+                    </div>
+                    <div class="pg-panel-controls">
+                        <button class="pg-btn pg-btn-primary pg-btn-sm" onclick="openAddModal()">
+                            <i class="fas fa-user-plus"></i> Agregar
+                        </button>
+                    </div>
+                </div>
+                <div class="pg-panel-body">
+                    <table class="pg-table" id="nomina-table">
+                        <thead>
+                            <tr>
+                                <th>Empleado</th>
+                                <th>Función / Sector</th>
                                 <th>Sueldo Base</th>
-                                <th>Acciones</th>
+                                <th>Forma de Pago</th>
+                                <th>ID Reloj</th>
+                                <th>Contacto</th>
+                                <th style="text-align:center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {personalList.map((emp) => (
                                 <tr>
                                     <td>
-                                        <div class="emp-name">
-                                            <div class="avatar-sm">{emp.nombre.charAt(0)}</div>
-                                            {emp.nombre}
+                                        <div class="emp-name-cell">
+                                            <div class="pg-avatar">{emp.nombre.charAt(0)}</div>
+                                            <div>
+                                                <div style="font-weight:600;color:var(--ps-highlight);">{emp.nombre}</div>
+                                                {emp.observaciones && (
+                                                    <div style="font-size:10px;color:var(--ps-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title={emp.observaciones}>
+                                                        {emp.observaciones}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
-                                    <td><span class="badge badge-outline">{emp.funcion}</span></td>
-                                    <td class="font-mono text-green-400">${parseFloat(emp.sueldo_base).toLocaleString('es-AR')}</td>
+                                    <td><span class="pg-badge">{emp.funcion || '-'}</span></td>
+                                    <td class="font-mono text-green">${parseFloat(emp.sueldo_base || '0').toLocaleString('es-AR')}</td>
                                     <td>
+                                        <span class={`pg-pago-badge pago-${(emp.forma_pago || 'efectivo').toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
+                                            {emp.forma_pago || 'Efectivo'}
+                                        </span>
+                                    </td>
+                                    <td class="font-mono text-muted">{emp.id_reloj || '-'}</td>
+                                    <td>
+                                        <div style="display:flex;flex-direction:column;gap:2px;font-size:11px;">
+                                            {emp.email && <span style="color:#60a5fa;"><i class="fas fa-envelope" style="width:12px;"></i> {emp.email}</span>}
+                                            {emp.whatsapp && <span style="color:#22c55e;"><i class="fab fa-whatsapp" style="width:12px;"></i> {emp.whatsapp}</span>}
+                                            {!emp.email && !emp.whatsapp && <span class="text-muted">-</span>}
+                                        </div>
+                                    </td>
+                                    <td style="text-align:center;">
                                         <button 
-                                            class="icon-btn text-blue-400 edit-btn" 
-                                            title="Editar Todos Sus Datos"
+                                            class="pg-icon-btn text-blue edit-btn" 
+                                            title="Editar empleado"
                                             data-emp={JSON.stringify(emp)}
                                         >
                                             <i class="fas fa-pen"></i>
                                         </button>
                                         <button 
-                                            class="icon-btn text-red-400 delete-btn" 
-                                            title="Eliminar Empleado"
-                                            style="margin-left: 8px;"
+                                            class="pg-icon-btn text-red delete-btn" 
+                                            title="Eliminar empleado"
                                             data-id={emp.id}
                                             data-name={emp.nombre}
+                                            style="margin-left:6px;"
                                         >
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -179,162 +439,395 @@ const presentismoGrid = asistenciasDia.map(row => {
                             ))}
                             {personalList.length === 0 && (
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">No hay empleados registrados en la base de datos.</td>
+                                    <td colspan="7" class="text-center text-muted" style="padding:30px;">
+                                        <i class="fas fa-users" style="font-size:24px;opacity:0.3;display:block;margin-bottom:8px;"></i>
+                                        No hay empleados registrados. Agregá el primero.
+                                    </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
             </div>
-
-            <!-- Right Panel: Fichadas de Hoy -->
-            <div class="panel-section">
-                <div class="panel-header">
-                    <h2><i class="fas fa-clock"></i> Presentismo (Día Actual)</h2>
-                </div>
-                <div class="panel-body table-responsive">
-                    <table class="data-table presentismo-table">
-                        <thead>
-                            <tr>
-                                <th>Empleado</th>
-                                <th>Entrada</th>
-                                <th>Salida</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {presentismoGrid.map((row) => (
-                                <tr class={row.estado === 'Ausente' ? 'row-absent' : ''}>
-                                    <td class="font-medium">{row.nombre}</td>
-                                    <td class="time-cell">
-                                        {row.entrada ? (
-                                            <span class="time-badge in"><i class="fas fa-sign-in-alt"></i> {row.entrada}</span>
-                                        ) : (
-                                            <span class="text-muted">-</span>
-                                        )}
-                                    </td>
-                                    <td class="time-cell">
-                                        {row.salida ? (
-                                            <span class="time-badge out"><i class="fas fa-sign-out-alt"></i> {row.salida}</span>
-                                        ) : (
-                                            <span class="text-muted">-</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        {row.estado === 'Presente' && <span class="status-badge status-present">En Turno</span>}
-                                        {row.estado === 'Completado' && <span class="status-badge status-complete">Jornada Completa</span>}
-                                        {row.estado === 'Ausente' && <span class="status-badge status-absent">Ausente</span>}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     </div>
 
-    <!-- Edit Modal -->
-    <div id="edit-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3 class="modal-title">Editar Empleado</h3>
-            <form id="edit-form" class="edit-form">
-                <input type="hidden" id="edit_id" name="id" />
-                
-                <div class="form-group">
-                    <label>Nombre Completo</label>
-                    <input type="text" id="edit_nombre" name="nombre" required />
-                </div>
-                
-                <div class="form-group">
-                    <label>Función / Sector</label>
-                    <input type="text" id="edit_funcion" name="funcion" />
-                </div>
-                
-                <div class="form-group">
-                    <label>Sueldo Base ($)</label>
-                    <input type="number" step="0.01" id="edit_sueldo" name="sueldo_base" />
-                </div>
-                
-                <div class="form-group">
-                    <label>ID Reloj Biométrico</label>
-                    <input type="text" id="edit_id_reloj" name="id_reloj" placeholder="Ej: 103" />
-                </div>
-                
-                <div class="form-group">
-                    <label>Email (para recibos)</label>
-                    <input type="email" id="edit_email" name="email" placeholder="ejemplo@alvarezplacas.com.ar" />
-                </div>
-                
-                <div class="form-group">
-                    <label>WhatsApp</label>
-                    <input type="text" id="edit_whatsapp" name="whatsapp" placeholder="549..." />
+    <!-- ============================================================ -->
+    <!--  MODAL: EDITAR / AGREGAR EMPLEADO                             -->
+    <!-- ============================================================ -->
+    <div id="emp-modal" class="pg-modal-overlay" style="display:none;">
+        <div class="pg-modal">
+            <div class="pg-modal-header">
+                <h3 id="modal-title"><i class="fas fa-user-edit"></i> Editar Empleado</h3>
+                <button class="pg-modal-close" onclick="closeEmpModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="emp-form" class="pg-modal-body">
+                <input type="hidden" id="emp-id" name="id" />
+
+                <!-- Section: Datos Básicos -->
+                <div class="pg-form-section">
+                    <div class="pg-form-section-title">
+                        <i class="fas fa-id-card"></i> Datos Básicos
+                    </div>
+                    <div class="pg-form-grid-2">
+                        <div class="pg-form-group">
+                            <label>Nombre Completo *</label>
+                            <input type="text" id="emp-nombre" name="nombre" required placeholder="Ej: Juan Pérez" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Función / Sector</label>
+                            <input type="text" id="emp-funcion" name="funcion" placeholder="Ej: Cortador, Vendedor" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Sueldo Base ($)</label>
+                            <input type="number" step="0.01" id="emp-sueldo" name="sueldo_base" placeholder="0.00" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Forma de Pago</label>
+                            <select id="emp-forma-pago" name="forma_pago">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Banco">Banco (transferencia)</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Mixto">Mixto</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
-                    <button type="submit" class="btn-save">Guardar Cambios</button>
+                <!-- Section: Reloj & Contacto -->
+                <div class="pg-form-section">
+                    <div class="pg-form-section-title">
+                        <i class="fas fa-fingerprint"></i> Reloj Biométrico & Contacto
+                    </div>
+                    <div class="pg-form-grid-3">
+                        <div class="pg-form-group">
+                            <label>ID Reloj Biométrico</label>
+                            <input type="text" id="emp-id-reloj" name="id_reloj" placeholder="Ej: 103" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Email (recibos)</label>
+                            <input type="email" id="emp-email" name="email" placeholder="correo@ejemplo.com" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>WhatsApp</label>
+                            <input type="text" id="emp-whatsapp" name="whatsapp" placeholder="549..." />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Presentismo -->
+                <div class="pg-form-section">
+                    <div class="pg-form-section-title">
+                        <i class="fas fa-clock"></i> Presentismo y Horas
+                    </div>
+                    <div class="pg-form-grid-2">
+                        <div class="pg-form-group">
+                            <label>Horas Extras (carga manual)</label>
+                            <input type="number" step="0.1" id="emp-horas-extras" name="horas_extras_manual" placeholder="0.0" />
+                            <small style="color:var(--ps-text-muted);font-size:10px;">Las horas extras automáticas se calculan del reloj.</small>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Adelantos ($)</label>
+                            <input type="number" step="0.01" id="emp-adelantos" name="adelantos" placeholder="0.00" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Indumentaria -->
+                <div class="pg-form-section">
+                    <div class="pg-form-section-title">
+                        <i class="fas fa-tshirt"></i> Indumentaria / EPP
+                    </div>
+                    <div class="pg-form-grid-2">
+                        <div class="pg-form-group">
+                            <label>Indumentaria Entregada</label>
+                            <input type="text" id="emp-indumentaria" name="indumentaria_entregada" placeholder="Ej: Remera, Pantalón, Calzado" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Fecha de Entrega</label>
+                            <input type="date" id="emp-fecha-indumentaria" name="fecha_entrega_indumentaria" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Observaciones -->
+                <div class="pg-form-section">
+                    <div class="pg-form-section-title">
+                        <i class="fas fa-sticky-note"></i> Observaciones
+                    </div>
+                    <div class="pg-form-group">
+                        <textarea id="emp-observaciones" name="observaciones" rows="3" placeholder="Notas internas sobre el empleado..."></textarea>
+                    </div>
+                </div>
+
+                <div class="pg-modal-actions">
+                    <button type="button" class="pg-btn pg-btn-ghost" onclick="closeEmpModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="pg-btn pg-btn-primary" id="emp-save-btn">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script is:inline>
-        const modal = document.getElementById('edit-modal');
-        const form = document.getElementById('edit-form');
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
+    <script is:inline>
+        // =============================================
+        //  TAB SWITCHING
+        // =============================================
+        function switchTab(tab) {
+            document.getElementById('workspace-presentismo').style.display = tab === 'presentismo' ? 'block' : 'none';
+            document.getElementById('workspace-nomina').style.display = tab === 'nomina' ? 'block' : 'none';
+            document.getElementById('tab-presentismo').classList.toggle('active', tab === 'presentismo');
+            document.getElementById('tab-nomina').classList.toggle('active', tab === 'nomina');
+        }
+
+        // =============================================
+        //  PERIOD STATS LOADER
+        // =============================================
+        let currentStatsData = null;
+
+        async function loadStats(periodo) {
+            // Update button states
+            document.querySelectorAll('.pg-period-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.periodo === periodo);
+            });
+
+            const loading = document.getElementById('presentismo-loading');
+            const container = document.getElementById('presentismo-table-container');
+            loading.style.display = 'flex';
+            container.style.display = 'none';
+
+            try {
+                const res = await fetch(`/api/ceo/personal-stats?periodo=${periodo}`);
+                const json = await res.json();
+
+                if (!json.success) throw new Error(json.error);
+
+                currentStatsData = json;
+
+                if (periodo === 'dia') {
+                    // Daily view: restore server-rendered table
+                    loading.style.display = 'none';
+                    container.style.display = 'block';
+                    // Update faltas from API
+                    if (json.stats) {
+                        json.stats.forEach(emp => {
+                            const el = document.querySelector(`.pg-faltas-badge[data-emp-id="${emp.id}"]`);
+                            if (el) {
+                                el.textContent = emp.faltas_mes > 0 ? emp.faltas_mes + ' falta' + (emp.faltas_mes > 1 ? 's' : '') : '✓ Ninguna';
+                                el.style.color = emp.faltas_mes > 2 ? '#f87171' : emp.faltas_mes > 0 ? '#fbbf24' : '#34d399';
+                            }
+                        });
+                    }
+                    updateSummary(json);
+                } else {
+                    // Multi-day view: render period table
+                    renderPeriodTable(json, periodo);
+                    loading.style.display = 'none';
+                    container.style.display = 'block';
+                    updateSummary(json);
+                }
+
+                // Update period label
+                const labels = { dia: 'Hoy', semana: 'Esta semana', mes: 'Este mes', anio: 'Este año' };
+                const sumPeriodo = document.getElementById('sum-periodo-label');
+                if (sumPeriodo) sumPeriodo.innerHTML = `<i class="fas fa-calendar-day"></i><span>Período: <strong>${labels[periodo]}</strong></span>`;
+
+            } catch (err) {
+                loading.style.display = 'none';
+                container.style.display = 'block';
+                console.error('Error loading stats:', err);
+            }
+        }
+
+        function renderPeriodTable(json, periodo) {
+            const tbody = document.getElementById('presentismo-tbody');
+            if (!tbody || !json.stats) return;
+
+            tbody.innerHTML = json.stats.map(emp => {
+                const hs = parseFloat(emp.horas_totales) || 0;
+                const dias = parseInt(emp.dias_presentes) || 0;
+                const faltas = parseInt(emp.faltas_mes) || 0;
+                const faltasColor = faltas > 2 ? '#f87171' : faltas > 0 ? '#fbbf24' : '#34d399';
+                const inicial = (emp.nombre || '?').charAt(0);
+
+                return `
+                    <tr>
+                        <td><div class="emp-name-cell"><div class="pg-avatar">${inicial}</div><span>${emp.nombre}</span></div></td>
+                        <td><span class="pg-badge">${emp.funcion || '-'}</span></td>
+                        <td class="text-center font-mono text-green">${hs.toFixed(1)}h</td>
+                        <td class="text-center font-mono" style="color:#fbbf24">${parseFloat(emp.horas_extras_manual || '0').toFixed(1)}h</td>
+                        <td class="text-center font-mono">${dias} día${dias !== 1 ? 's' : ''}</td>
+                        <td class="text-center font-mono" style="color:${faltasColor}">
+                            ${faltas > 0 ? faltas + ' falta' + (faltas > 1 ? 's' : '') : '<span style="color:#34d399">✓ Ninguna</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Update thead for period view
+            const thead = tbody.closest('table').querySelector('thead tr');
+            if (thead) {
+                thead.innerHTML = `
+                    <th>Empleado</th>
+                    <th>Función</th>
+                    <th>Horas Totales</th>
+                    <th>Horas Extras</th>
+                    <th>Días Presentes</th>
+                    <th>Faltas del Mes</th>
+                `;
+            }
+        }
+
+        function updateSummary(json) {
+            if (!json.stats) return;
+            const totalHs = json.stats.reduce((s, e) => s + (parseFloat(e.horas_totales) || 0), 0);
+            const totalPresentes = json.stats.filter(e => parseInt(e.dias_presentes) > 0).length;
+            
+            const sumPresentes = document.getElementById('sum-presentes');
+            const sumHoras = document.getElementById('sum-horas');
+            
+            if (sumPresentes) sumPresentes.textContent = totalPresentes;
+            if (sumHoras) sumHoras.textContent = totalHs.toFixed(1) + 'h';
+
+            const statHorasEl = document.getElementById('stat-horas-total');
+            if (statHorasEl) statHorasEl.textContent = totalHs.toFixed(1) + 'h';
+        }
+
+        // =============================================
+        //  EXPORT TO EXCEL
+        // =============================================
+        function exportarExcel() {
+            const table = document.getElementById('presentismo-table');
+            if (!table) return;
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(table);
+            
+            const periodoBtn = document.querySelector('.pg-period-btn.active');
+            const periodoLabel = periodoBtn ? periodoBtn.textContent.trim() : 'Hoy';
+            const fecha = new Date().toLocaleDateString('es-AR').replace(/\//g, '-');
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Presentismo');
+            XLSX.writeFile(wb, `presentismo_${periodoLabel}_${fecha}.xlsx`);
+        }
+
+        // =============================================
+        //  PRINT
+        // =============================================
+        function imprimirPresentismo() {
+            const table = document.getElementById('presentismo-table');
+            if (!table) return;
+            const html = `
+                <html><head>
+                    <title>Presentismo — Alvarez Placas</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; font-size: 12px; }
+                        h2 { margin-bottom: 10px; }
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+                        th { background: #f0f0f0; font-weight: bold; }
+                        tr:nth-child(even) { background: #f9f9f9; }
+                    </style>
+                </head>
+                <body>
+                    <h2>Control de Presentismo — Alvarez Placas</h2>
+                    <p style="margin-bottom:10px;">Fecha de impresión: ${new Date().toLocaleDateString('es-AR')}</p>
+                    ${table.outerHTML}
+                </body></html>
+            `;
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+            win.print();
+        }
+
+        // =============================================
+        //  MODAL: AGREGAR / EDITAR EMPLEADO
+        // =============================================
+        const empModal = document.getElementById('emp-modal');
+        const empForm = document.getElementById('emp-form');
+
+        function openAddModal() {
+            document.getElementById('modal-title').innerHTML = '<i class="fas fa-user-plus"></i> Agregar Empleado';
+            empForm.reset();
+            document.getElementById('emp-id').value = '';
+            empModal.style.display = 'flex';
+        }
+
+        function closeEmpModal() {
+            empModal.style.display = 'none';
+        }
+
+        empModal.addEventListener('click', (e) => {
+            if (e.target === empModal) closeEmpModal();
+        });
+
+        // Edit buttons
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const emp = JSON.parse(btn.dataset.emp);
-                document.getElementById('edit_id').value = emp.id;
-                document.getElementById('edit_nombre').value = emp.nombre || '';
-                document.getElementById('edit_funcion').value = emp.funcion || '';
-                document.getElementById('edit_sueldo').value = emp.sueldo_base || '';
-                document.getElementById('edit_id_reloj').value = emp.id_reloj || '';
-                document.getElementById('edit_email').value = emp.email || '';
-                document.getElementById('edit_whatsapp').value = emp.whatsapp || '';
-                
-                modal.classList.remove('hidden');
+                document.getElementById('modal-title').innerHTML = '<i class="fas fa-user-edit"></i> Editar Empleado';
+                document.getElementById('emp-id').value = emp.id || '';
+                document.getElementById('emp-nombre').value = emp.nombre || '';
+                document.getElementById('emp-funcion').value = emp.funcion || '';
+                document.getElementById('emp-sueldo').value = emp.sueldo_base || '';
+                document.getElementById('emp-id-reloj').value = emp.id_reloj || '';
+                document.getElementById('emp-email').value = emp.email || '';
+                document.getElementById('emp-whatsapp').value = emp.whatsapp || '';
+                document.getElementById('emp-forma-pago').value = emp.forma_pago || 'Efectivo';
+                document.getElementById('emp-horas-extras').value = emp.horas_extras_manual || '';
+                document.getElementById('emp-adelantos').value = emp.adelantos || '';
+                document.getElementById('emp-indumentaria').value = emp.indumentaria_entregada || '';
+                document.getElementById('emp-fecha-indumentaria').value = emp.fecha_entrega_indumentaria 
+                    ? new Date(emp.fecha_entrega_indumentaria).toISOString().split('T')[0] 
+                    : '';
+                document.getElementById('emp-observaciones').value = emp.observaciones || '';
+                empModal.style.display = 'flex';
             });
         });
 
-        function closeEditModal() {
-            modal.classList.add('hidden');
-        }
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeEditModal();
-        });
-
-        form.addEventListener('submit', async (e) => {
+        // Form submit (create or update)
+        empForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const submitBtn = form.querySelector('.btn-save');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Guardando...';
+            const saveBtn = document.getElementById('emp-save-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
-            const formData = new FormData(form);
+            const formData = new FormData(empForm);
             const data = Object.fromEntries(formData);
+            const isEdit = !!data.id;
+            const endpoint = isEdit ? '/api/ceo/update-personal' : '/api/ceo/add-personal';
 
             try {
-                const res = await fetch('/api/ceo/update-personal', {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
+
                 if (res.ok) {
                     window.location.reload();
                 } else {
-                    alert('Error al guardar: ' + await res.text());
+                    const errText = await res.text();
+                    alert('Error al guardar: ' + errText);
                 }
             } catch (err) {
                 alert('Error de red');
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Guardar Cambios';
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
             }
         });
 
+        // Delete buttons
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = btn.dataset.id;
@@ -363,74 +856,368 @@ const presentismoGrid = asistenciasDia.map(row => {
                 }
             });
         });
+
+        // Load faltas on startup (daily view)
+        loadStats('dia');
     </script>
 
-    <!-- STYLE SYSTEM -->
     <style>
-        .personal-dashboard-container { display: flex; flex-direction: column; height: 100%; gap: 15px; }
-        .dashboard-header { display: flex; justify-content: space-between; align-items: center; background-color: var(--ps-panel-bg); border: 1px solid var(--ps-panel-border); border-radius: 6px; padding: 15px 20px; }
-        .title-section { display: flex; align-items: center; gap: 15px; }
-        .title-icon { font-size: 32px; color: var(--ps-accent); }
-        .dashboard-header h1 { font-size: 20px; color: var(--ps-highlight); font-weight: 600; margin-bottom: 4px; }
-        .dashboard-header .subtitle { font-size: 12px; color: var(--ps-text-muted); }
-        .header-actions .action-btn { background-color: var(--ps-bg); border: 1px solid var(--ps-panel-border); color: var(--ps-text-main); padding: 8px 16px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
-        .header-actions .action-btn.primary { background-color: rgba(46, 96, 156, 0.2); border-color: var(--ps-accent); color: var(--ps-highlight); }
-        .header-actions .action-btn.primary:hover { background-color: var(--ps-accent); }
-        .error-banner { background-color: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 12px 16px; border-radius: 4px; display: flex; gap: 12px; align-items: center; font-size: 13px; }
-        
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        .stat-card { background-color: var(--ps-panel-bg); border: 1px solid var(--ps-panel-border); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
-        .stat-header { display: flex; justify-content: space-between; align-items: center; color: var(--ps-text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; }
-        .stat-value { font-size: 24px; font-weight: 700; color: var(--ps-highlight); }
-        .stat-desc { font-size: 10px; color: var(--ps-text-muted); }
-        
-        .workspace-main { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
-        .panel-section { background-color: var(--ps-panel-bg); border: 1px solid var(--ps-panel-border); border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; }
-        .panel-header { padding: 12px 16px; border-bottom: 1px solid var(--ps-panel-border); background-color: var(--ps-toolbar-bg); }
-        .panel-header h2 { font-size: 14px; color: var(--ps-highlight); font-weight: 600; display: flex; align-items: center; gap: 8px; }
-        .panel-body { padding: 0; flex: 1; overflow-y: auto; }
-        
-        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .data-table th { text-align: left; padding: 10px 16px; background-color: rgba(0,0,0,0.2); color: var(--ps-text-muted); font-weight: 600; border-bottom: 1px solid var(--ps-panel-border); }
-        .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--ps-panel-border); color: var(--ps-text-main); vertical-align: middle; }
-        .data-table tbody tr:hover { background-color: rgba(255,255,255,0.02); }
-        .emp-name { display: flex; align-items: center; gap: 10px; font-weight: 500; color: var(--ps-highlight); }
-        .avatar-sm { width: 28px; height: 28px; border-radius: 50%; background-color: var(--ps-accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-        .badge-outline { border: 1px solid var(--ps-panel-border); color: var(--ps-text-muted); }
-        .icon-btn { background: transparent; border: none; cursor: pointer; padding: 4px; opacity: 0.7; transition: opacity 0.2s; }
-        .icon-btn:hover { opacity: 1; }
-        
-        .row-absent td { opacity: 0.6; }
-        .time-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 4px; font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; }
-        .time-badge.in { background-color: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
-        .time-badge.out { background-color: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
-        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        .status-present { background-color: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-        .status-complete { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .status-absent { background-color: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
-        
-        /* Modal Styles */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .modal-overlay.hidden { display: none; }
-        .modal-content { background: var(--ps-bg); border: 1px solid var(--ps-panel-border); border-radius: 8px; width: 100%; max-width: 500px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .modal-title { font-size: 18px; color: var(--ps-highlight); margin-bottom: 20px; font-weight: 600; border-bottom: 1px solid var(--ps-panel-border); padding-bottom: 10px; }
-        .edit-form { display: grid; gap: 15px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group label { font-size: 11px; font-weight: 600; color: var(--ps-text-muted); text-transform: uppercase; }
-        .form-group input { background: rgba(0,0,0,0.2); border: 1px solid var(--ps-panel-border); border-radius: 4px; padding: 10px 12px; color: var(--ps-text-main); font-size: 13px; transition: border-color 0.2s; }
-        .form-group input:focus { outline: none; border-color: var(--ps-accent); }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; }
-        .modal-actions button { padding: 10px 20px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .btn-cancel { background: transparent; border: 1px solid var(--ps-panel-border); color: var(--ps-text-muted); }
-        .btn-cancel:hover { background: rgba(255,255,255,0.05); color: var(--ps-text-main); }
-        .btn-save { background: var(--ps-accent); border: 1px solid var(--ps-accent); color: white; }
-        .btn-save:hover { filter: brightness(1.1); }
-        
+        /* =============================================
+           PERSONAL DASHBOARD v2 — DESIGN SYSTEM
+           ============================================= */
+        .personal-v2-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+        }
+
+        /* Header */
+        .pg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px;
+            padding: 10px 16px;
+            flex-shrink: 0;
+        }
+        .pg-header-left { display: flex; align-items: center; gap: 12px; }
+        .pg-icon { font-size: 24px; color: var(--ps-accent); }
+        .pg-title-row { display: flex; align-items: center; gap: 8px; }
+        .pg-title { font-size: 16px; font-weight: 700; color: var(--ps-highlight); }
+        .pg-version {
+            background: rgba(46,96,156,0.3);
+            border: 1px solid rgba(46,96,156,0.5);
+            color: #60a5fa;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 20px;
+            font-family: 'Roboto Mono', monospace;
+        }
+        .pg-subtitle { font-size: 11px; color: var(--ps-text-muted); margin-top: 2px; }
+        .pg-header-actions { display: flex; gap: 8px; }
+
+        /* Buttons */
+        .pg-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 14px; border-radius: 4px;
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            border: none; transition: all 0.2s; white-space: nowrap;
+        }
+        .pg-btn-primary {
+            background: var(--ps-accent); color: #fff;
+        }
+        .pg-btn-primary:hover { background: var(--ps-accent-hover); }
+        .pg-btn-secondary {
+            background: var(--ps-toolbar-bg);
+            border: 1px solid var(--ps-panel-border);
+            color: var(--ps-text-main);
+        }
+        .pg-btn-secondary:hover { background: var(--ps-panel-border); color: var(--ps-highlight); }
+        .pg-btn-ghost {
+            background: transparent;
+            border: 1px solid var(--ps-panel-border);
+            color: var(--ps-text-muted);
+        }
+        .pg-btn-ghost:hover { color: var(--ps-text-main); }
+        .pg-btn-sm { padding: 5px 10px; font-size: 11px; }
+
+        /* Error */
+        .pg-error-banner {
+            display: flex; gap: 12px; align-items: center;
+            background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5; padding: 10px 14px; border-radius: 4px; font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        /* Alerts bar */
+        .pg-alerts-bar {
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: 6px; padding: 8px 14px;
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .pg-alerts-title {
+            display: flex; align-items: center; gap: 8px;
+            color: #f87171; font-size: 12px; flex-shrink: 0;
+        }
+        .pg-alerts-title i { animation: pulse-badge 2s infinite; }
+        @keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .pg-alerts-list { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pg-alert-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(239,68,68,0.12);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 20px; padding: 3px 10px; font-size: 11px;
+        }
+        .pg-alert-name { color: #fca5a5; font-weight: 600; }
+        .pg-alert-faltas { color: #f87171; font-size: 10px; }
+
+        /* Stats Grid */
+        .pg-stats-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            gap: 10px; flex-shrink: 0;
+        }
+        .pg-stat-card {
+            background: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px; padding: 10px 12px;
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .pg-stat-header {
+            display: flex; justify-content: space-between;
+            font-size: 10px; font-weight: 700;
+            text-transform: uppercase; color: var(--ps-text-muted);
+        }
+        .pg-stat-value { font-size: 22px; font-weight: 700; color: var(--ps-highlight); }
+        .pg-stat-desc { font-size: 10px; color: var(--ps-text-muted); }
+
+        /* Tabs */
+        .pg-tabs {
+            display: flex; gap: 4px; flex-shrink: 0;
+        }
+        .pg-tab {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 7px 16px; background: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 4px 4px 0 0; border-bottom: none;
+            color: var(--ps-text-muted); font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .pg-tab:hover { color: var(--ps-text-main); }
+        .pg-tab.active {
+            background: var(--ps-bg); color: var(--ps-highlight);
+            border-color: var(--ps-panel-border);
+            border-bottom: 2px solid var(--ps-accent);
+        }
+
+        /* Workspace panels */
+        .pg-workspace { flex: 1; overflow: hidden; min-height: 0; }
+        .pg-panel {
+            background: var(--ps-panel-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 0 6px 6px 6px;
+            display: flex; flex-direction: column;
+            height: 100%; overflow: hidden;
+        }
+        .pg-panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px;
+            background: var(--ps-toolbar-bg);
+            border-bottom: 1px solid var(--ps-panel-border);
+            flex-shrink: 0;
+        }
+        .pg-panel-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 600; color: var(--ps-highlight);
+        }
+        .pg-panel-controls { display: flex; align-items: center; gap: 8px; }
+        .pg-panel-body { flex: 1; overflow-y: auto; }
+
+        /* Period selector */
+        .pg-period-selector {
+            display: flex; background: var(--ps-bg);
+            border: 1px solid var(--ps-panel-border); border-radius: 4px; overflow: hidden;
+        }
+        .pg-period-btn {
+            padding: 5px 12px; background: transparent; border: none;
+            color: var(--ps-text-muted); font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; white-space: nowrap;
+            border-right: 1px solid var(--ps-panel-border);
+            display: flex; align-items: center; gap: 5px;
+        }
+        .pg-period-btn:last-child { border-right: none; }
+        .pg-period-btn:hover { color: var(--ps-text-main); background: rgba(255,255,255,0.05); }
+        .pg-period-btn.active {
+            background: var(--ps-accent); color: #fff;
+        }
+
+        /* Loading */
+        .pg-loading {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; padding: 40px;
+            color: var(--ps-text-muted); font-size: 13px;
+        }
+
+        /* Table */
+        .pg-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .pg-table th {
+            text-align: left; padding: 9px 14px;
+            background: rgba(0,0,0,0.2);
+            color: var(--ps-text-muted); font-weight: 700; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--ps-panel-border);
+            position: sticky; top: 0; z-index: 1;
+        }
+        .pg-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--ps-panel-border);
+            color: var(--ps-text-main); vertical-align: middle;
+        }
+        .pg-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+        .row-absent td { opacity: 0.55; }
+
+        .emp-name-cell { display: flex; align-items: center; gap: 10px; }
+        .pg-avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: var(--ps-accent); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 12px; flex-shrink: 0;
+        }
+        .pg-badge {
+            display: inline-block; padding: 3px 7px; border-radius: 3px;
+            font-size: 10px; font-weight: 500;
+            border: 1px solid var(--ps-panel-border); color: var(--ps-text-muted);
+        }
+        .pg-time-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 8px; border-radius: 4px;
+            font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600;
+        }
+        .pg-time-in { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+        .pg-time-out { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+        .pg-status {
+            display: inline-block; padding: 3px 8px; border-radius: 3px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+        }
+        .pg-status-present { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+        .pg-status-complete { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+        .pg-status-absent { background: rgba(239,68,68,0.08); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+
+        /* Payment badge */
+        .pg-pago-badge {
+            display: inline-block; padding: 3px 8px; border-radius: 20px;
+            font-size: 10px; font-weight: 700;
+        }
+        .pago-banco { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+        .pago-efectivo { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+        .pago-cheque { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+        .pago-mixto { background: rgba(139,92,246,0.1); color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
+        /* Banco (transferencia) maps to .pago-bancotransferencia via js strip */
+        .pago-bancotransferencia { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+
+        /* Summary bar */
+        .pg-summary-bar {
+            display: flex; gap: 20px; align-items: center;
+            padding: 8px 14px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid var(--ps-panel-border);
+            font-size: 11px; flex-shrink: 0;
+        }
+        .pg-summary-item { display: flex; align-items: center; gap: 7px; color: var(--ps-text-muted); }
+        .pg-summary-item strong { color: var(--ps-highlight); }
+
+        /* Icon buttons */
+        .pg-icon-btn {
+            background: transparent; border: none;
+            cursor: pointer; padding: 5px; border-radius: 4px;
+            opacity: 0.7; transition: all 0.15s;
+        }
+        .pg-icon-btn:hover { opacity: 1; background: rgba(255,255,255,0.08); }
+
+        /* Colors */
+        .text-green { color: #34d399; }
+        .text-red { color: #f87171; }
+        .text-blue { color: #60a5fa; }
+        .text-amber { color: #fbbf24; }
+        .text-purple { color: #a78bfa; }
         .text-muted { color: var(--ps-text-muted); }
         .text-center { text-align: center; }
-        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-        .font-medium { font-weight: 500; }
         .font-mono { font-family: 'Roboto Mono', monospace; }
+
+        /* =============================================
+           MODAL STYLES
+           ============================================= */
+        .pg-modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.82);
+            backdrop-filter: blur(5px);
+            z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pg-modal {
+            background: var(--ps-bg);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 10px;
+            width: 100%; max-width: 640px;
+            max-height: 88vh;
+            display: flex; flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            animation: modalIn 0.2s ease-out;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.98); }
+            to { opacity: 1; transform: none; }
+        }
+        .pg-modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--ps-panel-border);
+            background: var(--ps-toolbar-bg);
+            border-radius: 10px 10px 0 0; flex-shrink: 0;
+        }
+        .pg-modal-header h3 { font-size: 15px; font-weight: 700; color: var(--ps-highlight); display:flex;align-items:center;gap:8px; }
+        .pg-modal-close {
+            background: transparent; border: none;
+            color: var(--ps-text-muted); cursor: pointer; font-size: 14px;
+            padding: 4px 6px; border-radius: 4px; transition: all 0.15s;
+        }
+        .pg-modal-close:hover { color: #f87171; background: rgba(239,68,68,0.1); }
+        .pg-modal-body {
+            flex: 1; overflow-y: auto; padding: 20px;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .pg-form-section {
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 6px; padding: 14px;
+        }
+        .pg-form-section-title {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            color: var(--ps-text-muted); letter-spacing: 0.5px;
+            margin-bottom: 12px; padding-bottom: 8px;
+            border-bottom: 1px solid var(--ps-panel-border);
+        }
+        .pg-form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .pg-form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .pg-form-group { display: flex; flex-direction: column; gap: 5px; }
+        .pg-form-group label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            color: var(--ps-text-muted); letter-spacing: 0.3px;
+        }
+        .pg-form-group input,
+        .pg-form-group select,
+        .pg-form-group textarea {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--ps-panel-border);
+            border-radius: 4px; padding: 9px 12px;
+            color: var(--ps-text-main); font-size: 13px;
+            transition: border-color 0.2s; resize: none;
+            font-family: inherit;
+        }
+        .pg-form-group input:focus,
+        .pg-form-group select:focus,
+        .pg-form-group textarea:focus {
+            outline: none; border-color: var(--ps-accent);
+            background: rgba(46,96,156,0.05);
+        }
+        .pg-form-group select { cursor: pointer; }
+        .pg-form-group select option { background: var(--ps-toolbar-bg); }
+        .pg-modal-actions {
+            display: flex; justify-content: flex-end; gap: 10px;
+            padding-top: 6px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .pg-stats-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 900px) {
+            .pg-form-grid-2, .pg-form-grid-3 { grid-template-columns: 1fr; }
+        }
     </style>
 </CeoWorkspace>
