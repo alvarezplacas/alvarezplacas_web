@@ -1,3 +1,8 @@
 ---
-return Astro.redirect('/login');
+import Page from '@home/pages/login.astro';
+
+const sellerSession = Astro.cookies.get('seller_session')?.value;
+if (sellerSession) return Astro.redirect('/vendedor');
+
 ---
+<Page />

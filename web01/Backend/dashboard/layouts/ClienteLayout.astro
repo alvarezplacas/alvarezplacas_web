@@ -3,6 +3,7 @@
  * ClienteLayout - Portal de Clientes Preferenciales.
  */
 import '../../../Frontend/home/styles/global.css';
+import { CommunicationService } from '../logic/communication.js';
 
 interface Props {
 	title: string;
@@ -10,6 +11,13 @@ interface Props {
 }
 
 const { title, userName = "Cliente Alvarez" } = Astro.props;
+const clientId = Astro.cookies.get('client_session')?.value || Astro.url.searchParams.get('id');
+let unreadCount = 0;
+if (clientId) {
+    try {
+        unreadCount = await CommunicationService.getUnreadCount(clientId);
+    } catch (e) {}
+}
 ---
 
 <!doctype html>
@@ -45,18 +53,37 @@ const { title, userName = "Cliente Alvarez" } = Astro.props;
                     <a href="/cliente" class="text-[11px] font-black uppercase tracking-widest text-primary">Mi Panel</a>
                     <a href="/cliente/pedidos" class="text-[11px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors">Mis Pedidos</a>
                     <a href="/cliente/creador-presupuestos" class="text-[11px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors">Presupuestos</a>
+                    <a href={`/cliente/mensajes${clientId ? '?id=' + clientId : ''}`} class="relative text-[11px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors flex items-center gap-2">
+                        Mensajes
+                        {unreadCount > 0 && (
+                            <span class="absolute -top-2 -right-3 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] font-black animate-pulse">
+                                {unreadCount}
+                            </span>
+                        )}
+                    </a>
                 </nav>
             </div>
 
-            <div class="flex items-center gap-6">
+            <div class="flex items-center gap-4 md:gap-6">
                 <div class="hidden sm:flex flex-col items-end">
                     <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Bienvenido</p>
                     <p class="text-sm font-bold text-white leading-none">{userName}</p>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center shadow-lg shadow-primary/20">
+                
+                <a href={`/cliente/mensajes${clientId ? '?id=' + clientId : ''}`} class="relative w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-primary/20 transition-all border border-white/5 shadow-lg">
+                    <i class="fas fa-comment-alt text-sm md:text-base"></i>
+                    {unreadCount > 0 && (
+                        <span class="absolute -top-2 -right-2 md:-top-1 md:-right-1 w-4 h-4 md:w-5 md:h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-black animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]">
+                            {unreadCount}
+                        </span>
+                    )}
+                </a>
+
+                <div class="hidden md:flex w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-orange-600 items-center justify-center shadow-lg shadow-primary/20">
                     <i class="fas fa-user text-white"></i>
                 </div>
-                <a href="/api/auth/logout" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-400 hover:bg-red-500 hover:text-white transition-all">
+                
+                <a href="/api/auth/logout" class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center text-gray-400 hover:bg-red-500 hover:text-white transition-all shadow-lg border border-white/5">
                     <i class="fas fa-sign-out-alt"></i>
                 </a>
             </div>
@@ -66,8 +93,11 @@ const { title, userName = "Cliente Alvarez" } = Astro.props;
             <slot />
         </main>
 
-        <footer class="p-8 border-t border-white/5 bg-[#0a0a0a] text-center">
+        <footer class="p-8 border-t border-white/5 bg-[#0a0a0a] flex flex-col items-center justify-center gap-2">
             <p class="text-[10px] font-black text-gray-700 uppercase tracking-[0.3em]">Alvarez Placas SRL &copy; 2026 | Área de Clientes</p>
+            <a href="https://clientes.nuthost.com/aff.php?aff=329" target="_blank" rel="noopener noreferrer" class="text-[9px] text-gray-600 hover:text-white transition-colors flex items-center gap-1 mt-2">
+                <i class="fas fa-server"></i> Plataforma impulsada por NutHost
+            </a>
         </footer>
 	</body>
 </html>

@@ -1981,6 +1981,13 @@ const { isLoggedIn = false } = Astro.props;
                 `;
             });
             tableHtml += `</tbody></table>`;
+            tableHtml += `
+                <div style="display:flex; gap:10px; margin-top:15px; margin-bottom: 20px;">
+                    <button onclick="addBlankRowSC()" class="sc-btn" style="background:#1a1a1c; border:1px solid #333; color:#fff; padding:8px 16px; border-radius:6px; font-size:0.75rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s;" onmouseover="this.style.background='#252528'" onmouseout="this.style.background='#1a1a1c'">
+                        <i class="fas fa-plus"></i> AGREGAR FILA
+                    </button>
+                </div>
+            `;
             gridRoot.innerHTML = tableHtml;
         }
     }
@@ -2075,6 +2082,24 @@ const { isLoggedIn = false } = Astro.props;
             p.pieces = p.pieces.filter(pc => pc.id !== id);
         }
         renderEditorSC();
+    };
+
+    window.addBlankRowSC = () => {
+        const p = session.projects[session.currentIndex];
+        p.pieces.push({
+            id: Date.now() + p.pieces.length,
+            q: '',
+            l: '',
+            h: '',
+            label: '',
+            edges: { t: 0, b: 0, l: 0, r: 0 },
+            canRotate: true
+        });
+        renderEditorSC();
+        setTimeout(() => {
+            const nextIdx = p.pieces.length - 1;
+            document.getElementById(`grid-q-${nextIdx}`)?.focus();
+        }, 10);
     };
 
     window.removeProjectSC = (i, e) => { if (e) { e.preventDefault(); e.stopPropagation(); } if (confirm(`Eliminar ${session.projects[i].design}?`)) { session.projects.splice(i, 1); renderProjectsSC(); } };

@@ -12,7 +12,7 @@
     <div class="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
       
       <!-- Brand & Info -->
-      <div class="col-span-1 md:col-span-5 pr-8">
+      <div class="col-span-1 md:col-span-4 pr-4">
         <a href="/" class="text-3xl font-black tracking-tighter text-white mb-6 block drop-shadow-lg">
           ALVAREZ<span class="text-primary">PLACAS</span>
         </a>
@@ -54,8 +54,25 @@
         </ul>
       </div>
 
+      <!-- Zonas de Envío -->
+      <div class="col-span-1 md:col-span-2">
+        <h4 class="text-white font-black text-xs uppercase tracking-[0.15em] mb-6 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-primary/50"></span> Envíos a:
+        </h4>
+        <div class="grid grid-cols-2 gap-x-2 gap-y-3">
+          <a href="/envios/castelar" class="text-gray-400 hover:text-primary text-xs font-medium transition-colors">Castelar</a>
+          <a href="/envios/san-isidro" class="text-gray-400 hover:text-primary text-xs font-medium transition-colors">San Isidro</a>
+          <a href="/envios/palermo" class="text-gray-400 hover:text-primary text-xs font-medium transition-colors">Palermo</a>
+          <a href="/envios/parque-leloir" class="text-gray-400 hover:text-primary text-xs font-medium transition-colors">Leloir</a>
+          <a href="/envios/moron" class="text-gray-400 hover:text-primary text-xs font-medium transition-colors">Morón</a>
+          <a href="/envios/belgrano" class="text-gray-400 hover:text-primary text-xs font-medium transition-colors">Belgrano</a>
+          <a href="/envios/puerto-madero" class="text-gray-400 hover:text-primary text-xs font-medium transition-colors">P. Madero</a>
+          <a href="/envios/ituzaingo" class="text-gray-400 hover:text-primary text-xs font-medium transition-colors">Ituzaingó</a>
+        </div>
+      </div>
+
       <!-- Contact -->
-      <div class="col-span-1 md:col-span-3">
+      <div class="col-span-1 md:col-span-2">
         <h4 class="text-white font-black text-xs uppercase tracking-[0.15em] mb-6 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-primary/50"></span> Contacto
         </h4>
@@ -96,9 +113,13 @@
 
     <!-- Bottom Bar -->
     <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-      <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+      <div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold flex flex-wrap items-center gap-2">
         &copy; 2026 <span class="text-white">Alvarez Placas</span> — Todos los derechos reservados.
-      </p>
+        <span class="opacity-30">|</span>
+        <a href="https://clientes.nuthost.com/aff.php?aff=329" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
+          <i class="fas fa-server"></i> Hosting by NutHost
+        </a>
+      </div>
       <div class="text-[10px] text-gray-600 opacity-60 hover:opacity-100 transition-opacity flex items-center gap-2 font-medium tracking-wide">
         <span>Diseño & Desarrollo por</span>
         <span class="text-gray-300 font-bold">Javier Mix</span>

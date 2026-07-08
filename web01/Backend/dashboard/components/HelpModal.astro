@@ -88,6 +88,9 @@ const isCajero = role === 'cajero';
                 <button class="help-nav-btn" data-tab="help-estrategia">
                     <i class="fas fa-book"></i> Estrategia y Materiales
                 </button>
+                <a class="help-nav-btn" href="/manuales/Manual_Catalogacion_Alvarez_Placas.html" target="_blank" style="text-decoration: none;">
+                    <i class="fas fa-file-pdf" style="color: #ef4444;"></i> Manual de Catalogación
+                </a>
                 <button class="help-nav-btn" data-tab="help-acerca">
                     <i class="fas fa-info-circle"></i> Acerca de (Beta)
                 </button>
@@ -303,33 +306,46 @@ const isCajero = role === 'cajero';
                                 <code style="background:#111; padding:2px 6px; border-radius:4px; color:#10b981; font-family:monospace; font-size:11px;">d:\Alvarezplacas_2026\WEB-alvarezplacas_astro\Alvarezplacas\gcom\importacion_articulos.txt</code>
                             </div>
 
-                            <h3>Paso 1: Importar los Artículos</h3>
-                            <ol style="margin-left: 18px; color: #ccc; line-height: 1.8; font-size: 13px;">
-                                <li>Descarga el archivo desde el botón <strong>GCOM TXT (ARTICULOS)</strong>.</li>
-                                <li>En el menú superior de GCOM, ir a <strong style="color:#fff;">Bases</strong> ➡️ <strong style="color:#fff;">Formatos</strong> ➡️ <strong style="color:#fff;">Importación y Exportación</strong>.</li>
-                                <li>Seleccionar <strong style="color:#fff;">Importación de Artículos</strong> y verificar que las variables estén así:
-                                    <ul>
-                                        <li><strong>CODIGO ARTICULO</strong>: Columna <code style="color:#10b981;">1</code>, Ancho <code style="color:#10b981;">11</code></li>
-                                        <li><strong>DESCRIPCION</strong>: Columna <code style="color:#10b981;">13</code>, Ancho <code style="color:#10b981;">40</code></li>
-                                        <li><strong>RUBRO</strong>: Columna <code style="color:#10b981;">60</code>, Ancho <code style="color:#10b981;">4</code></li>
-                                    </ul>
-                                </li>
-                                <li>Ve a <strong>Módulos -> Stock -> Artículos -> Rubros y Artículos</strong>, presiona <strong>Ctrl + Clic</strong> en Descripción, ve a la llave de tuercas, selecciona <strong>Importar Artículos</strong> y carga el archivo.</li>
-                            </ol>
+                            <h3>Paso 1: Configurar e Importar los Artículos (`importacion_articulos.txt`)</h3>
+                             <ol style="margin-left: 18px; color: #ccc; line-height: 1.8; font-size: 13px;">
+                                 <li>Descarga el archivo desde el botón <strong>GCOM TXT (ARTICULOS)</strong>.</li>
+                                 <li>En el menú superior de GCOM, ir a <strong style="color:#fff;">Bases</strong> ➡️ <strong style="color:#fff;">Formatos</strong> ➡️ <strong style="color:#fff;">Importación y Exportación</strong>.</li>
+                                 <li>Seleccionar <strong style="color:#fff;">Importación de Artículos</strong> y configurar el formato posicional de <strong>80 caracteres</strong> así:
+                                     <ul>
+                                         <li><strong>CODIGO ARTICULO</strong>: Columna <code style="color:#10b981;">1</code>, Ancho <code style="color:#10b981;">12</code> (SKU sin guiones)</li>
+                                         <li><strong>DESCRIPCION</strong>: Columna <code style="color:#10b981;">13</code>, Ancho <code style="color:#10b981;">47</code></li>
+                                         <li><strong>RUBRO (LETRA)</strong>: Columna <code style="color:#10b981;">60</code>, Ancho <code style="color:#10b981;">11</code> (Código de rubro en una letra, ej. M o D)</li>
+                                         <li><strong>PRECIO EFECTIVO</strong>: Columna <code style="color:#10b981;">71</code>, Ancho <code style="color:#10b981;">10</code></li>
+                                     </ul>
+                                 </li>
+                             </ol>
 
-                            <h3>Paso 2: Importar los Precios</h3>
-                            <ol style="margin-left: 18px; color: #ccc; line-height: 1.8; font-size: 13px;">
-                                <li>Descarga el archivo desde el botón <strong>GCOM TXT (PRECIOS)</strong>.</li>
-                                <li>En el menú superior de GCOM, ir a <strong style="color:#fff;">Bases</strong> ➡️ <strong style="color:#fff;">Formatos</strong> ➡️ <strong style="color:#fff;">Importación y Exportación</strong>.</li>
-                                <li>Seleccionar el formato de tipo <strong style="color:#fff;">Importación precios</strong> (ej. "CAMBIO DE PRECIOS") y configurar las variables así:
-                                    <ul>
-                                        <li><strong>CODIGO ARTICULO</strong>: Columna <code style="color:#10b981;">1</code>, Ancho <code style="color:#10b981;">11</code></li>
-                                        <li><strong>PRECIO (Código moneda)</strong>: Columna <code style="color:#10b981;">13</code>, Ancho <code style="color:#10b981;">1</code></li>
-                                        <li><strong>PRECIO (Importe)</strong>: Columna <code style="color:#10b981;">21</code>, Ancho <code style="color:#10b981;">12</code></li>
-                                    </ul>
-                                </li>
-                                <li>Sigue las instrucciones estándar de GCOM para ejecutar la importación de la lista de precios usando este formato.</li>
-                            </ol>
+                             <h3>Paso 2: Configurar e Importar los Precios (`importacion_precios.txt`)</h3>
+                             <ol style="margin-left: 18px; color: #ccc; line-height: 1.8; font-size: 13px;">
+                                 <li>Descarga el archivo desde el botón <strong>GCOM TXT (PRECIOS)</strong>.</li>
+                                 <li>En el menú superior de GCOM, ir a <strong style="color:#fff;">Bases</strong> ➡️ <strong style="color:#fff;">Formatos</strong> ➡️ <strong style="color:#fff;">Importación y Exportación</strong>.</li>
+                                 <li>Seleccionar el formato de tipo <strong style="color:#fff;">Importación precios</strong> (ej. "CAMBIO DE PRECIOS") y configurar las variables de <strong>32 caracteres</strong> así:
+                                     <ul>
+                                         <li><strong>CODIGO ARTICULO</strong>: Columna <code style="color:#10b981;">1</code>, Ancho <code style="color:#10b981;">12</code></li>
+                                         <li><strong>PRECIO (Código lista/moneda)</strong>: Columna <code style="color:#10b981;">13</code>, Ancho <code style="color:#10b981;">3</code> (Por defecto `1`)</li>
+                                         <li><strong>PRECIO (Importe)</strong>: Columna <code style="color:#10b981;">16</code>, Ancho <code style="color:#10b981;">17</code> (Costo inverso ajustado)</li>
+                                     </ul>
+                                 </li>
+                             </ol>
+
+                             <h3>Paso 3: Configurar e Importar Cuentas Redondeadas (`precios_redondeados.txt`)</h3>
+                             <ol style="margin-left: 18px; color: #ccc; line-height: 1.8; font-size: 13px;">
+                                 <li>Descarga el archivo desde el botón <strong>GCOM TXT (REDONDEADOS)</strong>.</li>
+                                 <li>En el menú superior de GCOM, ir a <strong style="color:#fff;">Bases</strong> ➡️ <strong style="color:#fff;">Formatos</strong> ➡️ <strong style="color:#fff;">Importación y Exportación</strong>.</li>
+                                 <li>Seleccionar el formato correspondiente para importar la <strong>cuenta contable de 70 caracteres</strong>:
+                                     <ul>
+                                         <li><strong>CODIGO ARTICULO</strong>: Columna <code style="color:#10b981;">1</code>, Ancho <code style="color:#10b981;">15</code></li>
+                                         <li><strong>DESCRIPCION</strong>: Columna <code style="color:#10b981;">16</code>, Ancho <code style="color:#10b981;">40</code></li>
+                                         <li><strong>GAP (Vacío)</strong>: Columna <code style="color:#10b981;">56</code>, Ancho <code style="color:#10b981;">7</code></li>
+                                         <li><strong>CUENTA CONTABLE</strong>: Columna <code style="color:#10b981;">63</code>, Ancho <code style="color:#10b981;">8</code> (Código contable numérico del rubro, ej. `0001` o `0017`)</li>
+                                     </ul>
+                                 </li>
+                             </ol>
                             <div style="margin: 15px 0 25px 18px;">
                                 <span style="display:block; font-size:11px; color:#888; margin-bottom:6px; font-weight:bold; text-transform:uppercase;">📸 Vista de Configuración del Formato en GCOM:</span>
                                 <img src="/images/gcom/estructura_importacion_articulos.jpg" alt="Estructura de Importación GCOM" style="max-width: 100%; height: auto; border: 1px solid #444; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />

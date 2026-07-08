@@ -22,18 +22,7 @@ if (queryClientId && (isSeller || isAdmin)) {
     clientId = queryClientId;
 }
 
-if (!clientId) {
-    if (isSeller || isAdmin) {
-        try {
-            const tempClients = await directus.request(readItems('clientes', { limit: 1, fields: ['id'] }));
-            if (tempClients && tempClients.length > 0) {
-                clientId = tempClients[0].id.toString();
-            }
-        } catch (e) {
-            console.error("Error al buscar cliente temporal de soporte:", e);
-        }
-    }
-}
+
 
 if (!clientId) return Astro.redirect('/login');
 
@@ -209,38 +198,59 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                 </div>
             )}
 
-            <!-- GLASS HERO SECTION - FIDELIDAD DEL CLIENTE -->
-            <section class={`relative mb-10 p-10 md:p-12 rounded-[2.5rem] overflow-hidden bg-gradient-to-br ${memberLevel.heroGradient} bg-[var(--bg-card)] border border-[var(--border-card)] shadow-md transition-all duration-300`} aria-labelledby="hero-title">
+            <!-- GLASS HERO SECTION CON PERFIL INTEGRADO -->
+            <section class={`relative mb-10 p-8 md:p-12 rounded-[2.5rem] overflow-hidden bg-gradient-to-br ${memberLevel.heroGradient} bg-[var(--bg-card)] border border-[var(--border-card)] shadow-md transition-all duration-300`} aria-labelledby="hero-title">
                 <div class="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 pointer-events-none" aria-hidden="true">
                     <i class="fas fa-rocket text-[120px] text-[var(--text-main)]"></i>
                 </div>
                 
-                <div class="relative z-10">
-                    <div class="flex items-center gap-3 mb-6">
-                        <span class={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full border ${memberLevel.badgeClass}`} role="status">
-                            🏆 {memberLevel.name}
-                        </span>
-                        <span class="px-3 py-1 bg-black/5 dark:bg-white/5 text-[var(--text-muted)] text-[9px] font-black uppercase tracking-widest rounded-full border border-[var(--border-card)]">
-                            ID CLIENTE: {clientData.client_number}
-                        </span>
+                <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+                    <div class="flex-1">
+                        <div class="flex flex-wrap items-center gap-3 mb-6">
+                            <span class={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full border ${memberLevel.badgeClass}`} role="status">
+                                🏆 {memberLevel.name}
+                            </span>
+                            <span class="px-3 py-1 bg-black/5 dark:bg-white/5 text-[var(--text-muted)] text-[9px] font-black uppercase tracking-widest rounded-full border border-[var(--border-card)]">
+                                ID CLIENTE: {clientData.client_number}
+                            </span>
+                            <a href="/cliente/perfil" class="px-3 py-1 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 text-[9px] font-black uppercase tracking-widest rounded-full border border-blue-500/20 transition-colors flex items-center gap-2">
+                                <i class="fas fa-edit"></i> Editar Perfil
+                            </a>
+                        </div>
+                        
+                        <h1 id="hero-title" class="text-4xl md:text-5xl font-black text-[var(--text-main)] tracking-tighter uppercase mb-4 leading-none">
+                            CENTRO DE <span class="text-[var(--alvarez-blue)] italic">CONTROL</span>
+                        </h1>
+                        
+                        <p class="text-[var(--text-muted)] max-w-xl text-sm font-medium leading-relaxed mb-4">
+                            Bienvenido a tu suite profesional de Alvarez Placas. {clientData.company_name ? `Gestionando proyectos para ${clientData.company_name}.` : 'Desde aquí puedes gestionar tus proyectos, optimizar cortes y realizar un seguimiento preciso de tus pedidos industriales.'}
+                        </p>
                     </div>
-                    
-                    <h1 id="hero-title" class="text-4xl md:text-6xl font-black text-[var(--text-main)] tracking-tighter uppercase mb-6 leading-none">
-                        CENTRO DE <span class="text-[var(--alvarez-blue)] italic">CONTROL</span>
-                    </h1>
-                    
-                    <p class="text-[var(--text-muted)] max-w-xl text-sm font-medium leading-relaxed mb-8">
-                        Bienvenido a tu suite profesional de Alvarez Placas. Desde aquí puedes gestionar tus proyectos, optimizar cortes y realizar un seguimiento preciso de tus pedidos industriales.
-                    </p>
 
+                    <!-- AVATAR Y EMPRESA -->
+                    <div class="flex-shrink-0 flex flex-col items-center gap-4 bg-[var(--bg-main)] p-6 rounded-[2rem] border border-[var(--border-card)] shadow-sm w-full md:w-auto">
+                        <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-[var(--bg-card)] shadow-lg bg-gray-200 flex items-center justify-center relative group">
+                            {clientData.foto_perfil ? (
+                                <img src={clientData.foto_perfil} alt={clientData.name} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                            ) : (
+                                <i class="fas fa-user-circle text-gray-400 text-5xl"></i>
+                            )}
+                        </div>
+                        <div class="text-center">
+                            <h2 class="text-sm font-black text-[var(--text-main)] uppercase tracking-tight">{clientData.name}</h2>
+                            {clientData.company_name && (
+                                <p class="text-[10px] text-[var(--alvarez-blue)] font-bold uppercase mt-1 tracking-wider"><i class="fas fa-building"></i> {clientData.company_name}</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <!-- GRID PRINCIPAL DE HERRAMIENTAS - SOPORTE DE COMPONENTES FLEXIBLES -->
-            <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12" aria-label="Herramientas y servicios profesionales">
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6 mb-12" aria-label="Herramientas y servicios profesionales">
                 
                 <!-- SmartCut PRO -->
-                <a href="/herramientas/presupuestador" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] hover:bg-[oklch(0.65_0.2_40_/_0.06)] hover:border-[oklch(0.65_0.2_40_/_0.3)] transition-all flex flex-col justify-between min-h-[220px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.65_0.2_40)]" aria-label="Abrir SmartCut PRO, Optimizador de placas">
+                <a href="/herramientas/presupuestador" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-6 rounded-[2rem] hover:bg-[oklch(0.65_0.2_40_/_0.06)] hover:border-[oklch(0.65_0.2_40_/_0.3)] transition-all flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.65_0.2_40)]" aria-label="Abrir SmartCut PRO, Optimizador de placas">
                     <div class="w-14 h-14 bg-[oklch(0.65_0.2_40_/_0.1)] rounded-2xl flex items-center justify-center text-[oklch(0.65_0.2_40)] group-hover:scale-110 transition-transform" aria-hidden="true">
                         <i class="fas fa-cut text-2xl"></i>
                     </div>
@@ -251,7 +261,7 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                 </a>
 
                 <!-- CubiCal PRO -->
-                <a href="/herramientas/cubical" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] hover:bg-[oklch(0.65_0.18_200_/_0.06)] hover:border-[oklch(0.65_0.18_200_/_0.3)] transition-all flex flex-col justify-between min-h-[220px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.65_0.18_200)]" aria-label="Abrir CubiCal PRO, Calculador de muebles de precisión">
+                <a href="/herramientas/cubical" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-6 rounded-[2rem] hover:bg-[oklch(0.65_0.18_200_/_0.06)] hover:border-[oklch(0.65_0.18_200_/_0.3)] transition-all flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.65_0.18_200)]" aria-label="Abrir CubiCal PRO, Calculador de muebles de precisión">
                     <div class="w-14 h-14 bg-[oklch(0.65_0.18_200_/_0.1)] rounded-2xl flex items-center justify-center text-[oklch(0.6_0.18_200)] group-hover:scale-110 transition-transform" aria-hidden="true">
                         <i class="fas fa-cube text-2xl"></i>
                     </div>
@@ -262,7 +272,7 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                 </a>
 
                 <!-- Catálogo -->
-                <a href="/catalogo" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] hover:bg-[oklch(0.65_0.15_140_/_0.06)] hover:border-[oklch(0.65_0.15_140_/_0.3)] transition-all flex flex-col justify-between min-h-[220px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.65_0.15_140)]" aria-label="Ver Catálogo de materiales, precios y stock en línea">
+                <a href="/catalogo" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-6 rounded-[2rem] hover:bg-[oklch(0.65_0.15_140_/_0.06)] hover:border-[oklch(0.65_0.15_140_/_0.3)] transition-all flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.65_0.15_140)]" aria-label="Ver Catálogo de materiales, precios y stock en línea">
                     <div class="w-14 h-14 bg-[oklch(0.65_0.15_140_/_0.1)] rounded-2xl flex items-center justify-center text-[oklch(0.6_0.15_140)] group-hover:scale-110 transition-transform" aria-hidden="true">
                         <i class="fas fa-shopping-bag text-2xl"></i>
                     </div>
@@ -273,7 +283,7 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                 </a>
 
                 <!-- Pedidos -->
-                <a href="/cliente/pedidos" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] hover:bg-[oklch(0.6_0.18_270_/_0.06)] hover:border-[oklch(0.6_0.18_270_/_0.3)] transition-all flex flex-col justify-between min-h-[220px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.6_0.18_270)]" aria-label="Ver Mis Pedidos, historial y tracking de fabricación">
+                <a href="/cliente/pedidos" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-6 rounded-[2rem] hover:bg-[oklch(0.6_0.18_270_/_0.06)] hover:border-[oklch(0.6_0.18_270_/_0.3)] transition-all flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.6_0.18_270)]" aria-label="Ver Mis Pedidos, historial y tracking de fabricación">
                     <div class="w-14 h-14 bg-[oklch(0.6_0.18_270_/_0.1)] rounded-2xl flex items-center justify-center text-[oklch(0.55_0.18_270)] group-hover:scale-110 transition-transform" aria-hidden="true">
                         <i class="fas fa-history text-2xl"></i>
                     </div>
@@ -284,7 +294,7 @@ const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currenc
                 </a>
 
                 <!-- Academia de Materiales -->
-                <a href="/cliente/academia" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-8 rounded-[2rem] hover:bg-[oklch(0.55_0.15_140_/_0.06)] hover:border-[oklch(0.55_0.15_140_/_0.3)] transition-all flex flex-col justify-between min-h-[220px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.55_0.15_140)]" aria-label="Abrir Academia de Materiales, guía interactiva de tableros">
+                <a href="/cliente/academia" class="group bg-[var(--bg-card)] border border-[var(--border-card)] p-6 rounded-[2rem] hover:bg-[oklch(0.55_0.15_140_/_0.06)] hover:border-[oklch(0.55_0.15_140_/_0.3)] transition-all flex flex-col justify-between min-h-[160px] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[oklch(0.55_0.15_140)]" aria-label="Abrir Academia de Materiales, guía interactiva de tableros">
                     <div class="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform" aria-hidden="true">
                         <i class="fas fa-graduation-cap text-2xl"></i>
                     </div>

@@ -16,18 +16,7 @@ if (queryClientId && (isSeller || isAdmin)) {
     clientId = queryClientId;
 }
 
-if (!clientId) {
-    if (isSeller || isAdmin) {
-        try {
-            const tempClients = await directus.request(readItems('clientes', { limit: 1, fields: ['id'] }));
-            if (tempClients && tempClients.length > 0) {
-                clientId = tempClients[0].id.toString();
-            }
-        } catch (e) {
-            console.error("Error al buscar cliente temporal de soporte:", e);
-        }
-    }
-}
+
 
 if (!clientId) return Astro.redirect('/login');
 

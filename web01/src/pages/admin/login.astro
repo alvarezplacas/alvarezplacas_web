@@ -1,7 +1,8 @@
 ---
+import Page from '@home/pages/login.astro';
+
 const adminSession = Astro.cookies.get('admin_session')?.value;
 if (adminSession === 'authenticated_javier') return Astro.redirect('/admin');
 
-import Page from '@home/pages/login.astro';
 ---
 <Page />

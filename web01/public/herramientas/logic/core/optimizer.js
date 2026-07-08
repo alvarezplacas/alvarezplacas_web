@@ -32,8 +32,8 @@ export class SmartCutEngine {
     optimize(w, h, pieces) {
         console.time("Optimización");
         const flatPieces = this._flatten(pieces);
-        const usableW = Number(w) - (this.trim * 2);
-        const usableH = Number(h) - (this.trim * 2);
+        const usableW = Number(w) - this.trim;
+        const usableH = Number(h) - this.trim;
         let bestResult = null, bestScore = -1, stagnated = 0;
 
         let populations = [
@@ -63,7 +63,7 @@ export class SmartCutEngine {
         let remaining = [...pieces];
 
         while (remaining.length > 0) {
-            const root = new GuillotineNode(this.trim, this.trim, usableW, usableH);
+            const root = new GuillotineNode(0, 0, usableW, usableH);
             const plate = { id: plates.length + 1, items: [], root: root };
             let placedInPlate = 0;
 

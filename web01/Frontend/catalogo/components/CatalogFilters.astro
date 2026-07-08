@@ -6,41 +6,54 @@
 const { buckets, brandsByBucket, allUniqueBrands = [], totalProducts = 0, backgrounds = {} } = Astro.props;
 ---
 
-<div class="mb-10 flex flex-col items-center gap-6 relative">
-  <p class="text-gray-400 text-sm relative z-10">
-    Buscá entre <span class="text-white font-bold text-lg">{totalProducts}</span> productos específicos
-  </p>
+<div class="mb-10 flex flex-col items-center gap-6 relative w-full">
   
-  <!-- Filtros de Grupos (Buckets) -->
-  <div class="flex flex-wrap justify-center gap-3 mb-2 relative z-10" id="bucketFilters">
-    {buckets.map((bucket) => (
-      <button
-        class={`px-6 py-3 rounded-xl border text-sm font-bold uppercase tracking-wider transition-all duration-300 ${
-          bucket === "Todo" 
-            ? 'bg-primary text-black border-primary bucket-btn active' 
-            : 'bg-[#151515] text-gray-400 border-gray-800 hover:border-primary/50 hover:text-white bucket-btn'
-        }`}
-        data-bucket={bucket}
-      >
-        {bucket === "Todo" ? "🌐 Todos" : bucket}
-      </button>
-    ))}
-  </div>
-
-  <div class="relative w-full max-w-2xl z-10">
+  <!-- Contenedor del Buscador con Botón Dropdown Integrado -->
+  <div class="relative w-full max-w-2xl z-20" id="searchWrapper">
     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
       <i class="fas fa-search text-primary"></i>
     </div>
     <input
       type="search"
       id="catalogSearch"
-      placeholder="Buscar en esta categoría (Ej: Gola, Egger Blanco, Einhell...)"
-      class="w-full bg-[#151515] border border-gray-800/50 text-white rounded-2xl py-5 pl-12 pr-6 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-300 placeholder-gray-600 shadow-2xl text-lg"
+      placeholder="Buscar productos (Ej: Gola, Egger Blanco, Einhell...)"
+      class="w-full bg-[#151515] border border-gray-800/50 text-white rounded-2xl py-5 pl-12 pr-40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-300 placeholder-gray-600 shadow-2xl text-lg"
     />
+
+    <!-- Botón Desplegable -->
+    <div class="absolute right-3.5 top-1/2 -translate-y-1/2" id="filterDropdownContainer">
+      <button 
+        type="button" 
+        id="dropdownFilterBtn" 
+        class="bg-[#1e1e1e] hover:bg-[#2a2a2a] text-gray-300 hover:text-white border border-gray-800 hover:border-gray-700 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+      >
+        <span id="selectedCategoryLabel">Filtrar</span>
+        <i class="fas fa-chevron-down text-[10px] transition-transform duration-300" id="dropdownArrow"></i>
+      </button>
+
+      <!-- Panel Desplegable -->
+      <div 
+        id="dropdownFilterMenu" 
+        class="absolute right-0 mt-2 bg-[#151515]/95 backdrop-blur-xl border border-gray-800 rounded-2xl py-2 w-48 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-50 hidden opacity-0 scale-95 transition-all duration-150 origin-top-right"
+      >
+        {buckets.map((bucket) => (
+          <button
+            type="button"
+            class={`w-full text-left px-5 py-3 text-xs font-bold uppercase tracking-wider transition-colors bucket-btn flex items-center justify-between ${
+              bucket === "Todo" ? 'text-primary active' : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+            data-bucket={bucket}
+          >
+            <span>{bucket === "Todo" ? "Todos" : bucket}</span>
+            <i class={`fas fa-check text-primary text-[10px] check-icon ${bucket === "Todo" ? '' : 'hidden'}`}></i>
+          </button>
+        ))}
+      </div>
+    </div>
   </div>
 
   <!-- Filtros de Marca Secundarios (Dinámicos) -->
-  <div class="flex flex-wrap justify-center gap-2 max-w-4xl py-2" id="brandFilters">
+  <div class="flex flex-wrap justify-center gap-2 max-w-4xl py-2 z-10" id="brandFilters">
     <button
       class="px-5 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all duration-300 bg-gray-800 text-white border-gray-600 shadow-lg brand-btn active"
       data-filter="Todos"
@@ -61,16 +74,112 @@ const { buckets, brandsByBucket, allUniqueBrands = [], totalProducts = 0, backgr
 <script define:vars={{ brandsByBucket }}>
   window.BRANDS_BY_BUCKET = brandsByBucket;
 
-  // Mejora de UX Móvil: Cerrar teclado al presionar Enter (Reforzado para Android)
-  document.addEventListener('DOMContentLoaded', () => {
+  function initDropdownAndMobileSearch() {
+    const dropdownBtn = document.getElementById('dropdownFilterBtn');
+    if (!dropdownBtn) return;
+    if (dropdownBtn.dataset.dropdownInitialized === 'true') return;
+    dropdownBtn.dataset.dropdownInitialized = 'true';
+
     const searchInput = document.getElementById('catalogSearch');
     if (searchInput) {
-      searchInput.addEventListener('keydown', (e) => {
+      const onKeydown = (e) => {
         if (e.key === 'Enter' || e.keyCode === 13) {
+          e.preventDefault();
           searchInput.blur(); // Esto oculta el teclado en móviles
-          window.scrollTo({ top: searchInput.offsetTop - 20, behavior: 'smooth' });
+          
+          // Buscar el primer artículo visible en el grid y hacerle clic
+          const firstCard = document.querySelector('#catalogGrid .catalog-item[style*="display: flex"], #catalogGrid .catalog-item:not([style*="display: none"])');
+          if (firstCard) {
+            firstCard.click();
+          }
         }
+      };
+      searchInput.addEventListener('keydown', onKeydown);
+    }
+
+    // --- LÓGICA DE DROPDOWN DE FILTRADO ---
+    const dropdownMenu = document.getElementById('dropdownFilterMenu');
+    const dropdownArrow = document.getElementById('dropdownArrow');
+    const selectedLabel = document.getElementById('selectedCategoryLabel');
+    const bucketOptions = document.querySelectorAll('.bucket-btn');
+
+    if (dropdownMenu) {
+      // Toggle dropdown
+      const onDropdownClick = (e) => {
+        e.stopPropagation();
+        const isHidden = dropdownMenu.classList.contains('hidden');
+        if (isHidden) {
+          dropdownMenu.classList.remove('hidden');
+          setTimeout(() => {
+            dropdownMenu.classList.remove('opacity-0', 'scale-95');
+            dropdownMenu.classList.add('opacity-100', 'scale-100');
+          }, 10);
+          dropdownArrow.classList.add('rotate-180');
+        } else {
+          closeDropdown();
+        }
+      };
+      dropdownBtn.addEventListener('click', onDropdownClick);
+
+      function closeDropdown() {
+        if (!dropdownMenu.classList.contains('hidden')) {
+          dropdownMenu.classList.remove('opacity-100', 'scale-100');
+          dropdownMenu.classList.add('opacity-0', 'scale-95');
+          dropdownArrow.classList.remove('rotate-180');
+          setTimeout(() => {
+            dropdownMenu.classList.add('hidden');
+          }, 150);
+        }
+      }
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', () => {
+        closeDropdown();
+      });
+
+      // Update active option visuals and label
+      bucketOptions.forEach(opt => {
+        const onOptionClick = (e) => {
+          const bucket = opt.dataset.bucket;
+          selectedLabel.textContent = bucket === 'Todo' ? 'Filtrar' : bucket;
+          
+          // Resaltar el botón si hay filtro activo
+          if (bucket === 'Todo') {
+            dropdownBtn.classList.remove('bg-primary', 'text-black', 'border-primary');
+            dropdownBtn.classList.add('bg-[#1e1e1e]', 'text-gray-300', 'border-gray-800');
+          } else {
+            dropdownBtn.classList.remove('bg-[#1e1e1e]', 'text-gray-300', 'border-gray-800');
+            dropdownBtn.classList.add('bg-primary', 'text-black', 'border-primary');
+          }
+
+          // Update check icons inside dropdown
+          bucketOptions.forEach(b => {
+            const check = b.querySelector('.check-icon');
+            if (check) {
+              if (b === opt) {
+                check.classList.remove('hidden');
+                b.classList.add('text-primary');
+                b.classList.remove('text-gray-400');
+              } else {
+                check.classList.add('hidden');
+                b.classList.remove('text-primary');
+                b.classList.add('text-gray-400');
+              }
+            }
+          });
+
+          closeDropdown();
+        };
+        opt.addEventListener('click', onOptionClick);
       });
     }
-  });
+  }
+
+  // Escuchar evento de View Transitions de Astro y fallback de DOMContentLoaded
+  document.addEventListener('astro:page-load', initDropdownAndMobileSearch);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDropdownAndMobileSearch);
+  } else {
+    initDropdownAndMobileSearch();
+  }
 </script>

@@ -17,6 +17,7 @@ export function initCatalog() {
     const mPriceDisplay = document.getElementById('modalPriceDisplay');
     const mPriceL1 = document.getElementById('modalPriceL1');
     const mPriceMain = document.getElementById('modalPriceMain');
+    const mStockDisplay = document.getElementById('modalStockDisplay');
     const mWhatsAppBtn = document.getElementById('modalWhatsAppBtn');
     const mSmartMatchBtn = document.getElementById('modalSmartMatchBtn');
     const mEstadoContainer = document.getElementById('modalEstadoContainer');
@@ -71,13 +72,11 @@ export function initCatalog() {
     bucketFilterBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             bucketFilterBtns.forEach(b => {
-                b.classList.remove('bg-primary', 'text-black', 'border-primary', 'active');
-                b.classList.add('bg-[#151515]', 'text-gray-400', 'border-gray-800');
+                b.classList.remove('active');
             });
 
             const target = e.currentTarget;
-            target.classList.remove('bg-[#151515]', 'text-gray-400', 'border-gray-800');
-            target.classList.add('bg-primary', 'text-black', 'border-primary', 'active');
+            target.classList.add('active');
 
             currentBucket = target.dataset.bucket;
             currentPage = 1; // Reset a pag 1
@@ -246,9 +245,9 @@ export function initCatalog() {
                 mSpecsContainer.innerHTML = '';
                 
                 if (isTablero && data.variants && data.variants.length > 0) {
-                    const MASTER_SUPPORTS = ["MDF", "AGLOMERADO", "RH"];
+                    const MASTER_SUPPORTS = ["MDF", "AGLO", "RH"];
                     const availableSupports = [...new Set(data.variants.map(v => v.soporte.toUpperCase()))];
-                    let activeSupport = availableSupports.includes("MDF") ? "MDF" : (availableSupports.includes("AGLOMERADO") ? "AGLOMERADO" : availableSupports[0]);
+                    let activeSupport = availableSupports.includes("MDF") ? "MDF" : (availableSupports.includes("AGLO") ? "AGLO" : availableSupports[0]);
 
                     const renderVariants = (support) => {
                         const existingGrid = mSpecsContainer.querySelector('.variants-grid-container');
@@ -403,6 +402,18 @@ export function initCatalog() {
                         const labelSpan = mPriceDisplay.querySelector('span:first-child');
                         if (labelSpan) {
                             labelSpan.textContent = isEfectivo ? "Precio Efectivo" : "Precio Final";
+                        }
+                    }
+
+                    // Stock display logic
+                    if (mStockDisplay) {
+                        if (targetVariant.stock_actual && parseFloat(targetVariant.stock_actual) > 0) {
+                            const qty = parseFloat(targetVariant.stock_actual);
+                            const qtyFormatted = Number.isInteger(qty) ? qty : qty.toFixed(1);
+                            mStockDisplay.textContent = `Stock Disponible: ${qtyFormatted} ${qty === 1 ? 'unidad' : 'unidades'}`;
+                            mStockDisplay.classList.remove('hidden');
+                        } else {
+                            mStockDisplay.classList.add('hidden');
                         }
                     }
                 }

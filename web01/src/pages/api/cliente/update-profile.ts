@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     
     try {
         const body = await request.json();
-        const { id, name, email, phone, address, cuit_dni, password } = body;
+        const { id, name, email, phone, address, cuit_dni, password, company_name, company_description, foto_perfil } = body;
         
         // 🔒 SEGURIDAD: Evitar que modifiquen el perfil de otra cuenta
         if (id && id !== clientId) {
@@ -33,6 +33,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         if (phone !== undefined) updateData.phone = phone.replace(/\D/g, '');
         if (address !== undefined) updateData.address = address;
         if (cuit_dni !== undefined) updateData.cuit_dni = cuit_dni.trim();
+        if (company_name !== undefined) updateData.company_name = company_name;
+        if (company_description !== undefined) updateData.company_description = company_description;
+        if (foto_perfil !== undefined) updateData.foto_perfil = foto_perfil;
 
         // 🔒 SEGURIDAD: Si se está cambiando la contraseña, hashear de forma segura
         if (password) {

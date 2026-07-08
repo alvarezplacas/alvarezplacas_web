@@ -554,16 +554,35 @@ export const GET: APIRoute = async ({ cookies }) => {
               piecesHtml += "<tr><td><strong style='color: #3b82f6;'>" + p.q + "</strong></td><td><strong>" + p.l + " mm</strong></td><td><strong>" + p.h + " mm</strong></td><td style='color:#aaa;'>" + (p.label || '—') + "</td></tr>";
             });
             
-            // Construir texto plano compatible con Lepton
-            const leptonLines = pieces.map(p => p.q + "\\t" + p.l + "\\t" + p.h + "\\t" + (p.label || '')).join("\\n");
+            // Helper local para formatear tapacantos
+            const formatEdgeVal = (val: any) => {
+              if (!val || val <= 0) return '0';
+              if (val === 0.45) return '.4';
+              return val.toString();
+            };
+
+            // Construir texto plano compatible con Lepton (10 columnas: Cant;Largo;Alto;Detalle;Material;Girar;L1;L2;A1;A2)
+            const leptonLines = pieces.map(p => {
+              const matName = ((proj.brand || '') + ' ' + (proj.design || '')).trim() || 'Melamina';
+              const rot = p.canRotate === false ? 0 : 1;
+              const t = formatEdgeVal(p.edges?.t);
+              const b = formatEdgeVal(p.edges?.b);
+              const l = formatEdgeVal(p.edges?.l);
+              const r = formatEdgeVal(p.edges?.r);
+              return p.q + "\\t" + p.l + "\\t" + p.h + "\\t" + (p.label || '') + "\\t" + matName + "\\t" + rot + "\\t" + t + "\\t" + b + "\\t" + l + "\\t" + r;
+            }).join("\\n");
             
-            // Reconstruir el contenido de un archivo de texto compatible con el Asistente de Importacion de Lepton
+            // Reconstruir el contenido de un archivo de texto compatible con el Asistente de Importacion de Lepton (10 columnas)
             let importTxt = "";
             pieces.forEach(p => {
               const matName = ((proj.brand || '') + ' ' + (proj.design || '')).trim() || 'Melamina';
               const canRotateVal = p.canRotate === false ? 0 : 1;
-              // Formato de 6 campos: Cantidad;Largo;Alto;NombrePieza;Material;Girar
-              importTxt += p.q + ";" + p.l + ";" + p.h + ";" + (p.label || '') + ";" + matName + ";" + canRotateVal + "\\n";
+              const t = formatEdgeVal(p.edges?.t);
+              const b = formatEdgeVal(p.edges?.b);
+              const l = formatEdgeVal(p.edges?.l);
+              const r = formatEdgeVal(p.edges?.r);
+              // Formato de 10 campos: Cantidad;Largo;Alto;NombrePieza;Material;Girar;L1;L2;A1;A2
+              importTxt += p.q + ";" + p.l + ";" + p.h + ";" + (p.label || '') + ";" + matName + ";" + canRotateVal + ";" + t + ";" + b + ";" + l + ";" + r + "\\n";
             });
 
             container.innerHTML += '<div class="project-block">' +

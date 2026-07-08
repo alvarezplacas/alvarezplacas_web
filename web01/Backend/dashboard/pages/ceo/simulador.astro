@@ -249,6 +249,26 @@ if (!sellerId) {
     // Run initial calculation
     calculate();
 
+    // Cargar formula guardada al inicio
+    async function loadSavedFormula() {
+        try {
+            const res = await fetch('/api/settings');
+            if (res.ok) {
+                const settings = await res.json();
+                if (settings && settings.GECOM_FORMULA) {
+                    const motorSelect = document.getElementById('sim-motor') as HTMLSelectElement;
+                    if (motorSelect) {
+                        motorSelect.value = settings.GECOM_FORMULA;
+                        calculate();
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Error al cargar la fórmula guardada:', e);
+        }
+    }
+    loadSavedFormula();
+
     document.getElementById('btn-save-formula')?.addEventListener('click', async () => {
         const motor = (document.getElementById('sim-motor') as HTMLSelectElement).value;
         try {
@@ -256,12 +276,24 @@ if (!sellerId) {
             const originalText = btn!.innerHTML;
             btn!.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GUARDANDO...';
             
-            // Reemplazar con la IP del backend real (Next.js CATALOGADOR)
-            const res = await fetch('http://192.168.1.87:3050/api/financial/settings', {
+            // 1. Guardar en base de datos central de la Web
+            const res = await fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key: 'GECOM_FORMULA', value: motor })
             });
+
+            // 2. Intentar guardar en backend local de red de forma asíncrona no bloqueante
+            try {
+                fetch('http://192.168.1.87:3050/api/financial/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'GECOM_FORMULA', value: motor }),
+                    signal: AbortSignal.timeout(2000)
+                }).catch(err => console.log('Next.js catalogador local no alcanzado:', err));
+            } catch (err) {
+                // Silencioso
+            }
 
             if (res.ok) {
                 btn!.innerHTML = '<i class="fas fa-check"></i> FÓRMULA ACTIVA';
@@ -271,12 +303,12 @@ if (!sellerId) {
                     btn!.style.background = '#8b5cf6';
                 }, 3000);
             } else {
-                alert('Error al guardar la fórmula.');
+                alert('Error al guardar la fórmula en la base de datos central.');
                 btn!.innerHTML = originalText;
             }
         } catch (e) {
             console.error(e);
-            alert('Error de conexión con la base de datos central.');
+            alert('Error de conexión al guardar la fórmula.');
             const btn = document.getElementById('btn-save-formula');
             btn!.innerHTML = '<i class="fas fa-save"></i> Guardar Fórmula';
         }

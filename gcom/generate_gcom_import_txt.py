@@ -1,261 +1,303 @@
 # -*- coding: utf-8 -*-
 """
-Generates the fixed-width TXT import file for GECOM using the CATALOGADOR (Directus Products) as the Source of Truth.
-Format specified by the user:
-Col 1: CODIGO ARTICULO (Characters, Width 11)
-Col 13: DESCRIPCION (Characters, Width 40)
-Col 60: RUBRO (Characters, Width 4)
+Generates GCOM import files with inverse rounding calculations, proper rubro letters, 
+and account numbers (cuenta contable) mapped from the PostgreSQL database.
+
+=======================================================
+CONFIGURACION REQUERIDA EN GECOM (IMPORTACION DE TXT)
+-------------------------------------------------------
+Ancho: 500  |  Separador decimal: ,
+
+Variables posicionales:
+  1. CODIGO ARTICULO     | Caracteres         | Col: 1   | Ancho: 11
+  2. DESCRIPCION         | Caracteres         | Col: 13  | Ancho: 40
+  3. RUBRO               | Caracteres         | Col: 60  | Ancho: 4
+  4. IMPUTACION COMPRA   | Entero blanqueado  | Col: 70  | Ancho: 6
+  5. IMPUTACION VENTA    | Entero blanqueado  | Col: 85  | Ancho: 6
+=======================================================
+
+Outputs:
+1. importacion_articulos.txt (100 chars, uses above layout)
+2. importacion_precios.txt (32 chars: SKU, List Number, Costo Inverso)
+3. precios_redondeados.txt (70 chars: SKU, Description, Gap, Cuenta Contable)
 """
 import os
-import json
 import re
+import math
+import psycopg2
 
 # Paths
-DIRECTUS_PRODUCTS_CACHE = r"\\Server-alvarezp\c\CATALOGADOR\scratch\directus_products.json"
-MAP_PATH = r"d:\Alvarezplacas_2026\WEB-alvarezplacas_astro\Alvarezplacas\scratch\gcom_to_directus_map_smart_correct.json"
 OUTPUT_DIR = r"d:\Alvarezplacas_2026\WEB-alvarezplacas_astro\Alvarezplacas\gcom"
-OUTPUT_TXT = os.path.join(OUTPUT_DIR, "importacion_articulos.txt")
-OUTPUT_PRN = os.path.join(OUTPUT_DIR, "importacion_articulos.prn")
+ARTICULOS_TXT = os.path.join(OUTPUT_DIR, "ART.TXT")
+PRECIOS_TXT = os.path.join(OUTPUT_DIR, "PRE.TXT")
+REDONDEADOS_TXT = os.path.join(OUTPUT_DIR, "RED.TXT")
 
 def clean_description(desc):
-    """Clean description to fit 40 characters, remove newlines, and strip accents."""
+    """Clean description to fit GCOM constraints (uppercase, no accents, max 40/47 chars)."""
     if not desc:
         return ""
-    # Replace literal backslash-n/r and real newlines
     desc = desc.replace(r"\n", " ").replace(r"\r", " ")
     desc = desc.replace("\n", " ").replace("\r", " ")
-    # Translate accents
+    
+    # Translate accents and special Spanish characters
     trans = str.maketrans(
-        "áéíóúüÁÉÍÓÚÜ",
-        "aeiouuAEIOUU"
+        "áéíóúüñÁÉÍÓÚÜÑ",
+        "aeiouunAEIOUUN"
     )
     desc = desc.translate(trans)
-    # Remove excessive spaces
-    desc = re.sub(r'\s+', ' ', desc).strip()
-    # Limit to 40 chars
-    return desc[:40]
-
-def get_gcom_rubro(sku, name):
-    """
-    Intelligently map Directus products to GCOM's 4-character rubro codes
-    based on SKU prefix and name context.
-    """
-    sku = (sku or "").upper()
-    name = (name or "").upper()
+    desc = desc.upper()
     
-    if sku.startswith("M-"):
-        # Maderas / Tableros
-        if "MDF" in name or "FIBRO" in name:
-            return "Ag0002"  # MDF
-        elif "AGLO" in name or "AGLOMERADO" in name:
-            return "Ag0001"  # AGLOMERADO
-        elif "FENOLICO" in name:
-            return "Ag0032"  # FENOLICO
-        elif "TERCIADO" in name:
-            return "Ag0023"  # TERCIADO
-        elif "OSB" in name:
-            return "Ag0055"  # OSB
-        elif "PINO" in name or "EUCA" in name or "FINGER" in name:
-            return "Ag0013"  # TABLEROS
-        elif "CHAPADUR" in name or "FIPLASTO" in name:
-            return "Ag0058"  # CHAPADUR
-        elif "WPC" in name or "ALISTONADA" in name:
-            return "Ag0044"  # PLACA ALISTONADA
-        else:
-            if "-10-" in sku or "-20-" in sku or "-30-" in sku:
-                return "Ag0002"  # Default melamine boards to MDF
-            return "Ag0013"  # Default to Tableros
-            
-    elif sku.startswith("H-"):
-        # Herrajes
-        if "BISAGRA" in name:
-            return "Ag0039"  # BISAGRAS
-        elif "TORNILLO" in name or "AUTOPERFORANTE" in name:
-            return "Ag0012"  # TORNILLOS
-        elif "CORREDERA" in name:
-            return "Ag0027"  # CORREDERAS
-        elif "TIRADOR" in name:
-            return "Ag0014"  # TIRADORES
-        elif "MANIJA" in name:
-            return "Ag0033"  # MANIJAS
-        elif "RIEL" in name or "GUIA" in name:
-            return "Ag0019"  # RIELES
-        elif "TAPA" in name:
-            return "Ag0011"  # HOJA TAPATORNILLO
-        else:
-            return "Ag0057"  # ACCESORIOS HERRAJES
-            
-    elif sku.startswith("T-"):
-        # Tapacantos
-        if "PVC" in name:
-            return "Ag0005"  # PVC
-        elif "ABS" in name:
-            return "Ag0006"  # ABS
-        else:
-            return "Ag0005"  # PVC default
-            
-    elif sku.startswith("R-"):
-        # Herramientas
-        return "Ag0024"  # HERRAMIENTAS
-        
-    elif sku.startswith("D-"):
-        # Molduras / Zocalos
-        if "ZOCALO" in name:
-            return "Ag0017"  # ZOCALOS
-        elif "VARILLA" in name:
-            return "Ag0015"  # VARILLAS
-        else:
-            return "Ag0017"  # ZOCALOS default
-            
-    elif sku.startswith("I-"):
-        # Insumos / Quimica
-        if "LACA" in name or "BARNIZ" in name or "PINTURA" in name:
-            return "Ag0051"  # LACAS
-        elif "MASILLA" in name:
-            return "Ag0052"  # MASILLAS
-        elif "ADHESIVO" in name or "COLA" in name or "PEGAMENTO" in name:
-            return "Ag0016"  # ADHESIVOS
-        else:
-            return "Ag0053"  # COMPLEMENTOS DE PINTURA
-            
-    elif sku.startswith("S-"):
-        # Servicios
-        if "CORTE" in name:
-            return "Ag0003"  # CORTES A MEDIDA
-        elif "PEGADO" in name or "FILO" in name:
-            return "Ag0009"  # PEGADO DE FILO
-        elif "PERFORACION" in name or "BISAGRA" in name:
-            return "Ag0056"  # SERVICIO PERFORACION BISAGRAS
-        else:
-            return "Ag0003"  # CORTES default
-            
-    else:
-        return "Ag0067"  # SIN DETALLE
+    # Convertir puntuación común en espacios para no unir números (ej 1/4 -> 1 4)
+    import re
+    desc = re.sub(r'[.,:/_]', ' ', desc)
+    # Eliminar explícitamente puntos suspensivos o puntos restantes
+    desc = desc.replace('.', '')
+    # Eliminar cualquier otro caracter que no sea alfanumérico, espacio o guión
+    desc = re.sub(r'[^A-Z0-9\s-]', '', desc)
+    
+    # Reducir espacios múltiples a uno solo
+    desc = re.sub(r'\s+', ' ', desc)
+    
+    # Global brand abbreviation (replace full names with 3 letters)
+    desc = re.sub(r'\bEGGER\b', 'EGG', desc)
+    desc = re.sub(r'\bSADEPAN\b', 'SAD', desc)
+    desc = re.sub(r'\bFAPLAC\b', 'FAP', desc)
+    desc = re.sub(r'\bNOVAPLAC\b', 'NOV', desc)
+    desc = re.sub(r'\bNOVA\b', 'NOV', desc)
+    desc = re.sub(r'\bEINHELL\b', 'EIN', desc)
+    desc = re.sub(r'\bGREENWAY\b', 'GRE', desc)
+    desc = re.sub(r'\bCANTOCHAP\b', 'CAN', desc)
+    desc = re.sub(r'\bKEKOL\b', 'KEK', desc)
+    desc = re.sub(r'\bCUBER\b', 'CUB', desc)
+    desc = re.sub(r'\bMACAVI\b', 'MAC', desc)
+    
+    # Remove redundant EGG EGG if any
+    desc = re.sub(r'\bEGG EGG\b', 'EGG', desc)
+    
+    # Abbreviation dictionary
+    abbreviations = {
+        r'\bAGLOMERADO\b': 'AGLO',
+        r'\bENCHAPADOS\b': 'ENC',
+        r'\bENCHAPADO\b': 'ENC',
+        r'\bESPESOR\b': 'ESP',
+        r'\bSOPORTE\b': 'SOP',
+        r'\bPLACARD\b': 'PLAC',
+        r'\bINALAMBRICA\b': 'INAL',
+        r'\bINALAMBRICO\b': 'INAL',
+        r'\bELECTRICA\b': 'ELEC',
+        r'\bELECTRICO\b': 'ELEC',
+        r'\bBATERIA\b': 'BAT',
+        r'\bAMOLADORA\b': 'AMOL',
+        r'\bTALADRO\b': 'TAL',
+        r'\bASPIRADORA\b': 'ASP',
+        r'\bLIJADORA\b': 'LIJ',
+        r'\bMOTOSIERRA\b': 'MOTO',
+        r'\bINGLETEADORA\b': 'INGL',
+        r'\bCORTADORA\b': 'CORT',
+        r'\bBORDEADORA\b': 'BORD',
+        r'\bMEZCLADOR\b': 'MEZC',
+        r'\bACCESORIOS\b': 'ACC',
+        r'\bACCESORIO\b': 'ACC',
+        r'\bSISTEMA\b': 'SIST',
+        r'\bTELESCOPICA\b': 'TELES',
+        r'\bCORREDERA\b': 'CORR',
+        r'\bCORREDIZA\b': 'CORR',
+        r'\bPERFILES\b': 'PERF',
+        r'\bBISAGRA\b': 'BIS',
+        r'\bTAPAJUNTA\b': 'TAPA',
+        r'\bELEVADORES\b': 'ELEV',
+        r'\bCAJONES\b': 'CAJ',
+        r'\bCUCHILLA\b': 'CUCH',
+        r'\bCEPILLADO\b': 'CEP',
+        r'\bCEPILLO\b': 'CEP',
+        r'\bCARRETEL\b': 'CARR',
+        r'\bCUADROS\b': 'CUAD',
+        r'\bCIRCULAR\b': 'CIRC'
+    }
+    for pattern, replacement in abbreviations.items():
+        desc = re.sub(pattern, replacement, desc)
+    
+    return desc.strip()
+
+def calculate_inverse_price(cost, margin_percent, iva_percent):
+    """
+    1. Ideal public price = cost * (1 + margin) * (1 + IVA)
+    2. Round to nearest 100 pesos (e.g. Math.ceil(ideal/100) * 100)
+    3. Inverse cost = rounded / ((1 + margin) * (1 + IVA))
+    """
+    if cost is None or cost <= 0:
+        return 0.0
+    
+    margin_mult = 1.0 + (float(margin_percent or 30.0) / 100.0)
+    iva_mult = 1.0 + (float(iva_percent or 21.0) / 100.0)
+    
+    ideal_price = cost * margin_mult * iva_mult
+    # Round to nearest 100 pesos (commercial rounding)
+    rounded_price = math.ceil(ideal_price / 100.0) * 100.0
+    
+    # Inverse cost GCOM expects
+    inverse_cost = rounded_price / (margin_mult * iva_mult)
+    return inverse_cost
 
 def main():
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    products = []
-    source_name = ""
-
-    # Try to load from Catalogador source of truth
-    if os.path.exists(DIRECTUS_PRODUCTS_CACHE):
-        print(f"[1] Loading Directus products from Catalogador: {DIRECTUS_PRODUCTS_CACHE}")
+    print("[1] Connecting to PostgreSQL database...")
+    try:
+        conn = psycopg2.connect("postgresql://alvarez_admin:AlvarezAdmin2026@100.127.6.20:5432/alvarezplacas")
+    except Exception:
         try:
-            with open(DIRECTUS_PRODUCTS_CACHE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            raw_list = data.get("data", [])
-            for item in raw_list:
-                sku = item.get("sku")
-                nombre = item.get("nombre")
-                precio_efectivo = item.get("precio_efectivo")
-                if sku and nombre:
-                    products.append({
-                        "sku": sku,
-                        "nombre": nombre,
-                        "precio_efectivo": precio_efectivo
-                     })
-            source_name = "Catalogador Cache (directus_products.json)"
+            conn = psycopg2.connect("postgresql://alvarez_admin:AlvarezAdmin2026@localhost:5433/alvarezplacas")
         except Exception as e:
-            print(f"  Error reading from Catalogador: {e}")
+            print(f"❌ Error connecting to database: {e}")
+            return
 
-    # Fallback to smart correct mapping file if Catalogador is empty/unreadable
-    if not products and os.path.exists(MAP_PATH):
-        print(f"[1] Fallback: Loading matched products from {MAP_PATH}")
-        try:
-            with open(MAP_PATH, 'r', encoding='utf-8') as f:
-                map_data = json.load(f)
-            matched = map_data.get("matched", [])
-            for item in matched:
-                sku = item.get("directus_sku")
-                nombre = item.get("directus_name") or item.get("gcom_desc")
-                if sku and nombre:
-                    products.append({
-                        "sku": sku,
-                        "nombre": nombre,
-                        "precio_efectivo": None
-                    })
-            source_name = "Smart Matches Fallback"
-        except Exception as e:
-            print(f"  Error reading fallback: {e}")
+    cur = conn.cursor()
+    # Query products including rubro letter, account numbers, and brand name
+    query = """
+        SELECT p.sku, p.nombre, p.precio_efectivo, p."precio_L1", p.iva_porcentaje, p.margen_efectivo, p."Estado", 
+               r.letra as rubro_letra, p.codigo_contable, m.nombre as marca_nombre
+        FROM "Productos" p
+        LEFT JOIN marcas m ON p.marca = m.id
+        LEFT JOIN "Rubros" r ON p.rubro = r.id
+        WHERE p."Estado" LIKE '%Stock%' AND p.marca IS NOT NULL AND p.rubro IS NOT NULL
+        ORDER BY p.sku;
+    """
+    cur.execute(query)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
 
-    if not products:
-        print("  Error: No products could be loaded from any source!")
-        return
+    print(f"  Loaded {len(rows)} active products from database.")
 
-    print(f"  Loaded {len(products)} products from {source_name}")
-
-    print("\n[2] Generating GCOM fixed-width import lines...")
-    lines = []
-    rubros_count = {}
-
-    for item in products:
-        sku = item["sku"].strip()
-        nombre = item["nombre"].strip()
-        
-        # Limit description to 40 chars and clean spaces
-        desc_clean = clean_description(nombre)
-        
-        # Get the corresponding GCOM rubro
-        rubro_raw = get_gcom_rubro(sku, nombre)
-        # GCOM expects the rubro code in the import file without the 'Ag' prefix
-        rubro = rubro_raw[2:] if rubro_raw.startswith("Ag") else rubro_raw
-        rubros_count[rubro] = rubros_count.get(rubro, 0) + 1
-
-        # We build an 80-character line (since Col 69 + 12 - 1 = 80)
-        # Python string slicing is 0-indexed, so:
-        # Col 1 (index 0) to 11 (index 10)
-        # Col 13 (index 12) to 52 (index 51)
-        # Col 60 (index 59) to 67 (index 66)
-        # Col 69 (index 68) to 80 (index 79)
-        
-        line_chars = list(" " * 80)
-        
-        # CODIGO ARTICULO
-        sku_str = sku[:11].ljust(11)
-        for i, c in enumerate(sku_str):
-            line_chars[0 + i] = c
-            
-        # DESCRIPCION
-        desc_str = desc_clean[:40].ljust(40)
-        for i, c in enumerate(desc_str):
-            line_chars[12 + i] = c
-            
-        # RUBRO (width 8)
-        rubro_str = rubro[:8].ljust(8)
-        for i, c in enumerate(rubro_str):
-            line_chars[59 + i] = c
-            
-        # PRECIO (width 12)
-        precio_val = item.get("precio_efectivo")
-        if precio_val is not None and precio_val > 0:
-            precio_final = precio_val * 1.33
-            precio_str = f"{precio_final:.2f}".replace(".", ",").rjust(12)
-        else:
-            precio_str = " " * 12
-            
-        for i, c in enumerate(precio_str):
-            line_chars[68 + i] = c
-            
-        lines.append("".join(line_chars))
-
-    print(f"  Generated {len(lines)} lines.")
-    print("  Rubros distribution:")
-    for rb, count in sorted(rubros_count.items()):
-        print(f"    Rubro {rb}: {count} items")
-
-    # Save to TXT file in ANSI format
-    with open(OUTPUT_TXT, 'w', encoding='ansi') as f:
-        f.write("\n".join(lines) + "\n")
+    print("\n[2] Generating GCOM posicional files...")
+    lines_articulos = []
+    lines_precios = []
+    lines_redondeados = []
     
-    # Save to PRN file in ANSI format
-    with open(OUTPUT_PRN, 'w', encoding='ansi') as f:
-        f.write("\n".join(lines) + "\n")
+    seen_descriptions_47 = {}
+    seen_descriptions_40 = {}
 
-    print(f"\n[3] Import files successfully saved to:")
-    print(f"    - {OUTPUT_TXT} ({os.path.getsize(OUTPUT_TXT):,} bytes)")
-    print(f"    - {OUTPUT_PRN} ({os.path.getsize(OUTPUT_PRN):,} bytes)")
+    for row in rows:
+        sku = (row[0] or "").strip()
+        nombre = (row[1] or "").strip()
+        precio_efectivo = row[2]
+        precio_l1 = row[3]
+        iva_porcentaje = row[4]
+        margen_efectivo = row[5]
+        rubro_letra = (row[7] or "X").strip()
+        codigo_contable = (row[8] or "").strip()
+        marca_nombre = (row[9] or "").strip()
+        
+        # Clean SKU (GCOM wants alphanumeric without hyphens)
+        sku_clean = sku.replace("-", "")
+        
+        # Determine cost (use L1 for Placas/Maderas, precio_efectivo for others)
+        cost = float(precio_l1) if (sku.startswith("M-") and precio_l1 is not None) else float(precio_efectivo or 0.0)
+        
+        # Calculate GCOM Costo Inverso
+        costo_inverso = calculate_inverse_price(cost, margen_efectivo, iva_porcentaje)
+        costo_inverso_str = f"{costo_inverso:.2f}".replace(".", ",")
+        
+        # Clean name/descriptions
+        desc_base = clean_description(nombre)
+        
+        # 1. Description for Articulos (47 chars max)
+        desc_47 = desc_base[:47]
+        if desc_47 in seen_descriptions_47:
+            suffix = f" {sku[-4:]}"
+            desc_47 = desc_47[:42] + suffix
+            counter = 1
+            while desc_47 in seen_descriptions_47:
+                desc_47 = f"{desc_47[:39]}_{counter}{suffix}"
+                counter += 1
+        seen_descriptions_47[desc_47] = sku
+        
+        # 2. Description for Redondeados (40 chars max)
+        desc_40 = desc_base[:40]
+        if desc_40 in seen_descriptions_40:
+            suffix = f" {sku[-4:]}"
+            desc_40 = desc_40[:35] + suffix
+            counter = 1
+            while desc_40 in seen_descriptions_40:
+                desc_40 = f"{desc_40[:32]}_{counter}{suffix}"
+                counter += 1
+        seen_descriptions_40[desc_40] = sku
+        
+        # Extract GCOM numeric account number (e.g. Ag0001 -> 0001)
+        cuenta_num = codigo_contable[2:] if codigo_contable.startswith("Ag") else codigo_contable
+        if not cuenta_num:
+            cuenta_num = "0000"
+
+        # --- A. importacion_articulos.txt (100 characters) ---
+        # 0:11   -> SKU (Col 1, Ancho 11)
+        # 12:52  -> Description (Col 13, Ancho 40)
+        # 59:63  -> Rubro Letter (Col 60, Ancho 4)
+        # 69:75  -> Imputacion Compra (Col 70, Ancho 6)
+        # 84:90  -> Imputacion Venta (Col 85, Ancho 6)
+        line_art = list(" " * 100)
+        sku_art = sku_clean[:11].ljust(11)
+        for i, c in enumerate(sku_art):
+            line_art[0 + i] = c
+            
+        desc_art = desc_40.ljust(40) # usar desc_40 ya que ahora el ancho es 40
+        for i, c in enumerate(desc_art):
+            line_art[12 + i] = c
+            
+        rubro_art = rubro_letra[:4].ljust(4)
+        for i, c in enumerate(rubro_art):
+            line_art[59 + i] = c
+            
+        # Imputacion Compra y Venta (utiliza cuenta_num que deriva de codigo_contable)
+        cuenta_pad = cuenta_num[:6].ljust(6)
+        for i, c in enumerate(cuenta_pad):
+            line_art[69 + i] = c
+            line_art[84 + i] = c
+            
+        lines_articulos.append("".join(line_art))
+
+        # --- B. importacion_precios.txt (32 characters) ---
+        # 0:12   -> SKU (12 chars)
+        # 12:15  -> List Number (3 chars)
+        # 15:32  -> Price (17 chars)
+        line_prc = list(" " * 32)
+        for i, c in enumerate(sku_clean[:12].ljust(12)):
+            line_prc[0 + i] = c
+        for i, c in enumerate("1".ljust(3)):
+            line_prc[12 + i] = c
+        for i, c in enumerate(costo_inverso_str[:17].rjust(17)):
+            line_prc[15 + i] = c
+        lines_precios.append("".join(line_prc))
+
+        # --- C. precios_redondeados.txt (70 characters) ---
+        # 0:15   -> SKU (15 chars)
+        # 15:55  -> Description (40 chars)
+        # 55:62  -> Gap (7 chars)
+        # 62:70  -> Cuenta Contable (8 chars)
+        line_red = list(" " * 70)
+        for i, c in enumerate(sku_clean[:15].ljust(15)):
+            line_red[0 + i] = c
+        for i, c in enumerate(desc_40.ljust(40)):
+            line_red[15 + i] = c
+        # Gap (55:62) remains spaces
+        for i, c in enumerate(cuenta_num[:8].ljust(8)):
+            line_red[62 + i] = c
+        lines_redondeados.append("".join(line_red))
+
+    # Save all files in ANSI format
+    with open(ARTICULOS_TXT, 'w', encoding='ansi') as f:
+        f.write("\n".join(lines_articulos) + "\n")
+    with open(PRECIOS_TXT, 'w', encoding='ansi') as f:
+        f.write("\n".join(lines_precios) + "\n")
+    with open(REDONDEADOS_TXT, 'w', encoding='ansi') as f:
+        f.write("\n".join(lines_redondeados) + "\n")
+
+    print(f"\n[3] Export files successfully saved:")
+    print(f"    - {ARTICULOS_TXT} ({os.path.getsize(ARTICULOS_TXT):,} bytes, 100 chars)")
+    print(f"    - {PRECIOS_TXT} ({os.path.getsize(PRECIOS_TXT):,} bytes, 32 chars)")
+    print(f"    - {REDONDEADOS_TXT} ({os.path.getsize(REDONDEADOS_TXT):,} bytes, 70 chars)")
+    print(f"    - Total processed: {len(rows)}")
 
 if __name__ == "__main__":
     main()

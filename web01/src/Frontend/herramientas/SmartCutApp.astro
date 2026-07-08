@@ -759,8 +759,8 @@ const { isLoggedIn = false } = Astro.props;
                 <div>
                     <label style="font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 8px; display: block;">1. MARCA</label>
                     <select id="plate-brand" onchange="updateCatalogFlow('brand')" style="width: 100%; padding: 15px; background: #000; border: 1px solid #333; color: white; border-radius: 12px; font-weight: 700;">
-                        <option value="FAPLAC">FAPLAC (2750x1820)</option>
-                        <option value="EGGER">EGGER (2600x1820)</option>
+                        <option value="FAPLAC">FAPLAC (2750x1830)</option>
+                        <option value="EGGER">EGGER (2600x1830)</option>
                         <option value="SADEPAN">SADEPAN (2820x1830)</option>
                         <option value="NOVA">NOVA (3660x1830)</option>
                         <option value="CUSTOM">PERSONALIZADA...</option>
@@ -1144,7 +1144,7 @@ const { isLoggedIn = false } = Astro.props;
         session.activeCanto = val;
         renderEditorSC();
     };
-    const BRANDS = { 'FAPLAC': { w: 2750, h: 1820 }, 'EGGER': { w: 2600, h: 1820 }, 'SADEPAN': { w: 2820, h: 1830 }, 'NOVA': { w: 3660, h: 1830 }, 'OSB': { w: 2440, h: 1220 } };
+    const BRANDS = { 'FAPLAC': { w: 2750, h: 1830 }, 'EGGER': { w: 2600, h: 1830 }, 'SADEPAN': { w: 2820, h: 1830 }, 'NOVA': { w: 3660, h: 1830 }, 'OSB': { w: 2440, h: 1220 } };
 
     async function initSC() {
         try {
@@ -1904,7 +1904,7 @@ const { isLoggedIn = false } = Astro.props;
                 }));
             });
 
-            visualizer.render(p.result, p.w, p.h, (u) => { p.result = u; updateStatsSC(); });
+            visualizer.render(p.result, p.w - engine.trim, p.h - engine.trim, (u) => { p.result = u; updateStatsSC(); });
             updateStatsSC();
             document.getElementById(targetContainer).scrollIntoView({ behavior: 'smooth' });
             document.getElementById('btn-print-sc')?.classList.remove('hidden');
@@ -1981,8 +1981,8 @@ const { isLoggedIn = false } = Astro.props;
                     </div>
                     
                     <div class="print-layout-box-clean">
-                        <div class="layout-title-clean">${idx + 1} de ${p.w} x ${p.h} Placa Entera</div>
-                        <canvas id="print-canvas-${idx}" width="${p.w}" height="${p.h}"></canvas>
+                        <div class="layout-title-clean">${idx + 1} de ${p.w - engine.trim} x ${p.h - engine.trim} Placa Real</div>
+                        <canvas id="print-canvas-${idx}" width="${p.w - engine.trim}" height="${p.h - engine.trim}"></canvas>
                     </div>
 
                     <div class="print-columns-container">
@@ -2038,14 +2038,16 @@ const { isLoggedIn = false } = Astro.props;
                 const canvas = document.getElementById(`print-canvas-${idx}`);
                 const ctx = canvas.getContext('2d');
                 // Escalar canvas para que ocupe el ancho de la hoja
-                const scale = 800 / p.w;
+                const realW = p.w - engine.trim;
+                const realH = p.h - engine.trim;
+                const scale = 800 / realW;
                 canvas.width = 800;
-                canvas.height = p.h * scale;
+                canvas.height = realH * scale;
                 
                 // Usar el visualizador para dibujar en el canvas de impresión (forzando modo luz)
                 const tempVis = new visualizer.constructor('print-report-container');
                 tempVis.scale = scale;
-                tempVis.drawPlate(ctx, plate, p.w, p.h);
+                tempVis.drawPlate(ctx, plate, realW, realH);
             });
             window.print();
         }, 100);
@@ -2100,7 +2102,7 @@ const { isLoggedIn = false } = Astro.props;
             if (valid.length > 0) {
                 p.result = engine.optimize(p.w, p.h, valid);
                 visualizer.setContainer('plates-container-compact');
-                visualizer.render(p.result, p.w, p.h, (u) => { p.result = u; updateStatsSC(); });
+                visualizer.render(p.result, p.w - engine.trim, p.h - engine.trim, (u) => { p.result = u; updateStatsSC(); });
                 updateStatsSC();
             }
         } else {

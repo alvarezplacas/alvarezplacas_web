@@ -25,6 +25,9 @@ if (!sellerId) {
         <button class="ctab" data-ctab="margen">
             <i class="fas fa-chart-line"></i> Margen Avanzado
         </button>
+        <button class="ctab" data-ctab="stock-finder">
+            <i class="fas fa-boxes"></i> Ubicación Stock
+        </button>
         <button class="ctab" data-ctab="ayuda" style="margin-left:auto; border-color:#3d79bf; color:#3b82f6;">
             <i class="fas fa-question-circle"></i> Manual de Ayuda
         </button>
@@ -338,6 +341,56 @@ if (!sellerId) {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 6. BUSCADOR DE STOCK -->
+        <!-- ============================================== -->
+        <div class="ctab-panel hidden" id="panel-stock-finder">
+            <div style="background:#252525; border:1px solid #383838; border-radius:8px; padding:20px; max-width:800px; margin:0 auto;">
+                <h2 style="color:#fff; margin-bottom:15px; font-size:18px;"><i class="fas fa-boxes" style="color:#8b5cf6; margin-right:10px;"></i> Localizador de Stock y Ubicaciones</h2>
+                <p style="color:#bbb; font-size:13px; margin-bottom:20px;">Permite consultar la torre o plaquero exacto de un SKU o melamina para guiar al operario o cerrar la venta.</p>
+                
+                <div x-data="vendedorStockFinder()" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" x-model="query" @keyup.enter="search()" class="ps-input" placeholder="Buscar por SKU o descripción (Ej: Egger Roble)" style="flex: 1;">
+                        <button @click="search()" class="ctab active" style="padding: 10px 20px; background: #2e609c; border-color: #3d79bf; color: #fff;"><i class="fas fa-search"></i> Buscar</button>
+                    </div>
+
+                    <template x-if="loading">
+                        <div style="text-align: center; color: #888; padding: 20px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
+                        </div>
+                    </template>
+
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                        <template x-for="item in results" :key="item.id">
+                            <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 x-text="item.name" style="color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 4px;"></h4>
+                                    <span x-text="item.sku" style="font-family: monospace; font-size: 11px; color: #888;"></span>
+                                </div>
+                                <div style="text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+                                    <span style="font-size: 14px; font-weight: 900; color: #10b981;">Stock Total: <span x-text="item.stock_actual"></span></span>
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                                        <template x-for="loc in item.locations" :key="loc.location_name">
+                                            <span style="background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700;">
+                                                <span x-text="loc.location_name"></span>: +<span x-text="loc.quantity"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="item.locations.length === 0">
+                                            <span style="color: #666; font-size: 11px; font-style: italic;">Sin ubicación registrada</span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="!loading && results.length === 0 && searched">
+                            <p style="text-align: center; color: #888; padding: 20px;">No se encontraron productos con esa descripción o SKU.</p>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -680,6 +733,36 @@ if (!sellerId) {
                 }
 
                 this.mar_markup = ((this.mar_ganancia / this.mar_costoTotal) * 100).toFixed(2);
+            }
+        }));
+
+        window.Alpine.data('vendedorStockFinder', () => ({
+            query: '',
+            results: [],
+            loading: false,
+            searched: false,
+
+            async search() {
+                if (this.query.trim().length < 2) {
+                    alert('Escriba al menos 2 caracteres para buscar.');
+                    return;
+                }
+                this.loading = true;
+                this.searched = true;
+                try {
+                    const res = await fetch(`/api/vendedor/stock-finder?q=${encodeURIComponent(this.query)}`);
+                    const data = await res.json();
+                    if (data.success) {
+                        this.results = data.products;
+                    } else {
+                        this.results = [];
+                    }
+                } catch(e) {
+                    console.error('Error fetching stock finder results:', e);
+                    this.results = [];
+                } finally {
+                    this.loading = false;
+                }
             }
         }));
     });

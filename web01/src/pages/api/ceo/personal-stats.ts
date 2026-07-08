@@ -82,7 +82,17 @@ export const GET: APIRoute = async ({ url, cookies }) => {
                 c.sueldo_base,
                 c.id_reloj,
                 c.horas_extras_manual,
-                COUNT(DISTINCT DATE(a.timestamp)) as dias_presentes,
+                c.indumentaria_entregada,
+                c.fecha_entrega_indumentaria,
+                c.observaciones,
+                c.adelantos,
+                c.es_externo,
+                c.horas_trabajadas_manual,
+                c.basico_recibo,
+                c.antiguedad_anos,
+                c.no_remunerativo_basico,
+                c.es_media_jornada,
+                COUNT(DISTINCT a.dia) as dias_presentes,
                 SUM(
                     CASE 
                         WHEN a.daily_hours IS NOT NULL THEN a.daily_hours
@@ -94,14 +104,12 @@ export const GET: APIRoute = async ({ url, cookies }) => {
                 SELECT 
                     id_reloj,
                     DATE(timestamp) as dia,
-                    DATE(timestamp) as daily_date,
-                    EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp))) / 3600.0 as daily_hours,
-                    timestamp
+                    EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp))) / 3600.0 as daily_hours
                 FROM control_asistencias
                 WHERE 1=1 ${dateFilter.replace('a.timestamp', 'timestamp')}
-                GROUP BY id_reloj, DATE(timestamp), timestamp
+                GROUP BY id_reloj, DATE(timestamp)
             ) a ON c.id_reloj = a.id_reloj
-            GROUP BY c.id, c.nombre, c.funcion, c.sueldo_base, c.id_reloj, c.horas_extras_manual
+            GROUP BY c.id, c.nombre, c.funcion, c.sueldo_base, c.id_reloj, c.horas_extras_manual, c.indumentaria_entregada, c.fecha_entrega_indumentaria, c.observaciones, c.adelantos, c.es_externo, c.horas_trabajadas_manual, c.basico_recibo, c.antiguedad_anos, c.no_remunerativo_basico, c.es_media_jornada
             ORDER BY c.nombre ASC
         `);
 
@@ -116,6 +124,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
                 AND DATE(a.timestamp) >= DATE_TRUNC('month', CURRENT_DATE)
                 AND DATE(a.timestamp) <= CURRENT_DATE
             WHERE c.id_reloj IS NOT NULL
+                AND c.es_externo = FALSE
                 AND c.id NOT IN (
                     SELECT DISTINCT cp.id 
                     FROM control_personal cp
@@ -249,10 +258,13 @@ export const GET: APIRoute = async ({ url, cookies }) => {
                 let horasTotales = parseFloat(r.horas_totales || '0');
                 let faltasMes = faltasMesMap[r.id] || 0;
 
-                if (r.id === 13 || r.id_reloj === '999' || (r.nombre && r.nombre.includes("Alvarez, Javier"))) {
+                if (r.es_externo || r.id === 13 || r.id_reloj === '999' || (r.nombre && r.nombre.includes("Alvarez, Javier"))) {
                     const weekdays = getWeekdaysCount(periodo);
                     diasPresentes = weekdays;
-                    horasTotales = weekdays * 9.0;
+                    const dailyHours = (r.id === 13 || r.id_reloj === '999' || (r.nombre && r.nombre.includes("Alvarez, Javier")))
+                        ? 9.0
+                        : parseFloat(r.horas_trabajadas_manual || '8.0');
+                    horasTotales = weekdays * dailyHours;
                     faltasMes = 0;
                 }
 

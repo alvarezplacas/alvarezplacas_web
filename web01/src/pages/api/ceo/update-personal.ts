@@ -15,7 +15,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         const {
             id, nombre, funcion, sueldo_base, id_reloj, email, whatsapp,
             forma_pago, indumentaria_entregada, fecha_entrega_indumentaria,
-            observaciones, adelantos, horas_extras_manual
+            observaciones, adelantos, horas_extras_manual,
+            es_externo, horas_trabajadas_manual,
+            basico_recibo, antiguedad_anos, no_remunerativo_basico, es_media_jornada,
+            talle_pantalon, talle_remera, talle_calzado, talle_campera
         } = body;
 
         if (!id) {
@@ -30,7 +33,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             ADD COLUMN IF NOT EXISTS fecha_entrega_indumentaria DATE,
             ADD COLUMN IF NOT EXISTS observaciones TEXT,
             ADD COLUMN IF NOT EXISTS adelantos NUMERIC(12,2) DEFAULT 0,
-            ADD COLUMN IF NOT EXISTS horas_extras_manual NUMERIC(6,2) DEFAULT 0
+            ADD COLUMN IF NOT EXISTS horas_extras_manual NUMERIC(6,2) DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS es_externo BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS horas_trabajadas_manual NUMERIC(6,2) DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS basico_recibo NUMERIC(12,2) DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS antiguedad_anos INT DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS no_remunerativo_basico NUMERIC(12,2) DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS es_media_jornada BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS talle_pantalon VARCHAR(10),
+            ADD COLUMN IF NOT EXISTS talle_remera VARCHAR(10),
+            ADD COLUMN IF NOT EXISTS talle_calzado VARCHAR(10),
+            ADD COLUMN IF NOT EXISTS talle_campera VARCHAR(10)
         `).catch(() => {}); // Silently ignore if columns already exist
 
         // Update in DB
@@ -48,8 +61,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 fecha_entrega_indumentaria = $9,
                 observaciones = $10,
                 adelantos = $11,
-                horas_extras_manual = $12
-            WHERE id = $13
+                horas_extras_manual = $12,
+                es_externo = $13,
+                horas_trabajadas_manual = $14,
+                basico_recibo = $15,
+                antiguedad_anos = $16,
+                no_remunerativo_basico = $17,
+                es_media_jornada = $18,
+                talle_pantalon = $19,
+                talle_remera = $20,
+                talle_calzado = $21,
+                talle_campera = $22
+            WHERE id = $23
         `, [
             nombre, 
             funcion || null, 
@@ -63,6 +86,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             observaciones || null,
             adelantos ? parseFloat(adelantos) : 0,
             horas_extras_manual ? parseFloat(horas_extras_manual) : 0,
+            es_externo === 'true' || es_externo === true,
+            horas_trabajadas_manual ? parseFloat(horas_trabajadas_manual) : 0,
+            basico_recibo ? parseFloat(basico_recibo) : 0,
+            antiguedad_anos ? parseInt(antiguedad_anos) : 0,
+            no_remunerativo_basico ? parseFloat(no_remunerativo_basico) : 0,
+            es_media_jornada === 'true' || es_media_jornada === true,
+            talle_pantalon || null,
+            talle_remera || null,
+            talle_calzado || null,
+            talle_campera || null,
             parseInt(id)
         ]);
 

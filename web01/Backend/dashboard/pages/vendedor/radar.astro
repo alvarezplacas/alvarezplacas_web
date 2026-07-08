@@ -10,149 +10,239 @@ if (!sellerId) {
 ---
 
 <CajeroWorkspace title="Radar Global de Mercado" vendedor_id={sellerId}>
-    <div x-data="marketRadar()" x-init="fetchData()">
+    <div x-data="marketRadar()" x-init="fetchData()" class="radar-container">
         <div class="radar-header">
-            <h2><i class="fas fa-satellite-dish" style="color: #3b82f6;"></i> Radar Global Predictivo</h2>
-            <p>Monitoreo de la cadena de valor global para prever aumentos en listas de precios de tableros y herrajes.</p>
+            <div class="header-info">
+                <h2><i class="fas fa-satellite-dish animate-pulse-slow" style="color: #3b82f6;"></i> Radar Global Predictivo</h2>
+                <p>Auditoría de insumos locales de la Bolsa Argentina y commodities internacionales para anticipar reajustes de precios.</p>
+            </div>
             <button class="btn-refresh" @click="fetchData(true)" :disabled="loading">
                 <i class="fas fa-sync-alt" :class="loading ? 'fa-spin' : ''"></i> Actualizar Ahora
             </button>
         </div>
         
         <div x-show="loading" class="loading-state">
-            <i class="fas fa-spinner fa-spin"></i> Estableciendo conexión con los mercados...
+            <div class="spinner-box">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <span>Estableciendo conexión con los mercados y calculando persistencia a 30 días...</span>
+            </div>
         </div>
 
         <div x-show="!loading" class="radar-grid" x-cloak>
             
-            <!-- Semáforo de Riesgo General -->
+            <!-- Semáforo de Riesgo General con Panorama Ejecutivo -->
             <div class="radar-card risk-card" :class="getRiskClass()">
-                <div class="risk-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                <div class="risk-info">
-                    <h3>Nivel de Riesgo de Aumento (30-60 días)</h3>
-                    <p x-text="getRiskText()"></p>
+                <div class="risk-main-row">
+                    <div class="risk-badge-box">
+                        <div class="risk-gauge" :class="getRiskClass()">
+                            <span class="gauge-val" x-text="riesgoPuntaje.toFixed(1)"></span>
+                            <span class="gauge-max">/10</span>
+                        </div>
+                    </div>
+                    <div class="risk-info">
+                        <h3>Riesgo de Aumento Acumulado (Próximos 30 días)</h3>
+                        <p class="risk-desc-text" x-text="getRiskText()"></p>
+                    </div>
+                </div>
+                
+                <!-- Nota de Panorama Mensual (Análisis de Persistencia) -->
+                <div class="panorama-box">
+                    <span class="panorama-title">
+                        <i class="fas fa-brain"></i> Análisis de Persistencia y Panorama Mensual
+                    </span>
+                    <p class="panorama-text" x-text="panoramaNota"></p>
                 </div>
             </div>
 
-                <!-- Indicadores Locales -->
-                <div class="radar-card full-width" style="padding: 15px;">
-                    <div class="card-title" style="margin-bottom: 10px; font-size: 13px;">
-                        <i class="fas fa-money-bill-wave" style="color: #10b981;"></i> Indicadores Macro Locales
-                    </div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <template x-if="dolar?.blue?.val > 0">
-                            <div class="indicator" style="flex: 1; padding: 10px; min-width: 120px;">
-                                <span class="ind-label">Dólar Blue</span>
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <span class="ind-value" style="font-size: 18px;" x-text="fmtDolar(dolar.blue.val)"></span>
-                                    <span style="font-size: 12px; font-weight: bold;" :class="dolar.blue.var > 0 ? 'text-danger' : (dolar.blue.var < 0 ? 'text-success' : 'text-muted')">
-                                        <i class="fas" :class="dolar.blue.var > 0 ? 'fa-caret-up' : (dolar.blue.var < 0 ? 'fa-caret-down' : 'fa-minus')"></i>
-                                        <span x-text="Math.abs(dolar.blue.var).toFixed(2) + '%'"></span>
-                                    </span>
-                                </div>
-                            </div>
-                        </template>
-                        <template x-if="dolar?.mep?.val > 0">
-                            <div class="indicator" style="flex: 1; padding: 10px; min-width: 120px;">
-                                <span class="ind-label">Dólar MEP</span>
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <span class="ind-value" style="font-size: 18px;" x-text="fmtDolar(dolar.mep.val)"></span>
-                                    <span style="font-size: 12px; font-weight: bold;" :class="dolar.mep.var > 0 ? 'text-danger' : (dolar.mep.var < 0 ? 'text-success' : 'text-muted')">
-                                        <i class="fas" :class="dolar.mep.var > 0 ? 'fa-caret-up' : (dolar.mep.var < 0 ? 'fa-caret-down' : 'fa-minus')"></i>
-                                        <span x-text="Math.abs(dolar.mep.var).toFixed(2) + '%'"></span>
-                                    </span>
-                                </div>
-                            </div>
-                        </template>
-                        <template x-if="dolar?.ccl?.val > 0">
-                            <div class="indicator" style="flex: 1; padding: 10px; min-width: 120px;">
-                                <span class="ind-label">Dólar CCL</span>
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <span class="ind-value" style="font-size: 18px;" x-text="fmtDolar(dolar.ccl.val)"></span>
-                                    <span style="font-size: 12px; font-weight: bold;" :class="dolar.ccl.var > 0 ? 'text-danger' : (dolar.ccl.var < 0 ? 'text-success' : 'text-muted')">
-                                        <i class="fas" :class="dolar.ccl.var > 0 ? 'fa-caret-up' : (dolar.ccl.var < 0 ? 'fa-caret-down' : 'fa-minus')"></i>
-                                        <span x-text="Math.abs(dolar.ccl.var).toFixed(2) + '%'"></span>
-                                    </span>
-                                </div>
-                            </div>
-                        </template>
-                        <template x-if="riesgoPais > 0">
-                            <div class="indicator" style="flex: 1; padding: 10px; min-width: 120px; border-color: #333; background: rgba(245, 158, 11, 0.05);">
-                                <span class="ind-label" style="color: #f59e0b;">Riesgo País</span>
-                                <span class="ind-value" style="font-size: 18px;" x-text="riesgoPais + ' pts'"></span>
-                            </div>
-                        </template>
-                    </div>
+            <!-- Indicadores Macro Locales -->
+            <div class="radar-card full-width" style="padding: 15px;">
+                <div class="card-title" style="margin-bottom: 10px; font-size: 13px;">
+                    <i class="fas fa-money-bill-wave" style="color: #10b981;"></i> Indicadores Macro y Tipo de Cambio
                 </div>
-
-            <!-- Panel Sudamérica (Tableros) -->
-            <div class="radar-card">
-                <div class="card-title"><i class="fas fa-tree" style="color:#f59e0b;"></i> Salud Sector Sudamérica (MDF/Tableros)</div>
-                <p class="card-desc">Acciones en bolsa de la competencia directa y matriz de Faplac. Si caen, hay baja demanda regional de muebles.</p>
-                
-                <div class="ticker-list">
-                    <template x-for="ticker in [faplac, dexco, suzano]">
-                        <div class="ticker-item">
-                            <div class="t-name">
-                                <strong x-text="ticker.name"></strong>
-                                <span class="t-symbol" x-text="ticker.symbol"></span>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <template x-if="dolar?.blue?.val > 0">
+                        <div class="indicator" style="flex: 1; padding: 12px; min-width: 140px;">
+                            <span class="ind-label">Dólar Blue</span>
+                            <div class="ind-body">
+                                <span class="ind-value" x-text="fmtDolar(dolar.blue.val)"></span>
+                                <span class="ind-var" :class="dolar.blue.var > 0 ? 'text-danger' : (dolar.blue.var < 0 ? 'text-success' : 'text-muted')">
+                                    <i class="fas" :class="dolar.blue.var > 0 ? 'fa-caret-up' : (dolar.blue.var < 0 ? 'fa-caret-down' : 'fa-minus')"></i>
+                                    <span x-text="Math.abs(dolar.blue.var).toFixed(2) + '%'"></span>
+                                </span>
                             </div>
-                            <div class="t-price" x-text="ticker.price.toFixed(2)"></div>
-                            <div class="t-change" :class="ticker.changePercent >= 0 ? 'text-success' : 'text-danger'">
-                                <i class="fas" :class="ticker.changePercent >= 0 ? 'fa-caret-up' : 'fa-caret-down'"></i>
-                                <span x-text="Math.abs(ticker.changePercent).toFixed(2) + '%'"></span>
+                        </div>
+                    </template>
+                    <template x-if="dolar?.mep?.val > 0">
+                        <div class="indicator" style="flex: 1; padding: 12px; min-width: 140px;">
+                            <span class="ind-label">Dólar MEP</span>
+                            <div class="ind-body">
+                                <span class="ind-value" x-text="fmtDolar(dolar.mep.val)"></span>
+                                <span class="ind-var" :class="dolar.mep.var > 0 ? 'text-danger' : (dolar.mep.var < 0 ? 'text-success' : 'text-muted')">
+                                    <i class="fas" :class="dolar.mep.var > 0 ? 'fa-caret-up' : (dolar.mep.var < 0 ? 'fa-caret-down' : 'fa-minus')"></i>
+                                    <span x-text="Math.abs(dolar.mep.var).toFixed(2) + '%'"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="dolar?.ccl?.val > 0">
+                        <div class="indicator" style="flex: 1; padding: 12px; min-width: 140px;">
+                            <span class="ind-label">Dólar CCL</span>
+                            <div class="ind-body">
+                                <span class="ind-value" x-text="fmtDolar(dolar.ccl.val)"></span>
+                                <span class="ind-var" :class="dolar.ccl.var > 0 ? 'text-danger' : (dolar.ccl.var < 0 ? 'text-success' : 'text-muted')">
+                                    <i class="fas" :class="dolar.ccl.var > 0 ? 'fa-caret-up' : (dolar.ccl.var < 0 ? 'fa-caret-down' : 'fa-minus')"></i>
+                                    <span x-text="Math.abs(dolar.ccl.var).toFixed(2) + '%'"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="riesgoPais > 0">
+                        <div class="indicator" style="flex: 1; padding: 12px; min-width: 140px; border-color: rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.03);">
+                            <span class="ind-label" style="color: #f59e0b;">Riesgo País</span>
+                            <div class="ind-body">
+                                <span class="ind-value" style="color: #f59e0b;" x-text="riesgoPais + ' pts'"></span>
                             </div>
                         </div>
                     </template>
                 </div>
             </div>
 
-            <!-- Panel Insumos Globales -->
+            <!-- Panel 1: Siderurgia y Metalurgia (Bolsa de Comercio de Buenos Aires) -->
             <div class="radar-card">
-                <div class="card-title"><i class="fas fa-globe" style="color:#8b5cf6;"></i> Costos Base Internacionales (Egger / Sadepan)</div>
-                <p class="card-desc">Materias primas y divisas que encarecen la producción europea e importación a Argentina.</p>
+                <div class="card-title"><i class="fas fa-industry text-purple-400"></i> Insumos de Siderurgia y Metalurgia (Bolsa AR)</div>
+                <p class="card-desc">Materias primas clave cotizadas en pesos (BYMA) que impactan directamente en las listas de herrajes, correderas y perfiles metálicos.</p>
                 
                 <div class="ticker-list">
-                    <template x-for="ticker in [lumber, oil, eurusd]">
+                    <template x-for="ticker in [aluar, ternium]">
                         <div class="ticker-item">
-                            <div class="t-name">
-                                <strong x-text="ticker.name"></strong>
-                                <span class="t-symbol" x-text="ticker.symbol"></span>
-                            </div>
-                            <div class="t-price" x-text="ticker.price.toFixed(4)"></div>
-                            <div class="t-change" :class="ticker.changePercent >= 0 ? 'text-danger' : 'text-success'">
-                                <!-- Aca es inverso: si el petroleo sube, es MALO (rojo) para nuestros costos -->
-                                <i class="fas" :class="ticker.changePercent >= 0 ? 'fa-caret-up' : 'fa-caret-down'"></i>
-                                <span x-text="Math.abs(ticker.changePercent).toFixed(2) + '%'"></span>
-                            </div>
-                        </div>
-                    </template>
-                            <!-- Logística e Insumos -->
-                <div class="radar-card">
-                    <div class="card-title">
-                        <i class="fas fa-truck-loading" style="color: #3b82f6;"></i> Insumos y Logística Local
-                    </div>
-                    <p class="card-desc">Monitoreo de materias primas para herrajes (Grupo Euro, Bronzen) y fletes de proveedores locales (Egger, Sadepan).</p>
-                    
-                    <div class="ticker-list">
-                        <template x-for="ticker in [ali, hrc, ypf]">
-                            <div class="ticker-item">
+                            <div class="ticker-main">
                                 <div class="t-name">
                                     <strong x-text="ticker.name"></strong>
                                     <span class="t-symbol" x-text="ticker.symbol"></span>
                                 </div>
-                                <div class="t-price" x-text="ticker.price.toFixed(2)"></div>
-                                <div class="t-change" :class="ticker.changePercent >= 0 ? 'text-danger' : 'text-success'">
-                                    <!-- Aca es inverso: si aluminio sube, es MALO (rojo) para nuestros costos -->
-                                    <i class="fas" :class="ticker.changePercent >= 0 ? 'fa-caret-up' : 'fa-caret-down'"></i>
-                                    <span x-text="Math.abs(ticker.changePercent).toFixed(2) + '%'"></span>
+                                <div class="t-price" x-text="fmtPrice(ticker)"></div>
+                                <div class="t-changes">
+                                    <span class="var-badge daily" :class="getChangeClass(ticker)">
+                                        D: <span x-text="(ticker.changePercent >= 0 ? '+' : '') + ticker.changePercent.toFixed(2) + '%'"></span>
+                                    </span>
                                 </div>
                             </div>
-                        </template>
-                    </div>
+                            <div class="ticker-trends">
+                                <span class="trend-badge" :class="get7dChangeClass(ticker)">7d: <span x-text="(ticker.changePercent7d >= 0 ? '+' : '') + ticker.changePercent7d.toFixed(1) + '%'"></span></span>
+                                <span class="trend-badge" :class="get30dChangeClass(ticker)">30d: <span x-text="(ticker.changePercent30d >= 0 ? '+' : '') + ticker.changePercent30d.toFixed(1) + '%'"></span></span>
+                                <span class="trend-badge streak" :class="ticker.streakType === 'up' ? 'up' : (ticker.streakType === 'down' ? 'down' : '')">
+                                    <span x-text="ticker.streakType === 'up' ? '🔥 ' + ticker.streak + 'd Alza' : (ticker.streakType === 'down' ? '❄️ ' + ticker.streak + 'd Baja' : 'Stable')"></span>
+                                </span>
+                                <span class="trend-badge"><i class="fas fa-chart-line"></i> <span x-text="ticker.positiveDaysRatio.toFixed(0) + '% Ruedas (+)'"></span></span>
+                                <span class="trend-badge"><i class="fas fa-arrows-alt-v"></i> <span x-text="'↕️ ' + ticker.maxSwing30d.toFixed(1) + '%'"></span></span>
+                            </div>
+                        </div>
+                    </template>
                 </div>
-
             </div>
+
+            <!-- Panel 2: MDF y Celulosa (Local y Sudamérica) -->
+            <div class="radar-card">
+                <div class="card-title"><i class="fas fa-tree text-amber-500"></i> Sector Maderas, MDF y Celulosa</div>
+                <p class="card-desc">Competidores, proveedores locales de celulosa y holding de Faplac. Si suben, indica presiones en el costo de los tableros.</p>
+                
+                <div class="ticker-list">
+                    <template x-for="ticker in [celu, faplac, dexco, suzano]">
+                        <div class="ticker-item">
+                            <div class="ticker-main">
+                                <div class="t-name">
+                                    <strong x-text="ticker.name"></strong>
+                                    <span class="t-symbol" x-text="ticker.symbol"></span>
+                                </div>
+                                <div class="t-price" x-text="fmtPrice(ticker)"></div>
+                                <div class="t-changes">
+                                    <span class="var-badge daily" :class="getChangeClass(ticker)">
+                                        D: <span x-text="(ticker.changePercent >= 0 ? '+' : '') + ticker.changePercent.toFixed(2) + '%'"></span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ticker-trends">
+                                <span class="trend-badge" :class="get7dChangeClass(ticker)">7d: <span x-text="(ticker.changePercent7d >= 0 ? '+' : '') + ticker.changePercent7d.toFixed(1) + '%'"></span></span>
+                                <span class="trend-badge" :class="get30dChangeClass(ticker)">30d: <span x-text="(ticker.changePercent30d >= 0 ? '+' : '') + ticker.changePercent30d.toFixed(1) + '%'"></span></span>
+                                <span class="trend-badge streak" :class="ticker.streakType === 'up' ? 'up' : (ticker.streakType === 'down' ? 'down' : '')">
+                                    <span x-text="ticker.streakType === 'up' ? '🔥 ' + ticker.streak + 'd Alza' : (ticker.streakType === 'down' ? '❄️ ' + ticker.streak + 'd Baja' : 'Stable')"></span>
+                                </span>
+                                <span class="trend-badge"><i class="fas fa-chart-line"></i> <span x-text="ticker.positiveDaysRatio.toFixed(0) + '% Ruedas (+)'"></span></span>
+                                <span class="trend-badge"><i class="fas fa-arrows-alt-v"></i> <span x-text="'↕️ ' + ticker.maxSwing30d.toFixed(1) + '%'"></span></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Panel 3: Combustibles, Logística y Divisas -->
+            <div class="radar-card">
+                <div class="card-title"><i class="fas fa-truck text-blue-400"></i> Combustibles, Logística y Divisas</div>
+                <p class="card-desc">Monitoreo de YPF (combustible para fletes de distribución), Brent (químicos/plásticos) y paridad de importación EURUSD.</p>
+                
+                <div class="ticker-list">
+                    <template x-for="ticker in [ypf, oil, eurusd]">
+                        <div class="ticker-item">
+                            <div class="ticker-main">
+                                <div class="t-name">
+                                    <strong x-text="ticker.name"></strong>
+                                    <span class="t-symbol" x-text="ticker.symbol"></span>
+                                </div>
+                                <div class="t-price" x-text="fmtPrice(ticker)"></div>
+                                <div class="t-changes">
+                                    <span class="var-badge daily" :class="getChangeClass(ticker)">
+                                        D: <span x-text="(ticker.changePercent >= 0 ? '+' : '') + ticker.changePercent.toFixed(2) + '%'"></span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ticker-trends">
+                                <span class="trend-badge" :class="get7dChangeClass(ticker)">7d: <span x-text="(ticker.changePercent7d >= 0 ? '+' : '') + ticker.changePercent7d.toFixed(1) + '%'"></span></span>
+                                <span class="trend-badge" :class="get30dChangeClass(ticker)">30d: <span x-text="(ticker.changePercent30d >= 0 ? '+' : '') + ticker.changePercent30d.toFixed(1) + '%'"></span></span>
+                                <span class="trend-badge streak" :class="ticker.streakType === 'up' ? 'up' : (ticker.streakType === 'down' ? 'down' : '')">
+                                    <span x-text="ticker.streakType === 'up' ? '🔥 ' + ticker.streak + 'd Alza' : (ticker.streakType === 'down' ? '❄️ ' + ticker.streak + 'd Baja' : 'Stable')"></span>
+                                </span>
+                                <span class="trend-badge"><i class="fas fa-chart-line"></i> <span x-text="ticker.positiveDaysRatio.toFixed(0) + '% Ruedas (+)'"></span></span>
+                                <span class="trend-badge"><i class="fas fa-arrows-alt-v"></i> <span x-text="'↕️ ' + ticker.maxSwing30d.toFixed(1) + '%'"></span></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Panel 4: Referencias Globales de Bolsa y Commodities -->
+            <div class="radar-card">
+                <div class="card-title"><i class="fas fa-globe-americas text-emerald-400"></i> Futuros de Referencia Global e Índice Merval</div>
+                <p class="card-desc">Indicadores mundiales de madera y metales industriales (LME), junto con la salud de las acciones líderes de Argentina.</p>
+                
+                <div class="ticker-list">
+                    <template x-for="ticker in [lumber, ali, hrc, merval]">
+                        <div class="ticker-item">
+                            <div class="ticker-main">
+                                <div class="t-name">
+                                    <strong x-text="ticker.name"></strong>
+                                    <span class="t-symbol" x-text="ticker.symbol"></span>
+                                </div>
+                                <div class="t-price" x-text="fmtPrice(ticker)"></div>
+                                <div class="t-changes">
+                                    <span class="var-badge daily" :class="getChangeClass(ticker)">
+                                        D: <span x-text="(ticker.changePercent >= 0 ? '+' : '') + ticker.changePercent.toFixed(2) + '%'"></span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ticker-trends">
+                                <span class="trend-badge" :class="get7dChangeClass(ticker)">7d: <span x-text="(ticker.changePercent7d >= 0 ? '+' : '') + ticker.changePercent7d.toFixed(1) + '%'"></span></span>
+                                <span class="trend-badge" :class="get30dChangeClass(ticker)">30d: <span x-text="(ticker.changePercent30d >= 0 ? '+' : '') + ticker.changePercent30d.toFixed(1) + '%'"></span></span>
+                                <span class="trend-badge streak" :class="ticker.streakType === 'up' ? 'up' : (ticker.streakType === 'down' ? 'down' : '')">
+                                    <span x-text="ticker.streakType === 'up' ? '🔥 ' + ticker.streak + 'd Alza' : (ticker.streakType === 'down' ? '❄️ ' + ticker.streak + 'd Baja' : 'Stable')"></span>
+                                </span>
+                                <span class="trend-badge"><i class="fas fa-chart-line"></i> <span x-text="ticker.positiveDaysRatio.toFixed(0) + '% Ruedas (+)'"></span></span>
+                                <span class="trend-badge"><i class="fas fa-arrows-alt-v"></i> <span x-text="'↕️ ' + ticker.maxSwing30d.toFixed(1) + '%'"></span></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
         </div>
     </div>
 </CajeroWorkspace>
@@ -160,16 +250,31 @@ if (!sellerId) {
 <style>
     [x-cloak] { display: none !important; }
     
+    .radar-container {
+        padding: 5px;
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+    
     .radar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 25px;
         position: relative;
     }
-    .radar-header h2 { font-size: 24px; color: #fff; margin-bottom: 5px; }
-    .radar-header p { color: #888; font-size: 14px; }
+    .radar-header h2 { font-size: 24px; color: #fff; margin: 0; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .radar-header p { color: #888; font-size: 13px; margin: 5px 0 0 0; }
+    
+    .animate-pulse-slow {
+        animation: pulseSlow 3s infinite ease-in-out;
+    }
+    @keyframes pulseSlow {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.05); }
+    }
+
     .btn-refresh {
-        position: absolute;
-        top: 0;
-        right: 0;
         background: #252525;
         border: 1px solid #383838;
         color: #ccc;
@@ -177,113 +282,235 @@ if (!sellerId) {
         border-radius: 6px;
         cursor: pointer;
         font-size: 13px;
+        font-weight: 600;
         transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    .btn-refresh:hover { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+    .btn-refresh:hover { background: #3b82f6; color: #fff; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
 
     .loading-state {
-        padding: 50px;
+        padding: 60px;
         text-align: center;
         color: #888;
-        font-size: 16px;
-        background: #1a1a1a;
-        border-radius: 8px;
-        border: 1px dashed #333;
+        background: #1e1e1e;
+        border-radius: 12px;
+        border: 1px dashed rgba(255,255,255,0.08);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
+    .spinner-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+    .spinner-box i { font-size: 32px; color: #3b82f6; }
+    .spinner-box span { font-size: 14px; font-weight: 500; }
 
     .radar-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 20px;
     }
+    @media (max-width: 1024px) {
+        .radar-grid { grid-template-columns: 1fr; }
+    }
 
     .radar-card {
         background: #252525;
         border: 1px solid #383838;
-        border-radius: 8px;
+        border-radius: 12px;
         padding: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
     .radar-card.full-width { grid-column: 1 / -1; }
 
     .card-title {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 700;
         color: #fff;
         margin-bottom: 5px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
     }
-    .card-desc { font-size: 12px; color: #888; margin-bottom: 15px; line-height: 1.4; }
+    .card-desc { font-size: 12px; color: #888; margin-bottom: 20px; line-height: 1.5; }
 
+    /* Risk Card Styles */
     .risk-card {
         grid-column: 1 / -1;
+        border-width: 2px;
+        transition: all 0.3s ease;
+    }
+    .risk-card.risk-low { border-color: rgba(16, 185, 129, 0.4); background: linear-gradient(135deg, rgba(20, 20, 20, 0.9) 0%, rgba(16, 185, 129, 0.05) 100%); }
+    .risk-card.risk-med { border-color: rgba(245, 158, 11, 0.4); background: linear-gradient(135deg, rgba(20, 20, 20, 0.9) 0%, rgba(245, 158, 11, 0.05) 100%); }
+    .risk-card.risk-high { border-color: rgba(239, 68, 68, 0.4); background: linear-gradient(135deg, rgba(20, 20, 20, 0.9) 0%, rgba(239, 68, 68, 0.05) 100%); }
+
+    .risk-main-row {
         display: flex;
         align-items: center;
-        gap: 20px;
-        border-width: 2px;
+        gap: 24px;
+        margin-bottom: 18px;
     }
-    .risk-card.risk-low { border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
-    .risk-card.risk-low .risk-icon { color: #10b981; }
-    .risk-card.risk-med { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
-    .risk-card.risk-med .risk-icon { color: #f59e0b; }
-    .risk-card.risk-high { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-    .risk-card.risk-high .risk-icon { color: #ef4444; }
-
-    .risk-icon { font-size: 40px; }
-    .risk-info h3 { font-size: 16px; color: #fff; margin-bottom: 5px; }
-    .risk-info p { font-size: 14px; color: #ccc; }
-
-    /* Indicadores Dolar */
-    .indicator-row { display: flex; gap: 20px; }
-    .indicator {
-        flex: 1;
-        background: #1a1a1a;
-        border: 1px solid #333;
-        border-radius: 6px;
-        padding: 15px;
+    .risk-badge-box {
+        flex-shrink: 0;
+    }
+    .risk-gauge {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        border: 4px solid #333;
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
+        font-family: 'Roboto Mono', monospace;
+        background: #1a1a1a;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
-    .ind-label { font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; }
-    .ind-value { font-size: 24px; color: #fff; font-family: 'Roboto Mono', monospace; font-weight: 700; }
+    .risk-gauge.risk-low { border-color: #10b981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+    .risk-gauge.risk-med { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
+    .risk-gauge.risk-high { border-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+    
+    .gauge-val { font-size: 22px; font-weight: 800; color: #fff; line-height: 1; }
+    .gauge-max { font-size: 10px; color: #666; font-weight: bold; }
 
-    /* Ticker List */
-    .ticker-list { display: flex; flex-direction: column; gap: 10px; }
-    .ticker-item {
+    .risk-info h3 { font-size: 16px; color: #fff; margin-bottom: 6px; font-weight: 700; }
+    .risk-desc-text { font-size: 13.5px; color: #ccc; line-height: 1.5; margin: 0; }
+
+    /* Panorama Box styles */
+    .panorama-box {
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.25);
+        border-left: 4px solid #3b82f6;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    .panorama-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #3b82f6;
+        font-weight: 800;
         display: flex;
         align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+        letter-spacing: 0.5px;
+    }
+    .panorama-text { font-size: 13px; color: #e2e8f0; line-height: 1.55; margin: 0; font-weight: 400; }
+
+    /* Indicadores Dolar */
+    .indicator {
         background: #1a1a1a;
-        padding: 12px 15px;
-        border-radius: 6px;
         border: 1px solid #333;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    .indicator:hover { border-color: #444; background: #1e1e1e; }
+    .ind-label { font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px; }
+    .ind-body { display: flex; align-items: baseline; justify-content: space-between; width: 100%; }
+    .ind-value { font-size: 20px; color: #fff; font-family: 'Roboto Mono', monospace; font-weight: 700; }
+    .ind-var { font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 3px; }
+
+    /* Ticker List */
+    .ticker-list { display: flex; flex-direction: column; gap: 12px; }
+    .ticker-item {
+        display: flex;
+        flex-direction: column;
+        background: rgba(26, 26, 26, 0.4);
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        transition: all 0.25s ease;
+    }
+    .ticker-item:hover {
+        background: rgba(38, 38, 38, 0.6);
+        border-color: rgba(59, 130, 246, 0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    }
+    
+    .ticker-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
     .t-name { flex: 1; display: flex; flex-direction: column; }
-    .t-name strong { font-size: 14px; color: #ccc; }
-    .t-symbol { font-size: 11px; color: #666; font-family: 'Roboto Mono', monospace; }
-    .t-price { font-size: 16px; color: #fff; font-family: 'Roboto Mono', monospace; margin-right: 20px; font-weight: 600; width: 80px; text-align: right; }
-    .t-change { font-size: 14px; font-weight: 700; width: 70px; text-align: right; }
+    .t-name strong { font-size: 13.5px; color: #eee; font-weight: 600; }
+    .t-symbol { font-size: 11px; color: #666; font-family: 'Roboto Mono', monospace; margin-top: 2px; }
+    .t-price { font-size: 16px; color: #fff; font-family: 'Roboto Mono', monospace; font-weight: 700; width: 100px; text-align: right; margin-right: 15px; }
+    .t-changes { width: 90px; text-align: right; }
 
-    .text-success { color: #10b981; }
-    .text-danger { color: #ef4444; }
+    /* Badges */
+    .var-badge {
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        font-family: 'Roboto Mono', monospace;
+    }
+    .var-badge.text-success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .var-badge.text-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .var-badge.text-muted { background: rgba(255, 255, 255, 0.05); color: #aaa; }
+
+    /* Trends minibadges row */
+    .ticker-trends {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+        border-top: 1px dashed rgba(255, 255, 255, 0.03);
+        padding-top: 8px;
+    }
+    .trend-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        color: #888;
+        font-family: 'Inter', sans-serif;
+    }
+    .trend-badge.text-success { border-color: rgba(16, 185, 129, 0.15); color: #10b981; background: rgba(16, 185, 129, 0.02); }
+    .trend-badge.text-danger { border-color: rgba(239, 68, 68, 0.15); color: #ef4444; background: rgba(239, 68, 68, 0.02); }
+    
+    .trend-badge.streak.up { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: bold; }
+    .trend-badge.streak.down { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #ef4444; font-weight: bold; }
+
+    .text-success { color: #10b981 !important; }
+    .text-danger { color: #ef4444 !important; }
+    .text-muted { color: #888 !important; }
 </style>
 
 <script is:inline>
     document.addEventListener('alpine:init', () => {
         window.Alpine.data('marketRadar', () => ({
             loading: true,
-            faplac: { name: '', symbol: '', price: 0, changePercent: 0 },
-            dexco: { name: '', symbol: '', price: 0, changePercent: 0 },
-            suzano: { name: '', symbol: '', price: 0, changePercent: 0 },
-            lumber: { name: '', symbol: '', price: 0, changePercent: 0 },
-            oil: { name: '', symbol: '', price: 0, changePercent: 0 },
-            eurusd: { name: '', symbol: '', price: 0, changePercent: 0 },
-            ali: { name: '', symbol: '', price: 0, changePercent: 0 },
-            hrc: { name: '', symbol: '', price: 0, changePercent: 0 },
-            ypf: { name: '', symbol: '', price: 0, changePercent: 0 },
+            faplac: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            dexco: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            suzano: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            celu: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            lumber: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            oil: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            eurusd: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            ali: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            hrc: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            aluar: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            ternium: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            ypf: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
+            merval: { name: '', symbol: '', price: 0, changePercent: 0, changePercent7d: 0, changePercent30d: 0, streak: 0, streakType: '', positiveDaysRatio: 0, maxSwing30d: 0 },
             dolar: { blue: { val: 0, var: 0 }, mep: { val: 0, var: 0 }, ccl: { val: 0, var: 0 } },
             riesgoPais: 0,
+            panoramaNota: '',
+            riesgoPuntaje: 0,
+            riesgoClase: 'risk-low',
+            riesgoTexto: '',
 
             async fetchData(force = false) {
                 this.loading = true;
@@ -291,18 +518,27 @@ if (!sellerId) {
                     const url = force ? '/api/vendedor/market-radar?force=true' : '/api/vendedor/market-radar';
                     const res = await fetch(url);
                     const json = await res.json();
-                    if (json.success) {
-                        this.faplac = json.data.faplac;
-                        this.dexco = json.data.dexco;
-                        this.suzano = json.data.suzano;
-                        this.lumber = json.data.lumber;
-                        this.oil = json.data.oil;
-                        this.eurusd = json.data.eurusd;
-                        this.ali = json.data.ali;
-                        this.hrc = json.data.hrc;
-                        this.ypf = json.data.ypf;
-                        this.dolar = json.data.dolar;
-                        this.riesgoPais = json.data.riesgoPais;
+                    if (json.success && json.data) {
+                        const d = json.data;
+                        this.faplac = d.faplac;
+                        this.dexco = d.dexco;
+                        this.suzano = d.suzano;
+                        this.celu = d.celu;
+                        this.lumber = d.lumber;
+                        this.oil = d.oil;
+                        this.eurusd = d.eurusd;
+                        this.ali = d.ali;
+                        this.hrc = d.hrc;
+                        this.aluar = d.aluar;
+                        this.ternium = d.ternium;
+                        this.ypf = d.ypf;
+                        this.merval = d.merval;
+                        this.dolar = d.dolar;
+                        this.riesgoPais = d.riesgoPais;
+                        this.panoramaNota = d.panoramaNota;
+                        this.riesgoPuntaje = d.riesgoPuntaje;
+                        this.riesgoClase = d.riesgoClase;
+                        this.riesgoTexto = d.riesgoTexto;
                     }
                 } catch (e) {
                     console.error("Error cargando radar", e);
@@ -316,37 +552,68 @@ if (!sellerId) {
                 return '$ ' + val;
             },
 
-            // Algoritmo simple de riesgo
-            getRiskScore() {
-                let score = 0;
-                // Si petroleo o madera suben > 2%, es malísimo para nuestros costos (+2)
-                if (this.oil.changePercent > 2) score += 2;
-                if (this.lumber.changePercent > 2) score += 2;
-                // Aluminio o Acero suben > 2%, herrajes más caros
-                if (this.ali.changePercent > 2) score += 1;
-                if (this.hrc.changePercent > 2) score += 1;
-                // Transporte local
-                if (this.ypf.changePercent > 2) score += 1;
-                // Si el euro se dispara > 1%, importa (+1)
-                if (this.eurusd.changePercent > 1) score += 1;
-                // Si Dexco (mercado muebles) cae fuerte > -3%, alerta de recesión (+1)
-                if (this.dexco.changePercent < -3) score += 1;
+            fmtPrice(ticker) {
+                if (!ticker || !ticker.price) return '-';
+                // Formateo según moneda
+                if (ticker.symbol.includes('.BA') || ticker.symbol === '^MERV') {
+                    // Pesos argentinos
+                    return '$ ' + ticker.price.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+                if (ticker.symbol === 'EURUSD=X') {
+                    return ticker.price.toFixed(4);
+                }
+                // Dólares para futuros
+                return 'u$d ' + ticker.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
+
+            // Indica si el activo es un costo directo de la empresa (combustible, metal, divisa, etc.)
+            isCostTicker(symbol) {
+                return ['LBS=F', 'BZ=F', 'EURUSD=X', 'ALI=F', 'HRC=F', 'ALUA.BA', 'TXAR.BA', 'YPFD.BA'].includes(symbol);
+            },
+
+            // Estilos para variaciones
+            getChangeClass(ticker) {
+                const pct = ticker.changePercent || 0;
+                if (pct === 0) return 'text-muted';
                 
-                return score;
+                const isCost = this.isCostTicker(ticker.symbol);
+                if (pct > 0) {
+                    return isCost ? 'text-danger' : 'text-success';
+                } else {
+                    return isCost ? 'text-success' : 'text-danger';
+                }
+            },
+
+            get7dChangeClass(ticker) {
+                const pct = ticker.changePercent7d || 0;
+                if (Math.abs(pct) < 0.1) return 'text-muted';
+                
+                const isCost = this.isCostTicker(ticker.symbol);
+                if (pct > 0) {
+                    return isCost ? 'text-danger' : 'text-success';
+                } else {
+                    return isCost ? 'text-success' : 'text-danger';
+                }
+            },
+
+            get30dChangeClass(ticker) {
+                const pct = ticker.changePercent30d || 0;
+                if (Math.abs(pct) < 0.1) return 'text-muted';
+                
+                const isCost = this.isCostTicker(ticker.symbol);
+                if (pct > 0) {
+                    return isCost ? 'text-danger' : 'text-success';
+                } else {
+                    return isCost ? 'text-success' : 'text-danger';
+                }
             },
 
             getRiskClass() {
-                const s = this.getRiskScore();
-                if (s >= 3) return 'risk-high';
-                if (s >= 1) return 'risk-med';
-                return 'risk-low';
+                return this.riesgoClase || 'risk-low';
             },
 
             getRiskText() {
-                const s = this.getRiskScore();
-                if (s >= 3) return 'ALTO RIESGO. Fuerte presión sobre commodities (Madera, Aluminio, Combustible). Altísimas chances de nuevas listas de precios de Faplac, Egger y Herrajes inminentemente.';
-                if (s >= 1) return 'RIESGO MEDIO. Inestabilidad en algunos indicadores logísticos o de materia prima. Mantener atención a los costos de Aluminio, Acero y transporte local.';
-                return 'RIESGO BAJO. Los mercados proveedores operan con normalidad. No se detectan presiones de costos en el corto plazo.';
+                return this.riesgoTexto || 'Estable.';
             }
         }));
     });

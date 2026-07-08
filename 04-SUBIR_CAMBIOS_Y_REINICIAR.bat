@@ -14,7 +14,7 @@ set REMOTE_PATH=/opt/alvarez_v16/web01/site/web01
 
 echo 1. Preparando paquete local (V5.1)...
 cd /d "%BASE_LOCAL%"
-tar --exclude="sponsors.md" --exclude="*.log" --exclude="node_modules" --exclude=".git" --exclude=".astro" --exclude="dist" --exclude=".DS_Store" -czf ..\site_update.tar.gz Frontend Backend src public docs _INSTRUCCIONES package.json astro.config.mjs
+tar --exclude="*.zip" --exclude="*.pdf" --exclude="*.md" --exclude="*.log" --exclude="node_modules" --exclude=".git" --exclude=".astro" --exclude="dist" --exclude=".DS_Store" -czf ..\site_update.tar.gz Frontend Backend src public docs _INSTRUCCIONES package.json astro.config.mjs
 
 echo 2. Subiendo paquete al VPS...
 scp -i "%KEY%" -o StrictHostKeyChecking=no "%BASE_LOCAL%\..\site_update.tar.gz" %REMOTE_USER%@%REMOTE_IP%:%REMOTE_PATH%/

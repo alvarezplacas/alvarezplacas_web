@@ -260,7 +260,13 @@ try {
             const basico = basicoRecibo;
             const antiguedad = basico * antiguedadAnos * 0.01;
             const presentismo = (basico + antiguedad) / 12;
-            totalHaberes = basico + antiguedad + presentismo;
+            
+            // Valor hora y estimación de horas extras mensuales
+            const horasExtrasMensuales = parseFloat(emp.horas_extras_manual || '0');
+            const valorHoraNormal = (basico + antiguedad + presentismo) / 200;
+            const valorHorasExtras = horasExtrasMensuales * valorHoraNormal * 1.5; // Estimación al 50%
+            
+            totalHaberes = basico + antiguedad + presentismo + valorHorasExtras;
 
             const noRemBasico = noRemunerativoBasico;
             const noRemAntiguedad = noRemBasico * antiguedadAnos * 0.01;
@@ -269,13 +275,15 @@ try {
 
             const jubilacion = totalHaberes * 0.11;
             const ley19032 = totalHaberes * 0.03;
-            const obraSocialBase = (totalHaberes + totalNoRemunerativos) * (esMediaJornada ? 2 : 1);
-            const obraSocial = obraSocialBase * 0.03;
-            const sec = (totalHaberes + totalNoRemunerativos) * 0.02;
-            const faecys = (totalHaberes + totalNoRemunerativos) * 0.005;
-            const osecac = 100.00;
+            
+            // Todos jornada completa (excepto externos, que no tienen basicoRecibo)
+            const baseTotal = totalHaberes + totalNoRemunerativos;
+            const obraSocial = baseTotal * 0.03;
+            const sec = baseTotal * 0.02;
+            const faecys = baseTotal * 0.005;
 
-            totalDescuentos = jubilacion + ley19032 + obraSocial + sec + faecys + osecac;
+            // Se elimina OSECAC fijo de $4000 según nuevo recibo
+            totalDescuentos = jubilacion + ley19032 + obraSocial + sec + faecys;
             netoRecibo = totalHaberes + totalNoRemunerativos - totalDescuentos;
             netoNegro = Math.max(0, sueldoBasePocket - netoRecibo);
         }
@@ -286,19 +294,18 @@ try {
 
         // SAC (Aguinaldo) - June and December
         if (isSacMonth) {
+            // El SAC se liquida sobre la mejor remuneración del semestre (estimada aquí con totalHaberes)
+            // No incluye conceptos No Remunerativos según regla general
             const sacBrutoHaberes = totalHaberes / 2;
-            const sacBrutoNoRemunerativo = totalNoRemunerativos / 2;
-            const sacBrutoTotal = sacBrutoHaberes + sacBrutoNoRemunerativo;
 
             const sacJubilacion = sacBrutoHaberes * 0.11;
             const sacLey19032 = sacBrutoHaberes * 0.03;
-            const sacObraSocialBase = (sacBrutoHaberes + sacBrutoNoRemunerativo) * (esMediaJornada ? 2 : 1);
-            const sacObraSocial = sacObraSocialBase * 0.03;
-            const sacSec = sacBrutoTotal * 0.02;
-            const sacFaecys = sacBrutoTotal * 0.005;
+            const sacObraSocial = sacBrutoHaberes * 0.03;
+            const sacSec = sacBrutoHaberes * 0.02;
+            const sacFaecys = sacBrutoHaberes * 0.005;
             const sacDescuentos = sacJubilacion + sacLey19032 + sacObraSocial + sacSec + sacFaecys;
 
-            const sacNetoBlanco = sacBrutoTotal - sacDescuentos;
+            const sacNetoBlanco = sacBrutoHaberes - sacDescuentos;
             const sacNetoNegro = netoNegro / 2;
             const sacNetoTotal = sacNetoBlanco + sacNetoNegro;
             const sacPatronal = sacBrutoHaberes * 0.25;
@@ -351,10 +358,37 @@ const presentismoGrid = asistenciasDia.map(row => {
         }
     }
 
+    // --- Lógica Socio Fundador ---
+    if (row.nombre && row.nombre.includes('Alvarez, Javier')) {
+        estado = 'Presente';
+        if (!row.entrada) {
+            const hoy = new Date();
+            hoy.setHours(8, 0, 0, 0); 
+            row.entrada = hoy.toISOString();
+            entradaStr = '08:00 (Fijo)';
+        }
+    }
+
+    // --- Cálculo de horas en tiempo real para presentes ---
+    if (estado === 'Presente' && horasTrabajadas === 0 && row.entrada) {
+        const now = new Date();
+        const entradaDate = new Date(row.entrada);
+        const diffMs = now.getTime() - entradaDate.getTime();
+        if (diffMs > 0) {
+            horasTrabajadas = diffMs / (1000 * 60 * 60);
+        }
+    }
+
+    // --- Capitalización de Función ---
+    let funcionFmt = row.funcion ? row.funcion.charAt(0).toUpperCase() + row.funcion.slice(1).toLowerCase() : '-';
+    if (funcionFmt.toLowerCase() === 'recursos humano') {
+        funcionFmt = 'Recursos Humanos';
+    }
+
     return {
         id: row.id,
         nombre: row.nombre,
-        funcion: row.funcion,
+        funcion: funcionFmt,
         entrada: entradaStr,
         salida: salidaStr,
         estado,
@@ -389,6 +423,9 @@ const presentesHoy = presentismoGrid.filter(e => e.estado === 'Presente' || e.es
                 </div>
             </div>
             <div class="pg-header-actions">
+                <button class="pg-btn pg-btn-secondary" onclick="openLeyesModal()" id="btn-leyes-info" title="Ver detalle de leyes laborales">
+                    <i class="fas fa-balance-scale"></i> Normativa Legal
+                </button>
                 <button class="pg-btn pg-btn-secondary" onclick="window.location.reload()" id="btn-sync-reloj">
                     <i class="fas fa-sync-alt"></i> Sincronizar Reloj
                 </button>
@@ -788,7 +825,12 @@ const presentesHoy = presentismoGrid.filter(e => e.estado === 'Presente' || e.es
                                     basico = basicoRecibo;
                                     antiguedad = basico * antiguedadAnos * 0.01;
                                     presentismo = (basico + antiguedad) / 12;
-                                    totalHaberes = basico + antiguedad + presentismo;
+                                    
+                                    const horasExtrasMensuales = parseFloat(emp.horas_extras_manual || '0');
+                                    const valorHoraNormal = (basico + antiguedad + presentismo) / 200;
+                                    const valorHorasExtras = horasExtrasMensuales * valorHoraNormal * 1.5;
+                                    
+                                    totalHaberes = basico + antiguedad + presentismo + valorHorasExtras;
 
                                     noRemBasico = noRemunerativoBasico;
                                     noRemAntiguedad = noRemBasico * antiguedadAnos * 0.01;
@@ -801,7 +843,7 @@ const presentesHoy = presentismoGrid.filter(e => e.estado === 'Presente' || e.es
                                     obraSocial = obraSocialBase * 0.03;
                                     sec = (totalHaberes + totalNoRemunerativos) * 0.02;
                                     faecys = (totalHaberes + totalNoRemunerativos) * 0.005;
-                                    const osecac = 100.00;
+                                    const osecac = 4000.00; // ACTUALIZAR SEGUN PARITARIA VIGENTE
 
                                     totalDescuentos = jubilacion + ley19032 + obraSocial + sec + faecys + osecac;
                                     netoRecibo = totalHaberes + totalNoRemunerativos - totalDescuentos;
@@ -810,17 +852,15 @@ const presentesHoy = presentismoGrid.filter(e => e.estado === 'Presente' || e.es
 
                                 // SAC (Aguinaldo)
                                 const sacBrutoHaberes = isSacMonth ? (totalHaberes / 2) : 0;
-                                const sacBrutoNoRemunerativo = isSacMonth ? (totalNoRemunerativos / 2) : 0;
-                                const sacBrutoTotal = sacBrutoHaberes + sacBrutoNoRemunerativo;
 
                                 const sacJubilacion = sacBrutoHaberes * 0.11;
                                 const sacLey19032 = sacBrutoHaberes * 0.03;
-                                const sacObraSocialBase = (sacBrutoHaberes + sacBrutoNoRemunerativo) * (esMediaJornada ? 2 : 1);
+                                const sacObraSocialBase = sacBrutoHaberes * (esMediaJornada ? 2 : 1);
                                 const sacObraSocial = sacObraSocialBase * 0.03;
-                                const sacSec = sacBrutoTotal * 0.02;
-                                const sacFaecys = sacBrutoTotal * 0.005;
+                                const sacSec = sacBrutoHaberes * 0.02;
+                                const sacFaecys = sacBrutoHaberes * 0.005;
                                 const sacDescuentos = sacJubilacion + sacLey19032 + sacObraSocial + sacSec + sacFaecys;
-                                const sacNetoBlanco = sacBrutoTotal - sacDescuentos;
+                                const sacNetoBlanco = sacBrutoHaberes - sacDescuentos;
                                 const sacNetoNegro = isSacMonth ? (netoNegro / 2) : 0;
                                 const sacNetoTotal = sacNetoBlanco + sacNetoNegro;
 
@@ -893,7 +933,7 @@ const presentesHoy = presentismoGrid.filter(e => e.estado === 'Presente' || e.es
                                                         </div>
                                                         <div style="text-align: right; margin-top: 2px;">
                                                             <span style="font-size: 9px; color: #60a5fa; cursor: help; text-decoration: underline;" 
-                                                                  title={`Desglose CCT 130/75:\n- Básico: $${basico.toLocaleString('es-AR')}\n- Antigüedad (${antiguedadAnos}a): $${antiguedad.toLocaleString('es-AR')}\n- Presentismo: $${presentismo.toLocaleString('es-AR')}\n- Remunerativo: $${totalHaberes.toLocaleString('es-AR')}\n- No Remunerativo: $${totalNoRemunerativos.toLocaleString('es-AR')}\n- Jubilación (11%): $${jubilacion.toLocaleString('es-AR')}\n- Ley 19032 (3%): $${ley19032.toLocaleString('es-AR')}\n- Obra Social (3%): $${obraSocial.toLocaleString('es-AR')}${esMediaJornada ? ' (Media Jornada x2)' : ''}\n- SEC (2%): $${sec.toLocaleString('es-AR')}\n- FAECYS (0.5%): $${faecys.toLocaleString('es-AR')}\n- OSECAC Fijo: $100`}>
+                                                                  title={`Desglose CCT 130/75:\n- Básico: $${basico.toLocaleString('es-AR')}\n- Antigüedad (${antiguedadAnos}a): $${antiguedad.toLocaleString('es-AR')}\n- Presentismo: $${presentismo.toLocaleString('es-AR')}\n- Remunerativo: $${totalHaberes.toLocaleString('es-AR')}\n- No Remunerativo: $${totalNoRemunerativos.toLocaleString('es-AR')}\n- Jubilación (11%): $${jubilacion.toLocaleString('es-AR')}\n- Ley 19032 (3%): $${ley19032.toLocaleString('es-AR')}\n- Obra Social (3%): $${obraSocial.toLocaleString('es-AR')}${esMediaJornada ? ' (Media Jornada x2)' : ''}\n- SEC (2%): $${sec.toLocaleString('es-AR')}\n- FAECYS (0.5%): $${faecys.toLocaleString('es-AR')}\n- OSECAC Fijo: $4000.00`}>
                                                                 [Ver Detalle]
                                                             </span>
                                                         </div>
@@ -2663,4 +2703,56 @@ const presentesHoy = presentismoGrid.filter(e => e.estado === 'Presente' || e.es
             .pg-form-grid-2, .pg-form-grid-3 { grid-template-columns: 1fr; }
         }
     </style>
+
+    <!-- MODAL: LEYES LABORALES -->
+    <div id="leyes-modal" class="pg-modal-overlay" style="display:none; z-index: 9999999;">
+        <div class="pg-modal" style="max-width: 600px;">
+            <div class="pg-modal-header">
+                <h3><i class="fas fa-balance-scale"></i> Normativa Laboral (CCT 130/75)</h3>
+                <button class="pg-modal-close" onclick="closeLeyesModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="pg-modal-body" style="padding: 20px; font-size: 13px; line-height: 1.5; text-align: left;">
+                <h4 style="color: #60a5fa; margin-bottom: 8px;">Liquidación de Sueldos</h4>
+                <ul style="margin-bottom: 15px; padding-left: 20px; color: #d1d5db;">
+                    <li><strong>Básico, Antigüedad (1% por año) y Presentismo (8.33%):</strong> Componen la base remunerativa.</li>
+                    <li><strong>Horas Extras:</strong> Calculadas sobre la base del valor hora normal al 50%. Forman parte del haber remunerativo.</li>
+                    <li><strong>No Remunerativos:</strong> Sumas acordadas en paritarias que no sufren descuentos (salvo OSECAC/SEC) ni computan para el aguinaldo.</li>
+                </ul>
+
+                <h4 style="color: #60a5fa; margin-bottom: 8px;">Descuentos de Ley</h4>
+                <ul style="margin-bottom: 15px; padding-left: 20px; color: #d1d5db;">
+                    <li><strong>Jubilación:</strong> 11% sobre el total de haberes remunerativos.</li>
+                    <li><strong>Ley 19032 (INSSJP):</strong> 3% sobre remunerativos.</li>
+                    <li><strong>Obra Social (OSECAC):</strong> 3% sobre el total (Remunerativo + No Rem). Para media jornada, la base se duplica por ley.</li>
+                    <li><strong>Sindicato (SEC) y FAECYS:</strong> 2% y 0.5% respectivamente, sobre el total Bruto.</li>
+                    <li><strong>Aporte Fijo OSECAC:</strong> $4,000.00 actualizados por paritaria vigente.</li>
+                </ul>
+
+                <h4 style="color: #60a5fa; margin-bottom: 8px;">Sueldo Anual Complementario (SAC)</h4>
+                <ul style="margin-bottom: 15px; padding-left: 20px; color: #d1d5db;">
+                    <li>El Aguinaldo se abona en Junio y Diciembre sobre el 50% de la mejor remuneración del semestre.</li>
+                    <li><strong>Base de cálculo:</strong> Exclusivamente sobre sumas remunerativas (incluyendo horas extras). No incluye sumas no remunerativas.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script is:inline>
+        function openLeyesModal() {
+            const modal = document.getElementById('leyes-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+            }
+        }
+        function closeLeyesModal() {
+            const modal = document.getElementById('leyes-modal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+        }
+    </script>
 </CeoWorkspace>

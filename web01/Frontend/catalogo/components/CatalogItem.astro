@@ -6,6 +6,13 @@ const { placa } = Astro.props;
 
 // Identificamos si estamos usando el logo de fallback (para ajustar el estilo)
 const isFallback = placa.imagen.includes('assets/209a486b');
+
+// Remover marca del título para evitar redundancia visual
+const brandUpper = (placa.brand || '').toUpperCase().trim();
+const nameUpper = (placa.name || '').toUpperCase().trim();
+const displayTitle = (brandUpper && nameUpper.startsWith(brandUpper))
+  ? placa.name.substring(brandUpper.length).trim()
+  : placa.name;
 ---
 
 <div 
@@ -61,7 +68,7 @@ const isFallback = placa.imagen.includes('assets/209a486b');
         )}
       </div>
       <h3 class="text-white font-bold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5rem]">
-        {placa.name}
+        {displayTitle}
       </h3>
     </div>
 
@@ -75,7 +82,10 @@ const isFallback = placa.imagen.includes('assets/209a486b');
       </div>
 
       <div class="flex items-center justify-between">
-        <span class="text-[10px] text-gray-600 font-mono">{placa.code}</span>
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[10px] text-gray-600 font-mono">{placa.code}</span>
+          {placa.model && <span class="text-[9px] text-gray-500 font-bold uppercase tracking-tight">{placa.model}</span>}
+        </div>
         <div class="flex gap-2">
             <button class="bg-[#25D366]/10 text-[#25D366] p-2 rounded-lg hover:bg-[#25D366] hover:text-white transition-all">
                 <i class="fab fa-whatsapp text-xs"></i>

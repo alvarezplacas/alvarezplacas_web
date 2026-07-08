@@ -1,4 +1,6 @@
 ---
+import Page from '@home/pages/login.astro';
+
 const adminSession = Astro.cookies.get('admin_session')?.value;
 const sellerSession = Astro.cookies.get('seller_session')?.value;
 const clientSession = Astro.cookies.get('client_session')?.value;
@@ -7,6 +9,5 @@ if (adminSession === 'authenticated_javier') return Astro.redirect('/admin');
 if (sellerSession) return Astro.redirect('/vendedor');
 if (clientSession) return Astro.redirect('/cliente');
 
-import Page from '@home/pages/login.astro';
 ---
 <Page />

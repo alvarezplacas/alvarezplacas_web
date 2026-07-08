@@ -45,6 +45,29 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             }
         }
 
+        // 1.2 USUARIO DE STOCK: stock@alvarezplacas.com.ar — verificación directa
+        if (email === 'stock@alvarezplacas.com.ar') {
+            if (password === 'heli/315') {
+                const rememberMe = formData.get('remember-me') === 'on';
+                cookies.set('stock_session', 'Escobar, Jóse Ignacio', { 
+                    path: '/', 
+                    maxAge: rememberMe ? 60 * 60 * 24 * 365 : 60 * 60 * 24,
+                    httpOnly: true,
+                    sameSite: 'lax'
+                });
+                return new Response(JSON.stringify({ 
+                    success: true, 
+                    message: '¡Bienvenido al Depósito! 📦',
+                    redirectUrl: '/deposito' 
+                }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            } else {
+                return new Response(JSON.stringify({ 
+                    success: false, 
+                    message: 'Contraseña incorrecta' 
+                }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+            }
+        }
+
         // --- ACCESO PREFERENCIAL: Si el email es corporativo, PRIORIZAR búsqueda en vendedores ---
         const isCorporate = email.endsWith('@alvarezplacas.com.ar');
         let user = null;

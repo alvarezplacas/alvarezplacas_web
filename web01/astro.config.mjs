@@ -1,10 +1,12 @@
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import node from '@astrojs/node';
+import sitemap from '@astrojs/sitemap';
 import path from 'path';
 
 export default defineConfig({
   site: 'https://alvarezplacas.com.ar',
+  integrations: [sitemap()],
   output: 'server',
   adapter: node({
     mode: 'standalone'

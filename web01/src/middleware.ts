@@ -9,14 +9,20 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     const isLoginPage = path === '/login' || path === '/admin/login' || path === '/vendedor/login';
     const isApiRoute = path.startsWith('/api');
 
-    // Extraer IP y User-Agent para respaldo de sesión
-    const ip = context.request.headers.get('x-real-ip') || context.request.headers.get('x-forwarded-for')?.split(',')[0] || context.clientAddress || 'unknown';
-    const userAgent = context.request.headers.get('user-agent') || 'unknown';
+    let ip = 'unknown';
+    let userAgent = 'unknown';
+    try {
+        ip = context.request.headers.get('x-real-ip') || context.request.headers.get('x-forwarded-for')?.split(',')[0] || context.clientAddress || 'unknown';
+        userAgent = context.request.headers.get('user-agent') || 'unknown';
+    } catch (e) {
+        // En prerender, context.clientAddress y context.request.headers no están disponibles
+    }
 
     // 🛡️ Leer identidades de sesión tradicionales
     let adminSession = context.cookies.get('admin_session');
     let sellerSession = context.cookies.get('seller_session');
     let clientSession = context.cookies.get('client_session');
+    let stockSession = context.cookies.get('stock_session');
 
     // Desactivamos el motor de auto-recuperación por IP + User Agent para evitar conflicto de IPs duplicadas (ej. misma oficina)
     /*
@@ -53,9 +59,17 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     if (adminSession) context.locals.admin_id = adminSession.value;
     if (sellerSession) context.locals.vendedor_id = sellerSession.value;
     if (clientSession) context.locals.cliente_id = clientSession.value;
+    if (stockSession) context.locals.stock_user = stockSession.value;
 
     if (isPublic || isLoginPage || isApiRoute) {
         return next();
+    }
+
+    // Proteger rutas /deposito/*
+    if (path.startsWith('/deposito')) {
+        if (!stockSession && !adminSession) {
+            return context.redirect('/login');
+        }
     }
 
     // Proteger rutas /admin/*

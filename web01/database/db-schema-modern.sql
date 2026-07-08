@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS productos (
     
     -- Precios y Stock
     precio_base DECIMAL(12,2) DEFAULT 0,
-    stock_actual INTEGER DEFAULT 0,
+    stock_actual NUMERIC(10,2) DEFAULT 0,
     
     -- Metadatos y Media
     imagen_principal TEXT,       -- URL en MinIO

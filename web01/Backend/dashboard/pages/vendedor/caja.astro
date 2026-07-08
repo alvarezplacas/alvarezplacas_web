@@ -1682,27 +1682,16 @@ try {
             const ivaV = parseFloat(det.ivaVentas || 0);
             const ivaC = parseFloat(det.ivaCompras || 0);
             const ivaPagar = ivaV - ivaC;
-
-            let riskScore = 0;
-            let riskText = 'RIESGO BAJO: Los mercados proveedores operan con normalidad. No se detectan presiones de costos en el corto plazo.';
+            let riskScore = radar ? (radar.riesgoPuntaje || 0) : 0;
+            let riskText = radar ? (radar.riesgoTexto || 'RIESGO BAJO: Los mercados proveedores operan con normalidad.') : 'RIESGO BAJO: Los mercados proveedores operan con normalidad.';
             let riskColor = '#10b981';
             let riskBg = 'rgba(16, 185, 129, 0.08)';
 
             if (radar) {
-                if (radar.oil?.changePercent > 2) riskScore += 2;
-                if (radar.lumber?.changePercent > 2) riskScore += 2;
-                if (radar.ali?.changePercent > 2) riskScore += 1;
-                if (radar.hrc?.changePercent > 2) riskScore += 1;
-                if (radar.ypf?.changePercent > 2) riskScore += 1;
-                if (radar.eurusd?.changePercent > 1) riskScore += 1;
-                if (radar.dexco?.changePercent < -3) riskScore += 1;
-
-                if (riskScore >= 3) {
-                    riskText = 'ALTO RIESGO. Fuerte presión sobre commodities (Madera, Aluminio, Combustible). Altísimas chances de nuevas listas de precios de Faplac, Egger y Herrajes inminentemente.';
+                if (radar.riesgoClase === 'risk-high') {
                     riskColor = '#ef4444';
                     riskBg = 'rgba(239, 68, 68, 0.08)';
-                } else if (riskScore >= 1) {
-                    riskText = 'RIESGO MEDIO. Inestabilidad en algunos indicadores logísticos o de materia prima. Mantener atención a los costos de Aluminio, Acero y transporte local.';
+                } else if (radar.riesgoClase === 'risk-med') {
                     riskColor = '#f59e0b';
                     riskBg = 'rgba(245, 158, 11, 0.08)';
                 }
@@ -1724,22 +1713,25 @@ try {
             let tickerHTML = '';
             if (radar) {
                 const groups = [
-                    { title: 'Salud Sector Sudamérica (MDF/Tableros)', tickers: [radar.faplac, radar.dexco, radar.suzano] },
-                    { title: 'Costos Base Internacionales (Egger / Sadepan)', tickers: [radar.lumber, radar.oil, radar.eurusd] },
-                    { title: 'Insumos y Logística Local', tickers: [radar.ali, radar.hrc, radar.ypf] }
+                    { title: 'Siderurgia y Metalurgia (Bolsa AR - Pesos)', tickers: [radar.aluar, radar.ternium] },
+                    { title: 'Madera, MDF y Celulosa (Local & Regional)', tickers: [radar.celu, radar.faplac, radar.dexco, radar.suzano] },
+                    { title: 'Logística, Combustibles e Importación', tickers: [radar.ypf, radar.oil, radar.eurusd] },
+                    { title: 'Commodities de Referencia Global e Índices', tickers: [radar.lumber, radar.ali, radar.hrc, radar.merval] }
                 ];
 
                 groups.forEach(g => {
                     tickerHTML += `
                         <div class="radar-section">
-                            <div class="section-subtitle">${g.title}</div>
-                            <table class="radar-table">
+                            <div class="section-subtitle" style="font-weight: bold; margin-top: 8px; margin-bottom: 4px; font-size: 8.5px; color:#1e293b;">${g.title}</div>
+                            <table class="radar-table" style="width: 100%; border-collapse: collapse; font-size: 8px;">
                                 <thead>
-                                    <tr>
-                                        <th>Indicador</th>
-                                        <th>Símbolo</th>
-                                        <th style="text-align:right;">Valor</th>
-                                        <th style="text-align:right;">Variación</th>
+                                    <tr style="background: #f1f5f9;">
+                                        <th style="text-align:left; padding: 3px 5px;">Indicador</th>
+                                        <th style="text-align:left; padding: 3px 5px;">Símbolo</th>
+                                        <th style="text-align:right; padding: 3px 5px;">Valor</th>
+                                        <th style="text-align:right; padding: 3px 5px;">Var. Día</th>
+                                        <th style="text-align:right; padding: 3px 5px;">Var. 30d (Mes)</th>
+                                        <th style="text-align:right; padding: 3px 5px;">Racha</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1747,15 +1739,31 @@ try {
                     g.tickers.forEach(t => {
                         if (!t) return;
                         const chg = t.changePercent || 0;
-                        const isBad = g.title.includes('Sudamérica') ? chg < 0 : chg >= 0;
-                        const color = isBad ? '#ef4444' : '#10b981';
-                        const sign = chg >= 0 ? '+' : '';
+                        const chg30d = t.changePercent30d || 0;
+                        
+                        // Check if cost-inflating ticker
+                        const isCost = ['LBS=F', 'BZ=F', 'EURUSD=X', 'ALI=F', 'HRC=F', 'ALUA.BA', 'TXAR.BA', 'YPFD.BA'].includes(t.symbol);
+                        
+                        const colorD = isCost ? (chg >= 0 ? '#ef4444' : '#10b981') : (chg >= 0 ? '#10b981' : '#ef4444');
+                        const signD = chg >= 0 ? '+' : '';
+                        
+                        const colorM = isCost ? (chg30d >= 0 ? '#ef4444' : '#10b981') : (chg30d >= 0 ? '#10b981' : '#ef4444');
+                        const signM = chg30d >= 0 ? '+' : '';
+
+                        const streakText = t.streakType === 'up' ? `🔥 ${t.streak}d` : (t.streakType === 'down' ? `❄️ ${t.streak}d` : '=');
+                        const streakColor = t.streakType === 'up' ? '#ef4444' : (t.streakType === 'down' ? '#10b981' : '#666');
+
+                        let valStr = t.price.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        if (t.symbol === 'EURUSD=X') valStr = t.price.toFixed(4);
+
                         tickerHTML += `
                             <tr>
-                                <td><strong>${t.name}</strong></td>
-                                <td style="font-family:monospace; color:#666;">${t.symbol}</td>
-                                <td style="font-family:monospace; text-align:right; font-weight:bold;">${t.price.toFixed(t.symbol.includes('EURUSD') ? 4 : 2)}</td>
-                                <td style="font-family:monospace; text-align:right; font-weight:bold; color:${color};">${sign}${chg.toFixed(2)}%</td>
+                                <td style="padding: 3px 5px; border-bottom: 1px solid #f1f5f9;"><strong>${t.name}</strong></td>
+                                <td style="padding: 3px 5px; border-bottom: 1px solid #f1f5f9; font-family:monospace; color:#666;">${t.symbol}</td>
+                                <td style="padding: 3px 5px; border-bottom: 1px solid #f1f5f9; font-family:monospace; text-align:right; font-weight:bold;">${valStr}</td>
+                                <td style="padding: 3px 5px; border-bottom: 1px solid #f1f5f9; font-family:monospace; text-align:right; font-weight:bold; color:${colorD};">${signD}${chg.toFixed(2)}%</td>
+                                <td style="padding: 3px 5px; border-bottom: 1px solid #f1f5f9; font-family:monospace; text-align:right; font-weight:bold; color:${colorM};">${signM}${chg30d.toFixed(1)}%</td>
+                                <td style="padding: 3px 5px; border-bottom: 1px solid #f1f5f9; font-family:monospace; text-align:right; font-weight:bold; color:${streakColor};">${streakText}</td>
                             </tr>
                         `;
                     });
@@ -1927,6 +1935,16 @@ try {
                             background: ${riskBg};
                             color: #1e293b;
                         }
+                        .panorama-banner {
+                            border-radius: 4px;
+                            padding: 8px 12px;
+                            font-size: 8.5px;
+                            margin-bottom: 10px;
+                            border-left: 3px solid #3b82f6;
+                            background: #f0f6ff;
+                            color: #1e293b;
+                            line-height: 1.45;
+                        }
                         .dolar-box {
                             flex: 1;
                             background: #f8fafc;
@@ -2091,8 +2109,9 @@ try {
                             <span>Radar Predictivo de Mercado & Indicadores Globales</span>
                         </h3>
                         <div class="risk-banner">
-                            NIVEL DE ALERTA: ${riskText}
+                            NIVEL DE ALERTA: ${riskText} (Score: ${riskScore}/10)
                         </div>
+                        ${radar && radar.panoramaNota ? `<div class="panorama-banner"><strong>PANORAMA MENSUAL:</strong> ${radar.panoramaNota}</div>` : ''}
 
                         ${dolarHTML}
                         ${tickerHTML}

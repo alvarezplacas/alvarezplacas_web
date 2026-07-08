@@ -133,6 +133,37 @@ const { title } = Astro.props;
             font-size: 20px;
         }
 
+        .nav-item-central {
+            position: relative;
+            top: -14px;
+            overflow: visible;
+        }
+        .central-circle {
+            width: 58px;
+            height: 58px;
+            background-color: #ff2800; /* Vibrant Red */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(255, 40, 0, 0.4);
+            border: 4px solid var(--panel-bg);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .central-circle i {
+            color: #fff !important;
+            font-size: 24px !important;
+        }
+        .nav-item-central:active .central-circle {
+            transform: scale(0.92);
+            background-color: #d62200;
+        }
+        .nav-item-central.active .central-circle {
+            background-color: #ff2800;
+            box-shadow: 0 0 15px rgba(255, 40, 0, 0.6);
+            border-color: #333;
+        }
+
         .nav-item span {
             font-size: 10px;
             font-weight: 600;
@@ -190,11 +221,17 @@ const { title } = Astro.props;
             <i class="fas fa-home"></i>
             <span>Inicio</span>
         </a>
-        <a href="/deposito/ingreso" class="nav-item ${Astro.url.pathname.includes('/deposito/ingreso') ? 'active' : ''}">
-            <i class="fas fa-plus-circle"></i>
+        <a href="/deposito/torres" class="nav-item ${Astro.url.pathname.includes('/deposito/torres') ? 'active' : ''}">
+            <i class="fas fa-warehouse"></i>
+            <span>Torres</span>
+        </a>
+        <a href="/deposito/ingreso?mode=new" class="nav-item nav-item-central ${Astro.url.searchParams.get('mode') === 'new' ? 'active' : ''}">
+            <div class="central-circle">
+                <i class="fas fa-plus"></i>
+            </div>
             <span>Ingresar</span>
         </a>
-        <a href="#" class="nav-item">
+        <a href="/deposito/ingreso?mode=search" class="nav-item ${Astro.url.searchParams.get('mode') === 'search' || (Astro.url.pathname.includes('/deposito/ingreso') && Astro.url.searchParams.get('mode') !== 'new') ? 'active' : ''}">
             <i class="fas fa-search"></i>
             <span>Buscar</span>
         </a>

@@ -407,13 +407,22 @@ if (resolvedSellerId) {
                     <i class="fas fa-users-cog" style="color: #f59e0b;"></i>
                 </a>
 
+                <a href="/ceo/clientes" class="tool-btn tooltip-trigger ${Astro.url.pathname === '/ceo/clientes' ? 'active' : ''}" data-tooltip="Cartera de Clientes Online" style="position: relative;">
+                    <span class="badge-new" style="background:#10b981;">NUEVO</span>
+                    <i class="fas fa-address-card" style="color: #10b981;"></i>
+                </a>
+
                 <a href="/ceo/simulador" class="tool-btn tooltip-trigger ${Astro.url.pathname === '/ceo/simulador' ? 'active' : ''}" data-tooltip="Simulador Fórmulas GCOM" style="position: relative;">
                     <span class="badge-new" style="background:#3b82f6;">SIM</span>
                     <i class="fas fa-calculator" style="color: #10b981;"></i>
                 </a>
 
-                <a href="/deposito" class="tool-btn tooltip-trigger" data-tooltip="Control de Stock (Vista Móvil)" target="_blank" style="position: relative;">
+                <a href="/ceo/stock" class="tool-btn tooltip-trigger ${Astro.url.pathname === '/ceo/stock' ? 'active' : ''}" data-tooltip="Control de Stock & Depósito" style="position: relative;">
                     <i class="fas fa-boxes" style="color: #8b5cf6;"></i>
+                </a>
+
+                <a href="/deposito" class="tool-btn tooltip-trigger" data-tooltip="Ingresar Stock (Vista Móvil)" target="_blank" style="position: relative;">
+                    <i class="fas fa-mobile-alt" style="color: #10b981;"></i>
                 </a>
                 
                 <a href="#" class="tool-btn disabled tooltip-trigger" data-tooltip="Gestión de Cuentas (Próximamente)">

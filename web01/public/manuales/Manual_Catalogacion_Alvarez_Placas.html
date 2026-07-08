@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Catalogación Álvarez Placas</title>
     <style>
         @page {
             size: A4;
@@ -14,6 +16,18 @@
             line-height: 1.6;
             margin: 0;
             padding: 0;
+            background-color: #ffffff;
+        }
+        .page-container {
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        @media print {
+            body { padding: 0; }
+            .page-container { max-width: none; padding: 0; }
         }
         .header {
             background-color: #2c3e50;
@@ -106,10 +120,11 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>ALVAREZ PLACAS</h1>
-        <p>Manual Maestro de Catalogación de Productos v1.0</p>
-    </div>
+    <div class="page-container">
+        <div class="header">
+            <h1>ALVAREZ PLACAS</h1>
+            <p>Manual Maestro de Catalogación de Productos v1.0</p>
+        </div>
 
     <div class="section">
         <h2>1. El Código Único (SKU)</h2>
@@ -130,6 +145,9 @@
 
     <div class="section">
         <h2>2. Diccionario de Rubros (La Letra X)</h2>
+        <div class="highlight" style="margin-bottom: 15px;">
+            <b>REGLA ESTRICTA:</b> Los nuevos rubros y nuevas marcas <b>SOLO</b> están permitidos ser creados a mano directamente en Directus (a menos que se otorgue permiso explícito a la IA). No está permitida la generación automática de rubros o marcas desde interfaces de usuario u otras importaciones para evitar inconsistencias.
+        </div>
         <table>
             <tr>
                 <th>Letra</th>
@@ -161,6 +179,26 @@
                 <td>Herramientas</td>
                 <td>Maquinaria y accesorios de taller.</td>
             </tr>
+            <tr>
+                <td><b>S</b></td>
+                <td>Servicios</td>
+                <td>Afilados, cortes a medida, pegado de tapacantos, fletes y mano de obra.</td>
+            </tr>
+            <tr>
+                <td><b>D</b></td>
+                <td>Molduras</td>
+                <td>Listones, contramarcos, zócalos, tapajuntas.</td>
+            </tr>
+            <tr>
+                <td><b>E</b></td>
+                <td>Afilador</td>
+                <td>Discos y herramientas de corte para mantenimiento.</td>
+            </tr>
+            <tr>
+                <td><b>X</b></td>
+                <td>Sin Detalle</td>
+                <td>Artículos sin especificación o de uso genérico.</td>
+            </tr>
         </table>
     </div>
 
@@ -181,12 +219,25 @@
             <li><b>10:</b> GRUPO EURO</li>
             <li><b>20:</b> BRONZEN</li>
             <li><b>30:</b> GREENWAY</li>
+            <li><b>70:</b> SG-HARD</li>
         </ul>
 
         <h3>Rubro I (Química / Insumos)</h3>
         <ul>
             <li><b>10:</b> KEKOL</li>
             <li><b>20:</b> MACAVI</li>
+        </ul>
+
+        <h3>Rubro R (Herramientas)</h3>
+        <ul>
+            <li><b>01:</b> KWB</li>
+            <li><b>10:</b> EINHELL</li>
+        </ul>
+
+        <h3>Rubro S (Servicios)</h3>
+        <ul>
+            <li><b>10:</b> PROPIOS (Servicios Propios, Afilados)</li>
+            <li><b>20:</b> TALLER (Trabajos Físicos de Taller: Cortes, Pegados)</li>
         </ul>
     </div>
 
@@ -215,10 +266,107 @@
         <div class="example-card">
             <b>I-10-0014:</b> Adhesivo KEKOL K-320 (Unidad: Litro)
         </div>
+        <div class="example-card">
+            <b>S-20-0001:</b> Servicio Corte a Medida TALLER (Unidad: Servicio)
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>6. Imputación y Códigos Contables (GECOM)</h2>
+        <p>El catalogador realiza la imputación contable automática mapeando rubros y marcas a cuentas contables del ERP:</p>
+        <table>
+            <tr>
+                <th>Rubro / Servicio</th>
+                <th>Cuenta Entrada (Compra)</th>
+                <th>Cuenta Salida (Venta)</th>
+                <th>Descripción Cuenta</th>
+            </tr>
+            <tr>
+                <td><b>M (Maderas)</b></td>
+                <td>113002</td>
+                <td>311004</td>
+                <td>Stock de Placas / Venta de Placas</td>
+            </tr>
+            <tr>
+                <td><b>H (Herrajes)</b></td>
+                <td>113003</td>
+                <td>311005</td>
+                <td>Stock de Herrajes / Venta de Herrajes</td>
+            </tr>
+            <tr>
+                <td><b>T (Tapacantos)</b></td>
+                <td>113004</td>
+                <td>311006</td>
+                <td>Stock de Tapacantos / Venta de Tapacantos</td>
+            </tr>
+            <tr>
+                <td><b>I (Química)</b></td>
+                <td>113006</td>
+                <td>311008</td>
+                <td>Stock Prod. Químicos / Venta Prod. Químicos</td>
+            </tr>
+            <tr>
+                <td><b>R (Herramientas)</b></td>
+                <td>113005</td>
+                <td>311007</td>
+                <td>Stock Herramientas / Venta Herramientas</td>
+            </tr>
+            <tr>
+                <td><b>S (TALLER - Cortes/Pegados)</b></td>
+                <td></td>
+                <td>311011</td>
+                <td>Servicios Generales / Servicio de Corte y Pegado</td>
+            </tr>
+            <tr>
+                <td><b>D (Molduras)</b></td>
+                <td>113002</td>
+                <td>311004</td>
+                <td>Stock de Molduras / Venta de Molduras</td>
+            </tr>
+            <tr>
+                <td><b>E (Afilador)</b></td>
+                <td>113008</td>
+                <td>311010</td>
+                <td>Bienes de Cambio / Venta de Afilado</td>
+            </tr>
+            <tr>
+                <td><b>X (Sin Detalle)</b></td>
+                <td>113008</td>
+                <td>311010</td>
+                <td>Servicios Generales / Venta Sin Detalle</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>7. Operaciones Integradas y Despliegue (VPS)</h2>
+        <p>El ecosistema de Alvarez Placas se compone de servidores locales e infraestructura en la nube. Conocer cómo operar y desplegar actualizaciones es fundamental para el equipo técnico.</p>
+        
+        <h3>Infraestructura Local (Servidor)</h3>
+        <ul>
+            <li><b>Catalogador MDM:</b> Next.js 15 + Prisma. Puerto 3050. Proceso gestionado vía PowerShell (<code>CatalogadorTray.ps1</code>).</li>
+            <li><b>Base de Datos:</b> PostgreSQL 16 local (<code>alvarezplacas</code>) en puerto 5432.</li>
+            <li><b>Sistema Node.js Legacy:</b> Puertos 3000 (CEO), 3001 (Taller), 3002 (Producción). Gestionado por PM2 (<code>AlvarezPlacas</code>).</li>
+            <li><b>SyncDocumentos:</b> Proceso PM2 que sincroniza facturas en PDF desde <code>\\SERVER-ALVAREZP\Public\Documents</code> hacia la web.</li>
+        </ul>
+
+        <h3>Infraestructura Cloud (VPS)</h3>
+        <ul>
+            <li><b>IP de Producción:</b> <code>144.217.163.13</code> (Acceso root vía SSH key).</li>
+            <li><b>Sitio Web:</b> Astro corriendo en Docker. Directorio <code>/opt/alvarez_v16/web01/site/web01</code>.</li>
+            <li><b>CMS Directus:</b> Frontend web alojado en <code>admin.alvarezplacas.com.ar</code> para visualización de catálogo.</li>
+        </ul>
+
+        <h3>Comando de Despliegue (Deploy Web Producción)</h3>
+        <p>Para aplicar cambios al sitio web principal en Astro, se debe ejecutar un build completo dentro del contenedor de compilación. Este comando unifica todo el proceso:</p>
+        <div class="example-card" style="font-size: 8pt; font-family: monospace; white-space: pre-wrap; word-break: break-all;">
+ssh -i "C:\Users\javier\.ssh\antigravity_key" root@144.217.163.13 "cd /opt/alvarez_v16/web01/site/web01 && git pull origin main && docker run --rm -v /opt/alvarez_v16/web01/site/web01:/app -w /app node:22-alpine sh -c 'npm install && npm run build' && docker compose -f /opt/alvarez_v16/web01/docker-compose.vps.yml restart alvarezplacas_web"
+        </div>
     </div>
 
     <div class="footer">
-        Álvarez Placas - Sistema de Gestión de Inventario 2024 - Prohibida su reproducción externa.
+        Álvarez Placas - Sistema de Gestión de Inventario 2026 - Prohibida su reproducción externa.
+    </div>
     </div>
 </body>
 </html>

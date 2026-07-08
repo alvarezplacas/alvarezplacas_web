@@ -155,60 +155,47 @@ Parametros→periodos habilitados(tildar los correspondientes al ejercicio)`
   },
   {
     title: `importacion de datos Gecom`,
-    content: `IMPORTACION DATOS EN GECOM
---------------------------
+    content: `CONFIGURACIÓN EXACTA PARA IMPORTACIÓN DE DATOS A GECOM
+------------------------------------------------------
+Para asegurar una ingesta exitosa sin errores de columnas o desfases de datos, configure GECOM exactamente como se detalla a continuación.
 
+1. GENERAR EL ARCHIVO TXT
+-------------------------
+El sistema genera automáticamente el archivo "importacion_articulos.txt" en el backend. 
+Asegúrese de usar ese archivo generado por la herramienta, ya que respeta los 100 caracteres de ancho exactos.
 
-1 Preparar archivo Excel 
+2. EN GECOM: CONFIGURAR FORMATO
+-------------------------------
+* Ir a BASES -> FORMATOS -> IMPORTACION Y EXPORTACION
+* Clic en "IMPORTACION DE ARTICULOS", luego clic en MODIFICAR.
+* Aplique los siguientes parámetros generales:
+  - Ancho a Saltear: 500
+  - Separador decimal: , (coma)
 
-*No dejar filas arriba y a la izquierda en blanco.
-*No dejar datos vacios, en su defecto colocar asterisco(*)
-*Los numeros de los rubros y subrubros tienen que estar en formato de texto(formato de celdas-numero-texto)
-*Exportar en formato txt- texto con formato delimitado por espacios
-*En el lugar que se guardó se genera un archivo con formato .prn (se tiene que guardar en el escritorio ya que si se guarda en una carpeta el GECOM no lo reconoce, o en sudefecto el nombre de la carpeta debe estar separado por guiones bajos.Luego (editar, boton derecho del mouse, cambiar nombre y poner txt como extension del archivo)
-*Se recomienda que en el bloc de notas la primer referencia, en este caso CODIGO DE ARTICULO, esté ubicada en la primer columna(01).
+3. EN GECOM: CONFIGURAR VARIABLES POSICIONALES
+----------------------------------------------
+Configure las columnas y anchos EXACTAMENTE con estos valores:
 
+Reg | Col | Variable           | Formato            | Ancho
+------------------------------------------------------------
+ 1  |  1  | CODIGO ARTICULO    | Caracteres         |  11
+ 1  |  13 | DESCRIPCION        | Caracteres         |  40
+ 1  |  60 | RUBRO              | Caracteres         |  4
+ 1  |  70 | IMPUTACION COMPRA  | Entero blanqueado  |  6
+ 1  |  85 | IMPUTACION VENTA   | Entero blanqueado  |  6
 
+4. IMPORTAR EN GECOM
+--------------------
+* Ir a STOCK -> RUBROS Y ARTICULOS
+* Control + clic en cualquier artículo en la columna descripción (se pone azul)
+* Ir a HERRAMIENTAS Y FUNCIONES ESPECIALES -> IMPORTAR ARTICULOS
+* Elegir la ruta del archivo "importacion_articulos.txt"
+* Tilde verde (Ejecutar)
 
-
-2 Abrir el archivo con  bloc de notas
-
-*Abajo de todo, teniendo la pantalla maximizada, verificar el numero de columna correspondiente para hacer la importacion en GECOM.
-
-
-
-
-3 En GECOM 
-
-*Ir a BASES-FORMATOS-IMPORTACION Y EXPORTACION
-*Clic una vez en IMPORTACION DE ARTICULOS, luego clic en MODIFICAR
-*En modificar:
-ancho de columna 500, separador decimal (colocar una coma,)reg(poner1) col(colocar el numero de columna correspondiente que figura en el bloc de notas) variable (utilizar los predeterminados de GECOM)
-*ANCHO, ejemplo:
-CODIGO ARTICULO 01
-DESCRIPCION 29
-RUBRO(conviene que sea el subrubro ya que hay mas cantidad)58
-
-
-
-
-4 Importar en GECOM
-
-*Ir a STOCK-RUBROS Y ARTICULOS
-*Control + clic en cualquier articulo en la columna descripcion(se pone en azul)
-*Ir a HERRAMIENTAS Y FUNCIONES ESPECIALES
-*En el desplegable poner IMPORTAR ARTICULOS
-*Elegir la ruta del arxhivo txt
-*Tilde verde(ejecutar)
-
-
-
-
-5 Rearmar la estructura
-
-*Control + clic en cualquier articulo en la columna descripcion(se pone en azul)
-*Ir a HERRAMIENTAS Y FUNCIONES ESPECIALES
-*En el desplegable poner REARMAR ESTRUCTURA`
+5. REARMAR LA ESTRUCTURA
+------------------------
+* Control + clic en cualquier artículo (azul)
+* Ir a HERRAMIENTAS Y FUNCIONES ESPECIALES -> REARMAR ESTRUCTURA`
   },
   {
     title: `Informe de ventas`,

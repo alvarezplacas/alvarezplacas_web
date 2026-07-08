@@ -1,52 +1,84 @@
 ---
 import DepositoMobile from '../../layouts/DepositoMobile.astro';
+import { query } from '@conexiones/lib/db.js';
+
+let latestMoves = [];
+try {
+    const res = await query(`
+        SELECT dm.id, dm.quantity, dm.type_move, dm.is_tapa, dm.created_at,
+               p.nombre as product_name, p.sku as product_sku,
+               du.name as location_name, du.type_code as location_type
+        FROM deposito_movimientos dm
+        JOIN "Productos" p ON dm.product_id = p.id
+        JOIN deposito_ubicaciones du ON dm.location_id = du.id
+        ORDER BY dm.created_at DESC
+        LIMIT 10
+    `);
+    latestMoves = res.rows;
+} catch (e) {
+    console.error("Error fetching latest movements:", e);
+}
+
+function formatTime(dateStr: string) {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' });
+}
 ---
 
 <DepositoMobile title="Inicio">
     <div style="display: flex; flex-direction: column; gap: 20px;">
         
-        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 20px; padding: 24px; color: white; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);">
-            <h2 style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; opacity: 0.9;">Turno Actual</h2>
-            <p style="font-size: 28px; font-weight: 900; margin-bottom: 4px;">¡Hola, Operador!</p>
-            <p style="font-size: 14px; opacity: 0.8;">Galpón Principal - Alvarez Placas</p>
+        <div style="background: linear-gradient(135deg, #1e1e1e 0%, #151515 100%); border: 1px solid #333; border-radius: 20px; padding: 24px; color: white; text-align: center; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);">
+            <h1 style="font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; margin: 0; color: #10b981;">Control de Stock</h1>
+            <p style="font-size: 12px; color: #888; margin-top: 4px; text-transform: uppercase; font-weight: 600;">Depósito Álvarez Placas</p>
         </div>
 
         <a href="/deposito/ingreso" style="text-decoration: none;">
-            <button class="btn-giant">
-                <i class="fas fa-barcode"></i> Cargar Stock
+            <button class="btn-giant" style="height: 80px; font-size: 20px;">
+                <i class="fas fa-plus-circle"></i> CARGAR STOCK
             </button>
         </a>
 
         <div style="margin-top: 10px;">
-            <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-history" style="color: #f59e0b;"></i> Últimos Movimientos
+            <h3 style="font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-weight: 800;">
+                <i class="fas fa-history" style="color: #10b981;"></i> Últimos Movimientos
             </h3>
             
             <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 16px; overflow: hidden;">
-                <!-- Placeholder items for now, will be dynamic later -->
-                <div style="padding: 16px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <p style="color: #fff; font-weight: 700; font-size: 14px; margin-bottom: 4px;">Melamina Roble 18mm</p>
-                        <p style="color: #888; font-size: 12px;"><i class="fas fa-layer-group text-blue-400"></i> Torre A1</p>
+                {latestMoves.length === 0 ? (
+                    <div style="padding: 24px; text-align: center; color: #666; font-size: 14px;">
+                        <i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                        No se registraron movimientos hoy
                     </div>
-                    <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 10px; border-radius: 8px; font-weight: 900; font-size: 16px;">
-                        +5
-                    </div>
-                </div>
-
-                <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <p style="color: #fff; font-weight: 700; font-size: 14px; margin-bottom: 4px;">MDF Crudo 15mm</p>
-                        <p style="color: #888; font-size: 12px;"><i class="fas fa-th-large text-orange-400"></i> Plaquero 3</p>
-                    </div>
-                    <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 10px; border-radius: 8px; font-weight: 900; font-size: 16px;">
-                        +1.5
-                    </div>
-                </div>
+                ) : (
+                    latestMoves.map((move: any) => (
+                        <div style="padding: 16px; border-bottom: 1px solid #2d2d2d; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="flex: 1; min-width: 0; padding-right: 12px;">
+                                <p style="color: #fff; font-weight: 700; font-size: 14px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    {move.product_name}
+                                </p>
+                                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                    <span style="color: #888; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                        <i class="fas fa-map-marker-alt" style="color: #3b82f6;"></i> {move.location_name}
+                                    </span>
+                                    <span style="color: #666; font-size: 11px;">|</span>
+                                    <span style="color: #888; font-size: 12px;">
+                                        {formatTime(move.created_at)} hs
+                                    </span>
+                                    {move.is_tapa && (
+                                        <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase;">
+                                            2da Calidad
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 16px; font-family: monospace; flex-shrink: 0;">
+                                +{Number(move.quantity)}
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
-            <p style="text-align: center; margin-top: 12px;">
-                <a href="#" style="color: #10b981; font-size: 12px; text-decoration: none; font-weight: 700;">Ver historial completo</a>
-            </p>
         </div>
     </div>
 </DepositoMobile>

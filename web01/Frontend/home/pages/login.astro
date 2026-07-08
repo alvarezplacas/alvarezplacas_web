@@ -6,8 +6,15 @@ import Layout from '../../home/layouts/Layout.astro';
 
 // Determinamos a dónde enviar el POST basándonos en la URL actual
 const { pathname } = Astro.url;
-const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/auth/login-client';
+let action = '/api/auth/login-client';
+if (pathname.startsWith('/admin')) {
+    action = '/api/auth/login-admin';
+} else if (pathname.startsWith('/vendedor')) {
+    action = '/api/auth/login-seller';
+}
 
+const isClientLogin = action === '/api/auth/login-client';
+const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 ---
 
 <Layout title="Iniciar Sesión - Alvarez Placas">
@@ -35,7 +42,41 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
                 </div>
             </div>
 
-            <form class="mt-8 space-y-6" id="login-form" action={action} method="POST">
+            {isClientLogin && googleClientId && (
+                <div class="mt-8 flex flex-col items-center justify-center w-full">
+                    <div id="g_id_onload"
+                        data-client_id={googleClientId}
+                        data-context="use"
+                        data-ux_mode="popup"
+                        data-callback="handleGoogleLogin"
+                        data-auto_prompt="false">
+                    </div>
+                    
+                    <div class="g_id_signin"
+                        data-type="standard"
+                        data-shape="rectangular"
+                        data-theme="filled_black"
+                        data-text="continue_with"
+                        data-size="large"
+                        data-logo_alignment="left"
+                        data-width="320">
+                    </div>
+                    
+                    <div class="w-full flex items-center my-6">
+                        <div class="flex-1 border-t border-gray-800"></div>
+                        <span class="px-4 text-xs text-gray-500 uppercase tracking-wider font-semibold">o con correo clásico</span>
+                        <div class="flex-1 border-t border-gray-800"></div>
+                    </div>
+                </div>
+            )}
+
+            {isClientLogin && !googleClientId && (
+                <div class="mt-6 p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs rounded text-center">
+                    Falta configurar PUBLIC_GOOGLE_CLIENT_ID en .env para activar el login con Google.
+                </div>
+            )}
+
+            <form class={isClientLogin ? "mt-4 space-y-6" : "mt-8 space-y-6"} id="login-form" action={action} method="POST">
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div class="mb-4">
                         <label for="email-address" class="sr-only">Correo electrónico</label>
@@ -89,7 +130,65 @@ const action = pathname.startsWith('/admin') ? '/api/auth/login-admin' : '/api/a
         <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-4 w-full max-w-xs sm:max-w-md px-4"></div>
     </div>
 
+    {isClientLogin && (
+        <script is:inline src="https://accounts.google.com/gsi/client" async defer></script>
+    )}
+
     <script is:inline>
+        // Función global para Google Login Callback
+        async function handleGoogleLogin(response) {
+            const toastContainer = document.getElementById('toast-container');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            function showLocalToast(message, type = 'error') {
+                const toast = document.createElement('div');
+                toast.className = `flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md transform transition-all duration-500 translate-y-10 opacity-0 ${
+                    type === 'error' 
+                    ? 'bg-red-500/10 border-red-500/20 text-red-500' 
+                    : 'bg-green-500/10 border-green-500/20 text-green-500'
+                }`;
+                toast.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} text-lg"></i><span class="font-bold text-sm text-white">${message}</span>`;
+                toastContainer.appendChild(toast);
+                setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+                setTimeout(() => {
+                    toast.classList.add('translate-y-[-10px]', 'opacity-0');
+                    setTimeout(() => toast.remove(), 500);
+                }, 6000);
+            }
+
+            if(submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Conectando...';
+            }
+            
+            try {
+                const res = await fetch('/api/auth/google-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                
+                const data = await res.json();
+                if(data.success) {
+                    showLocalToast(data.message, 'success');
+                    setTimeout(() => { window.location.href = data.redirectUrl || '/cliente'; }, 1000);
+                } else {
+                    showLocalToast(data.message || 'Error autenticando con Google', 'error');
+                    if(submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Iniciar Sesión <i class="fas fa-arrow-right ml-2 opacity-0 group-hover:opacity-100 transition-all"></i>';
+                    }
+                }
+            } catch(e) {
+                console.error(e);
+                showLocalToast('Error conectando al servidor', 'error');
+                if(submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Iniciar Sesión <i class="fas fa-arrow-right ml-2 opacity-0 group-hover:opacity-100 transition-all"></i>';
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.querySelector('#login-form');
             const submitBtn = document.querySelector('#submit-btn');
