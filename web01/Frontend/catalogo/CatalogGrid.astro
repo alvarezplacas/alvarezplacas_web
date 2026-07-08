@@ -39,6 +39,18 @@ try {
 
     const rawProducts = materials?.data || materials || [];
     
+    // Construir mapa de imágenes por marca y modelo (color)
+    const imageMap = new Map();
+    if (rawProducts.length > 0) {
+        rawProducts.forEach(p => {
+            const brand = normalizeBrand(p.marca?.nombre);
+            if (p.modelo && p.foto_principal) {
+                const key = `${brand}_${p.modelo}`.toLowerCase();
+                imageMap.set(key, p.foto_principal);
+            }
+        });
+    }
+    
     if (rawProducts.length > 0) {
         const grouped = new Map();
         const standalone = [];
@@ -110,6 +122,14 @@ try {
             } else {
                 const itemSku = (p.sku || "").toUpperCase();
                 let directusId = p.foto_principal;
+
+                // Heredar imagen si no tiene una propia
+                if (!directusId && p.modelo) {
+                    const key = `${brand}_${p.modelo}`.toLowerCase();
+                    if (imageMap.has(key)) {
+                        directusId = imageMap.get(key);
+                    }
+                }
 
                 standalone.push({
                     id: p.id,
