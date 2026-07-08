@@ -1,0 +1,367 @@
+---
+---
+
+<div class="ai-chat-widget" x-data="aiChatWidget()">
+    <div class="ai-header">
+        <div class="ai-title">
+            <i class="fas fa-brain text-amber-500"></i>
+            <span>Cerebro Cognitivo N3</span>
+        </div>
+        <div class="ai-status" :class="isOnline ? 'online' : 'offline'" :title="isOnline ? 'IA Online' : 'Desconectado'">
+            <div class="status-dot"></div>
+        </div>
+    </div>
+
+    <div class="ai-messages custom-scrollbar" id="ai-messages-container">
+        <template x-for="(msg, index) in messages" :key="index">
+            <div class="msg-row" :class="msg.role">
+                <div class="msg-bubble">
+                    <span x-html="formatMessage(msg.content)"></span>
+                    <template x-if="msg.sources && msg.sources.length > 0">
+                        <div class="msg-sources">
+                            <strong>Fuentes:</strong>
+                            <template x-for="src in msg.sources">
+                                <span class="source-tag" x-text="src.id"></span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+        
+        <template x-if="isLoading">
+            <div class="msg-row assistant">
+                <div class="msg-bubble loading">
+                    <div class="dot-pulse"></div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <div class="ai-input-area">
+        <form @submit.prevent="sendMessage" class="ai-form">
+            <input 
+                type="text" 
+                x-model="currentInput" 
+                placeholder="Preguntale a la IA..." 
+                :disabled="isLoading"
+                class="ai-input"
+            />
+            <button type="submit" class="ai-btn" :disabled="isLoading || currentInput.trim() === ''">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .ai-chat-widget {
+        background: var(--ps-bg);
+        border: 1px solid var(--ps-panel-border);
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        height: 400px;
+        margin-top: 15px;
+        overflow: hidden;
+    }
+
+    .ai-header {
+        background: var(--ps-toolbar-bg);
+        border-bottom: 1px solid var(--ps-panel-border);
+        padding: 8px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .ai-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .ai-status {
+        display: flex;
+        align-items: center;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #666;
+    }
+
+    .ai-status.online .status-dot {
+        background-color: #10b981;
+        box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+    }
+
+    .ai-status.offline .status-dot {
+        background-color: #ef4444;
+    }
+
+    .ai-messages {
+        flex: 1;
+        padding: 12px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: var(--ps-panel-bg);
+    }
+
+    .msg-row {
+        display: flex;
+        width: 100%;
+    }
+
+    .msg-row.user {
+        justify-content: flex-end;
+    }
+
+    .msg-row.assistant {
+        justify-content: flex-start;
+    }
+
+    .msg-bubble {
+        max-width: 85%;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
+
+    .user .msg-bubble {
+        background: var(--ps-accent);
+        color: #fff;
+        border-bottom-right-radius: 2px;
+    }
+
+    .assistant .msg-bubble {
+        background: var(--ps-toolbar-bg);
+        color: var(--ps-text-main);
+        border: 1px solid var(--ps-panel-border);
+        border-bottom-left-radius: 2px;
+    }
+
+    .msg-sources {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        font-size: 10px;
+        color: var(--ps-text-muted);
+    }
+
+    .source-tag {
+        display: inline-block;
+        background: rgba(0,0,0,0.3);
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-right: 4px;
+        margin-top: 4px;
+    }
+
+    .ai-input-area {
+        padding: 10px;
+        background: var(--ps-toolbar-bg);
+        border-top: 1px solid var(--ps-panel-border);
+        flex-shrink: 0;
+    }
+
+    .ai-form {
+        display: flex;
+        gap: 8px;
+    }
+
+    .ai-input {
+        flex: 1;
+        background: var(--ps-bg);
+        border: 1px solid var(--ps-panel-border);
+        border-radius: 4px;
+        padding: 8px 10px;
+        color: var(--ps-text-main);
+        font-size: 12px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .ai-input:focus {
+        border-color: var(--ps-accent);
+    }
+
+    .ai-input:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .ai-btn {
+        background: var(--ps-accent);
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        width: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .ai-btn:hover:not(:disabled) {
+        background: var(--ps-accent-hover);
+    }
+
+    .ai-btn:disabled {
+        background: var(--ps-panel-border);
+        color: var(--ps-text-muted);
+        cursor: not-allowed;
+    }
+
+    /* Loading animation */
+    .loading .dot-pulse {
+        position: relative;
+        width: 6px;
+        height: 6px;
+        border-radius: 5px;
+        background-color: var(--ps-text-muted);
+        color: var(--ps-text-muted);
+        animation: dot-pulse 1.5s infinite linear;
+        animation-delay: 0.25s;
+        margin: 0 10px;
+    }
+    .loading .dot-pulse::before, .loading .dot-pulse::after {
+        content: "";
+        display: inline-block;
+        position: absolute;
+        top: 0;
+        width: 6px;
+        height: 6px;
+        border-radius: 5px;
+        background-color: var(--ps-text-muted);
+        color: var(--ps-text-muted);
+        animation: dot-pulse 1.5s infinite linear;
+    }
+    .loading .dot-pulse::before {
+        left: -12px;
+        animation-delay: 0s;
+    }
+    .loading .dot-pulse::after {
+        left: 12px;
+        animation-delay: 0.5s;
+    }
+
+    @keyframes dot-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255,255,255, 0.4); }
+        50% { box-shadow: 0 0 0 4px rgba(255,255,255, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255,255,255, 0); }
+    }
+</style>
+
+<script is:inline>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('aiChatWidget', () => ({
+            isOnline: true,
+            isLoading: false,
+            currentInput: '',
+            messages: [
+                { role: 'assistant', content: 'Hola. Soy la Inteligencia Artificial de Alvarez Placas. ¿En qué te puedo ayudar hoy?' }
+            ],
+            
+            init() {
+                // Ping to check if AI is online
+                this.checkStatus();
+                // setInterval(() => this.checkStatus(), 60000); // Check every minute
+            },
+
+            async checkStatus() {
+                // This could be a separate ping endpoint if needed.
+                // For now, assume it's online unless a query fails.
+                this.isOnline = true;
+            },
+
+            formatMessage(text) {
+                if (!text) return '';
+                // Simple markdown parsing for bold and line breaks
+                let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                html = html.replace(/\n/g, '<br>');
+                return html;
+            },
+
+            async sendMessage() {
+                if (!this.currentInput.trim() || this.isLoading) return;
+
+                const userMsg = this.currentInput.trim();
+                this.currentInput = '';
+                
+                // Add user message to UI
+                this.messages.push({ role: 'user', content: userMsg });
+                this.scrollToBottom();
+                
+                this.isLoading = true;
+
+                try {
+                    // Send history minus the very first welcome message
+                    const historyForApi = this.messages.slice(1).map(m => ({
+                        role: m.role,
+                        content: m.content
+                    }));
+
+                    const res = await fetch('/api/ia/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: userMsg,
+                            history: historyForApi
+                        })
+                    });
+
+                    const data = await res.json();
+
+                    if (!data.success) {
+                        this.messages.push({ 
+                            role: 'assistant', 
+                            content: `⚠️ Error: ${data.error || 'No se pudo contactar con el Cerebro Cognitivo.'}` 
+                        });
+                        this.isOnline = false;
+                    } else {
+                        this.isOnline = true;
+                        this.messages.push({ 
+                            role: 'assistant', 
+                            content: data.answer,
+                            sources: data.sources 
+                        });
+                    }
+
+                } catch (err) {
+                    console.error("Chat fetch error:", err);
+                    this.messages.push({ 
+                        role: 'assistant', 
+                        content: '⚠️ Problema de conexión local. Verifique su red.' 
+                    });
+                    this.isOnline = false;
+                } finally {
+                    this.isLoading = false;
+                    this.scrollToBottom();
+                }
+            },
+
+            scrollToBottom() {
+                setTimeout(() => {
+                    const container = document.getElementById('ai-messages-container');
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                }, 100);
+            }
+        }));
+    });
+</script>

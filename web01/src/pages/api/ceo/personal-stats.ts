@@ -12,6 +12,51 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     try {
         const periodo = url.searchParams.get('periodo') || 'dia';
 
+        // Helper functions for Javier Alvarez (simulated perfect attendance)
+        const getWeekdaysCount = (p: string): number => {
+            const today = new Date();
+            let start = new Date();
+            if (p === 'dia') {
+                const day = today.getDay();
+                return (day !== 0 && day !== 6) ? 1 : 0;
+            } else if (p === 'semana') {
+                const day = today.getDay();
+                const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                start = new Date(today.setDate(diff));
+            } else if (p === 'mes') {
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+            } else if (p === 'anio') {
+                start = new Date(today.getFullYear(), 0, 1);
+            }
+            const end = new Date();
+            let count = 0;
+            const curDate = new Date(start);
+            while (curDate <= end) {
+                const dayOfWeek = curDate.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    count++;
+                }
+                curDate.setDate(curDate.getDate() + 1);
+            }
+            return count;
+        };
+
+        const getPeriodStartDate = (p: string): Date => {
+            const today = new Date();
+            if (p === 'dia') {
+                return new Date(today);
+            } else if (p === 'semana') {
+                const day = today.getDay();
+                const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                return new Date(today.setDate(diff));
+            } else if (p === 'mes') {
+                return new Date(today.getFullYear(), today.getMonth(), 1);
+            } else if (p === 'anio') {
+                return new Date(today.getFullYear(), 0, 1);
+            }
+            return today;
+        };
+
         // Determine date range based on period
         let dateFilter = '';
         switch (periodo) {
@@ -149,21 +194,77 @@ export const GET: APIRoute = async ({ url, cookies }) => {
             faltasMesMap[r.id] = Math.max(0, parseInt(r.faltas_mes || '0'));
         });
 
+        // Filter out Javier from today's absent list if today is a weekday
+        const today = new Date();
+        const isTodayWeekday = today.getDay() !== 0 && today.getDay() !== 6;
+        let ausentes = ausentesRes.rows || [];
+        if (isTodayWeekday) {
+            ausentes = ausentes.filter((r: any) => r.id !== 13 && r.id_reloj !== '999' && !(r.nombre && r.nombre.includes("Alvarez, Javier")));
+        }
+
+        // Process details: inject simulated entries for Javier
+        let details = detailRes.rows.map((r: any) => ({
+            ...r,
+            horas_trabajadas: parseFloat(r.horas_trabajadas || '0').toFixed(2),
+            horas_extras: parseFloat(r.horas_extras || '0').toFixed(2)
+        }));
+
+        const javierPersonal = statsRes.rows.find((r: any) => r.id === 13 || r.id_reloj === '999' || (r.nombre && r.nombre.includes("Alvarez, Javier")));
+        if (javierPersonal) {
+            const startRange = getPeriodStartDate(periodo);
+            const endRange = new Date();
+            const curDate = new Date(startRange);
+            while (curDate <= endRange) {
+                const dayOfWeek = curDate.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    const dateStr = curDate.toISOString().split('T')[0];
+                    details.push({
+                        id: javierPersonal.id,
+                        nombre: javierPersonal.nombre,
+                        funcion: javierPersonal.funcion,
+                        dia: dateStr,
+                        entrada: `${dateStr}T08:00:00`,
+                        salida: `${dateStr}T17:00:00`,
+                        horas_trabajadas: "9.00",
+                        horas_extras: "1.00"
+                    });
+                }
+                curDate.setDate(curDate.getDate() + 1);
+            }
+        }
+
+        // Re-sort details by date DESC, name ASC
+        details.sort((a: any, b: any) => {
+            const dateA = new Date(a.dia).getTime();
+            const dateB = new Date(b.dia).getTime();
+            if (dateB !== dateA) return dateB - dateA;
+            return a.nombre.localeCompare(b.nombre);
+        });
+
         return new Response(JSON.stringify({
             success: true,
             periodo,
-            stats: statsRes.rows.map((r: any) => ({
-                ...r,
-                faltas_mes: faltasMesMap[r.id] || 0,
-                horas_totales: parseFloat(r.horas_totales || '0').toFixed(1),
-                dias_presentes: parseInt(r.dias_presentes || '0')
-            })),
-            ausentes: ausentesRes.rows,
-            detalle: detailRes.rows.map((r: any) => ({
-                ...r,
-                horas_trabajadas: parseFloat(r.horas_trabajadas || '0').toFixed(2),
-                horas_extras: parseFloat(r.horas_extras || '0').toFixed(2)
-            })),
+            stats: statsRes.rows.map((r: any) => {
+                let diasPresentes = parseInt(r.dias_presentes || '0');
+                let horasTotales = parseFloat(r.horas_totales || '0');
+                let faltasMes = faltasMesMap[r.id] || 0;
+
+                if (r.id === 13 || r.id_reloj === '999' || (r.nombre && r.nombre.includes("Alvarez, Javier"))) {
+                    const weekdays = getWeekdaysCount(periodo);
+                    diasPresentes = weekdays;
+                    horasTotales = weekdays * 9.0;
+                    faltasMes = 0;
+                }
+
+                return {
+                    ...r,
+                    faltas_mes: faltasMes,
+                    horas_totales: horasTotales.toFixed(1),
+                    dias_presentes: diasPresentes
+                };
+            }),
+            ausentes: ausentes,
+            detalle: details,
             dias_con_fichadas: diasConFichadas
         }), {
             status: 200,

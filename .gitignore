@@ -1,12 +1,30 @@
+# Entorno Astro y Node
 node_modules
 .astro
 dist
 .env
-*.key
+.DS_Store
+
+# Archivos temporales y de sistema
 .snapshots
 _basura
 scratch
-.DS_Store
+
+# Seguridad y Base de Datos local
+*.key
 *.xlsx
 *.csv
-web01/Manuales_pdf/
+
+# Rutas específicas del proyecto
+web01/Manuales_pdf/web01/Empleados/
+
+# Blindaje de Diseño Gráfico y Multimedia (NUEVO)
+*.psd
+*.ai
+*.indd
+*.raw
+*.eps
+*.tif
+*.tiff
+*.mp4
+*.mov

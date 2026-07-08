@@ -18,6 +18,9 @@ const {
 	title, 
 	description = "Alvarez Placas - La mejor calidad en cortes de melamina y soluciones para el mueble." 
 } = Astro.props;
+
+// Force canonical URL to use Astro.site to prevent internal proxy hostnames in SSR
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
@@ -27,6 +30,19 @@ const {
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		
+		<!-- Open Graph & Canonical -->
+		<link rel="canonical" href={canonicalURL} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonicalURL} />
+		<meta property="og:image" content="https://alvarezplacas.com.ar/logo.png" />
+		<meta property="og:type" content="website" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content="https://alvarezplacas.com.ar/logo.png" />
+
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		
 		<!-- Google Fonts -->

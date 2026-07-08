@@ -228,7 +228,7 @@ if (!adminSession && !sellerSession) {
                                         <span class="att-name" x-text="att.filename"></span>
                                         <span class="att-size" x-text="formatBytes(att.size)"></span>
                                     </div>
-                                    <a href="#" class="att-download" @click.prevent="alert('Los adjuntos están resguardados en el VPS.')">
+                                    <a :href="`/api/ceo/download-attachment?account=${encodeURIComponent(activeAccount)}&uid=${selectedEmail.uid}&filename=${encodeURIComponent(att.filename)}`" target="_blank" class="att-download" title="Descargar adjunto">
                                         <i class="fas fa-download"></i>
                                     </a>
                                 </div>

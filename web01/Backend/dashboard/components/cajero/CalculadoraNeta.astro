@@ -599,27 +599,27 @@
         Alpine.data('calculadora', () => ({
             // State variables
             isLiveSync: false,
-            ventaBlanco: 1500000,
-            ventaCorteBlanco: 150000,
-            ventaPegadoBlanco: 60000,
-            cantPegadosBlanco: 40,
+            ventaBlanco: 0,
+            ventaCorteBlanco: 0,
+            ventaPegadoBlanco: 0,
+            cantPegadosBlanco: 0,
             precioPegadoBlanco: 1000,
             
-            ventaNegro: 2200000,
-            ventaCorteNegro: 200000,
-            ventaPegadoNegro: 80000,
-            cantPegadosNegro: 50,
+            ventaNegro: 0,
+            ventaCorteNegro: 0,
+            ventaPegadoNegro: 0,
+            cantPegadosNegro: 0,
             precioPegadoNegro: 1000,
 
             porcentajeMargenBlanco: 24.24,
             porcentajeMargenNegro: 24.24,
             
-            gastosTotales: 680000,
-            ivaCompras: 80000,
-            ivaVentas: 130000,
+            gastosTotales: 0,
+            ivaCompras: 0,
+            ivaVentas: 0,
 
-            recaudacion: 3700000,
-            compraTotalReal: 2846151,
+            recaudacion: 0,
+            compraTotalReal: 0,
             fechaCarga: new Date().toISOString().split('T')[0],
             get fechaDesde() {
                 if (!this.fechaCarga) return '';

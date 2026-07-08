@@ -8,6 +8,7 @@ import { CommunicationService } from '../logic/communication.js';
 import { query } from '@conexiones/lib/db.js';
 import BusinessHoursCounter from '../components/BusinessHoursCounter.astro';
 import HelpModal from '../components/HelpModal.astro';
+import AIChatWidget from '../components/AIChatWidget.astro';
 
 interface Props {
 	title: string;
@@ -282,10 +283,14 @@ try {
                 <div class="right-panel-section agenda-section">
                     <AgendaPanel vendedor_id={vendedor_id || ''} />
                 </div>
+                
+                {isJefe && (
+                    <AIChatWidget />
+                )}
             </aside>
             <div class="right-panel-toggle" id="btn-toggle-right-panel" title="Expandir Panel Derecho">
                 <i class="fas fa-chevron-left"></i>
-                <span class="right-panel-toggle-text">Notas y Agenda</span>
+                <span class="right-panel-toggle-text">Notas, Agenda e IA</span>
             </div>
         </div>
 

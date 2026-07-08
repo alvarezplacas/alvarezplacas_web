@@ -6,6 +6,7 @@ import QuickNotes from '../components/QuickNotes.astro';
 import AgendaPanel from '../components/AgendaPanel.astro';
 import BusinessHoursCounter from '../components/BusinessHoursCounter.astro';
 import HelpModal from '../components/HelpModal.astro';
+import AIChatWidget from '../components/AIChatWidget.astro';
 
 interface Props {
     title: string;
@@ -505,11 +506,13 @@ if (resolvedSellerId) {
                 <div class="agenda-widget" style="margin-top: 15px;">
                     <AgendaPanel vendedor_id={resolvedSellerId} />
                 </div>
+                
+                <AIChatWidget />
             </div>
         </aside>
         <div class="right-panel-toggle" id="btn-toggle-right-panel" title="Expandir Panel Derecho">
             <i class="fas fa-chevron-left"></i>
-            <span class="right-panel-toggle-text">Notas y Agenda</span>
+            <span class="right-panel-toggle-text">Notas, Agenda e IA</span>
         </div>
     </div>
 

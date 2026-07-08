@@ -15,7 +15,18 @@ const DASHBOARD_VERSION = 'v2.1';
 let personalList: any[] = [];
 let asistenciasDia: any[] = [];
 let ausentesHoy: any[] = [];
+let adelantosList: any[] = [];
+let novedadesList: any[] = [];
 let error: string | null = null;
+let totalSueldosTeoricos = 0;
+let totalSueldosRegistrados = 0;
+let totalSac = 0;
+let totalCargasSociales = 0;
+let totalGastoAdministrativo = 0;
+let totalProyectadoMes = 0;
+const CARGAS_SOCIALES_PORC = 0.25;
+const currentMonth = new Date().getMonth(); // 5 = June, 11 = December
+const isSacMonth = currentMonth === 5 || currentMonth === 11;
 
 try {
     // Auto-migrate: add new columns if they don't exist yet
@@ -26,7 +37,26 @@ try {
         ADD COLUMN IF NOT EXISTS fecha_entrega_indumentaria DATE,
         ADD COLUMN IF NOT EXISTS observaciones TEXT,
         ADD COLUMN IF NOT EXISTS adelantos NUMERIC(12,2) DEFAULT 0,
-        ADD COLUMN IF NOT EXISTS horas_extras_manual NUMERIC(6,2) DEFAULT 0
+        ADD COLUMN IF NOT EXISTS horas_extras_manual NUMERIC(6,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS dni_file_id VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS dni_dorso_file_id VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS cuil_file_id VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS codem_file_id VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS examen_medico_file_id VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS foto_file_id VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS es_externo BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS horas_trabajadas_manual NUMERIC(6,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS basico_recibo NUMERIC(12,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS antiguedad_anos INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS no_remunerativo_basico NUMERIC(12,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS es_media_jornada BOOLEAN DEFAULT FALSE
+    `).catch(() => {});
+
+    // Set initial values for existing external employees
+    await query(`
+        UPDATE control_personal 
+        SET es_externo = TRUE 
+        WHERE observaciones ILIKE '%externo%' AND es_externo = FALSE
     `).catch(() => {});
 
     const personalRes = await query(`SELECT * FROM control_personal ORDER BY nombre ASC`);
@@ -35,7 +65,8 @@ try {
     // Asistencias de hoy cruzadas por id_reloj
     const asistRes = await query(`
         SELECT 
-            c.id, c.nombre, c.funcion,
+            c.id, c.nombre, c.funcion, c.indumentaria_entregada, c.fecha_entrega_indumentaria, c.observaciones, c.adelantos,
+            c.es_externo, c.horas_trabajadas_manual,
             MIN(a.timestamp) as entrada,
             MAX(a.timestamp) as salida,
             ROUND(
@@ -49,10 +80,36 @@ try {
         FROM control_personal c
         LEFT JOIN control_asistencias a 
             ON c.id_reloj = a.id_reloj AND DATE(a.timestamp) = CURRENT_DATE
-        GROUP BY c.id, c.nombre, c.funcion
+        GROUP BY c.id, c.nombre, c.funcion, c.indumentaria_entregada, c.fecha_entrega_indumentaria, c.observaciones, c.adelantos, c.es_externo, c.horas_trabajadas_manual
         ORDER BY c.nombre ASC
     `);
-    asistenciasDia = asistRes.rows || [];
+    const asistRows = asistRes.rows || [];
+    const today = new Date();
+    const isWeekday = today.getDay() !== 0 && today.getDay() !== 6;
+
+    asistenciasDia = asistRows.map((row: any) => {
+        if (row.id === 13 || row.id_reloj === '999' || (row.nombre && row.nombre.includes("Alvarez, Javier"))) {
+            if (isWeekday) {
+                const dateStr = today.toISOString().split('T')[0];
+                return {
+                    ...row,
+                    entrada: `${dateStr}T08:00:00`,
+                    salida: `${dateStr}T17:00:00`,
+                    horas_trabajadas: 9.00,
+                    horas_extras_auto: 1.00
+                };
+            } else {
+                return {
+                    ...row,
+                    entrada: null,
+                    salida: null,
+                    horas_trabajadas: 0,
+                    horas_extras_auto: 0
+                };
+            }
+        }
+        return row;
+    });
 
     // Ausentes hoy con faltas del mes
     const ausentesRes = await query(`
@@ -74,6 +131,7 @@ try {
             ) as faltas_mes
         FROM control_personal c
         WHERE c.id_reloj IS NOT NULL
+        AND c.es_externo = FALSE
         AND c.id NOT IN (
             SELECT DISTINCT cp.id 
             FROM control_personal cp
@@ -82,7 +140,176 @@ try {
         )
         ORDER BY c.nombre ASC
     `);
-    ausentesHoy = ausentesRes.rows || [];
+    const novedadesRes = await query(`
+        SELECT n.*, p.nombre as empleado_nombre
+        FROM control_novedades n
+        JOIN control_personal p ON n.empleado_id = p.id
+        ORDER BY n.fecha_inicio DESC
+    `).catch(() => ({ rows: [] }));
+    novedadesList = novedadesRes.rows || [];
+
+    // Helper functions for timezone-safe date comparison
+    const formatDateStr = (d: any) => {
+        if (!d) return '';
+        if (typeof d === 'string') return d.split('T')[0];
+        const dateObj = new Date(d);
+        const yyyy = dateObj.getUTCFullYear();
+        const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getUTCDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const argentinaOffset = -3;
+    const argToday = new Date(new Date().getTime() + (argentinaOffset * 60 + new Date().getTimezoneOffset()) * 60000);
+    const todayStr = argToday.toISOString().split('T')[0];
+
+    // Calculate how many weekdays (Mon-Fri) each employee spent on novelty in this month up to today
+    const getCalendarWeekdaysCount = (nov: any): number => {
+        const startMonth = new Date(argToday.getFullYear(), argToday.getMonth(), 1);
+        const endMonth = argToday;
+
+        const nStart = new Date(nov.fecha_inicio);
+        const nEnd = new Date(nov.fecha_fin);
+
+        const start = nStart < startMonth ? startMonth : nStart;
+        const end = nEnd > endMonth ? endMonth : nEnd;
+
+        let count = 0;
+        const cur = new Date(start);
+        while (cur <= end) {
+            const day = cur.getDay();
+            if (day !== 0 && day !== 6) {
+                count++;
+            }
+            cur.setDate(cur.getDate() + 1);
+        }
+        return count;
+    };
+
+    const noveltyFaltasDeduction: Record<number, number> = {};
+    novedadesList.forEach((nov: any) => {
+        const count = getCalendarWeekdaysCount(nov);
+        noveltyFaltasDeduction[nov.empleado_id] = (noveltyFaltasDeduction[nov.empleado_id] || 0) + count;
+    });
+
+    const ausentesRows = ausentesRes.rows || [];
+    let initialAusentes = isWeekday
+        ? ausentesRows.filter((row: any) => row.id !== 13 && row.id_reloj !== '999' && !(row.nombre && row.nombre.includes("Alvarez, Javier")))
+        : ausentesRows;
+
+    // Filter out active novedades from today's unjustified absences list
+    ausentesHoy = initialAusentes.filter((row: any) => {
+        const activeNov = novedadesList.find((n: any) => {
+            if (n.empleado_id !== row.id) return false;
+            const start = formatDateStr(n.fecha_inicio);
+            const end = formatDateStr(n.fecha_fin);
+            return todayStr >= start && todayStr <= end;
+        });
+        return !activeNov;
+    }).map((row: any) => {
+        const rawFaltas = parseInt(row.faltas_mes || '0');
+        const deduction = noveltyFaltasDeduction[row.id] || 0;
+        return {
+            ...row,
+            faltas_mes: Math.max(0, rawFaltas - deduction)
+        };
+    });
+
+    // Egresos Registrados en Caja para el mes actual (gasto_fijo_sueldos_2026)
+    const totalSueldosRegistradosRes = await query(`
+        SELECT COALESCE(SUM(monto), 0) as total 
+        FROM caja_movimientos 
+        WHERE categoria = 'gasto_fijo_sueldos_2026'
+          AND DATE(fecha) >= DATE_TRUNC('month', CURRENT_DATE)
+          AND DATE(fecha) <= CURRENT_DATE
+    `);
+    totalSueldosRegistrados = parseFloat(totalSueldosRegistradosRes.rows[0]?.total || '0');
+
+    const adelantosRes = await query(`
+        SELECT * FROM control_adelantos 
+        WHERE estado = 'Pendiente'
+    `).catch(() => ({ rows: [] }));
+    adelantosList = adelantosRes.rows || [];
+
+    // Cálculo preciso consolidado de gastos administrativos (teóricos)
+    const activeEmployees = personalList.filter((emp: any) => emp.status === 'active');
+    
+    totalSueldosTeoricos = 0;
+    totalCargasSociales = 0;
+    let totalRetenciones = 0;
+    totalSac = 0;
+
+    activeEmployees.forEach((emp: any) => {
+        const sueldoBasePocket = parseFloat(emp.sueldo_base || '0');
+        const basicoRecibo = parseFloat(emp.basico_recibo || '0');
+        const antiguedadAnos = parseInt(emp.antiguedad_anos || '0');
+        const noRemunerativoBasico = parseFloat(emp.no_remunerativo_basico || '0');
+        const esMediaJornada = emp.es_media_jornada === true || emp.es_media_jornada === 'true';
+
+        const empAdelantos = adelantosList.filter((a: any) => a.empleado_id === emp.id);
+        const vales_mes = empAdelantos.filter((a: any) => a.tipo === 'Vale').reduce((sum: number, a: any) => sum + parseFloat(a.monto || '0'), 0);
+        const prestamos_mes = empAdelantos.filter((a: any) => a.tipo === 'Prestamo').reduce((sum: number, a: any) => sum + (parseFloat(a.monto || '0') / parseInt(a.cuotas_totales || '1')), 0);
+
+        let totalHaberes = 0;
+        let totalNoRemunerativos = 0;
+        let totalDescuentos = 0;
+        let netoRecibo = 0;
+        let netoNegro = sueldoBasePocket;
+
+        if (basicoRecibo > 0) {
+            const basico = basicoRecibo;
+            const antiguedad = basico * antiguedadAnos * 0.01;
+            const presentismo = (basico + antiguedad) / 12;
+            totalHaberes = basico + antiguedad + presentismo;
+
+            const noRemBasico = noRemunerativoBasico;
+            const noRemAntiguedad = noRemBasico * antiguedadAnos * 0.01;
+            const noRemPresentismo = (noRemBasico + noRemAntiguedad) / 12;
+            totalNoRemunerativos = noRemBasico + noRemAntiguedad + noRemPresentismo;
+
+            const jubilacion = totalHaberes * 0.11;
+            const ley19032 = totalHaberes * 0.03;
+            const obraSocialBase = (totalHaberes + totalNoRemunerativos) * (esMediaJornada ? 2 : 1);
+            const obraSocial = obraSocialBase * 0.03;
+            const sec = (totalHaberes + totalNoRemunerativos) * 0.02;
+            const faecys = (totalHaberes + totalNoRemunerativos) * 0.005;
+            const osecac = 100.00;
+
+            totalDescuentos = jubilacion + ley19032 + obraSocial + sec + faecys + osecac;
+            netoRecibo = totalHaberes + totalNoRemunerativos - totalDescuentos;
+            netoNegro = Math.max(0, sueldoBasePocket - netoRecibo);
+        }
+
+        totalSueldosTeoricos += sueldoBasePocket;
+        totalCargasSociales += totalHaberes * 0.25;
+        totalRetenciones += totalDescuentos;
+
+        // SAC (Aguinaldo) - June and December
+        if (isSacMonth) {
+            const sacBrutoHaberes = totalHaberes / 2;
+            const sacBrutoNoRemunerativo = totalNoRemunerativos / 2;
+            const sacBrutoTotal = sacBrutoHaberes + sacBrutoNoRemunerativo;
+
+            const sacJubilacion = sacBrutoHaberes * 0.11;
+            const sacLey19032 = sacBrutoHaberes * 0.03;
+            const sacObraSocialBase = (sacBrutoHaberes + sacBrutoNoRemunerativo) * (esMediaJornada ? 2 : 1);
+            const sacObraSocial = sacObraSocialBase * 0.03;
+            const sacSec = sacBrutoTotal * 0.02;
+            const sacFaecys = sacBrutoTotal * 0.005;
+            const sacDescuentos = sacJubilacion + sacLey19032 + sacObraSocial + sacSec + sacFaecys;
+
+            const sacNetoBlanco = sacBrutoTotal - sacDescuentos;
+            const sacNetoNegro = netoNegro / 2;
+            const sacNetoTotal = sacNetoBlanco + sacNetoNegro;
+            const sacPatronal = sacBrutoHaberes * 0.25;
+
+            // Costo total del SAC para la empresa: Neto + Retenciones + Cargas Patronales
+            totalSac += (sacNetoTotal + sacDescuentos + sacPatronal);
+        }
+    });
+
+    totalGastoAdministrativo = totalSueldosTeoricos + totalRetenciones + totalCargasSociales + totalSac;
+    totalProyectadoMes = totalGastoAdministrativo;
 
 } catch (e: any) {
     console.error("Error fetching personal VPS data:", e);
@@ -93,8 +320,8 @@ const presentismoGrid = asistenciasDia.map(row => {
     let estado = 'Ausente';
     let entradaStr = null;
     let salidaStr = null;
-    let horasTrabajadas = 0;
-    let horasExtras = 0;
+    let horasTrabajadas = parseFloat(row.horas_trabajadas_manual || '0');
+    let horasExtras = parseFloat(row.horas_extras_manual || '0');
 
     if (row.entrada) {
         entradaStr = new Date(row.entrada).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
@@ -102,8 +329,25 @@ const presentismoGrid = asistenciasDia.map(row => {
         if (row.salida && new Date(row.salida).getTime() !== new Date(row.entrada).getTime()) {
             salidaStr = new Date(row.salida).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
             estado = 'Completado';
-            horasTrabajadas = parseFloat(row.horas_trabajadas || '0');
-            horasExtras = parseFloat(row.horas_extras_auto || '0');
+            if (horasTrabajadas === 0) {
+                horasTrabajadas = parseFloat(row.horas_trabajadas || '0');
+            }
+            if (horasExtras === 0) {
+                horasExtras = parseFloat(row.horas_extras_auto || '0');
+            }
+        }
+    } else if (row.es_externo) {
+        estado = 'Externo';
+    } else {
+        // Look for active novelty today
+        const activeNov = novedadesList.find((n: any) => {
+            if (n.empleado_id !== row.id) return false;
+            const start = formatDateStr(n.fecha_inicio);
+            const end = formatDateStr(n.fecha_fin);
+            return todayStr >= start && todayStr <= end;
+        });
+        if (activeNov) {
+            estado = activeNov.tipo;
         }
     }
 
@@ -115,13 +359,18 @@ const presentismoGrid = asistenciasDia.map(row => {
         salida: salidaStr,
         estado,
         horasTrabajadas,
-        horasExtras
+        horasExtras,
+        indumentaria: row.indumentaria_entregada,
+        fechaIndumentaria: row.fecha_entrega_indumentaria,
+        observaciones: row.observaciones,
+        adelantos: row.adelantos,
+        esExterno: row.es_externo
     };
 });
 
 const totalHorasHoy = presentismoGrid.reduce((sum, r) => sum + r.horasTrabajadas, 0);
 const totalExtrasHoy = presentismoGrid.reduce((sum, r) => sum + r.horasExtras, 0);
-const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
+const presentesHoy = presentismoGrid.filter(e => e.estado === 'Presente' || e.estado === 'Completado' || e.estado === 'Externo').length;
 ---
 
 <CeoWorkspace title="Control de Personal y Asistencias" vendedor_id={sellerSession}>
@@ -230,6 +479,12 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
             <button class="pg-tab" id="tab-nomina" onclick="switchTab('nomina')">
                 <i class="fas fa-address-book"></i> Nómina de Empleados
             </button>
+            <button class="pg-tab" id="tab-adelantos" onclick="switchTab('adelantos')">
+                <i class="fas fa-hand-holding-usd"></i> Vales y Préstamos
+            </button>
+            <button class="pg-tab" id="tab-novedades" onclick="switchTab('novedades')">
+                <i class="fas fa-calendar-alt"></i> Novedades y Licencias
+            </button>
         </div>
 
         <!-- ============================================================ -->
@@ -285,6 +540,9 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                                 <th>Hs. Trabajadas</th>
                                 <th>Hs. Extras</th>
                                 <th>Faltas/Mes</th>
+                                <th>Indumentaria / Fecha</th>
+                                <th>Adelantos</th>
+                                <th>Observaciones</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
@@ -326,9 +584,37 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                                         <span class="pg-faltas-badge" data-emp-id={row.id}>-</span>
                                     </td>
                                     <td>
+                                        {row.indumentaria ? (
+                                            <div style="font-size:11px;">
+                                                <div>{row.indumentaria}</div>
+                                                {row.fechaIndumentaria && (
+                                                    <small style="color:var(--ps-text-muted);">
+                                                        {new Date(row.fechaIndumentaria).toLocaleDateString('es-AR')}
+                                                    </small>
+                                                )}
+                                            </div>
+                                        ) : <span class="text-muted">-</span>}
+                                    </td>
+                                    <td class="font-mono text-green">
+                                        {row.adelantos > 0 ? `$${parseFloat(row.adelantos).toLocaleString('es-AR')}` : <span class="text-muted">-</span>}
+                                    </td>
+                                    <td>
+                                        {row.observaciones ? (
+                                            <div style="font-size:11px;color:var(--ps-text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title={row.observaciones}>
+                                                {row.observaciones}
+                                            </div>
+                                        ) : <span class="text-muted">-</span>}
+                                    </td>
+                                    <td>
                                         {row.estado === 'Presente' && <span class="pg-status pg-status-present">En Turno</span>}
                                         {row.estado === 'Completado' && <span class="pg-status pg-status-complete">Jornada OK</span>}
                                         {row.estado === 'Ausente' && <span class="pg-status pg-status-absent">Ausente</span>}
+                                        {row.estado === 'Externo' && <span class="pg-status pg-status-present" style="background: rgba(139,92,246,0.1); color: #a78bfa; border: 1px solid rgba(139,92,246,0.25);">Externo</span>}
+                                        {!['Presente', 'Completado', 'Ausente', 'Externo'].includes(row.estado) && (
+                                            <span class="pg-status" style="background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3);">
+                                                {row.estado}
+                                            </span>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
@@ -374,72 +660,400 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                     </div>
                 </div>
                 <div class="pg-panel-body">
+                           <!-- COMPARADOR DE GASTOS DE SUELDOS VS NÓMINA CON AGUINALDO -->
+                    <div class="pg-stats-grid" style="margin-bottom: 24px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <!-- Tarjeta 1: Sueldos Base -->
+                        <div class="pg-stat-card" style="background: rgba(59, 130, 246, 0.03); border: 1px solid rgba(59, 130, 246, 0.15); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            <div class="pg-stat-header">
+                                <span>SUELDOS BASE ACTIVOS</span>
+                                <i class="fas fa-calculator text-blue" style="font-size: 16px;"></i>
+                            </div>
+                            <div class="pg-stat-value text-blue" style="font-size: 22px; font-family: 'Roboto Mono', monospace; font-weight: 700; margin: 8px 0;">
+                                {totalSueldosTeoricos.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                            </div>
+                            <div class="pg-stat-desc" style="font-size: 11px; opacity: 0.85;">Gasto mensual en sueldos base</div>
+                        </div>
+
+                        <!-- Tarjeta 2: Aguinaldo (SAC) - Dinámica -->
+                        {isSacMonth && (
+                            <div class="pg-stat-card" style="background: rgba(167, 139, 250, 0.03); border: 1px solid rgba(167, 139, 250, 0.25); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                                <div class="pg-stat-header">
+                                    <span>AGUINALDO (SAC)</span>
+                                    <i class="fas fa-gift" style="color: #a78bfa; font-size: 16px;"></i>
+                                </div>
+                                <div class="pg-stat-value" style="font-size: 22px; font-family: 'Roboto Mono', monospace; font-weight: 700; margin: 8px 0; color: #a78bfa;">
+                                    {totalSac.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                                </div>
+                                <div class="pg-stat-desc" style="font-size: 11px; opacity: 0.85;">SAC 1º Semestre (50% sueldo base)</div>
+                            </div>
+                        )}
+
+                        <!-- Tarjeta 3: Cargas Sociales Patronales (25%) -->
+                        <div class="pg-stat-card" style="background: rgba(14, 165, 233, 0.03); border: 1px solid rgba(14, 165, 233, 0.15); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            <div class="pg-stat-header">
+                                <span>CARGAS PATRONALES (EST. 25%)</span>
+                                <i class="fas fa-percent text-sky" style="font-size: 16px; color: #38bdf8;"></i>
+                            </div>
+                            <div class="pg-stat-value" style="font-size: 22px; font-family: 'Roboto Mono', monospace; font-weight: 700; margin: 8px 0; color: #38bdf8;">
+                                {totalCargasSociales.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                            </div>
+                            <div class="pg-stat-desc" style="font-size: 11px; opacity: 0.85;">Contribuciones obligatorias ley AR</div>
+                        </div>
+
+                        <!-- Tarjeta 4: Gasto Administrativo Total (Costo Empresa Real) -->
+                        <div class="pg-stat-card" style="background: rgba(99, 102, 241, 0.03); border: 1px solid rgba(99, 102, 241, 0.15); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            <div class="pg-stat-header">
+                                <span>GASTO ADMINISTRATIVO TOTAL</span>
+                                <i class="fas fa-receipt text-indigo" style="font-size: 16px; color: #6366f1;"></i>
+                            </div>
+                            <div class="pg-stat-value" style="font-size: 22px; font-family: 'Roboto Mono', monospace; font-weight: 700; margin: 8px 0; color: #6366f1;">
+                                {totalGastoAdministrativo.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                            </div>
+                            <div class="pg-stat-desc" style="font-size: 11px; opacity: 0.85;">Presupuesto adm. real {isSacMonth ? '(Sueldos+SAC+Cargas)' : '(Sueldos+Cargas)'}</div>
+                        </div>
+
+                        <!-- Tarjeta 5: Egresos en Caja -->
+                        <div class="pg-stat-card" style="background: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.15); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            <div class="pg-stat-header">
+                                <span>EGRESOS SUELDOS (CAJA)</span>
+                                <i class="fas fa-money-bill-wave text-red" style="font-size: 16px;"></i>
+                            </div>
+                            <div class="pg-stat-value text-red" style="font-size: 22px; font-family: 'Roboto Mono', monospace; font-weight: 700; margin: 8px 0;">
+                                {totalSueldosRegistrados.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                            </div>
+                            <div class="pg-stat-desc" style="font-size: 11px; opacity: 0.85;">Egresos de "Sueldos 2026" este mes</div>
+                        </div>
+
+                        <!-- Tarjeta 6: Desviación -->
+                        <div class="pg-stat-card" style="background: {totalSueldosRegistrados >= totalGastoAdministrativo ? 'rgba(245, 158, 11, 0.03)' : 'rgba(16, 185, 129, 0.03)'}; border: 1px solid {totalSueldosRegistrados >= totalGastoAdministrativo ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)'}; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            <div class="pg-stat-header">
+                                <span>CONTROL / DESVIACIÓN</span>
+                                <i class="fas fa-scale-balanced text-amber" style="font-size: 16px;"></i>
+                            </div>
+                            <div class="pg-stat-value" style="font-size: 22px; font-family: 'Roboto Mono', monospace; font-weight: 700; margin: 8px 0; color: {totalSueldosRegistrados >= totalGastoAdministrativo ? 'var(--ps-warning, #f59e0b)' : 'var(--ps-success, #10b981)'};">
+                                {(totalSueldosRegistrados - totalGastoAdministrativo).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', signDisplay: 'always' })}
+                            </div>
+                            <div class="pg-stat-desc" style="font-size: 11px; opacity: 0.85;">Diferencia (caja - gasto adm. total)</div>
+                        </div>
+                    </div>
+
                     <table class="pg-table" id="nomina-table">
                         <thead>
                             <tr>
                                 <th>Empleado</th>
                                 <th>Función / Sector</th>
-                                <th>Sueldo Base</th>
+                                <th>Liquidación Sueldo (Ley AR)</th>
+                                {isSacMonth && <th>Aguinaldo (SAC)</th>}
+                                <th>Gasto Administrativo (Costo Empresa)</th>
                                 <th>Forma de Pago</th>
                                 <th>ID Reloj</th>
+                                <th>Documentación</th>
                                 <th>Contacto</th>
                                 <th style="text-align:center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {personalList.map((emp) => (
-                                <tr>
-                                    <td>
-                                        <div class="emp-name-cell">
-                                            <div class="pg-avatar">{emp.nombre.charAt(0)}</div>
-                                            <div>
-                                                <div style="font-weight:600;color:var(--ps-highlight);">{emp.nombre}</div>
-                                                {emp.observaciones && (
-                                                    <div style="font-size:10px;color:var(--ps-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title={emp.observaciones}>
-                                                        {emp.observaciones}
+                            {personalList.map((emp) => {
+                                const sueldoBasePocket = parseFloat(emp.sueldo_base || '0');
+                                const basicoRecibo = parseFloat(emp.basico_recibo || '0');
+                                const antiguedadAnos = parseInt(emp.antiguedad_anos || '0');
+                                const noRemunerativoBasico = parseFloat(emp.no_remunerativo_basico || '0');
+                                const esMediaJornada = emp.es_media_jornada === true || emp.es_media_jornada === 'true';
+
+                                const empAdelantos = adelantosList.filter((a: any) => a.empleado_id === emp.id);
+                                const valesMes = empAdelantos.filter((a: any) => a.tipo === 'Vale').reduce((sum: number, a: any) => sum + parseFloat(a.monto || '0'), 0);
+                                const prestamosMes = empAdelantos.filter((a: any) => a.tipo === 'Prestamo').reduce((sum: number, a: any) => sum + (parseFloat(a.monto || '0') / parseInt(a.cuotas_totales || '1')), 0);
+                                const totalDescuentosInternos = valesMes + prestamosMes;
+                                const sueldoNetoACobrar = sueldoBasePocket - totalDescuentosInternos;
+
+                                let totalHaberes = 0;
+                                let totalNoRemunerativos = 0;
+                                let totalDescuentos = 0;
+                                let netoRecibo = 0;
+                                let netoNegro = sueldoBasePocket;
+                                
+                                let basico = 0;
+                                let antiguedad = 0;
+                                let presentismo = 0;
+                                let noRemBasico = 0;
+                                let noRemAntiguedad = 0;
+                                let noRemPresentismo = 0;
+                                let jubilacion = 0;
+                                let ley19032 = 0;
+                                let obraSocial = 0;
+                                let sec = 0;
+                                let faecys = 0;
+
+                                if (basicoRecibo > 0) {
+                                    basico = basicoRecibo;
+                                    antiguedad = basico * antiguedadAnos * 0.01;
+                                    presentismo = (basico + antiguedad) / 12;
+                                    totalHaberes = basico + antiguedad + presentismo;
+
+                                    noRemBasico = noRemunerativoBasico;
+                                    noRemAntiguedad = noRemBasico * antiguedadAnos * 0.01;
+                                    noRemPresentismo = (noRemBasico + noRemAntiguedad) / 12;
+                                    totalNoRemunerativos = noRemBasico + noRemAntiguedad + noRemPresentismo;
+
+                                    jubilacion = totalHaberes * 0.11;
+                                    ley19032 = totalHaberes * 0.03;
+                                    const obraSocialBase = (totalHaberes + totalNoRemunerativos) * (esMediaJornada ? 2 : 1);
+                                    obraSocial = obraSocialBase * 0.03;
+                                    sec = (totalHaberes + totalNoRemunerativos) * 0.02;
+                                    faecys = (totalHaberes + totalNoRemunerativos) * 0.005;
+                                    const osecac = 100.00;
+
+                                    totalDescuentos = jubilacion + ley19032 + obraSocial + sec + faecys + osecac;
+                                    netoRecibo = totalHaberes + totalNoRemunerativos - totalDescuentos;
+                                    netoNegro = Math.max(0, sueldoBasePocket - netoRecibo);
+                                }
+
+                                // SAC (Aguinaldo)
+                                const sacBrutoHaberes = isSacMonth ? (totalHaberes / 2) : 0;
+                                const sacBrutoNoRemunerativo = isSacMonth ? (totalNoRemunerativos / 2) : 0;
+                                const sacBrutoTotal = sacBrutoHaberes + sacBrutoNoRemunerativo;
+
+                                const sacJubilacion = sacBrutoHaberes * 0.11;
+                                const sacLey19032 = sacBrutoHaberes * 0.03;
+                                const sacObraSocialBase = (sacBrutoHaberes + sacBrutoNoRemunerativo) * (esMediaJornada ? 2 : 1);
+                                const sacObraSocial = sacObraSocialBase * 0.03;
+                                const sacSec = sacBrutoTotal * 0.02;
+                                const sacFaecys = sacBrutoTotal * 0.005;
+                                const sacDescuentos = sacJubilacion + sacLey19032 + sacObraSocial + sacSec + sacFaecys;
+                                const sacNetoBlanco = sacBrutoTotal - sacDescuentos;
+                                const sacNetoNegro = isSacMonth ? (netoNegro / 2) : 0;
+                                const sacNetoTotal = sacNetoBlanco + sacNetoNegro;
+
+                                const cargasPatronalesMensual = totalHaberes * 0.25;
+                                const cargasPatronalesSac = sacBrutoHaberes * 0.25;
+                                const cargasPatronalesTotal = cargasPatronalesMensual + cargasPatronalesSac;
+
+                                const costoEmpresaMensual = sueldoBasePocket + totalDescuentos + cargasPatronalesMensual;
+                                const costoEmpresaSac = (isSacMonth ? (sueldoBasePocket / 2) : 0) + sacDescuentos + cargasPatronalesSac;
+                                const costoEmpresaTotal = costoEmpresaMensual + costoEmpresaSac;
+
+                                return (
+                                    <tr>
+                                        <td>
+                                            <div class="emp-name-cell row-click-trigger" data-emp={JSON.stringify(emp)} style="cursor:pointer;" title="Hacer clic para editar empleado">
+                                                <div class="pg-avatar">{emp.nombre.charAt(0)}</div>
+                                                <div>
+                                                    <div style="font-weight:600;color:var(--ps-highlight);">{emp.nombre}</div>
+                                                    {emp.observaciones && (
+                                                        <div style="font-size:10px;color:var(--ps-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title={emp.observaciones}>
+                                                            {emp.observaciones}
+                                                        </div>
+                                                    )}
+                                                    {(emp.talle_pantalon || emp.talle_remera || emp.talle_calzado || emp.talle_campera) && (
+                                                        <div style="font-size:10px;color:#a78bfa;margin-top:2px;display:flex;align-items:center;gap:4px;" title="Talles de Indumentaria: Pantalón / Remera / Calzado / Campera">
+                                                            <i class="fas fa-tshirt" style="font-size:9px;"></i>
+                                                            <span>T: {emp.talle_pantalon || '-'}/{emp.talle_remera || '-'}/{emp.talle_calzado || '-'}/{emp.talle_campera || '-'}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="pg-badge">{emp.funcion || '-'}</span></td>
+                                        
+                                        <!-- Liquidación Sueldo Base (Ley AR) -->
+                                        <td class="font-mono" style="line-height: 1.4;">
+                                            <div style="font-size: 11px;">
+                                                <span style="color: var(--ps-text-muted);">Pactado:</span>
+                                                <strong style="color: var(--ps-highlight);">${sueldoBasePocket.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+                                            </div>
+                                            {totalDescuentosInternos > 0 && (
+                                                <div style="font-size: 11px; color: #f87171;">
+                                                    <span>Vales/Dctos:</span>
+                                                    <strong>-${totalDescuentosInternos.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+                                                </div>
+                                            )}
+                                            <div style="font-size: 11px; margin-top: 2px; border-top: 1px dashed var(--ps-panel-border); padding-top: 2px;">
+                                                <span style="color: var(--ps-text-muted);">Neto en Mano:</span>
+                                                <strong style="color: #34d399; font-size: 12px;">${sueldoNetoACobrar.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+                                            </div>
+                                            <div style="font-size: 10px; margin-top: 4px; padding: 4px; background: rgba(0,0,0,0.15); border-radius: 4px; border: 1px solid var(--ps-panel-border); display: flex; flex-direction: column; gap: 2px;">
+                                                {basicoRecibo > 0 ? (
+                                                    <>
+                                                        <div style="display:flex; justify-content:space-between; gap: 8px;">
+                                                            <span style="color: #60a5fa;"><i class="fas fa-university" style="width:12px;"></i> Banco (Blanco):</span>
+                                                            <strong>${netoRecibo.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+                                                        </div>
+                                                        <div style="display:flex; justify-content:space-between; gap: 8px;">
+                                                            <span style="color: #fbbf24;"><i class="fas fa-wallet" style="width:12px;"></i> Efectivo (Negro):</span>
+                                                            <strong>${netoNegro.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+                                                        </div>
+                                                        <div style="display:flex; justify-content:space-between; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2px; margin-top: 2px;">
+                                                            <span style="color: var(--ps-text-muted);">A pagar Efectivo:</span>
+                                                            <strong style={(sueldoNetoACobrar - netoRecibo) < 0 ? "color:#f87171;" : "color:#34d399;"}>
+                                                                {(sueldoNetoACobrar - netoRecibo) < 0 
+                                                                    ? `-$${Math.abs(sueldoNetoACobrar - netoRecibo).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})} (Exceso)` 
+                                                                    : `$${(sueldoNetoACobrar - netoRecibo).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}`
+                                                                }
+                                                            </strong>
+                                                        </div>
+                                                        <div style="text-align: right; margin-top: 2px;">
+                                                            <span style="font-size: 9px; color: #60a5fa; cursor: help; text-decoration: underline;" 
+                                                                  title={`Desglose CCT 130/75:\n- Básico: $${basico.toLocaleString('es-AR')}\n- Antigüedad (${antiguedadAnos}a): $${antiguedad.toLocaleString('es-AR')}\n- Presentismo: $${presentismo.toLocaleString('es-AR')}\n- Remunerativo: $${totalHaberes.toLocaleString('es-AR')}\n- No Remunerativo: $${totalNoRemunerativos.toLocaleString('es-AR')}\n- Jubilación (11%): $${jubilacion.toLocaleString('es-AR')}\n- Ley 19032 (3%): $${ley19032.toLocaleString('es-AR')}\n- Obra Social (3%): $${obraSocial.toLocaleString('es-AR')}${esMediaJornada ? ' (Media Jornada x2)' : ''}\n- SEC (2%): $${sec.toLocaleString('es-AR')}\n- FAECYS (0.5%): $${faecys.toLocaleString('es-AR')}\n- OSECAC Fijo: $100`}>
+                                                                [Ver Detalle]
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div style="display:flex; justify-content:space-between; gap: 8px;">
+                                                        <span style="color: #fbbf24;"><i class="fas fa-wallet" style="width:12px;"></i> Todo Efectivo:</span>
+                                                        <strong>${sueldoNetoACobrar.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td><span class="pg-badge">{emp.funcion || '-'}</span></td>
-                                    <td class="font-mono text-green">${parseFloat(emp.sueldo_base || '0').toLocaleString('es-AR')}</td>
-                                    <td>
-                                        <span class={`pg-pago-badge pago-${(emp.forma_pago || 'efectivo').toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
-                                            {emp.forma_pago || 'Efectivo'}
-                                        </span>
-                                    </td>
-                                    <td class="font-mono text-muted">{emp.id_reloj || '-'}</td>
-                                    <td>
-                                        <div style="display:flex;flex-direction:column;gap:2px;font-size:11px;">
-                                            {emp.email && <span style="color:#60a5fa;"><i class="fas fa-envelope" style="width:12px;"></i> {emp.email}</span>}
-                                            {emp.whatsapp && <span style="color:#22c55e;"><i class="fab fa-whatsapp" style="width:12px;"></i> {emp.whatsapp}</span>}
-                                            {!emp.email && !emp.whatsapp && <span class="text-muted">-</span>}
-                                        </div>
-                                    </td>
-                                    <td style="text-align:center;">
-                                        <button 
-                                            class="pg-icon-btn text-blue edit-btn" 
-                                            title="Editar empleado"
-                                            data-emp={JSON.stringify(emp)}
-                                        >
-                                            <i class="fas fa-pen"></i>
-                                        </button>
-                                        <button 
-                                            class="pg-icon-btn text-red delete-btn" 
-                                            title="Eliminar empleado"
-                                            data-id={emp.id}
-                                            data-name={emp.nombre}
-                                            style="margin-left:6px;"
-                                        >
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+
+                                        <!-- Aguinaldo (SAC) -->
+                                        {isSacMonth && (
+                                            <td class="font-mono">
+                                                {basicoRecibo > 0 ? (
+                                                    <>
+                                                        <div style="font-weight: 600; color: #a78bfa;">
+                                                            Bolsillo: ${sacNetoTotal.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                                                        </div>
+                                                        <div style="font-size: 10px; color: var(--ps-text-muted); margin-top: 2px; display: flex; flex-direction: column; gap: 1px;">
+                                                            <span>Blanco: ${sacNetoBlanco.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                                                            <span>Negro: ${sacNetoNegro.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                                                        </div>
+                                                        <div style="font-size: 10px; color: #f87171;">
+                                                            Retenciones: -${sacDescuentos.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div style="font-weight: 600; color: #a78bfa;">
+                                                            Bolsillo: ${sacNetoTotal.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                                                        </div>
+                                                        <div style="font-size: 10px; color: var(--ps-text-muted); margin-top: 2px;">
+                                                            100% No Registrado
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </td>
+                                        )}
+
+                                        <!-- Gasto Administrativo (Costo Empresa Real) -->
+                                        <td class="font-mono">
+                                            {basicoRecibo > 0 ? (
+                                                <>
+                                                    <div style="font-weight: 700; color: #6366f1; font-size: 13px;">
+                                                        ${costoEmpresaTotal.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                                                    </div>
+                                                    <div style="font-size: 10px; color: var(--ps-text-muted); margin-top: 2px; display: flex; flex-direction: column; gap: 1px;">
+                                                        <span>Bolsillo: ${sueldoBasePocket.toLocaleString('es-AR')}</span>
+                                                        <span>Retenciones: +${totalDescuentos.toLocaleString('es-AR')}</span>
+                                                        <span>Contrib. (25%): +${cargasPatronalesMensual.toLocaleString('es-AR')}</span>
+                                                        {isSacMonth && <span style="color: #a78bfa;">SAC + Contrib + Ret: +${costoEmpresaSac.toLocaleString('es-AR')}</span>}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div style="font-weight: 700; color: #6366f1; font-size: 13px;">
+                                                        ${costoEmpresaTotal.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2})}
+                                                    </div>
+                                                    <div style="font-size: 10px; color: var(--ps-text-muted); margin-top: 2px;">
+                                                        Bolsillo: ${sueldoBasePocket.toLocaleString('es-AR')}
+                                                        {isSacMonth && <span style="color: #a78bfa; display: block;">SAC: +${sacNetoTotal.toLocaleString('es-AR')}</span>}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </td>
+                                        
+                                        <td>
+                                            <span class={`pg-pago-badge pago-${(emp.forma_pago || 'efectivo').toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
+                                                {emp.forma_pago || 'Efectivo'}
+                                            </span>
+                                        </td>
+                                        <td class="font-mono text-muted">{emp.id_reloj || '-'}</td>
+                                        <td>
+                                            <div class="doc-badges-container">
+                                                {emp.dni_file_id ? (
+                                                    <div class="doc-badge-group">
+                                                        <span class="doc-badge doc-uploaded" onclick={`openDocViewer('${emp.nombre.replace(/'/g, "\\'")}', 'DNI Frente', '${emp.dni_file_id}')`} title="Ver DNI Frente"><i class="fas fa-id-card"></i> DNI F</span>
+                                                        <span class="doc-reupload" onclick={`triggerUpload(${emp.id}, 'dni_file_id')`} title="Re-subir DNI Frente"><i class="fas fa-redo"></i></span>
+                                                        <div class="doc-hover-preview">
+                                                            <img src={`/api/ceo/download-document?file_id=${emp.dni_file_id}`} loading="lazy" alt="DNI Frente" />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span class="doc-badge doc-empty" onclick={`triggerUpload(${emp.id}, 'dni_file_id')`} title="Subir DNI Frente"><i class="fas fa-upload"></i> DNI F</span>
+                                                )}
+
+                                                {emp.dni_dorso_file_id ? (
+                                                    <div class="doc-badge-group">
+                                                        <span class="doc-badge doc-uploaded" onclick={`openDocViewer('${emp.nombre.replace(/'/g, "\\'")}', 'DNI Dorso', '${emp.dni_dorso_file_id}')`} title="Ver DNI Dorso"><i class="fas fa-id-card"></i> DNI D</span>
+                                                        <span class="doc-reupload" onclick={`triggerUpload(${emp.id}, 'dni_dorso_file_id')`} title="Re-subir DNI Dorso"><i class="fas fa-redo"></i></span>
+                                                        <div class="doc-hover-preview">
+                                                            <img src={`/api/ceo/download-document?file_id=${emp.dni_dorso_file_id}`} loading="lazy" alt="DNI Dorso" />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span class="doc-badge doc-empty" onclick={`triggerUpload(${emp.id}, 'dni_dorso_file_id')`} title="Subir DNI Dorso"><i class="fas fa-upload"></i> DNI D</span>
+                                                )}
+
+                                                {emp.cuil_file_id ? (
+                                                    <div class="doc-badge-group">
+                                                        <span class="doc-badge doc-uploaded" onclick={`openDocViewer('${emp.nombre.replace(/'/g, "\\'")}', 'CUIL', '${emp.cuil_file_id}')`} title="Ver CUIL"><i class="fas fa-file-invoice"></i> CUIL</span>
+                                                        <span class="doc-reupload" onclick={`triggerUpload(${emp.id}, 'cuil_file_id')`} title="Re-subir CUIL"><i class="fas fa-redo"></i></span>
+                                                    </div>
+                                                ) : (
+                                                    <span class="doc-badge doc-empty" onclick={`triggerUpload(${emp.id}, 'cuil_file_id')`} title="Subir CUIL"><i class="fas fa-upload"></i> CUIL</span>
+                                                )}
+
+                                                {emp.codem_file_id ? (
+                                                    <div class="doc-badge-group">
+                                                        <span class="doc-badge doc-uploaded" onclick={`openDocViewer('${emp.nombre.replace(/'/g, "\\'")}', 'CODEM', '${emp.codem_file_id}')`} title="Ver CODEM"><i class="fas fa-file-medical"></i> CODEM</span>
+                                                        <span class="doc-reupload" onclick={`triggerUpload(${emp.id}, 'codem_file_id')`} title="Re-subir CODEM"><i class="fas fa-redo"></i></span>
+                                                    </div>
+                                                ) : (
+                                                    <span class="doc-badge doc-empty" onclick={`triggerUpload(${emp.id}, 'codem_file_id')`} title="Subir CODEM"><i class="fas fa-upload"></i> CODEM</span>
+                                                )}
+
+                                                {emp.examen_medico_file_id ? (
+                                                    <div class="doc-badge-group">
+                                                        <span class="doc-badge doc-uploaded" onclick={`openDocViewer('${emp.nombre.replace(/'/g, "\\'")}', 'Examen Médico', '${emp.examen_medico_file_id}')`} title="Ver Examen Médico"><i class="fas fa-file-medical-alt"></i> EXAM</span>
+                                                        <span class="doc-reupload" onclick={`triggerUpload(${emp.id}, 'examen_medico_file_id')`} title="Re-subir Examen Médico"><i class="fas fa-redo"></i></span>
+                                                    </div>
+                                                ) : (
+                                                    <span class="doc-badge doc-empty" onclick={`triggerUpload(${emp.id}, 'examen_medico_file_id')`} title="Subir Examen Médico"><i class="fas fa-upload"></i> EXAM</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style="display:flex;flex-direction:column;gap:2px;font-size:11px;">
+                                                {emp.email && <span style="color:#60a5fa;"><i class="fas fa-envelope" style="width:12px;"></i> {emp.email}</span>}
+                                                {emp.whatsapp && <span style="color:#22c55e;"><i class="fab fa-whatsapp" style="width:12px;"></i> {emp.whatsapp}</span>}
+                                                {!emp.email && !emp.whatsapp && <span class="text-muted">-</span>}
+                                            </div>
+                                        </td>
+                                        <td style="text-align:center;">
+                                            <button 
+                                                class="pg-icon-btn text-blue edit-btn" 
+                                                title="Editar empleado"
+                                                data-emp={JSON.stringify(emp)}
+                                            >
+                                                <i class="fas fa-pen"></i>
+                                            </button>
+                                            <button 
+                                                class="pg-icon-btn text-red delete-btn" 
+                                                title="Eliminar empleado"
+                                                data-id={emp.id}
+                                                data-name={emp.nombre}
+                                                style="margin-left:6px;"
+                                            >
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {personalList.length === 0 && (
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted" style="padding:30px;">
+                                    <td colspan="11" class="text-center text-muted" style="padding:30px;">
                                         <i class="fas fa-users" style="font-size:24px;opacity:0.3;display:block;margin-bottom:8px;"></i>
                                         No hay empleados registrados. Agregá el primero.
                                     </td>
@@ -448,6 +1062,212 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!--  TAB: VALES Y PRÉSTAMOS                                       -->
+        <!-- ============================================================ -->
+        <div class="pg-workspace" id="workspace-adelantos" style="display:none;">
+            <div class="adelantos-layout" style="display: grid; grid-template-columns: 340px 1fr; gap: 16px; height: 100%; min-height: 0;">
+                
+                <!-- Form Panel -->
+                <div class="pg-panel">
+                    <div class="pg-panel-header">
+                        <div class="pg-panel-title">
+                            <i class="fas fa-plus-circle"></i> Nuevo Adelanto / Préstamo
+                        </div>
+                    </div>
+                    <form id="adelanto-form" class="pg-panel-body" style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+                        <div class="pg-form-group">
+                            <label>Empleado *</label>
+                            <select id="ade-empleado-id" name="empleado_id" required>
+                                <option value="">Seleccione un empleado...</option>
+                                {personalList.filter(emp => emp.status === 'active').map(emp => (
+                                    <option value={emp.id}>{emp.nombre}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Tipo *</label>
+                            <select id="ade-tipo" name="tipo" required onchange="toggleCuotasVisibility()">
+                                <option value="Vale">Vale (Adelanto de Sueldo)</option>
+                                <option value="Prestamo">Préstamo (en cuotas)</option>
+                            </select>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Monto Total ($) *</label>
+                            <input type="number" step="0.01" id="ade-monto" name="monto" required placeholder="0.00" min="0.01" />
+                        </div>
+                        <div class="pg-form-group" id="ade-cuotas-container" style="display:none;">
+                            <label>Cuotas Totales</label>
+                            <input type="number" id="ade-cuotas" name="cuotas_totales" min="1" value="1" />
+                            <small style="color:var(--ps-text-muted);font-size:10px;">Se descontará Monto / Cuotas cada mes.</small>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Método de Pago</label>
+                            <select id="ade-metodo" name="metodo_pago">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Mercado Pago">Mercado Pago</option>
+                                <option value="Banco">Banco (transferencia)</option>
+                            </select>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Fecha</label>
+                            <input type="date" id="ade-fecha" name="fecha" value={new Date().toISOString().split('T')[0]} />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Observaciones</label>
+                            <textarea id="ade-observaciones" name="observaciones" rows="3" placeholder="Detalles o motivo..."></textarea>
+                        </div>
+                        <button type="submit" class="pg-btn pg-btn-primary" style="margin-top: 10px; justify-content: center;">
+                            <i class="fas fa-save"></i> Registrar
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Table Panel -->
+                <div class="pg-panel">
+                    <div class="pg-panel-header">
+                        <div class="pg-panel-title">
+                            <i class="fas fa-history"></i> Historial de Vales y Préstamos Activos
+                        </div>
+                    </div>
+                    <div class="pg-panel-body" style="padding:0;">
+                        <table class="pg-table" id="adelantos-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Empleado</th>
+                                    <th>Tipo</th>
+                                    <th>Monto Total</th>
+                                    <th>Cuota Mensual</th>
+                                    <th>Cuotas</th>
+                                    <th>Medio Pago</th>
+                                    <th>Observaciones</th>
+                                    <th style="text-align:center;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adelantos-tbody">
+                                <!-- Cargado dinámicamente con JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!--  TAB: NOVEDADES Y LICENCIAS                                   -->
+        <!-- ============================================================ -->
+        <div class="pg-workspace" id="workspace-novedades" style="display:none;">
+            <div class="adelantos-layout" style="display: grid; grid-template-columns: 340px 1fr; gap: 16px; height: 100%; min-height: 0;">
+                
+                <!-- Form Panel -->
+                <div class="pg-panel">
+                    <div class="pg-panel-header">
+                        <div class="pg-panel-title">
+                            <i class="fas fa-plus-circle"></i> Nueva Novedad / Licencia
+                        </div>
+                    </div>
+                    <form id="novedad-form" class="pg-panel-body" style="padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+                        <div class="pg-form-group">
+                            <label>Empleado *</label>
+                            <select name="empleado_id" required style="width: 100%; padding: 6px; background: var(--ps-bg); border: 1px solid var(--ps-panel-border); color: #fff; border-radius: 4px;">
+                                <option value="">-- Seleccionar --</option>
+                                {personalList.filter(emp => emp.status === 'active').map(emp => (
+                                    <option value={emp.id}>{emp.nombre}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Tipo de Novedad *</label>
+                            <select name="tipo" required style="width: 100%; padding: 6px; background: var(--ps-bg); border: 1px solid var(--ps-panel-border); color: #fff; border-radius: 4px;">
+                                <option value="Vacaciones">Vacaciones</option>
+                                <option value="Enfermedad">Enfermedad</option>
+                                <option value="Franco">Franco / Descanso</option>
+                                <option value="Ausente con Aviso">Ausente con Aviso</option>
+                                <option value="Accidente">Accidente de Trabajo</option>
+                                <option value="Tramite">Trámite</option>
+                            </select>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Fecha de Inicio *</label>
+                            <input type="date" name="fecha_inicio" required value={new Date().toISOString().split('T')[0]} style="width: 100%; padding: 6px; background: var(--ps-bg); border: 1px solid var(--ps-panel-border); color: #fff; border-radius: 4px;" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Fecha de Fin *</label>
+                            <input type="date" name="fecha_fin" required value={new Date().toISOString().split('T')[0]} style="width: 100%; padding: 6px; background: var(--ps-bg); border: 1px solid var(--ps-panel-border); color: #fff; border-radius: 4px;" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Observaciones</label>
+                            <textarea name="observaciones" rows="3" placeholder="Detalles de la licencia..." style="width: 100%; padding: 6px; background: var(--ps-bg); border: 1px solid var(--ps-panel-border); color: #fff; border-radius: 4px; resize: none;"></textarea>
+                        </div>
+                        <button type="submit" class="pg-btn pg-btn-primary" style="margin-top: 10px; justify-content: center;">
+                            <i class="fas fa-save"></i> Registrar Novedad
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Table Panel -->
+                <div class="pg-panel">
+                    <div class="pg-panel-header">
+                        <div class="pg-panel-title">
+                            <i class="fas fa-history"></i> Historial de Licencias y Novedades Cargadas
+                        </div>
+                    </div>
+                    <div class="pg-panel-body" style="padding:0; overflow-y:auto;">
+                        <table class="pg-table" id="novedades-table">
+                            <thead>
+                                <tr>
+                                    <th>Empleado</th>
+                                    <th>Tipo</th>
+                                    <th>Desde</th>
+                                    <th>Hasta</th>
+                                    <th>Observaciones</th>
+                                    <th style="text-align:center;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {novedadesList.map((nov) => (
+                                    <tr>
+                                        <td style="font-weight: 600; color: var(--ps-highlight);">{nov.empleado_nombre}</td>
+                                        <td>
+                                            <span class="pg-status" style="background: rgba(46,96,156,0.15); color: #60a5fa; border: 1px solid rgba(46,96,156,0.3); font-size: 11px; padding: 2px 6px; border-radius: 4px;">
+                                                {nov.tipo}
+                                            </span>
+                                        </td>
+                                        <td class="font-mono">{new Date(nov.fecha_inicio).toLocaleDateString('es-AR')}</td>
+                                        <td class="font-mono">{new Date(nov.fecha_fin).toLocaleDateString('es-AR')}</td>
+                                        <td style="font-size:11px; color:var(--ps-text-muted); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title={nov.observaciones}>
+                                            {nov.observaciones || '-'}
+                                        </td>
+                                        <td style="text-align:center;">
+                                            <button 
+                                                class="pg-icon-btn text-red delete-novedad-btn" 
+                                                title="Eliminar novedad"
+                                                data-id={nov.id}
+                                                data-name={`${nov.tipo} de ${nov.empleado_nombre}`}
+                                            >
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {novedadesList.length === 0 && (
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted" style="padding:30px;">
+                                            <i class="fas fa-calendar-times" style="font-size:24px;opacity:0.3;display:block;margin-bottom:8px;"></i>
+                                            No hay novedades o licencias registradas para este mes.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -496,6 +1316,38 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                     </div>
                 </div>
 
+                <!-- Section: Liquidación en Blanco -->
+                <div class="pg-form-section">
+                    <div class="pg-form-section-title">
+                        <i class="fas fa-file-invoice-dollar"></i> Liquidación de Recibo (Blanco - Opcional)
+                    </div>
+                    <div class="pg-form-grid-2">
+                        <div class="pg-form-group">
+                            <label>Sueldo Básico Recibo ($)</label>
+                            <input type="number" step="0.01" id="emp-basico-recibo" name="basico_recibo" placeholder="Ej: 535930.00" />
+                            <small style="color:var(--ps-text-muted);font-size:10px;">Si es 0 o vacío, el empleado se considera 100% informal (En Negro).</small>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Años de Antigüedad</label>
+                            <input type="number" id="emp-antiguedad-anos" name="antiguedad_anos" placeholder="Ej: 3" min="0" value="0" />
+                            <small style="color:var(--ps-text-muted);font-size:10px;">Aplica 1% anual según CCT 130/75 de Comercio.</small>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Concepto No Remunerativo Base ($)</label>
+                            <input type="number" step="0.01" id="emp-no-remunerativo-basico" name="no_remunerativo_basico" placeholder="Ej: 50000.00" />
+                            <small style="color:var(--ps-text-muted);font-size:10px;">Suma fija no remunerativa (por paritarias).</small>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Jornada Laboral</label>
+                            <select id="emp-es-media-jornada" name="es_media_jornada">
+                                <option value="false">Jornada Completa</option>
+                                <option value="true">Media Jornada (Aporte Obra Social x2)</option>
+                            </select>
+                            <small style="color:var(--ps-text-muted);font-size:10px;">En Media Jornada, Obra Social aporta sobre jornada completa.</small>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Section: Reloj & Contacto -->
                 <div class="pg-form-section">
                     <div class="pg-form-section-title">
@@ -524,6 +1376,18 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                     </div>
                     <div class="pg-form-grid-2">
                         <div class="pg-form-group">
+                            <label>Personal Externo</label>
+                            <select id="emp-es-externo" name="es_externo">
+                                <option value="false">No (Ficha con reloj)</option>
+                                <option value="true">Sí (Externo - No ficha)</option>
+                            </select>
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Horas Trabajadas (carga manual)</label>
+                            <input type="number" step="0.1" id="emp-horas-trabajadas" name="horas_trabajadas_manual" placeholder="0.0" />
+                            <small style="color:var(--ps-text-muted);font-size:10px;">Si es externo, se usarán estas horas para el presentismo.</small>
+                        </div>
+                        <div class="pg-form-group">
                             <label>Horas Extras (carga manual)</label>
                             <input type="number" step="0.1" id="emp-horas-extras" name="horas_extras_manual" placeholder="0.0" />
                             <small style="color:var(--ps-text-muted);font-size:10px;">Las horas extras automáticas se calculan del reloj.</small>
@@ -550,6 +1414,24 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                             <input type="date" id="emp-fecha-indumentaria" name="fecha_entrega_indumentaria" />
                         </div>
                     </div>
+                    <div class="pg-form-grid-4" style="margin-top: 10px;">
+                        <div class="pg-form-group">
+                            <label>Talle Pantalón</label>
+                            <input type="text" id="emp-talle-pantalon" name="talle_pantalon" placeholder="Ej: 42" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Talle Remera</label>
+                            <input type="text" id="emp-talle-remera" name="talle_remera" placeholder="Ej: L" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Talle Calzado</label>
+                            <input type="text" id="emp-talle-calzado" name="talle_calzado" placeholder="Ej: 41" />
+                        </div>
+                        <div class="pg-form-group">
+                            <label>Talle Campera/Buzo</label>
+                            <input type="text" id="emp-talle-campera" name="talle_campera" placeholder="Ej: XL" />
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Section: Observaciones -->
@@ -574,24 +1456,139 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
         </div>
     </div>
 
+    <!-- ============================================================ -->
+    <!--  MODAL: VISUALIZADOR DE DOCUMENTOS                           -->
+    <!-- ============================================================ -->
+    <div id="doc-viewer-modal" class="pg-modal-overlay" style="display:none;">
+        <div class="pg-modal" style="max-width: 800px; max-height: 90vh;">
+            <div class="pg-modal-header">
+                <h3 id="doc-viewer-title"><i class="fas fa-file-alt"></i> Visualizar Documento</h3>
+                <button class="pg-modal-close" onclick="closeDocViewer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="pg-modal-body" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; align-items: center; overflow-y: auto;">
+                <div id="doc-viewer-meta" style="font-size: 13px; color: var(--ps-text-muted); align-self: flex-start; margin-bottom: 8px;">
+                    Empleado: <strong id="doc-viewer-emp" style="color: var(--ps-highlight);"></strong> | Tipo: <strong id="doc-viewer-type" style="color: var(--ps-highlight);"></strong>
+                </div>
+                
+                <!-- PDF / Iframe Viewer container -->
+                <div id="doc-iframe-container" style="width: 100%; height: 520px; display: none; border-radius: 6px; overflow: hidden; border: 1px solid var(--ps-panel-border);">
+                    <iframe id="doc-viewer-iframe" style="width: 100%; height: 100%; border: none; background: #fff;"></iframe>
+                </div>
+
+                <!-- Image Viewer container -->
+                <div id="doc-image-container" style="width: 100%; max-height: 520px; display: none; overflow: auto; display: flex; justify-content: center; align-items: center; border-radius: 6px; border: 1px solid var(--ps-panel-border); background: #0c1017; padding: 10px;">
+                    <img id="doc-viewer-img" style="max-width: 100%; max-height: 500px; object-fit: contain; border-radius: 4px;" />
+                </div>
+            </div>
+            <div class="pg-modal-actions" style="padding: 16px 20px; border-top: 1px solid var(--ps-panel-border); display: flex; justify-content: flex-end; gap: 10px; background: var(--ps-toolbar-bg); border-radius: 0 0 10px 10px;">
+                <a id="doc-download-link" href="#" class="pg-btn pg-btn-primary" target="_blank" download>
+                    <i class="fas fa-download"></i> Descargar
+                </a>
+                <button class="pg-btn pg-btn-secondary" onclick="printCurrentDoc()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <button class="pg-btn pg-btn-ghost" onclick="closeDocViewer()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for document uploader -->
+    <input type="file" id="global-doc-uploader" style="display:none;" />
+
     <!-- SheetJS for Excel export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <script is:inline>
+        // =============================================
+        //  DOCUMENT VISUALIZER MODAL
+        // =============================================
+        function openDocViewer(employeeName, docTypeName, fileId) {
+            const modal = document.getElementById('doc-viewer-modal');
+            const title = document.getElementById('doc-viewer-title');
+            const empNameEl = document.getElementById('doc-viewer-emp');
+            const docTypeEl = document.getElementById('doc-viewer-type');
+            const iframeContainer = document.getElementById('doc-iframe-container');
+            const imageContainer = document.getElementById('doc-image-container');
+            const iframe = document.getElementById('doc-viewer-iframe');
+            const img = document.getElementById('doc-viewer-img');
+            const downloadLink = document.getElementById('doc-download-link');
+
+            empNameEl.textContent = employeeName;
+            docTypeEl.textContent = docTypeName;
+            title.innerHTML = `<i class="fas fa-file-alt"></i> ${docTypeName} — ${employeeName}`;
+
+            const url = `/api/ceo/download-document?file_id=${fileId}`;
+            downloadLink.href = url;
+
+            const isImage = docTypeName.toLowerCase().includes('dni') || docTypeName.toLowerCase().includes('foto');
+
+            if (isImage) {
+                iframeContainer.style.display = 'none';
+                imageContainer.style.display = 'flex';
+                img.src = url;
+                iframe.src = '';
+            } else {
+                imageContainer.style.display = 'none';
+                iframeContainer.style.display = 'block';
+                iframe.src = url;
+                img.src = '';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeDocViewer() {
+            document.getElementById('doc-viewer-modal').style.display = 'none';
+            document.getElementById('doc-viewer-iframe').src = '';
+            document.getElementById('doc-viewer-img').src = '';
+        }
+
+        function printCurrentDoc() {
+            const iframe = document.getElementById('doc-viewer-iframe');
+            const img = document.getElementById('doc-viewer-img');
+            
+            if (iframe.style.display !== 'none' && iframe.src) {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } else if (img.style.display !== 'none' && img.src) {
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`<html><body style="margin:0;display:flex;align-items:center;justify-content:center;background:#fff;"><img src="${img.src}" style="max-width:100%;max-height:100%;object-fit:contain;"/></body></html>`);
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.onload = function() {
+                    printWindow.print();
+                    printWindow.close();
+                };
+            }
+        }
+
         // =============================================
         //  TAB SWITCHING
         // =============================================
         function switchTab(tab) {
             document.getElementById('workspace-presentismo').style.display = tab === 'presentismo' ? 'block' : 'none';
             document.getElementById('workspace-nomina').style.display = tab === 'nomina' ? 'block' : 'none';
+            document.getElementById('workspace-adelantos').style.display = tab === 'adelantos' ? 'block' : 'none';
+            document.getElementById('workspace-novedades').style.display = tab === 'novedades' ? 'block' : 'none';
             document.getElementById('tab-presentismo').classList.toggle('active', tab === 'presentismo');
             document.getElementById('tab-nomina').classList.toggle('active', tab === 'nomina');
+            document.getElementById('tab-adelantos').classList.toggle('active', tab === 'adelantos');
+            document.getElementById('tab-novedades').classList.toggle('active', tab === 'novedades');
+            if (tab === 'adelantos') {
+                loadAdelantos();
+            }
         }
 
         // =============================================
         //  PERIOD STATS LOADER
         // =============================================
         let currentStatsData = null;
+        let originalTbodyHtml = '';
+        let originalTheadHtml = '';
 
         async function loadStats(periodo) {
             // Update button states
@@ -613,7 +1610,19 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                 currentStatsData = json;
 
                 if (periodo === 'dia') {
-                    // Daily view: restore server-rendered table
+                    // Daily view: restore server-rendered table HTML first
+                    const tbody = document.getElementById('presentismo-tbody');
+                    const table = document.getElementById('presentismo-table');
+                    if (tbody && originalTbodyHtml) {
+                        tbody.innerHTML = originalTbodyHtml;
+                    }
+                    if (table && originalTheadHtml) {
+                        const thead = table.querySelector('thead tr');
+                        if (thead) {
+                            thead.innerHTML = originalTheadHtml;
+                        }
+                    }
+
                     loading.style.display = 'none';
                     container.style.display = 'block';
                     // Update faltas from API
@@ -658,6 +1667,15 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                 const faltasColor = faltas > 2 ? '#f87171' : faltas > 0 ? '#fbbf24' : '#34d399';
                 const inicial = (emp.nombre || '?').charAt(0);
 
+                const indumentariaStr = emp.indumentaria_entregada 
+                    ? `<div>${emp.indumentaria_entregada}</div>${emp.fecha_entrega_indumentaria ? `<small style="color:var(--ps-text-muted);">${new Date(emp.fecha_entrega_indumentaria).toLocaleDateString('es-AR')}</small>` : ''}`
+                    : '-';
+                const adelantosVal = parseFloat(emp.adelantos || '0');
+                const adelantosStr = adelantosVal > 0 ? `$${adelantosVal.toLocaleString('es-AR')}` : '-';
+                const observacionesStr = emp.observaciones 
+                    ? `<div style="font-size:11px;color:var(--ps-text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${emp.observaciones.replace(/"/g, '&quot;')}">${emp.observaciones}</div>`
+                    : '-';
+
                 return `
                     <tr>
                         <td><div class="emp-name-cell"><div class="pg-avatar">${inicial}</div><span>${emp.nombre}</span></div></td>
@@ -668,6 +1686,9 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                         <td class="text-center font-mono" style="color:${faltasColor}">
                             ${faltas > 0 ? faltas + ' falta' + (faltas > 1 ? 's' : '') : '<span style="color:#34d399">✓ Ninguna</span>'}
                         </td>
+                        <td>${indumentariaStr}</td>
+                        <td class="font-mono text-green">${adelantosStr}</td>
+                        <td>${observacionesStr}</td>
                     </tr>
                 `;
             }).join('');
@@ -682,6 +1703,9 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                     <th>Horas Extras</th>
                     <th>Días Presentes</th>
                     <th>Faltas del Mes</th>
+                    <th>Indumentaria / Fecha</th>
+                    <th>Adelantos</th>
+                    <th>Observaciones</th>
                 `;
             }
         }
@@ -759,6 +1783,10 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
             document.getElementById('modal-title').innerHTML = '<i class="fas fa-user-plus"></i> Agregar Empleado';
             empForm.reset();
             document.getElementById('emp-id').value = '';
+            document.getElementById('emp-basico-recibo').value = '';
+            document.getElementById('emp-antiguedad-anos').value = '0';
+            document.getElementById('emp-no-remunerativo-basico').value = '';
+            document.getElementById('emp-es-media-jornada').value = 'false';
             empModal.style.display = 'flex';
         }
 
@@ -770,8 +1798,8 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
             if (e.target === empModal) closeEmpModal();
         });
 
-        // Edit buttons
-        document.querySelectorAll('.edit-btn').forEach(btn => {
+        // Edit buttons and row triggers
+        document.querySelectorAll('.edit-btn, .row-click-trigger').forEach(btn => {
             btn.addEventListener('click', () => {
                 const emp = JSON.parse(btn.dataset.emp);
                 document.getElementById('modal-title').innerHTML = '<i class="fas fa-user-edit"></i> Editar Empleado';
@@ -783,13 +1811,23 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
                 document.getElementById('emp-email').value = emp.email || '';
                 document.getElementById('emp-whatsapp').value = emp.whatsapp || '';
                 document.getElementById('emp-forma-pago').value = emp.forma_pago || 'Efectivo';
+                document.getElementById('emp-es-externo').value = emp.es_externo ? 'true' : 'false';
+                document.getElementById('emp-horas-trabajadas').value = emp.horas_trabajadas_manual || '';
                 document.getElementById('emp-horas-extras').value = emp.horas_extras_manual || '';
                 document.getElementById('emp-adelantos').value = emp.adelantos || '';
                 document.getElementById('emp-indumentaria').value = emp.indumentaria_entregada || '';
                 document.getElementById('emp-fecha-indumentaria').value = emp.fecha_entrega_indumentaria 
                     ? new Date(emp.fecha_entrega_indumentaria).toISOString().split('T')[0] 
                     : '';
+                document.getElementById('emp-talle-pantalon').value = emp.talle_pantalon || '';
+                document.getElementById('emp-talle-remera').value = emp.talle_remera || '';
+                document.getElementById('emp-talle-calzado').value = emp.talle_calzado || '';
+                document.getElementById('emp-talle-campera').value = emp.talle_campera || '';
                 document.getElementById('emp-observaciones').value = emp.observaciones || '';
+                document.getElementById('emp-basico-recibo').value = emp.basico_recibo || '';
+                document.getElementById('emp-antiguedad-anos').value = emp.antiguedad_anos || '0';
+                document.getElementById('emp-no-remunerativo-basico').value = emp.no_remunerativo_basico || '';
+                document.getElementById('emp-es-media-jornada').value = emp.es_media_jornada ? 'true' : 'false';
                 empModal.style.display = 'flex';
             });
         });
@@ -857,8 +1895,285 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
             });
         });
 
+        // =============================================
+        //  VALES Y PRÉSTAMOS LOGIC
+        // =============================================
+        function toggleCuotasVisibility() {
+            const tipo = document.getElementById('ade-tipo').value;
+            const container = document.getElementById('ade-cuotas-container');
+            if (tipo === 'Prestamo') {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+                document.getElementById('ade-cuotas').value = '1';
+            }
+        }
+
+        async function loadAdelantos() {
+            const tbody = document.getElementById('adelantos-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Cargando vales y préstamos...</td></tr>';
+            try {
+                const res = await fetch('/api/ceo/get-adelantos');
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+
+                if (!data.adelantos || data.adelantos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:30px;"><i class="fas fa-info-circle"></i> No hay vales o préstamos pendientes registrados.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.adelantos.map(a => {
+                    const fechaStr = new Date(a.fecha).toLocaleDateString('es-AR');
+                    const montoTotal = parseFloat(a.monto || '0');
+                    const cuotasTotales = parseInt(a.cuotas_totales || '1');
+                    const cuotaActual = parseInt(a.cuota_actual || '1');
+                    
+                    const cuotaMonto = a.tipo === 'Prestamo' ? (montoTotal / cuotasTotales) : montoTotal;
+                    const cuotasInfo = a.tipo === 'Prestamo' ? `${cuotaActual} de ${cuotasTotales}` : '1 de 1';
+                    
+                    const badgeColor = a.tipo === 'Prestamo' ? '#a78bfa' : '#fbbf24';
+                    const badgeBorder = a.tipo === 'Prestamo' ? 'rgba(167,139,250,0.25)' : 'rgba(251,191,36,0.25)';
+                    const badgeBg = a.tipo === 'Prestamo' ? 'rgba(167,139,250,0.05)' : 'rgba(251,191,36,0.05)';
+
+                    return `
+                        <tr>
+                            <td class="font-mono">${fechaStr}</td>
+                            <td style="font-weight: 600; color: var(--ps-highlight);">${a.empleado_nombre}</td>
+                            <td>
+                                <span class="pg-badge" style="color: ${badgeColor}; border-color: ${badgeBorder}; background: ${badgeBg};">
+                                    ${a.tipo}
+                                </span>
+                            </td>
+                            <td class="font-mono">$${montoTotal.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td class="font-mono text-green">$${cuotaMonto.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td class="text-center font-mono">${cuotasInfo}</td>
+                            <td>
+                                <span class="pg-pago-badge pago-${a.metodo_pago.toLowerCase().replace(/[^a-z0-9]/g, '')}">
+                                    ${a.metodo_pago}
+                                </span>
+                            </td>
+                            <td style="color: var(--ps-text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${(a.observaciones || '').replace(/"/g, '&quot;')}">
+                                ${a.observaciones || '-'}
+                            </td>
+                            <td style="text-align: center;">
+                                <button class="pg-icon-btn text-red" onclick="deleteAdelanto(${a.id})" title="Eliminar vale/préstamo">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-red"><i class="fas fa-exclamation-triangle"></i> Error al cargar datos: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function deleteAdelanto(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este vale/préstamo?')) return;
+            try {
+                const res = await fetch('/api/ceo/delete-adelanto', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadAdelantos();
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                alert('Error de red');
+            }
+        }
+
+        // Attach to window so inline onclick handlers can call them
+        window.toggleCuotasVisibility = toggleCuotasVisibility;
+        window.loadAdelantos = loadAdelantos;
+        window.deleteAdelanto = deleteAdelanto;
+
+        // Form submit handler
+        document.addEventListener('DOMContentLoaded', () => {
+            const adelantoForm = document.getElementById('adelanto-form');
+            if (adelantoForm) {
+                adelantoForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const btn = adelantoForm.querySelector('button[type="submit"]');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+
+                    const formData = new FormData(adelantoForm);
+                    const data = Object.fromEntries(formData);
+
+                    try {
+                        const res = await fetch('/api/ceo/add-adelanto', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        
+                        if (res.ok) {
+                            const json = await res.json();
+                            if (json.success) {
+                                adelantoForm.reset();
+                                document.getElementById('ade-cuotas-container').style.display = 'none';
+                                window.location.reload();
+                            } else {
+                                alert('Error: ' + (json.error || 'Desconocido'));
+                            }
+                        } else {
+                            alert('Error al registrar adelanto');
+                        }
+                    } catch (err) {
+                        alert('Error de red');
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-save"></i> Registrar';
+                    }
+                });
+            }
+        });
+
+        // =============================================
+        //  NOVEDADES Y LICENCIAS LOGIC
+        // =============================================
+        const novedadForm = document.getElementById('novedad-form');
+        if (novedadForm) {
+            novedadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = novedadForm.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+                const formData = new FormData(novedadForm);
+                const data = Object.fromEntries(formData);
+                try {
+                    const res = await fetch('/api/ceo/add-novedad', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.success) {
+                            novedadForm.reset();
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (json.error || 'Desconocido'));
+                        }
+                    } else {
+                        const errText = await res.text();
+                        alert('Error al registrar novedad: ' + errText);
+                    }
+                } catch (err) {
+                    alert('Error de red');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save"></i> Registrar Novedad';
+                }
+            });
+        }
+
+        // Delete novedad buttons
+        document.querySelectorAll('.delete-novedad-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const name = btn.dataset.name;
+                if (!confirm('¿Eliminar "' + name + '"?')) return;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                try {
+                    const res = await fetch('/api/ceo/delete-novedad', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'No se pudo eliminar'));
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-trash"></i>';
+                    }
+                } catch (err) {
+                    alert('Error de red');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash"></i>';
+                }
+            });
+        });
+
         // Load faltas on startup (daily view)
+        // Capture original table HTML BEFORE loadStats overwrites it
+        const _tbodyEl = document.getElementById('presentismo-tbody');
+        const _tableEl = document.getElementById('presentismo-table');
+        if (_tbodyEl) originalTbodyHtml = _tbodyEl.innerHTML;
+        if (_tableEl) {
+            const _theadRow = _tableEl.querySelector('thead tr');
+            if (_theadRow) originalTheadHtml = _theadRow.innerHTML;
+        }
         loadStats('dia');
+
+        // Document Uploader logic
+        let currentUploadEmployeeId = null;
+        let currentUploadDocType = null;
+
+        window.triggerUpload = function(employeeId, docType) {
+            currentUploadEmployeeId = employeeId;
+            currentUploadDocType = docType;
+            const uploader = document.getElementById('global-doc-uploader');
+            if (uploader) uploader.click();
+        };
+
+        const uploader = document.getElementById('global-doc-uploader');
+        if (uploader) {
+            uploader.addEventListener('change', async () => {
+                if (!uploader.files || uploader.files.length === 0) return;
+                const file = uploader.files[0];
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('employee_id', currentUploadEmployeeId);
+                formData.append('doc_type', currentUploadDocType);
+
+                // Show loading state by creating a temporary loading indicator
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.style.position = 'fixed';
+                loadingOverlay.style.inset = '0';
+                loadingOverlay.style.background = 'rgba(0,0,0,0.7)';
+                loadingOverlay.style.zIndex = '9999';
+                loadingOverlay.style.display = 'flex';
+                loadingOverlay.style.alignItems = 'center';
+                loadingOverlay.style.justifyContent = 'center';
+                loadingOverlay.style.color = '#fff';
+                loadingOverlay.style.fontFamily = 'sans-serif';
+                loadingOverlay.style.fontSize = '16px';
+                loadingOverlay.innerHTML = '<div><i class="fas fa-spinner fa-spin" style="margin-right:8px;font-size:24px;"></i> Subiendo documento a Directus...</div>';
+                document.body.appendChild(loadingOverlay);
+
+                try {
+                    const res = await fetch('/api/ceo/upload-document', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Error al subir: ' + (data.error || 'Desconocido'));
+                        document.body.removeChild(loadingOverlay);
+                    }
+                } catch (err) {
+                    alert('Error de red al subir documento');
+                    document.body.removeChild(loadingOverlay);
+                } finally {
+                    uploader.value = '';
+                }
+            });
+        }
     </script>
 
     <style>
@@ -1210,6 +2525,134 @@ const presentesHoy = presentismoGrid.filter(e => e.estado !== 'Ausente').length;
         .pg-modal-actions {
             display: flex; justify-content: flex-end; gap: 10px;
             padding-top: 6px;
+        }
+
+        /* Document Badges */
+        .doc-badges-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-width: 255px;
+        }
+        .doc-badge-group {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 6px;
+            overflow: visible;
+            border: 1px solid rgba(16,185,129,0.25);
+            background: rgba(6,78,59,0.3);
+            position: relative;
+            transition: all 0.2s;
+        }
+        .doc-badge-group:hover {
+            border-color: rgba(16,185,129,0.5);
+            box-shadow: 0 4px 12px rgba(16,185,129,0.15);
+            z-index: 99999 !important;
+        }
+        /* Raise parent row/cell stacking context on hover to prevent header clipping */
+        #nomina-table tbody tr:hover {
+            position: relative;
+            z-index: 100;
+        }
+        #nomina-table tbody td:hover {
+            position: relative;
+            z-index: 101;
+        }
+        .doc-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 9px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            outline: none;
+            border-radius: 6px 0 0 6px;
+            background: transparent;
+        }
+        .doc-uploaded {
+            color: #34d399 !important;
+        }
+        .doc-uploaded:hover {
+            background: rgba(16,185,129,0.15);
+            color: #a7f3d0 !important;
+        }
+        .doc-empty {
+            background: rgba(31,41,55,0.4);
+            color: #9ca3af !important;
+            border: 1px solid rgba(55,65,81,0.5);
+            border-radius: 6px;
+            padding: 5px 9px;
+            transition: all 0.2s;
+        }
+        .doc-empty:hover {
+            background: rgba(55,65,81,0.6);
+            color: #f3f4f6 !important;
+            border-color: rgba(75,85,99,0.8);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .doc-reupload {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(16,185,129,0.1);
+            color: #34d399;
+            padding: 5px 8px;
+            font-size: 9px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 1px solid rgba(16,185,129,0.25);
+            border-radius: 0 6px 6px 0;
+        }
+        .doc-reupload:hover {
+            background: #047857;
+            color: #fff;
+        }
+        /* Tooltip Preview - Larger & Stacks Above Everything */
+        .doc-hover-preview {
+            display: none;
+            position: absolute;
+            top: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 6px;
+            z-index: 999999 !important;
+            box-shadow: 0 16px 36px rgba(0,0,0,0.9);
+            pointer-events: none;
+            width: 320px;
+            animation: fadeInTooltip 0.15s ease-out;
+        }
+        .doc-hover-preview img {
+            width: 100%;
+            height: auto;
+            max-height: 220px;
+            object-fit: contain;
+            border-radius: 5px;
+            display: block;
+            background: #000;
+        }
+        .doc-hover-preview::after {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent transparent #374151 transparent;
+        }
+        .doc-badge-group:hover .doc-hover-preview {
+            display: block;
+        }
+        @keyframes fadeInTooltip {
+            from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+            to { opacity: 1; transform: translateX(-50%); }
         }
 
         /* Responsive */

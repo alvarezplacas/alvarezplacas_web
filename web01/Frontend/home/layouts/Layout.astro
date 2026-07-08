@@ -18,6 +18,9 @@ const {
 	title, 
 	description = "Alvarez Placas - La mejor calidad en cortes de melamina y soluciones para el mueble." 
 } = Astro.props;
+
+// Force canonical URL to use Astro.site to prevent internal proxy hostnames (e.g. localhost) in SSR
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
@@ -27,6 +30,19 @@ const {
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		
+		<!-- Open Graph & Canonical -->
+		<link rel="canonical" href={canonicalURL} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonicalURL} />
+		<meta property="og:image" content="https://alvarezplacas.com.ar/logo.png" />
+		<meta property="og:type" content="website" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content="https://alvarezplacas.com.ar/logo.png" />
+
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		
 		<!-- Google Fonts -->
@@ -40,6 +56,41 @@ const {
 		<!-- Analytics -->
 		<script defer src="https://stats.javiermix.ar/script.js" data-website-id="d70f2548-e4c6-4aa9-bd21-00b8d3e93995"></script>
 		<ClientRouter />
+
+		<!-- Schema Markup (LocalBusiness) -->
+		<script type="application/ld+json" is:inline>
+			{
+			  "@context": "https://schema.org",
+			  "@type": "LocalBusiness",
+			  "name": "Alvarez Placas",
+			  "image": "https://alvarezplacas.com.ar/logo.png",
+			  "@id": "https://alvarezplacas.com.ar",
+			  "url": "https://alvarezplacas.com.ar",
+			  "telephone": "+541100000000",
+			  "address": {
+				"@type": "PostalAddress",
+				"streetAddress": "Av. Vergara",
+				"addressLocality": "Villa Tesei",
+				"addressRegion": "Buenos Aires",
+				"addressCountry": "AR"
+			  },
+			  "geo": {
+				"@type": "GeoCoordinates",
+				"latitude": -34.6212,
+				"longitude": -58.6473
+			  },
+			  "areaServed": [
+				"Villa Tesei",
+				"Castelar",
+				"Hurlingham",
+				"Parque Leloir",
+				"San Isidro",
+				"Capital Federal"
+			  ],
+			  "priceRange": "$$",
+			  "description": "Proveedor líder en zona oeste (Villa Tesei). Cortes de melamina, herrajes y soluciones para interioristas, constructoras y carpinteros en Parque Leloir, Castelar, San Isidro y CABA."
+			}
+		</script>
 
 		<style is:inline>
 			#nprogress-bar {

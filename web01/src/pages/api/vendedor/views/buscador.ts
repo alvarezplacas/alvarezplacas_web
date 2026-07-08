@@ -178,6 +178,7 @@ export const GET: APIRoute = async () => {
       <option value="FC">Facturas (FC)</option>
       <option value="NC">Notas de Crédito (NC)</option>
       <option value="RE">Remitos (RE)</option>
+      <option value="OP">Órdenes de Pago (OP)</option>
     </select>
     <button id="doc-search-order-btn" class="search-order-btn">
       <i class="fas fa-sort-amount-down"></i> Más nuevos
@@ -364,7 +365,8 @@ export const GET: APIRoute = async () => {
   .badge-fa-c { background: rgba(139,92,246,.15); color: #a78bfa; border: 1px solid rgba(139,92,246,.3); }
   .badge-nc-a, .badge-nc-b, .badge-nc-c, .badge-nc-m { background: rgba(239,68,68,.15); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
   .badge-nd-a, .badge-nd-b, .badge-nd-c { background: rgba(239,68,68,.15); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
-  .badge-x, .badge-cert, .badge-re-b, .badge-re-a { background: rgba(99,102,241,.15); color: #818cf8; border: 1px solid rgba(99,102,241,.3); }
+  .badge-op { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); }
+  .badge-x, .badge-cert, .badge-re-b, .badge-re-a, .badge-re { background: rgba(99,102,241,.15); color: #818cf8; border: 1px solid rgba(99,102,241,.3); }
 
   /* CENTER: Body */
   .doc-card-body { flex: 1; min-width: 0; }

@@ -9,7 +9,7 @@ export const GET: APIRoute = async ({ url }) => {
         const offset = (page - 1) * limit;
         const order = url.searchParams.get('order') === 'asc' ? 'ASC' : 'DESC';
         const docType = url.searchParams.get('type')?.trim() || '';
-        const typeParam = docType ? `${docType}-%` : '%';
+        const typeParam = docType ? `${docType}%` : '%';
         
         let dbResult;
         let totalCount = 0;
