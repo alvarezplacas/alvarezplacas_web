@@ -123,8 +123,8 @@ try {
                 const itemSku = (p.sku || "").toUpperCase();
                 let directusId = p.foto_principal;
 
-                // Heredar imagen si no tiene una propia
-                if (!directusId && p.modelo) {
+                // Heredar imagen si no tiene una propia (Solo Tableros y Tapacantos comparten texturas por modelo/color)
+                if (!directusId && p.modelo && (bucket === 'Tableros' || bucket === 'Tapacantos')) {
                     const key = `${brand}_${p.modelo}`.toLowerCase();
                     if (imageMap.has(key)) {
                         directusId = imageMap.get(key);
