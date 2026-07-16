@@ -34,10 +34,24 @@ try {
         directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
     ]);
 
-    officialBrands = (brands?.data || brands || []).map(b => normalizeBrand(b.nombre));
-    if (settings?.length > 0) showPrices = settings[0].value !== 'false';
-
     const rawProducts = materials?.data || materials || [];
+
+    // Filtrar solo las marcas que tengan productos activos en la base de datos
+    const brandsWithProducts = new Set();
+    if (rawProducts.length > 0) {
+        rawProducts.forEach(p => {
+            const letra = p.rubro?.letra || "X";
+            if (p.marca?.nombre && p.Estado && p.Estado.includes('Stock') && letra !== 'E' && letra !== 'S') {
+                brandsWithProducts.add(normalizeBrand(p.marca.nombre));
+            }
+        });
+    }
+
+    officialBrands = (brands?.data || brands || [])
+        .map(b => normalizeBrand(b.nombre))
+        .filter(b => brandsWithProducts.has(b));
+
+    if (settings?.length > 0) showPrices = settings[0].value !== 'false';
     
     // Construir mapa de imágenes por marca y modelo (color)
     const imageMap = new Map();
@@ -60,12 +74,14 @@ try {
             const category = p.rubro?.nombre || "Varios";
             const letra = p.rubro?.letra || "X";
             
+            // Ignorar Servicios (S) y Afilador (E) en el catálogo público
+            if (letra === 'S' || letra === 'E') return;
+            
             // Clasificación por Bucket (Categoría Principal)
             let bucket = "Varios";
             if (letra === 'M') bucket = "Tableros";
             else if (letra === 'H') bucket = "Herrajes";
             else if (letra === 'I') bucket = "Química";
-            else if (letra === 'S') bucket = "Servicios";
             else if (letra === 'T') bucket = "Tapacantos";
             else if (letra === 'R') bucket = "Herramientas";
             else if (letra === 'D') bucket = "Molduras";
@@ -215,10 +231,13 @@ buckets.forEach(b => {
   />
 
   <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-10" id="catalogGrid">
-    {catalogItems.map(item => (
-      <CatalogItem placa={item} showPrices={showPrices} />
-    ))}
+    <!-- JS renderizará los items aquí para mejorar el rendimiento -->
   </div>
+
+  <script is:inline define:vars={{ catalogItems, showPrices }}>
+    window.CATALOG_ITEMS = catalogItems;
+    window.SHOW_PRICES = showPrices;
+  </script>
 
   <!-- Contenedor de Paginación -->
   <div id="paginationContainer" class="flex flex-wrap justify-center gap-2 mt-16 mb-10">
