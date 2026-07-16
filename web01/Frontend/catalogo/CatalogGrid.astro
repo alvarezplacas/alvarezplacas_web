@@ -231,13 +231,10 @@ buckets.forEach(b => {
   />
 
   <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-10" id="catalogGrid">
-    <!-- JS renderizará los items aquí para mejorar el rendimiento -->
+    {catalogItems.map(item => (
+      <CatalogItem placa={item} showPrices={showPrices} />
+    ))}
   </div>
-
-  <script is:inline define:vars={{ catalogItems, showPrices }}>
-    window.CATALOG_ITEMS = catalogItems;
-    window.SHOW_PRICES = showPrices;
-  </script>
 
   <!-- Contenedor de Paginación -->
   <div id="paginationContainer" class="flex flex-wrap justify-center gap-2 mt-16 mb-10">
