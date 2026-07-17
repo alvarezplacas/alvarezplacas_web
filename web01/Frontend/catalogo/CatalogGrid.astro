@@ -28,7 +28,7 @@ try {
     const [settings, materials, brands] = await Promise.all([
         directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
         directus.request(readItems('Productos', { 
-            limit: 5000, 
+            limit: -1, 
             fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre','foto_principal','precio_L1','precio_L2', 'precio_efectivo', 'precio_transferencia', 'iva_porcentaje', 'margen_efectivo', 'margen_transferencia', 'Estado', 'stock_actual'] 
         })).catch(() => []),
         directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
@@ -219,8 +219,9 @@ buckets.forEach(b => {
     </p>
   </div>
 
-  <script is:inline define:vars={{ brandsByBucket }}>
+  <script is:inline define:vars={{ brandsByBucket, catalogItems }}>
     window.BRANDS_BY_BUCKET = brandsByBucket;
+    window.CATALOG_ITEMS = catalogItems;
   </script>
 
   <CatalogFilters 
