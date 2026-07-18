@@ -28,31 +28,11 @@ export function initCatalog() {
     let currentBucket = 'Todo';
     let currentSearchTerm = '';
     let currentPage = 1;
-    const itemsPerPage = 25;
+    const itemsPerPage = 20;
 
     const paginationContainer = document.getElementById('paginationContainer');
 
-    function updateBrandButtons(bucket) {
-        const validBrands = window.BRANDS_BY_BUCKET[bucket] || [];
-        
-        brandFilterBtns.forEach(btn => {
-            const brandName = btn.dataset.filter;
-            if (brandName === 'Todos') return;
 
-            if (bucket === 'Todo' || validBrands.includes(brandName)) {
-                btn.classList.remove('hidden');
-            } else {
-                btn.classList.add('hidden');
-            }
-        });
-
-        if (currentBrand !== 'Todos') {
-            const currentBtn = Array.from(brandFilterBtns).find(b => b.dataset.filter === currentBrand);
-            if (currentBtn && currentBtn.classList.contains('hidden')) {
-                resetBrandFilter();
-            }
-        }
-    }
 
     function resetBrandFilter() {
         currentBrand = 'Todos';
@@ -80,7 +60,6 @@ export function initCatalog() {
 
             currentBucket = target.dataset.bucket;
             currentPage = 1; // Reset a pag 1
-            updateBrandButtons(currentBucket);
             filterCards();
         });
     });
@@ -125,7 +104,7 @@ export function initCatalog() {
 
         // Botón Anterior
         if (currentPage > 1) {
-            createPageBtn('Prev', currentPage - 1);
+            createPageBtn('Anterior', currentPage - 1);
         }
 
         for (let i = startPage; i <= endPage; i++) {
@@ -134,7 +113,7 @@ export function initCatalog() {
 
         // Botón Siguiente
         if (currentPage < totalPages) {
-            createPageBtn('Next', currentPage + 1);
+            createPageBtn('Siguiente', currentPage + 1);
         }
     }
 
@@ -152,41 +131,137 @@ export function initCatalog() {
             window.scrollTo({ top: searchInput.offsetTop - 100, behavior: 'smooth' });
         };
         paginationContainer.appendChild(btn);
+    }    const catalogGrid = document.getElementById('catalogGrid');
+
+    function renderCards(pageItems) {
+        if (!catalogGrid) return;
+        
+        let html = '';
+        pageItems.forEach(placa => {
+            const isFallback = placa.imagen && placa.imagen.includes('assets/209a486b');
+            const brandUpper = (placa.brand || '').toUpperCase().trim();
+            const nameUpper = (placa.name || '').toUpperCase().trim();
+            const displayTitle = (brandUpper && nameUpper.startsWith(brandUpper))
+              ? placa.name.substring(brandUpper.length).trim()
+              : placa.name;
+              
+            const bucketColor = placa.bucket === "Tableros" ? 'bg-primary text-black' : 'bg-gray-700 text-white';
+            const imgClass = isFallback ? 'object-contain p-12 bg-[#1a1a1a]' : 'object-cover';
+            
+            let estadoHtml = '';
+            if (placa.estado) {
+                const tags = Array.isArray(placa.estado) ? placa.estado : [placa.estado];
+                estadoHtml = `<div class="flex flex-wrap gap-1">` + tags.map(tag => {
+                    let color = 'bg-gray-800 text-gray-400';
+                    if (tag === 'Stock') color = 'bg-[#c0c0c0] text-black';
+                    else if (tag === 'Sin Stock') color = 'bg-red-900/30 text-red-500 border border-red-500/20';
+                    else if (tag === 'Outlet') color = 'bg-[#FFD60A] text-black';
+                    else if (tag === 'Nuevo') color = 'bg-[#007AFF] text-white';
+                    else if (tag === 'Descontinuado') color = 'bg-red-600 text-white';
+                    return `<span class="text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter shadow-sm ${color}">${tag}</span>`;
+                }).join('') + `</div>`;
+            }
+            
+            let specsHtml = '';
+            if (placa.specs && placa.specs.length > 0) {
+                specsHtml = `<div class="flex flex-wrap gap-1.5 mb-4">` + placa.specs.map(spec => `<span class="bg-gray-900 text-gray-500 text-[8px] px-1.5 py-0.5 rounded uppercase font-medium">${spec}</span>`).join('') + `</div>`;
+            }
+
+            const dataFull = JSON.stringify(placa).replace(/"/g, '&quot;');
+            
+            html += `
+            <div class="catalog-item group flex flex-col bg-[#111111] rounded-2xl overflow-hidden border border-gray-800/50 transition-all duration-500 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 cursor-pointer h-full relative"
+                 data-bucket="${placa.bucket}" data-brand="${placa.brand}" data-full="${dataFull}">
+                <div class="absolute top-4 left-4 z-10">
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter shadow-lg ${bucketColor}">${placa.bucket}</span>
+                </div>
+                <div class="aspect-square overflow-hidden bg-[#0a0a0a] relative">
+                    <img src="${placa.imagen}" alt="${placa.name}" loading="lazy" class="w-full h-full transition-transform duration-700 group-hover:scale-105 ${imgClass}" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40"></div>
+                </div>
+                <div class="p-5 flex flex-col flex-grow">
+                    <div class="mb-4">
+                        <div class="flex items-center gap-2 mb-1">
+                            <p class="text-primary text-[10px] font-bold uppercase tracking-widest">${placa.brand}</p>
+                            ${estadoHtml}
+                        </div>
+                        <h3 class="text-white font-bold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5rem]">
+                            ${displayTitle}
+                        </h3>
+                    </div>
+                    <div class="mt-auto pt-4 border-t border-gray-800/40">
+                        ${specsHtml}
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-0.5">
+                                <span class="text-[10px] text-gray-600 font-mono">${placa.code || '-'}</span>
+                                ${placa.model ? `<span class="text-[9px] text-gray-500 font-bold uppercase tracking-tight">${placa.model}</span>` : ''}
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="bg-[#25D366]/10 text-[#25D366] p-2 rounded-lg hover:bg-[#25D366] hover:text-white transition-all">
+                                    <i class="fab fa-whatsapp text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        });
+        catalogGrid.innerHTML = html;
+        
+        // Re-attach modal listeners to newly rendered cards
+        const renderedCards = document.querySelectorAll('.catalog-item');
+        renderedCards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return; // WhatsApp btn click
+                const data = JSON.parse(card.dataset.full);
+                openModal(data);
+            });
+        });
     }
 
     function filterCards() {
-        let matchingItems = [];
         const searchTerms = currentSearchTerm.split(' ').filter(term => term.length > 0);
-
-        cards.forEach(card => {
-            const cardBucket = card.dataset.bucket;
-            const cardBrand = card.dataset.brand;
-
-            const matchesBucket = currentBucket === 'Todo' || cardBucket === currentBucket;
-            const matchesBrand = currentBrand === 'Todos' || 
-                               cardBrand.toUpperCase().trim() === currentBrand.toUpperCase().trim();
-            
+        const items = window.CATALOG_ITEMS || [];
+        
+        // 1. Elementos que coinciden con Rubro y Búsqueda (ignorar marca) para actualizar botones
+        let itemsForBrandCalc = items.filter(placa => {
+            const matchesBucket = currentBucket === 'Todo' || placa.bucket === currentBucket;
             let matchesSearch = true;
             if (searchTerms.length > 0) {
-                const cardDataString = card.dataset.search || "";
-                matchesSearch = searchTerms.every(term => cardDataString.includes(term));
+                const searchString = `${placa.name} ${placa.brand} ${placa.category} ${placa.code}`.toLowerCase();
+                matchesSearch = searchTerms.every(term => searchString.includes(term));
             }
-
-            if (matchesBucket && matchesBrand && matchesSearch) {
-                matchingItems.push(card);
-            }
-            card.style.display = 'none'; // Ocultar todos por defecto
+            return matchesBucket && matchesSearch;
         });
 
-        // Aplicar Paginación sobre los que matchean
+        const availableBrands = new Set(itemsForBrandCalc.map(i => i.brand ? i.brand.toUpperCase().trim() : ''));
+
+        brandFilterBtns.forEach(btn => {
+            const brandName = btn.dataset.filter;
+            if (brandName === 'Todos') return;
+            if (availableBrands.has(brandName.toUpperCase().trim())) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        });
+
+        if (currentBrand !== 'Todos' && !availableBrands.has(currentBrand.toUpperCase().trim())) {
+            resetBrandFilter();
+        }
+
+        // 2. Elementos que realmente se muestran (aplicando filtro de marca)
+        let matchingItems = itemsForBrandCalc.filter(placa => {
+            return currentBrand === 'Todos' || 
+                   (placa.brand && placa.brand.toUpperCase().trim() === currentBrand.toUpperCase().trim());
+        });
+
+        // Paginación
         const start = (currentPage - 1) * itemsPerPage;
         const end = start + itemsPerPage;
         const pageItems = matchingItems.slice(start, end);
 
-        pageItems.forEach(card => {
-            card.style.display = 'flex';
-        });
-
+        renderCards(pageItems);
         renderPagination(matchingItems.length);
 
         if (noResults) {
@@ -195,17 +270,11 @@ export function initCatalog() {
         }
     }
 
-            // Modal Handling
-            cards.forEach(card => {
-                card.addEventListener('click', (e) => {
-                    if (e.target.closest('a') || e.target.closest('button')) return;
-        
-                    const dataStr = card.dataset.full;
-                    if (!dataStr) return;
-        
-                    const data = JSON.parse(dataStr);
-                    const isTablero = data.bucket === "Tableros";
-                    const isHerramienta = data.bucket === "Herramientas";
+    // Initial render is handled by filterCards() which is called at the end.
+    
+    function openModal(data) {
+        const isTablero = data.bucket === "Tableros";
+        const isHerramienta = data.bucket === "Herramientas";
 
             if (mImage) {
                 const LOGO_FALLBACK = "https://admin.alvarezplacas.com.ar/assets/209a486b-8623-4c3e-8f8e-2a3288f1f0fd";
@@ -216,8 +285,19 @@ export function initCatalog() {
 
             if (mMarcaBadge) mMarcaBadge.textContent = data.brand;
             if (mNombre) mNombre.textContent = data.name;
+            
+            mCategory.textContent = data.bucket === "Tableros" && data.category ? `${data.bucket} - ${data.category}` : data.category || data.bucket;
+            
+            const descContainer = document.getElementById('modalDescriptionContainer');
+            const descText = document.getElementById('modalDescription');
+            if (data.descripcion && data.descripcion.trim() !== '') {
+                descText.textContent = data.descripcion;
+                descContainer.classList.remove('hidden');
+            } else {
+                descContainer.classList.add('hidden');
+            }
+
             if (mCategory) {
-                mCategory.textContent = data.category;
                 mCategory.className = `text-xs font-bold uppercase tracking-widest ${isTablero ? 'text-primary' : (isHerramienta ? 'text-red-500' : 'text-blue-400')}`;
             }
 
@@ -462,8 +542,8 @@ export function initCatalog() {
                 }, 10);
                 document.body.style.overflow = 'hidden';
             }
-        });
-    });
+        }
+    }
 
     const closeModalFunc = () => {
         if (modal) {
@@ -489,6 +569,4 @@ export function initCatalog() {
         }
     });
 
-    updateBrandButtons(currentBucket);
     filterCards(); // ACTIVAR PAGINACION AL INICIO
-}

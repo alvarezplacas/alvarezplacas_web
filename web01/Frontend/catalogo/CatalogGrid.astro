@@ -29,7 +29,7 @@ try {
         directus.request(readItems('site_settings', { filter: { key: { _eq: 'show_prices' } }, limit: 1 })).catch(() => []),
         directus.request(readItems('Productos', { 
             limit: -1, 
-            fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre','foto_principal','precio_L1','precio_L2', 'precio_efectivo', 'precio_transferencia', 'iva_porcentaje', 'margen_efectivo', 'margen_transferencia', 'Estado', 'stock_actual'] 
+            fields: ['id','nombre','sku','modelo','espesor','soporte','marca.nombre','rubro.letra','rubro.nombre','foto_principal','precio_L1','precio_L2', 'precio_efectivo', 'precio_transferencia', 'iva_porcentaje', 'margen_efectivo', 'margen_transferencia', 'Estado', 'stock_actual', 'descripcion'] 
         })).catch(() => []),
         directus.request(readItems('marcas', { limit: 100, fields: ['id', 'nombre'], sort: ['nombre'] })).catch(() => [])
     ]);
@@ -110,6 +110,7 @@ try {
                         bucket: bucket,
                         imagen: resolveProductImage(p.sku, directusId),
                         directus_id: directusId,
+                        descripcion: p.descripcion || "",
                         variants: [],
                         price: "Consultar",
                         estado: p.Estado
@@ -165,6 +166,7 @@ try {
                     margen_efectivo: p.margen_efectivo,
                     margen_transferencia: p.margen_transferencia,
                     stock_actual: p.stock_actual ? parseFloat(p.stock_actual) : 0,
+                    descripcion: p.descripcion || "",
                     estado: p.Estado
                 });
             }
@@ -278,6 +280,11 @@ buckets.forEach(b => {
         <div class="mb-8">
             <p id="modalCategory" class="text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-6 border-b border-primary/20 pb-2 inline-block"></p>
             
+            <!-- CONTENEDOR DESCRIPCION (NUEVO) -->
+            <div id="modalDescriptionContainer" class="hidden mb-8 bg-white text-black p-5 rounded-xl shadow-lg border border-gray-100">
+                <p id="modalDescription" class="font-sans text-[13px] font-medium leading-relaxed text-gray-900"></p>
+            </div>
+
             <!-- Contenedor Dinámico -->
             <div id="modalSpecsContainer" class="space-y-8">
                 <!-- Aquí se inyectan los selectores por JS -->
