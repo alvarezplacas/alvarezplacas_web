@@ -221,7 +221,7 @@ buckets.forEach(b => {
     </p>
   </div>
 
-  <script is:inline define:vars={{ brandsByBucket, catalogItems }}>
+  <script data-cfasync="false" is:inline define:vars={{ brandsByBucket, catalogItems }}>
     window.BRANDS_BY_BUCKET = brandsByBucket;
     window.CATALOG_ITEMS = catalogItems;
   </script>
