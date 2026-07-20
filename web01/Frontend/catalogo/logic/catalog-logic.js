@@ -221,6 +221,8 @@ export function initCatalog() {
     }
 
     function filterCards() {
+    console.log('filterCards started');
+    try {
         const searchTerms = currentSearchTerm.split(' ').filter(term => term.length > 0);
         const items = window.CATALOG_ITEMS || [];
         
