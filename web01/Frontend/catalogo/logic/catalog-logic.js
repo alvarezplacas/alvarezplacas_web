@@ -228,8 +228,23 @@ export function initCatalog() {
             const matchesBucket = currentBucket === 'Todo' || placa.bucket === currentBucket;
             let matchesSearch = true;
             if (searchTerms.length > 0) {
-                const searchString = `${placa.name} ${placa.brand} ${placa.category} ${placa.code}`.toLowerCase();
-                matchesSearch = searchTerms.every(term => searchString.includes(term));
+              let searchString = `${placa.name} ${placa.brand} ${placa.category} ${placa.code}`.toLowerCase();
+              
+              // Expansión inteligente de abreviaturas en el texto a buscar
+              if (searchString.includes('egg')) searchString += ' egger';
+              if (searchString.includes('fap')) searchString += ' faplac';
+              if (searchString.includes('sad')) searchString += ' sadepan';
+              if (searchString.includes('ench')) searchString += ' enchapado';
+              if (searchString.includes('tpc') || searchString.includes('tapacanto')) searchString += ' tpc tapacanto tapacantos';
+
+              matchesSearch = searchTerms.every(term => {
+                  // Mapeo inverso: si el usuario escribe la marca completa, aceptamos la abreviatura
+                  if (term === 'egger' && searchString.includes('egg')) return true;
+                  if (term === 'faplac' && searchString.includes('fap')) return true;
+                  if (term === 'sadepan' && searchString.includes('sad')) return true;
+                  if (term === 'enchapado' && searchString.includes('ench')) return true;
+                  return searchString.includes(term);
+              });
             }
             return matchesBucket && matchesSearch;
         });
