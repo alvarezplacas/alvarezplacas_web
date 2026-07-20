@@ -131,9 +131,10 @@ export function initCatalog() {
             window.scrollTo({ top: searchInput.offsetTop - 100, behavior: 'smooth' });
         };
         paginationContainer.appendChild(btn);
-    }    const catalogGrid = document.getElementById('catalogGrid');
+    }
 
     function renderCards(pageItems) {
+        const catalogGrid = document.getElementById('catalogGrid');
         if (!catalogGrid) return;
         
         let html = '';
@@ -236,13 +237,17 @@ export function initCatalog() {
               if (searchString.includes('sad')) searchString += ' sadepan';
               if (searchString.includes('ench')) searchString += ' enchapado';
               if (searchString.includes('tpc') || searchString.includes('tapacanto')) searchString += ' tpc tapacanto tapacantos';
+              if (searchString.includes('bco')) searchString += ' blanco';
+              if (searchString.includes('ngro') || searchString.includes('neg')) searchString += ' negro';
 
               matchesSearch = searchTerms.every(term => {
-                  // Mapeo inverso: si el usuario escribe la marca completa, aceptamos la abreviatura
+                  // Mapeo inverso: si el usuario escribe la palabra completa, aceptamos la abreviatura
                   if (term === 'egger' && searchString.includes('egg')) return true;
                   if (term === 'faplac' && searchString.includes('fap')) return true;
                   if (term === 'sadepan' && searchString.includes('sad')) return true;
                   if (term === 'enchapado' && searchString.includes('ench')) return true;
+                  if (term === 'blanco' && searchString.includes('bco')) return true;
+                  if (term === 'negro' && (searchString.includes('ngro') || searchString.includes('neg'))) return true;
                   return searchString.includes(term);
               });
             }
