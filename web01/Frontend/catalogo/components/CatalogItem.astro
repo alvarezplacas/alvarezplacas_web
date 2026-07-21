@@ -13,6 +13,17 @@ const nameUpper = (placa.name || '').toUpperCase().trim();
 const displayTitle = (brandUpper && nameUpper.startsWith(brandUpper))
   ? placa.name.substring(brandUpper.length).trim()
   : placa.name;
+// Determinar el fondo ideal para la imagen según el rubro/bucket
+let imageBgClass = 'bg-white';
+let imgExtraClass = 'object-contain';
+
+if (isFallback) {
+  imageBgClass = 'bg-[#0a0a0a]';
+  imgExtraClass = 'object-contain p-12 bg-[#1a1a1a]';
+} else if (placa.bucket && placa.bucket.toUpperCase().includes('MOLDURA')) {
+  imageBgClass = 'bg-[#000000]'; // Negro puro para resaltar molduras claras
+  imgExtraClass = 'object-contain p-4'; // un poco de padding para que no toque los bordes
+}
 ---
 
 <div 
@@ -32,14 +43,12 @@ const displayTitle = (brandUpper && nameUpper.startsWith(brandUpper))
   </div>
 
   <!-- Contenedor de Imagen -->
-  <div class={`aspect-square overflow-hidden relative ${isFallback ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
+  <div class={`aspect-square overflow-hidden relative ${imageBgClass}`}>
     <img 
       src={placa.imagen} 
       alt={placa.name}
       loading="lazy"
-      class={`w-full h-full transition-transform duration-700 group-hover:scale-105 ${
-        isFallback ? 'object-contain p-12 bg-[#1a1a1a]' : 'object-contain'
-      }`}
+      class={`w-full h-full transition-transform duration-700 group-hover:scale-105 ${imgExtraClass}`}
     />
     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40"></div>
   </div>
