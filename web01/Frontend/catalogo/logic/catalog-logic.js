@@ -290,7 +290,10 @@ export function initCatalog() {
             if (matchingItems.length === 0) noResults.classList.remove('hidden');
             else noResults.classList.add('hidden');
         }
+    } catch (e) {
+        console.error("Error filtering cards: ", e);
     }
+}
 
     // Initial render is handled by filterCards() which is called at the end.
     
